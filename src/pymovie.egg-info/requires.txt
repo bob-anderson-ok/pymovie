@@ -1,0 +1,8 @@
+pyqtgraph
+opencv-python
+astroquery
+scikit-image>=0.15.0
+
+[:platform_system == "Windows"]
+winshell
+pypiwin32
