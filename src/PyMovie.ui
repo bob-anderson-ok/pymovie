@@ -1,0 +1,609 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>932</width>
+    <height>859</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <property name="toolTipDuration">
+   <number>-1</number>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="0">
+     <widget class="QSplitter" name="splitter_3">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+      <widget class="QSplitter" name="splitter_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <widget class="QWidget" name="">
+        <layout class="QVBoxLayout" name="verticalLayout_6">
+         <item>
+          <widget class="QPushButton" name="readFitsFolderButton">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;A &lt;span style=&quot; color:#fc0107;&quot;&gt;FITS&lt;/span&gt; folder should contain a set of *.fits files, all from a single recording.&lt;/p&gt;&lt;p&gt;There should be no other .fits files in that folder.&lt;/p&gt;&lt;p&gt;It is assumed that the alphabetic ordering of the file names corresponds to sequential frames.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="toolTipDuration">
+            <number>0</number>
+           </property>
+           <property name="statusTip">
+            <string/>
+           </property>
+           <property name="text">
+            <string>Open FITS folder</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="readAviFileButton">
+           <property name="text">
+            <string>Open avi file</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_3">
+           <item>
+            <spacer name="horizontalSpacer_2">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="logScalingCheckBox">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:14pt;&quot;&gt;'Checking' this box scales the pixel values in the image to make details easier to see.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:14pt;&quot;&gt;The scaling equation used is:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Menlo'; font-size:13.5pt; color:#000000;&quot;&gt;
+&lt;pre&gt;&lt;code&gt;  # x is a 2D matrix of image pixels&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;  a = np.min(x) # a will be set to the smallest pixel value in the image&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;  b = np.max(x) # b will be set to the highest pixel value in the image&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;  # linval will be a 2D matrix (because x is 2D) of pixel values between 10.0 and 990.0&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;  linval = 10.0 + 990.0 * (x-float(a))/(b-a)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;  # return a 2D matrix of pixel values log scaled with values between 0.0 and 255.0&lt;/span&gt;
+&lt;pre&gt;&lt;code&gt;  return (np.log10(linval) - 1.0 * 0.5 * 255.0&lt;/pre&gt;&lt;/code&gt;&lt;/span&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="layoutDirection">
+              <enum>Qt::RightToLeft</enum>
+             </property>
+             <property name="text">
+              <string>log scale image</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout">
+           <item>
+            <widget class="QPushButton" name="decThreshButton">
+             <property name="text">
+              <string>dec thresh</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="incThreshButton">
+             <property name="text">
+              <string>Inc thresh</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer_3">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>Thresh</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="threshValueEdit">
+             <property name="maximumSize">
+              <size>
+               <width>50</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>0</string>
+             </property>
+             <property name="maxLength">
+              <number>4</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_6">
+           <item>
+            <spacer name="horizontalSpacer_6">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <layout class="QVBoxLayout" name="verticalLayout_3">
+             <item>
+              <widget class="QLabel" name="label_3">
+               <property name="minimumSize">
+                <size>
+                 <width>89</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>89</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="layoutDirection">
+                <enum>Qt::LeftToRight</enum>
+               </property>
+               <property name="text">
+                <string> Current frame:</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+               </property>
+               <property name="margin">
+                <number>0</number>
+               </property>
+               <property name="indent">
+                <number>-1</number>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_4">
+               <property name="minimumSize">
+                <size>
+                 <width>89</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>89</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>Stop at frame:</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QVBoxLayout" name="verticalLayout_4">
+             <item>
+              <widget class="QSpinBox" name="currentFrameSpinBox">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>73</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+               </property>
+               <property name="maximum">
+                <number>99999</number>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="stopAtFrameSpinBox">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>73</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+               </property>
+               <property name="maximum">
+                <number>99999</number>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QVBoxLayout" name="verticalLayout_5">
+             <item>
+              <widget class="QRadioButton" name="runRadioButton">
+               <property name="minimumSize">
+                <size>
+                 <width>100</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>100</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="layoutDirection">
+                <enum>Qt::LeftToRight</enum>
+               </property>
+               <property name="text">
+                <string>Run</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QRadioButton" name="pauseRadioButton">
+               <property name="maximumSize">
+                <size>
+                 <width>100</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="layoutDirection">
+                <enum>Qt::LeftToRight</enum>
+               </property>
+               <property name="text">
+                <string>Pause</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_7">
+           <item>
+            <widget class="QPushButton" name="setMaxStopButton">
+             <property name="text">
+              <string>Set max stop frame</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="experimentButton">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button is used for running experimental code and is used during development.&lt;/p&gt;&lt;p&gt;If you're not the developer, then the developer failed to remove/disable this button before release.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>Display plots</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="writeCsvButton">
+             <property name="text">
+              <string>write csv</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_8">
+           <item>
+            <widget class="QDoubleSpinBox" name="defaultMaskRadiusDoubleSpinBox">
+             <property name="minimum">
+              <double>2.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>20.000000000000000</double>
+             </property>
+             <property name="singleStep">
+              <double>0.500000000000000</double>
+             </property>
+             <property name="value">
+              <double>5.300000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>Set radius of default mask</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer_5">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <spacer name="verticalSpacer">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="useYellowMaskCheckBox">
+           <property name="text">
+            <string>Use mask derived from yellow aperture</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_5">
+           <item>
+            <widget class="QPushButton" name="metadataButton">
+             <property name="text">
+              <string>Show FITS metadata</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="clearAppDataButton">
+             <property name="text">
+              <string>Clear plot data</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer_4">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_4">
+           <item>
+            <widget class="QPushButton" name="infoButton">
+             <property name="toolTip">
+              <string>Clicking on this button will open a pdf file that provides version history. Additional documentation follows the version history so don't fail to scroll down.</string>
+             </property>
+             <property name="text">
+              <string>About</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="enableHoverHelpCheckBox">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The best way to use the 'Hover Help' system employed by this app is to position this dialog box off to one side where it won't be covered by the main app window once that has been made active.&lt;/p&gt;&lt;p&gt;This dialog box will be dynamically updated any time you hover over an item in the main app window that has 'hover help' text associated with it.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>Enable hover help</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+       <widget class="ImageView" name="frameView">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>1</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="toolTip">
+         <string/>
+        </property>
+       </widget>
+      </widget>
+      <widget class="QSplitter" name="splitter">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <widget class="QTextEdit" name="textOut">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>1</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="font">
+         <font>
+          <family>Courier New</family>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="toolTip">
+         <string>We will add an explanation for the values printed here (in the future)</string>
+        </property>
+       </widget>
+       <widget class="QWidget" name="layoutWidget">
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <layout class="QVBoxLayout" name="verticalLayout_2">
+           <item>
+            <widget class="ImageView" name="thumbOneView"/>
+           </item>
+           <item>
+            <widget class="QLabel" name="thumbnailOneLabel">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:14pt;&quot;&gt;This panel shows a zoomed version of the image contained within the aperture boundaries.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>Thumbnail One (hover here for info)</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QVBoxLayout" name="verticalLayout">
+           <item>
+            <widget class="ImageView" name="thumbTwoView"/>
+           </item>
+           <item>
+            <widget class="QLabel" name="thumbnailTwoLabel">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This image shows the mask that will be applied to the image shown in Thumbnail One.&lt;/p&gt;&lt;p&gt;Currently, the 'mask' is dynamically calculated by the following steps: &lt;/p&gt;&lt;p&gt;1) Thumbnail One is blurred using a 5x5 pixel Gaussian.&lt;/p&gt;&lt;p&gt;2) A 'threshold' is calculated as: &lt;span style=&quot; color:#fc0107;&quot;&gt;thresh&lt;/span&gt; = &lt;span style=&quot; color:#0000ff;&quot;&gt;mean + 3 * std + thresh_adder &lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#0000ff;&quot;&gt;thresh_adder &lt;/span&gt;&lt;span style=&quot; color:#000000;&quot;&gt;is unique for each aperture: it is set to zero when the aperture is created; it can be increased or decreased by the context menu that each aperture has (right-click menu) &lt;/span&gt;&lt;span style=&quot; font-style:italic; color:#000000;&quot;&gt;. &lt;/span&gt;&lt;span style=&quot; color:#000000;&quot;&gt;The &lt;/span&gt;&lt;span style=&quot; color:#0000ff;&quot;&gt;mean&lt;/span&gt;&lt;span style=&quot; color:#000000;&quot;&gt; and &lt;/span&gt;&lt;span style=&quot; color:#0000ff;&quot;&gt;std&lt;/span&gt;&lt;span style=&quot; color:#000000;&quot;&gt; (standard deviation) are extracted from the Thumbnail One image by a Robust mean and scale estimator (scale is a measure of the dispersion/distribution of a data set). Median Absolute Deviation (MAD) is the underlying math of the scale estimation; this is turned into a standard deviation by multiplying MAD by 1.486. This results in a reliable &lt;/span&gt;&lt;span style=&quot; color:#0000ff;&quot;&gt;std&lt;/span&gt;&lt;span style=&quot; color:#000000;&quot;&gt; when/if the pixel distribution (ignoring outliers) is Gaussian.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;3) &lt;span style=&quot; color:#fc0107;&quot;&gt;thresh&lt;/span&gt; is used to turn the blurred Thumbnail One image into a binary image (only the values 0 and 1 are present) by setting to 0 all pixels that are &amp;lt;= &lt;span style=&quot; color:#fc0107;&quot;&gt;thresh&lt;/span&gt; and setting to 1 all pixels that are greater than &lt;span style=&quot; color:#fc0107;&quot;&gt;thresh&lt;/span&gt;. &lt;/p&gt;&lt;p&gt;4) The resulting binary image is processed to find all 'blobs' (connected groups of pixels with value 1).&lt;/p&gt;&lt;p&gt;5) The largest 'blob' found in step 4 is turned into the mask that is displayed in this thumbnail.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>Thumbnail Two (hover here for info)</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>932</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="defaultUp">
+    <bool>true</bool>
+   </property>
+   <property name="nativeMenuBar">
+    <bool>false</bool>
+   </property>
+   <widget class="QMenu" name="menuBobs_stuff">
+    <property name="title">
+     <string>We may have something here in the future</string>
+    </property>
+    <addaction name="actionLike_special_settings"/>
+    <addaction name="separator"/>
+    <addaction name="actionOr_preferences"/>
+   </widget>
+   <addaction name="menuBobs_stuff"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionLike_special_settings">
+   <property name="text">
+    <string>Like special settings</string>
+   </property>
+  </action>
+  <action name="actionOr_preferences">
+   <property name="text">
+    <string>Or preferences</string>
+   </property>
+  </action>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ImageView</class>
+   <extends>QGraphicsView</extends>
+   <header>pyqtgraph</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>
