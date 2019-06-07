@@ -2614,7 +2614,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 try:
                     self.cap.set(cv2.CAP_PROP_POS_FRAMES, frame_to_show)
                     status, frame = self.cap.read()
-                    self.image = frame[:, :, 0]
+                    self.image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                    pass
+
                 except Exception as e:
                     self.showMsg(f'Problem reading avi file: {e}')
             else:  # We're dealing with FITS files
