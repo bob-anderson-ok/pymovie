@@ -26,12 +26,6 @@
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
      <widget class="QSplitter" name="splitter_3">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-        <horstretch>0</horstretch>
-        <verstretch>2</verstretch>
-       </sizepolicy>
-      </property>
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
@@ -215,7 +209,10 @@
             </spacer>
            </item>
            <item>
-            <widget class="QLabel" name="label">
+            <widget class="QLabel" name="setMskthLabel">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If there is a currently 'green' aperture showing, its threshold value will be set to any new value from this spinner and &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Thumbnail Two&lt;/span&gt; in the lower right corner will update dynamically to show the effect of the change on the binary sample mask generation.&lt;/p&gt;&lt;p&gt;The mask threshold is always set as counts above average background.  A good starting point for setting this value is to set it equal to the background noise (found in the column labelled &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;bkstd&lt;/span&gt; in the text box) rounded up. The program tries to do this automatically so, in most cases, this value will already be preset. This is sometimes referred to as &lt;span style=&quot; color:#0000ff;&quot;&gt;'setting the threshold to 1 sigma'&lt;/span&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="text">
               <string>set mskth counts above bkavg</string>
              </property>
@@ -250,7 +247,7 @@
               <widget class="QPushButton" name="back25Button">
                <property name="maximumSize">
                 <size>
-                 <width>60</width>
+                 <width>120</width>
                  <height>16777215</height>
                 </size>
                </property>
@@ -258,7 +255,7 @@
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump back 25 frames.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="text">
-                <string>&lt; 25</string>
+                <string>&lt; 25 frames</string>
                </property>
               </widget>
              </item>
@@ -266,7 +263,7 @@
               <widget class="QPushButton" name="back200Button">
                <property name="maximumSize">
                 <size>
-                 <width>60</width>
+                 <width>120</width>
                  <height>16777215</height>
                 </size>
                </property>
@@ -274,7 +271,7 @@
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump back 200 frames.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="text">
-                <string>&lt; 200</string>
+                <string>&lt; 200 frames</string>
                </property>
               </widget>
              </item>
@@ -289,7 +286,7 @@
               <widget class="QPushButton" name="forward25Button">
                <property name="maximumSize">
                 <size>
-                 <width>60</width>
+                 <width>120</width>
                  <height>16777215</height>
                 </size>
                </property>
@@ -297,7 +294,7 @@
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump forward 25 frames.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="text">
-                <string>25 &gt;</string>
+                <string>25 frames &gt;</string>
                </property>
               </widget>
              </item>
@@ -305,7 +302,7 @@
               <widget class="QPushButton" name="forward200Button">
                <property name="maximumSize">
                 <size>
-                 <width>60</width>
+                 <width>120</width>
                  <height>16777215</height>
                 </size>
                </property>
@@ -313,7 +310,7 @@
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump forward 200 frames.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="text">
-                <string>200 &gt;</string>
+                <string>200 frames &gt;</string>
                </property>
               </widget>
              </item>
@@ -325,7 +322,7 @@
               <number>0</number>
              </property>
              <item>
-              <widget class="QLabel" name="label_3">
+              <widget class="QLabel" name="currentFrameLabel">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                  <horstretch>0</horstretch>
@@ -343,6 +340,10 @@
                  <width>16777215</width>
                  <height>16777215</height>
                 </size>
+               </property>
+               <property name="toolTip">
+                <string>This box controls which frame is currently being analyzed. It can be changed by direct entry or by use of the spinner control buttons.
+This will be the starting frame for an extraction triggered by clicking on the Start analysis radio button to the right.</string>
                </property>
                <property name="layoutDirection">
                 <enum>Qt::LeftToRight</enum>
@@ -362,7 +363,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QLabel" name="label_4">
+              <widget class="QLabel" name="stopAtFrameLabel">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                  <horstretch>0</horstretch>
@@ -380,6 +381,9 @@
                  <width>16777215</width>
                  <height>16777215</height>
                 </size>
+               </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This box controls which frame will be the final frame in a lightcurve extraction.&lt;/p&gt;&lt;p&gt;At initial file read, this box will be populated with the highest available frame number.&lt;/p&gt;&lt;p&gt;Should you change the value in this box and wish to reset it back to the correct maximum frame number, click on the Set max stop frame button located below and to the left.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Note: the value here can be less than than that in the Current frame entry. In that case, when an analysis is started, it will proceed 'backwards' from higher numbered frames to lower numbered frames. When running 'backwards', the analysis stops 1 frame before the Stop at frame value to make it convenient to run from both ends without duplicating the Stop at frame. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="text">
                 <string>Stop at frame:</string>
@@ -569,7 +573,7 @@
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking this button opens a Save File dialog. Use this dialog to name and, optionally select the directory where you wish the csv file to be written. The default directory is the directory from which the video data was read.&lt;/p&gt;&lt;p&gt;A set of columns is created for each aperture with the column naming incorporating the aperture name for identification.&lt;/p&gt;&lt;p&gt;Hopefully you named each aperture in a logical manner. While there is an automatic unique name given to each aperture at creation time, providing user-friendly aperture names will help greatly in identifying the csv file columns.&lt;/p&gt;&lt;p&gt;Apertures can be renamed at any time without losing any data, so please make use of this feature: it will make consumers of your csv file happy.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
-              <string>write csv</string>
+              <string>Write csv</string>
              </property>
             </widget>
            </item>
@@ -597,7 +601,13 @@
             </widget>
            </item>
            <item>
-            <widget class="QLabel" name="label_2">
+            <widget class="QLabel" name="setRadiusLabel">
+             <property name="toolTip">
+              <string>Sometimes the star image gets so dim (or is occulted) that the mask generation routine cannot find a connected group of 9 pixels above threshold to form a mask.
+In this case, a default mask is substituted.
+This spinbox (which can be edited directly) is used to set the size of this default mask.
+In practice, you should set the size of the default mask to match as closely as possible the mask size of the dimmest image for which a mask was able to be computed. This will make the noise characteristics of the subtituted mask similar to 'real' masks.</string>
+             </property>
              <property name="text">
               <string>Set radius (pixels) of default mask</string>
              </property>
@@ -617,7 +627,10 @@
             </spacer>
            </item>
            <item>
-            <widget class="QLabel" name="label_6">
+            <widget class="QLabel" name="plotSymbolSizeLabel">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This spinner sets the size of the symbols used in the plots to show a data value position. &lt;/p&gt;&lt;p&gt;If you open a set of plots and would like to see smaller or larger dots, simply close the plots, change the symbol size using this spinner and reopen the plots.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="text">
               <string>Plot symbol size:</string>
              </property>
@@ -678,12 +691,15 @@
             </widget>
            </item>
            <item>
-            <widget class="QLabel" name="label_5">
+            <widget class="QLabel" name="selectApertureSizeLabel">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This drop-down selection box changes the measurement aperture size.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Note:&lt;/span&gt; it is a reqirement that all apertures be the same size during a lightcurve extraction, so changing the aperture size will automatically remove all existing apertures.&lt;/p&gt;&lt;p&gt;If there is substantial wind shake in the video, you should select an aperture size sufficent to contain the 'wanderings' of the star you have selected for tracking or, if there is no tracking star, then the target star itself.&lt;/p&gt;&lt;p&gt;If there is no significant wind shake, use of a smaller aperture (like 31) may be more useful in dealing with dense star fields.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
               <string>Select aperture size</string>
@@ -794,12 +810,15 @@
                 </spacer>
                </item>
                <item>
-                <widget class="QLabel" name="label_8">
+                <widget class="QLabel" name="ucac4Label">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
+                 </property>
+                 <property name="toolTip">
+                  <string>The entry here must be of the form XXX-XXXXX otherwise you will get a 'star not found' message instead of the coordinates you were seeking.</string>
                  </property>
                  <property name="text">
                   <string>UCAC4</string>
@@ -959,17 +978,20 @@
               </size>
              </property>
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This entry is used to specify how many lines from the image bottom to remove to get rid of the timestamp.&lt;/p&gt;&lt;p&gt;Getting rid of the timestamp is &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;essential&lt;/span&gt; for getting a good image to image registration based on the star field movement. If the timestamp is not removed, then the stacking process will likely register on the timestamp instead.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string/>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QLabel" name="label_11">
+            <widget class="QLabel" name="finderRedactLinesLabel">
              <property name="minimumSize">
               <size>
                <width>85</width>
                <height>0</height>
               </size>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This entry is used to specify how many lines from the image bottom to remove to get rid of the timestamp.&lt;/p&gt;&lt;p&gt;Getting rid of the timestamp is &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;essential&lt;/span&gt; for getting a good image to image registration based on the star field movement. If the timestamp is not removed, then the stacking process will likely register on the timestamp instead.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
               <string>redact lines</string>
@@ -1004,12 +1026,12 @@
               </size>
              </property>
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This edit box specifies how many frames to register and sum. For the purpose of locating a star that can produce an occultation light curve, a number of frames in the range of 100 to 400 is effective. If this number is set too high, while the target star might become visible in this enhanced image, it is likely to be lost in quantization and noise effects when frame by frame aperture photometry is attempted.&lt;/p&gt;&lt;p&gt;Of course, your objective might be to get a 'pretty picture' of the star field. If so, have at it, but be aware that stars may 'appear' for which an occultation light curve cannot be extracted when processing is done frame by frame.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string/>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QLabel" name="label_12">
+            <widget class="QLabel" name="finderNumFramesLabel">
              <property name="minimumSize">
               <size>
                <width>0</width>
@@ -1021,6 +1043,9 @@
                <width>16777215</width>
                <height>16777215</height>
               </size>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This edit box specifies how many frames to register and sum. For the purpose of locating a star that can produce an occultation light curve, a number of frames in the range of 100 to 400 is effective. If this number is set too high, while the target star might become visible in this enhanced image, it is likely to be lost in quantization and noise effects when frame by frame aperture photometry is attempted.&lt;/p&gt;&lt;p&gt;Of course, your objective might be to get a 'pretty picture' of the star field. If so, have at it, but be aware that stars may 'appear' for which an occultation light curve cannot be extracted when processing is done frame by frame.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
               <string>num frames</string>
@@ -1163,17 +1188,20 @@
                   </size>
                  </property>
                  <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This entry is only used when preparing a frame for submission to nova.astrometry.net for WCS calibration.&lt;/p&gt;&lt;p&gt;If there is a timestamp overlay, its presence may make the WCS location and calibration harder (takes longer) for nova.astrometry.net. So, before submitting an image to nova.astrometry.net, we like to 'redact' the timestamp area by replacing the bottom lines with the average background (sampled from the center of the image). The value in this box controls how many lines from the bottom get this treatment.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                  <string/>
                  </property>
                 </widget>
                </item>
                <item>
-                <widget class="QLabel" name="label_9">
+                <widget class="QLabel" name="astrometryRedactLabel">
                  <property name="minimumSize">
                   <size>
                    <width>70</width>
                    <height>0</height>
                   </size>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This entry is only used when preparing a frame for submission to nova.astrometry.net for WCS calibration.&lt;/p&gt;&lt;p&gt;If there is a timestamp overlay, its presence may make the WCS location and calibration harder (takes longer) for nova.astrometry.net. So, before submitting an image to nova.astrometry.net, we like to 'redact' the timestamp area by replacing the bottom lines with the average background (sampled from the center of the image). The value in this box controls how many lines from the bottom get this treatment.&lt;/p&gt;&lt;p&gt;Entering a negative number will redact lines from the top.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                  </property>
                  <property name="text">
                   <string>redact lines</string>
@@ -1236,17 +1264,22 @@
                   </size>
                  </property>
                  <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This edit box allows a plate scale to be specified for a manual WCS calibration.&lt;/p&gt;&lt;p&gt;Normally, this box should be left &lt;span style=&quot; font-weight:600; font-style:italic; color:#fc0107;&quot;&gt;empty&lt;/span&gt;. The plate scale will then be calculated (and reported for your records) from the two calibration apertures specified.&lt;/p&gt;&lt;p&gt;If you think that you know the plate scale more precisely than what can be calculated from two points (which might necessarily be close together due to a puacity of good stars to use for calibration), then definitely enter that value in this box.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                  <string/>
                  </property>
                 </widget>
                </item>
                <item>
-                <widget class="QLabel" name="label_10">
+                <widget class="QLabel" name="manualPlateScaleLabel">
                  <property name="minimumSize">
                   <size>
                    <width>70</width>
                    <height>0</height>
                   </size>
+                 </property>
+                 <property name="toolTip">
+                  <string>This edit box allows a plate scale to be specified for a manual WCS calibration.
+Normally, this box should be left empty. The plate scale will then be calculated (and reported for your records) from the two calibration apertures specified.
+If you think that you know the plate scale more precisely than what can be calculated from two points (which might necessarily be close together due to a puacity of good stars to use for calibration), then definitely enter that value in this box.</string>
                  </property>
                  <property name="text">
                   <string>plate scale</string>
@@ -1335,23 +1368,39 @@
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <widget class="QTextEdit" name="textOut">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-          <horstretch>1</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="font">
-         <font>
-          <family>Courier New</family>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="toolTip">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Here is the 'decoder' for the column headings:&lt;/p&gt;&lt;p&gt;signal = sum of all pixels included in the mask with the background (bkavg) subtracted from each one.&lt;/p&gt;&lt;p&gt;appsum = sum of all pixels included in the mask &lt;/p&gt;&lt;p&gt;bkavg = average background, calculated using a Robust Mean estimator with 50% outlier rejection.&lt;/p&gt;&lt;p&gt;bkstd = standard deviation of the background, calculated using a Robust Scale estimator with 50% outlier rejection (assumes gaussian distribution)&lt;/p&gt;&lt;p&gt;mskth = Thresh used in forming mask. This value is added to bkavg to compute binary mask&lt;/p&gt;&lt;p&gt;mskpx = number of pixels in binary mask - if negative, a default mask was used&lt;/p&gt;&lt;p&gt;cvxhull = convex hull: the area enclosed by a rubber band that surrounds the mask.&lt;/p&gt;&lt;p&gt;xpos = y position of centroid in image coordinates&lt;/p&gt;&lt;p&gt;ypos = x position of centroid in image coordinates&lt;/p&gt;&lt;p&gt;minpx = minimum value pixel contained in the aperture&lt;/p&gt;&lt;p&gt;maxpx = maximum value pixel contained in the aperture&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-        </property>
+       <widget class="QWidget" name="">
+        <layout class="QVBoxLayout" name="verticalLayout_14">
+         <item>
+          <widget class="QTextEdit" name="textOut">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <horstretch>1</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="font">
+            <font>
+             <family>Courier New</family>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="textOutLabel">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Here is the 'decoder' for the column headings:&lt;/p&gt;&lt;p&gt;signal = sum of all pixels included in the mask with the background (bkavg) subtracted from each one.&lt;/p&gt;&lt;p&gt;appsum = sum of all pixels included in the mask &lt;/p&gt;&lt;p&gt;bkavg = average background, calculated using a Robust Mean estimator with 50% outlier rejection.&lt;/p&gt;&lt;p&gt;bkstd = standard deviation of the background, calculated using a Robust Scale estimator with 50% outlier rejection (assumes gaussian distribution)&lt;/p&gt;&lt;p&gt;mskth = Thresh used in forming mask. This value is added to bkavg to compute binary mask&lt;/p&gt;&lt;p&gt;mskpx = number of pixels in binary mask - if negative, a default mask was used&lt;/p&gt;&lt;p&gt;cvxhull = convex hull: the area enclosed by a rubber band that surrounds the mask.&lt;/p&gt;&lt;p&gt;xpos = y position of centroid in image coordinates&lt;/p&gt;&lt;p&gt;ypos = x position of centroid in image coordinates&lt;/p&gt;&lt;p&gt;minpx = minimum value pixel contained in the aperture&lt;/p&gt;&lt;p&gt;maxpx = maximum value pixel contained in the aperture&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string>Right-click here for info</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
        <widget class="QWidget" name="layoutWidget">
         <layout class="QHBoxLayout" name="horizontalLayout_2">

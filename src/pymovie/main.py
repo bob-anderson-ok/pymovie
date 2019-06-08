@@ -235,6 +235,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.roiComboBox.currentIndexChanged.connect(self.setRoiFromComboBox)
         self.roiComboBox.installEventFilter(self)
+        self.selectApertureSizeLabel.installEventFilter(self)
 
         # Initialize all instance variables as a block (to satisfy PEP 8 standard)
 
@@ -367,7 +368,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.showImageControlCheckBox.clicked.connect(self.toggleImageControl)
         self.showImageControlCheckBox.installEventFilter(self)
 
-        self.textOut.installEventFilter(self)  # Captures the toolTip info and displays it in our own dialog
+        # Captures the toolTip info and displays it in our own helpDialog
+        self.textOutLabel.installEventFilter(self)
 
         # self.frameView.installEventFilter(self)
         self.mainImageLabel.installEventFilter(self)
@@ -391,9 +393,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.selectAviWcsFolderButton.installEventFilter(self)
 
         self.currentFrameSpinBox.valueChanged.connect(self.updateFrameWithTracking)
-        self.currentFrameSpinBox.installEventFilter(self)
+        self.currentFrameLabel.installEventFilter(self)
 
-        self.stopAtFrameSpinBox.installEventFilter(self)
+        self.stopAtFrameLabel.installEventFilter(self)
 
         self.setMaxStopButton.clicked.connect(self.resetMaxStopAtFrameValue)
         self.setMaxStopButton.installEventFilter(self)
@@ -416,7 +418,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.queryVizierButton.clicked.connect(self.queryVizier)
         self.queryVizierButton.installEventFilter(self)
 
-        self.starIdEdit.installEventFilter(self)
+        # self.starIdEdit.installEventFilter(self)
+        self.ucac4Label.installEventFilter(self)
         self.starIdEdit.textChanged.connect(self.clearCoordinatesEdit)
 
         self.saveTargetLocButton.clicked.connect(self.saveTargetInFolder)
@@ -426,10 +429,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.logScalingCheckBox.installEventFilter(self)
 
         self.threshValueEdit.valueChanged.connect(self.changeThreshold)
-        self.threshValueEdit.installEventFilter(self)
+        # self.threshValueEdit.installEventFilter(self)
+        self.setMskthLabel.installEventFilter(self)
 
         self.defaultMaskRadiusDoubleSpinBox.valueChanged.connect(self.changeDefaultMask)
-        self.defaultMaskRadiusDoubleSpinBox.installEventFilter(self)
+        # self.defaultMaskRadiusDoubleSpinBox.installEventFilter(self)
+        self.setRadiusLabel.installEventFilter(self)
 
         self.metadataButton.clicked.connect(self.showFitsMetadata)
         self.metadataButton.installEventFilter(self)
@@ -450,7 +455,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.demoMeanPushButton.installEventFilter(self)
 
         self.plotSymbolSizeSpinBox.valueChanged.connect(self.changePlotSymbolSize)
-        self.plotSymbolSizeSpinBox.installEventFilter(self)
+        # self.plotSymbolSizeSpinBox.installEventFilter(self)
+        self.plotSymbolSizeLabel.installEventFilter(self)
 
         self.displayPlotsButton.clicked.connect(self.showLightcurves)
         self.displayPlotsButton.installEventFilter(self)
@@ -461,19 +467,17 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.stackFramesButton.clicked.connect(self.performFrameStacking)
         self.stackFramesButton.installEventFilter(self)
 
-        self.redactLinesEdit.installEventFilter(self)
-        self.numFramesToStackEdit.installEventFilter(self)
+        self.finderRedactLinesLabel.installEventFilter(self)
+        self.finderNumFramesLabel.installEventFilter(self)
 
-        self.plateScaleEdit.installEventFilter(self)
+        self.astrometryRedactLabel.installEventFilter(self)
+        self.manualPlateScaleLabel.installEventFilter(self)
 
         self.frameToFitsButton.clicked.connect(self.getWCSsolution)
         self.frameToFitsButton.installEventFilter(self)
 
         self.thumbnailOneLabel.installEventFilter(self)
         self.thumbnailTwoLabel.installEventFilter(self)
-
-        # self.enableHoverHelpCheckBox.clicked.connect(self.enableHoverHelpClicked)
-        # self.enableHoverHelpCheckBox.installEventFilter(self)
 
         self.back25Button.clicked.connect(self.jump25FramesBack)
         self.back25Button.installEventFilter(self)
@@ -489,8 +493,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.view3DButton.clicked.connect(self.show3DThumbnail)
         self.view3DButton.installEventFilter(self)
-
-        self.timestampHeightEdit.installEventFilter(self)
 
         self.buildDefaultMask(radius=5.3)
 
@@ -1193,9 +1195,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if event.type() == QtCore.QEvent.MouseButtonPress:
             if event.button() == Qt.RightButton:
                 if obj.toolTip():
-                    self.helperThing = HelpDialog()
-                    # self.helperThing.textEdit.clear()
+                    # self.helperThing = HelpDialog()
+                    # self.helperThing.resize(1000,400)
+                    self.helperThing.textEdit.clear()
                     self.helperThing.textEdit.insertHtml(obj.toolTip())
+                    self.helperThing.raise_()
                     self.helperThing.show()
                     return True
             return False

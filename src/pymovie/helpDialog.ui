@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>458</width>
-    <height>194</height>
+    <width>991</width>
+    <height>434</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,10 +20,7 @@
    <item row="0" column="0">
     <widget class="QTextEdit" name="textEdit">
      <property name="toolTip">
-      <string>This dialog box is non-modal. You may click on the main window to continue.</string>
-     </property>
-     <property name="toolTipDuration">
-      <number>5000</number>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This dialog box is non-modal, so there is no need to close it in order to continue using the main GUI&lt;br/&gt;&lt;/p&gt;&lt;p&gt;In fact, best practice is to set your preferred size and position and DO NOT close the dialog. When you click on the main GUI, this dialog box may disappear behind the main GUI, but a new right-click will pop it back up at the previous size and position.&lt;/p&gt;&lt;p&gt;TIP: &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;click on labels&lt;/span&gt;, particularly ones that label entry boxes.  Because images and entry boxes have an inherent right-click context menu, in order to avoid conflicting with that usage, the right-click help is attached to the label rather than the control itself.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="readOnly">
       <bool>true</bool>
