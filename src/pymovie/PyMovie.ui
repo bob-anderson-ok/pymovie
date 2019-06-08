@@ -224,7 +224,7 @@
            <item>
             <widget class="QSpinBox" name="threshValueEdit">
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If there is a currently 'green' aperture showing, its threshold value will be set to any new value from this spinner and &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Thumbnail Two&lt;/span&gt; in the lower right corner will update dynamically to show the effect of the change on the binary sample mask generation.&lt;/p&gt;&lt;p&gt;The mask threshold is always set as counts above average background.  A good starting point for setting this value is to set it equal to the background noise (found in the column labelled &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;bkstd&lt;/span&gt; in the text box) rounded up. The program tries to do this automatically so, in most cases, this value will already be preset. This is sometimes referred to as &lt;span style=&quot; color:#0000ff;&quot;&gt;'setting the threshold to 1 sigma'&lt;/span&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string/>
              </property>
              <property name="maximum">
               <number>99999</number>
@@ -342,8 +342,7 @@
                 </size>
                </property>
                <property name="toolTip">
-                <string>This box controls which frame is currently being analyzed. It can be changed by direct entry or by use of the spinner control buttons.
-This will be the starting frame for an extraction triggered by clicking on the Start analysis radio button to the right.</string>
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This box controls which frame is currently being analyzed. It can be changed by direct entry or by use of the spinner control buttons.&lt;/p&gt;&lt;p&gt;This will be the starting frame for an extraction triggered by clicking on the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Start analysis&lt;/span&gt; radio button to the right.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="layoutDirection">
                 <enum>Qt::LeftToRight</enum>
@@ -383,7 +382,7 @@ This will be the starting frame for an extraction triggered by clicking on the S
                 </size>
                </property>
                <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This box controls which frame will be the final frame in a lightcurve extraction.&lt;/p&gt;&lt;p&gt;At initial file read, this box will be populated with the highest available frame number.&lt;/p&gt;&lt;p&gt;Should you change the value in this box and wish to reset it back to the correct maximum frame number, click on the Set max stop frame button located below and to the left.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Note: the value here can be less than than that in the Current frame entry. In that case, when an analysis is started, it will proceed 'backwards' from higher numbered frames to lower numbered frames. When running 'backwards', the analysis stops 1 frame before the Stop at frame value to make it convenient to run from both ends without duplicating the Stop at frame. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This box controls which frame will be the final frame in a lightcurve extraction.&lt;/p&gt;&lt;p&gt;At initial file read, this box will be populated with the highest available frame number.&lt;/p&gt;&lt;p&gt;Should you change the value in this box and wish to reset it back to the correct maximum frame number, click on the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Set max stop frame&lt;/span&gt; button located below and to the left.&lt;/p&gt;&lt;p&gt;Note: the value here can be less than than that in the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Current frame&lt;/span&gt; entry. In that case, when an analysis is started, it will proceed 'backwards' from higher numbered frames to lower numbered frames. When running 'backwards', the analysis stops 1 frame before the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Stop at frame&lt;/span&gt; value to make it convenient to run from both ends without duplicating the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Stop at frame&lt;/span&gt;. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="text">
                 <string>Stop at frame:</string>
@@ -424,7 +423,7 @@ This will be the starting frame for an extraction triggered by clicking on the S
                 </size>
                </property>
                <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This box controls which frame is currently being analyzed. It can be changed by direct entry or by use of the spinner control buttons.&lt;/p&gt;&lt;p&gt;This will be the starting frame for an extraction triggered by clicking on the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Start analysis&lt;/span&gt; radio button to the right.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                <string/>
                </property>
                <property name="alignment">
                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -455,7 +454,7 @@ This will be the starting frame for an extraction triggered by clicking on the S
                 </size>
                </property>
                <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This box controls which frame will be the final frame in a lightcurve extraction.&lt;/p&gt;&lt;p&gt;At initial file read, this box will be populated with the highest available frame number.&lt;/p&gt;&lt;p&gt;Should you change the value in this box and wish to reset it back to the correct maximum frame number, click on the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Set max stop frame&lt;/span&gt; button located below and to the left.&lt;/p&gt;&lt;p&gt;Note: the value here can be less than than that in the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Current frame&lt;/span&gt; entry.  In that case, when an analysis is started, it will proceed 'backwards' from higher numbered frames to lower numbered frames.  When running 'backwards', the analysis stops 1 frame before the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Stop at frame&lt;/span&gt; value to make it convenient to run from both ends without duplicating the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Stop at frame&lt;/span&gt;. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                <string/>
                </property>
                <property name="alignment">
                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -584,7 +583,7 @@ This will be the starting frame for an extraction triggered by clicking on the S
            <item>
             <widget class="QDoubleSpinBox" name="defaultMaskRadiusDoubleSpinBox">
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sometimes the star image gets so dim (or is occulted) that the mask generation routine cannot find a connected group of 9 pixels above threshold to form a mask.&lt;/p&gt;&lt;p&gt;In this case, a default mask is substituted.&lt;/p&gt;&lt;p&gt;This spinbox (which can be edited directly) is used to set the size of this default mask.&lt;/p&gt;&lt;p&gt;In practice, you should set the size of the default mask to match as closely as possible the mask size of the dimmest image for which a mask was able to be computed. This will make the noise characteristics of the subtituted mask similar to 'real' masks.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string/>
              </property>
              <property name="minimum">
               <double>2.000000000000000</double>
@@ -642,7 +641,7 @@ In practice, you should set the size of the default mask to match as closely as 
            <item>
             <widget class="QSpinBox" name="plotSymbolSizeSpinBox">
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This spinner sets the size of the symbols used in the plots to show a data value position. &lt;/p&gt;&lt;p&gt;If you open a set of plots and would like to see smaller or larger dots, simply close the plots, change the symbol size using this spinner and reopen the plots.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string/>
              </property>
              <property name="minimum">
               <number>1</number>
@@ -1386,7 +1385,7 @@ If you think that you know the plate scale more precisely than what can be calcu
             </font>
            </property>
            <property name="toolTip">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string/>
            </property>
           </widget>
          </item>
