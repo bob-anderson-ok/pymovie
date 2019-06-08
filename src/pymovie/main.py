@@ -1200,24 +1200,25 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     return True
             return False
 
+        if event.type() == QtCore.QEvent.ToolTip:
+            return True
+            # if not self.enableHoverHelpCheckBox.isChecked():
+            #             #     return True
+            #             # if obj.toolTip():
+            #             #
+            #             #     # The following is a 'hack' to solve the problem that our textOut widgit
+            #             #     # does not have .text() property.  So far, this is the only widget that
+            #             #     # will throw an exception, so we just assume the name is "Text output"
+            #             #     try:
+            #             #         self.helperThing.setWindowTitle(obj.text())
+            #             #     except AttributeError:
+            #             #         self.helperThing.setWindowTitle("Text output")
+            #             #
+            #             #     self.helperThing.textEdit.clear()
+            #             #     self.helperThing.textEdit.insertHtml(obj.toolTip())
+            #             #     self.helperThing.show()
+            #             #     return True
 
-        # if event.type() == QtCore.QEvent.ToolTip:
-        #     if not self.enableHoverHelpCheckBox.isChecked():
-        #         return True
-        #     if obj.toolTip():
-        #
-        #         # The following is a 'hack' to solve the problem that our textOut widgit
-        #         # does not have .text() property.  So far, this is the only widget that
-        #         # will throw an exception, so we just assume the name is "Text output"
-        #         try:
-        #             self.helperThing.setWindowTitle(obj.text())
-        #         except AttributeError:
-        #             self.helperThing.setWindowTitle("Text output")
-        #
-        #         self.helperThing.textEdit.clear()
-        #         self.helperThing.textEdit.insertHtml(obj.toolTip())
-        #         self.helperThing.show()
-        #         return True
         return False
 
     @pyqtSlot('PyQt_PyObject')
