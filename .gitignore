@@ -1,0 +1,14 @@
+dist/
+build/
+.idea/
+__pycache__/
+gui.py
+setup.cfg
+src/__pycache__/
+src/pymovie.egg-info/dependency_links.txt
+src/pymovie.egg-info/not-zip-safe
+src/pymovie.egg-info/top_level.txt
+src/pymovie/PyMovie.changetobat
+src/pymovie/__pycache__/
+PyMovie.ini
+
