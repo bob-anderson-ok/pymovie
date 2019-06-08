@@ -26,6 +26,12 @@
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
      <widget class="QSplitter" name="splitter_3">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>2</verstretch>
+       </sizepolicy>
+      </property>
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
@@ -91,32 +97,10 @@
           </layout>
          </item>
          <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_12" stretch="1,2,2">
+          <layout class="QHBoxLayout" name="horizontalLayout_12" stretch="2,2">
            <property name="spacing">
             <number>-1</number>
            </property>
-           <item>
-            <widget class="QCheckBox" name="enableHoverHelpCheckBox">
-             <property name="minimumSize">
-              <size>
-               <width>40</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The best way to use the 'Tooltip' system employed by this app is to position this dialog box off to one side where it won't be covered by the main app window once that has been made active.&lt;/p&gt;&lt;p&gt;This dialog box will be dynamically updated any time you hover over an item in the main app window that has 'hover help' text associated with it.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="text">
-              <string>Enable Tooltips</string>
-             </property>
-            </widget>
-           </item>
            <item>
             <widget class="QPushButton" name="openBmpPushButton">
              <property name="toolTip">
@@ -1319,16 +1303,32 @@
          </item>
         </layout>
        </widget>
-       <widget class="ImageView" name="frameView">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-          <horstretch>2</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="toolTip">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Context menus invoked by the usual mouse right-click are used to place measurement apertures, change their properties, name them, remove them, and control the image view itself.&lt;/p&gt;&lt;p&gt;For controlling the image view itself, a left-click and hold will allow the image to be panned in all directions with subsequent mouse movement.&lt;/p&gt;&lt;p&gt;A right-click and hold allows zooming in the direction of subsequent mouse movement.&lt;/p&gt;&lt;p&gt;A right-click in a region that does not contain a measuring aperture will cause a context menu to appear that has &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Add snap-to-blob aperture&lt;/span&gt; and &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Add static aperture (no snap)&lt;/span&gt; menu entries. You will almost always be using the 'snap-to-blob' aperture; &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Add static aperture (no snap&lt;/span&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;)&lt;/span&gt; is used for placing an aperture exactly where you want it (i.e., no snap). This will most commonly be used for placing a &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;white&lt;/span&gt; aperture (see below) and for placing an aperture on a &amp;quot;finder&amp;quot; image.&lt;/p&gt;&lt;p&gt;On this same context menu, there are menu items for controlling aspects of the image view itself; the most used menu item will be &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;View all&lt;/span&gt;, used after a &lt;span style=&quot; font-weight:600; text-decoration: underline; color:#fc0107;&quot;&gt;scroll wheel zoom&lt;/span&gt; or &lt;span style=&quot; text-decoration: underline; color:#fc0107;&quot;&gt;left-click-drag-for-pan&lt;/span&gt; have been used to adjust the view to return the size and position to the original condition.&lt;/p&gt;&lt;p&gt;A right-click &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;inside&lt;/span&gt; a measurement aperture brings up a context menu that allows you to change propertires of the aperture. You will be most concerned with the color of the aperture:&lt;/p&gt;&lt;p&gt;A &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;yellow&lt;/span&gt; aperture around a bright star causes that star to be used as a tracking reference. If you select a single star as a tracking reference, translation movements (the image as a whole moves some number of pixels up, down, and sideways) of the star field will be tracked. The aperture constellation as a whole will be translated.&lt;/p&gt;&lt;p&gt;You can add a second yellow aperture (no more than two are allowed) if there a possibility of field rotation as well as field translation. In this case, tracking equations are used that allow for the aperture constellation as a whole to be both rotated and translated in order to follow the star field.&lt;/p&gt;&lt;p&gt;A &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;green&lt;/span&gt; aperture is connected to the threshold setting spinner to make it easier to modify threshold settings. That spinner has the longish title: &lt;span style=&quot; color:#fc0107;&quot;&gt;set mskth counts above bkavg&lt;/span&gt;&lt;/p&gt;&lt;p&gt;A &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;white&lt;/span&gt; aperture is useful when flash-tags have been recorded in the video. The special thing about a white aperture is that all pixels in the aperture are summed and output as the 'signal' with no background subtraction. Such a signal can be employed by PyOTE to provide an alternative to the timestamp overlay from Video Time Inserters.  In addition, a 'white' aperture always stays where placed --- it does not track and is never part of an aperture constellation group.&lt;/p&gt;&lt;p&gt;A &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;red&lt;/span&gt; aperture has the special property that it will only form a mask from a blob that is within 8 pixels of the center. This helps keep a nearby bright star from interfering with mask formation..&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-        </property>
+       <widget class="QWidget" name="">
+        <layout class="QVBoxLayout" name="verticalLayout_13">
+         <item>
+          <widget class="ImageView" name="frameView">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <horstretch>2</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="toolTip">
+            <string/>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="mainImageLabel">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Context menus invoked by the usual mouse right-click are used to place measurement apertures, change their properties, name them, remove them, and control the image view itself.&lt;/p&gt;&lt;p&gt;For controlling the image view itself, a left-click and hold will allow the image to be panned in all directions with subsequent mouse movement.&lt;/p&gt;&lt;p&gt;A right-click and hold allows zooming in the direction of subsequent mouse movement.&lt;/p&gt;&lt;p&gt;A right-click in a region that does not contain a measuring aperture will cause a context menu to appear that has &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Add snap-to-blob aperture&lt;/span&gt; and &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Add static aperture (no snap)&lt;/span&gt; menu entries. You will almost always be using the 'snap-to-blob' aperture; &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Add static aperture (no snap&lt;/span&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;)&lt;/span&gt; is used for placing an aperture exactly where you want it (i.e., no snap). This will most commonly be used for placing a &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;white&lt;/span&gt; aperture (see below) and for placing an aperture on a &amp;quot;finder&amp;quot; image.&lt;/p&gt;&lt;p&gt;On this same context menu, there are menu items for controlling aspects of the image view itself; the most used menu item will be &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;View all&lt;/span&gt;, used after a &lt;span style=&quot; font-weight:600; text-decoration: underline; color:#fc0107;&quot;&gt;scroll wheel zoom&lt;/span&gt; or &lt;span style=&quot; text-decoration: underline; color:#fc0107;&quot;&gt;left-click-drag-for-pan&lt;/span&gt; have been used to adjust the view to return the size and position to the original condition.&lt;/p&gt;&lt;p&gt;A right-click &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;inside&lt;/span&gt; a measurement aperture brings up a context menu that allows you to change propertires of the aperture. You will be most concerned with the color of the aperture:&lt;/p&gt;&lt;p&gt;A &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;yellow&lt;/span&gt; aperture around a bright star causes that star to be used as a tracking reference. If you select a single star as a tracking reference, translation movements (the image as a whole moves some number of pixels up, down, and sideways) of the star field will be tracked. The aperture constellation as a whole will be translated.&lt;/p&gt;&lt;p&gt;You can add a second yellow aperture (no more than two are allowed) if there a possibility of field rotation as well as field translation. In this case, tracking equations are used that allow for the aperture constellation as a whole to be both rotated and translated in order to follow the star field.&lt;/p&gt;&lt;p&gt;A &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;green&lt;/span&gt; aperture is connected to the threshold setting spinner to make it easier to modify threshold settings. That spinner has the longish title: &lt;span style=&quot; color:#fc0107;&quot;&gt;set mskth counts above bkavg&lt;/span&gt;&lt;/p&gt;&lt;p&gt;A &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;white&lt;/span&gt; aperture is useful when flash-tags have been recorded in the video. The special thing about a white aperture is that all pixels in the aperture are summed and output as the 'signal' with no background subtraction. Such a signal can be employed by PyOTE to provide an alternative to the timestamp overlay from Video Time Inserters. In addition, a 'white' aperture always stays where placed --- it does not track and is never part of an aperture constellation group.&lt;/p&gt;&lt;p&gt;A &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;red&lt;/span&gt; aperture has the special property that it will only form a mask from a blob that is within 8 pixels of the center. This helps keep a nearby bright star from interfering with mask formation..&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string>Right-click here for image/aperture help</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </widget>
       <widget class="QSplitter" name="splitter">
@@ -1366,7 +1366,7 @@
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:14pt;&quot;&gt;This panel shows a zoomed version of the image contained within the aperture boundaries.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
-              <string>Thumbnail One (hover here for info)</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Thumbnail One (right-click here for info)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="alignment">
               <set>Qt::AlignCenter</set>
@@ -1386,7 +1386,7 @@
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This image shows the mask that will be applied to the image shown in Thumbnail One.&lt;/p&gt;&lt;p&gt;Currently, the 'mask' is dynamically calculated by the following steps: &lt;/p&gt;&lt;p&gt;1) Thumbnail One is blurred using a 5x5 pixel Gaussian.&lt;/p&gt;&lt;p&gt;2) &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;set mskth counts above bkavg&lt;/span&gt; is used to turn the blurred Thumbnail One image into a binary image (only the values 0 and 1 are present) by setting to 0 all pixels that are &amp;lt;= &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;set mskth counts above bkavg &lt;/span&gt;&lt;span style=&quot; color:#fc0107;&quot;&gt;+ bkavg&lt;/span&gt; and setting to 1 all pixels that are greater than &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;set mskth counts above bkavg &lt;/span&gt;&lt;span style=&quot; color:#fc0107;&quot;&gt;+ bkavg&lt;/span&gt;. &lt;/p&gt;&lt;p&gt;3) The resulting binary image is processed to find all 'blobs' (connected groups of pixels with value 1).&lt;/p&gt;&lt;p&gt;4) The signal contained in each blob is computed (with background subtraction).&lt;/p&gt;&lt;p&gt;5) If a tracking star is present and this is a target star (non-yellow aperture), an additional constraint is enforced: the centroid of the 'blob' must lie within a 8 pixel radius of the aperture center. This helps suppress any bright stars that may be in the aperture, but not in the center.&lt;/p&gt;&lt;p&gt;6) The 'blob' found in step 5 is turned into the mask that is displayed in this thumbnail.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
-              <string>Thumbnail Two (hover here for info)</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Thumbnail Two (right-click here for info)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="alignment">
               <set>Qt::AlignCenter</set>

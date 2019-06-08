@@ -188,8 +188,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.api_key = self.settings.value('api_key', '')
 
-        # self.statusbar.showMessage('Status: just started.  Waiting for user commands.')
-
         # Clean up the frame display by hiding the 'extras' that pyqtgraph
         # standardly includes in an ImageView widget
         self.frameView.ui.menuBtn.hide()
@@ -371,7 +369,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.textOut.installEventFilter(self)  # Captures the toolTip info and displays it in our own dialog
 
-        self.frameView.installEventFilter(self)
+        # self.frameView.installEventFilter(self)
+        self.mainImageLabel.installEventFilter(self)
 
         self.viewFieldsCheckBox.clicked.connect(self.showFrame)
         self.viewFieldsCheckBox.installEventFilter(self)
@@ -473,8 +472,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.thumbnailOneLabel.installEventFilter(self)
         self.thumbnailTwoLabel.installEventFilter(self)
 
-        self.enableHoverHelpCheckBox.clicked.connect(self.enableHoverHelpClicked)
-        self.enableHoverHelpCheckBox.installEventFilter(self)
+        # self.enableHoverHelpCheckBox.clicked.connect(self.enableHoverHelpClicked)
+        # self.enableHoverHelpCheckBox.installEventFilter(self)
 
         self.back25Button.clicked.connect(self.jump25FramesBack)
         self.back25Button.installEventFilter(self)
@@ -1172,15 +1171,15 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.one_time_suppress_stats = True
         self.threshValueEdit.setValue(aperture.thresh)
 
-    def enableHoverHelpClicked(self):
-        if self.enableHoverHelpCheckBox.isChecked():
-            self.helperThing.setWindowTitle('How to best use Hover Help ...')
-
-            self.helperThing.textEdit.clear()
-            self.helperThing.textEdit.insertHtml(self.enableHoverHelpCheckBox.toolTip())
-            self.helperThing.show()
-        else:
-            self.helperThing.hide()
+    # def enableHoverHelpClicked(self):
+    #     if self.enableHoverHelpCheckBox.isChecked():
+    #         self.helperThing.setWindowTitle('How to best use Hover Help ...')
+    #
+    #         self.helperThing.textEdit.clear()
+    #         self.helperThing.textEdit.insertHtml(self.enableHoverHelpCheckBox.toolTip())
+    #         self.helperThing.show()
+    #     else:
+    #         self.helperThing.hide()
 
     def eventFilter(self, obj, event):
         if event.type() == QtCore.QEvent.KeyPress:
@@ -1191,23 +1190,34 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             else:
                 return super(PyMovie, self).eventFilter(obj, event)
 
-        if event.type() == QtCore.QEvent.ToolTip:
-            if not self.enableHoverHelpCheckBox.isChecked():
-                return True
-            if obj.toolTip():
+        if event.type() == QtCore.QEvent.MouseButtonPress:
+            if event.button() == Qt.RightButton:
+                if obj.toolTip():
+                    self.helperThing = HelpDialog()
+                    # self.helperThing.textEdit.clear()
+                    self.helperThing.textEdit.insertHtml(obj.toolTip())
+                    self.helperThing.show()
+                    return True
+            return False
 
-                # The following is a 'hack' to solve the problem that our textOut widgit
-                # does not have .text() property.  So far, this is the only widget that
-                # will throw an exception, so we just assume the name is "Text output"
-                try:
-                    self.helperThing.setWindowTitle(obj.text())
-                except AttributeError:
-                    self.helperThing.setWindowTitle("Text output")
 
-                self.helperThing.textEdit.clear()
-                self.helperThing.textEdit.insertHtml(obj.toolTip())
-                self.helperThing.show()
-                return True
+        # if event.type() == QtCore.QEvent.ToolTip:
+        #     if not self.enableHoverHelpCheckBox.isChecked():
+        #         return True
+        #     if obj.toolTip():
+        #
+        #         # The following is a 'hack' to solve the problem that our textOut widgit
+        #         # does not have .text() property.  So far, this is the only widget that
+        #         # will throw an exception, so we just assume the name is "Text output"
+        #         try:
+        #             self.helperThing.setWindowTitle(obj.text())
+        #         except AttributeError:
+        #             self.helperThing.setWindowTitle("Text output")
+        #
+        #         self.helperThing.textEdit.clear()
+        #         self.helperThing.textEdit.insertHtml(obj.toolTip())
+        #         self.helperThing.show()
+        #         return True
         return False
 
     @pyqtSlot('PyQt_PyObject')

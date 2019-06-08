@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd /Users/bob/Anaconda3
+cd ~/Anaconda3
 
 # Create/overwrite python script for starting up PyMovie
 echo "from pymovie import main" >  run-pymovie.py
