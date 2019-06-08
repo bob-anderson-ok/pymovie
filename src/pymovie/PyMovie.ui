@@ -25,11 +25,11 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
-     <widget class="QSplitter" name="splitter_3">
+     <widget class="QSplitter" name="splitterThree">
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
-      <widget class="QSplitter" name="splitter_2">
+      <widget class="QSplitter" name="splitterTwo">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
@@ -817,7 +817,7 @@ In practice, you should set the size of the default mask to match as closely as 
                   </sizepolicy>
                  </property>
                  <property name="toolTip">
-                  <string>The entry here must be of the form XXX-XXXXX otherwise you will get a 'star not found' message instead of the coordinates you were seeking.</string>
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The entry here must be of the form XXX-XXXXXX otherwise you will get a 'star not found' message instead of the coordinates you were seeking.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                  </property>
                  <property name="text">
                   <string>UCAC4</string>
@@ -827,7 +827,7 @@ In practice, you should set the size of the default mask to match as closely as 
                <item>
                 <widget class="QLineEdit" name="starIdEdit">
                  <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The entry here &lt;span style=&quot; text-decoration: underline;&quot;&gt;must&lt;/span&gt; be of the form XXX-XXXXX otherwise you will get a 'star not found' message instead of the coordinates you were seeking.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The entry here &lt;span style=&quot; text-decoration: underline;&quot;&gt;must&lt;/span&gt; be of the form XXX-XXXXXX otherwise you will get a 'star not found' message instead of the coordinates you were seeking.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                  </property>
                 </widget>
                </item>
@@ -1363,7 +1363,7 @@ If you think that you know the plate scale more precisely than what can be calcu
         </layout>
        </widget>
       </widget>
-      <widget class="QSplitter" name="splitter">
+      <widget class="QSplitter" name="splitterOne">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>

@@ -186,6 +186,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.logScalingCheckBox.setChecked( self.settings.value('logscale', False) == 'true' )
         self.plotSymbolSizeSpinBox.setValue(int(self.settings.value('plot_symbol_size', 4)))
 
+        if self.settings.value('splitterOne') is not None:
+            self.splitterOne.restoreState(self.settings.value('splitterOne'))
+            self.splitterTwo.restoreState(self.settings.value('splitterTwo'))
+            self.splitterThree.restoreState(self.settings.value('splitterThree'))
+
         self.api_key = self.settings.value('api_key', '')
 
         # Clean up the frame display by hiding the 'extras' that pyqtgraph
@@ -3342,6 +3347,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.settings.setValue('pos', self.pos())
         self.settings.setValue('logscale', self.logScalingCheckBox.isChecked())
         self.settings.setValue('plot_symbol_size', self.plotSymbolSizeSpinBox.value())
+        self.settings.setValue('splitterOne', self.splitterOne.saveState())
+        self.settings.setValue('splitterTwo', self.splitterTwo.saveState())
+        self.settings.setValue('splitterThree', self.splitterThree.saveState())
 
         if self.helperThing:
             self.helperThing.close()
