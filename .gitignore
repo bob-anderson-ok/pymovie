@@ -11,4 +11,5 @@ src/pymovie.egg-info/top_level.txt
 src/pymovie/PyMovie.changetobat
 src/pymovie/__pycache__/
 PyMovie.ini
-
+src/pymovie/PyMovie.ini
+src/pymovie.egg-info/PKG-INFO
