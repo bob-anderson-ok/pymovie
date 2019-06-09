@@ -2811,6 +2811,15 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 star_icrs = f.read()
             self.showMsg(f'Star/target position is: {star_icrs}')
 
+            try:
+                star_loc = SkyCoord(star_icrs, frame='icrs')
+            except Exception as e:
+                self.showMsg(f'star location string is invalid: {e}')
+                return
+
+            self.showMsg(f'RA: {star_loc.ra.value}')
+            self.showMsg(f'Dec: {star_loc.dec.value}')
+
         self.clearApertures()
         self.showFrame()
 
