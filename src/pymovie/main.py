@@ -376,7 +376,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # Captures the toolTip info and displays it in our own helpDialog
         self.textOutLabel.installEventFilter(self)
 
-        # self.frameView.installEventFilter(self)
+        self.frameView.installEventFilter(self)
         self.mainImageLabel.installEventFilter(self)
 
         self.viewFieldsCheckBox.clicked.connect(self.showFrame)
@@ -1178,19 +1178,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.one_time_suppress_stats = True
         self.threshValueEdit.setValue(aperture.thresh)
 
-    # def enableHoverHelpClicked(self):
-    #     if self.enableHoverHelpCheckBox.isChecked():
-    #         self.helperThing.setWindowTitle('How to best use Hover Help ...')
-    #
-    #         self.helperThing.textEdit.clear()
-    #         self.helperThing.textEdit.insertHtml(self.enableHoverHelpCheckBox.toolTip())
-    #         self.helperThing.show()
-    #     else:
-    #         self.helperThing.hide()
-
     def eventFilter(self, obj, event):
         if event.type() == QtCore.QEvent.KeyPress:
-            # self.showMsg(f'key:{event.key()}')
+            self.showMsg(f'key:{event.key()}')
             handled = self.processKeystroke(event)
             if handled:
                 return True
@@ -1211,22 +1201,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         if event.type() == QtCore.QEvent.ToolTip:
             return True
-            # if not self.enableHoverHelpCheckBox.isChecked():
-            #             #     return True
-            #             # if obj.toolTip():
-            #             #
-            #             #     # The following is a 'hack' to solve the problem that our textOut widgit
-            #             #     # does not have .text() property.  So far, this is the only widget that
-            #             #     # will throw an exception, so we just assume the name is "Text output"
-            #             #     try:
-            #             #         self.helperThing.setWindowTitle(obj.text())
-            #             #     except AttributeError:
-            #             #         self.helperThing.setWindowTitle("Text output")
-            #             #
-            #             #     self.helperThing.textEdit.clear()
-            #             #     self.helperThing.textEdit.insertHtml(obj.toolTip())
-            #             #     self.helperThing.show()
-            #             #     return True
 
         return False
 
@@ -1788,6 +1762,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def mouseMovedInFrameView(self, pos):
 
+        # inBbox determines whether or not the point x, y is in
+        # the bounding box bbox.  Used to determine if the cursor is inside an aperture
         def inBbox(x, y, bbox):
             x0, y0, w, h = bbox
             xin = x0 < x < x0 + w
@@ -1812,7 +1788,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         mousePoint = self.frameView.getView().mapSceneToView(pos)
         x = int(mousePoint.x())
-        y: int = int(mousePoint.y())
+        y = int(mousePoint.y())
         self.mousex = x
         self.mousey = y
 
@@ -1830,6 +1806,17 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if self.image is not None:
             ylim, xlim = self.image.shape
             if 0 <= y < ylim and 0 <= x < xlim:
+                # test code
+                appsStacked = ""
+                if self.pointed_at_aperture is None:
+                    for app in self.getApertureList():
+                        if inBbox(x, y, app.getBbox()):
+                            appsStacked += app.name + " "
+
+                    if appsStacked:
+                        self.showMsg(f'apertures under cursor: {appsStacked}')
+                        self.pointed_at_aperture = app
+
                 app_name = ""
                 for app in self.getApertureList():
                     if inBbox(x, y, app.getBbox()):
@@ -2503,6 +2490,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             ss = self.getStarPositionString()
             if ss:
                 self.showMsg(f'star position string provided: "{ss}"')
+
+                try:
+                    _ = SkyCoord(ss, frame='icrs')
+                except Exception as e:
+                    self.showMsg(f'star location string is invalid: {e}')
+                    return
+
                 with open(self.folder_dir + r'/target-location.txt', 'w') as f:
                     f.writelines(ss)
                 got_star_position = True
@@ -2800,6 +2794,16 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             if not star_icrs:
                 self.showMsg(f'Cannot proceed without a star/target position entry.')
                 return
+
+            try:
+                star_loc = SkyCoord(star_icrs, frame='icrs')
+            except Exception as e:
+                self.showMsg(f'star location string is invalid: {e}')
+                return
+
+            self.showMsg(f'RA: {star_loc.ra.value}')
+            self.showMsg(f'Dec: {star_loc.dec.value}')
+
             with open(dir_path + r'/target-location.txt', 'w') as f:
                 f.writelines(star_icrs)
         else:
@@ -2869,8 +2873,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         # If this point is reached, we have a satisfactory image and a star position file,
         # so we are ready to try to make a submission to Astrometry.net
-        # TODO We need to (over)write the fits file from the current image for submission to Astrometry.net
-        # TODO We need to (over)write the frame number file
 
         self.removePreviousWcsFiles()
 
@@ -2909,10 +2911,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # any solution found.
         image_to_calibrate = cal_image_path
         calibration_file_dest = dir_path + f'/wcs-{frame_num}.fit'
-
-        star_loc = SkyCoord(star_icrs, frame='icrs')
-        self.showMsg(f'RA: {star_loc.ra.value}')
-        self.showMsg(f'Dec: {star_loc.dec.value}')
 
         # These are the parameters/arguments that the 'solver' uses to work a little faster ...
         kwargs = dict()
@@ -3074,7 +3072,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def setApertureFromWcsData(self, star_location, wcs_fits):
 
-        star_loc = SkyCoord(star_location, frame='icrs')
+        try:
+            star_loc = SkyCoord(star_location, frame='icrs')
+        except Exception as e:
+            self.showMsg(f'star location string is invalid: {e}')
+            return
 
         # This context capture of AstropyWarning is to suppress the innocuous warning
         # FITSFixedWarning: The WCS transformation has more axes(2) than ....

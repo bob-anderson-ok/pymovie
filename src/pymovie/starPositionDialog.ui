@@ -216,10 +216,10 @@
     </rect>
    </property>
    <property name="text">
-    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Alternative single line entry (eases copy and paste from VizieR query):&lt;/p&gt;&lt;p&gt;Use form &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;6h32m45.66s -23d31m29.11s&lt;/span&gt; (the +/- sign for  Dec must be present)&lt;/p&gt;&lt;p&gt;or &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;6 32 45.66 -23 31 29.11&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Alternative single line entry (eases copy and paste from VizieR query):&lt;/p&gt;&lt;p&gt;Use form &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;6h32m45.66s -23d31m29.11s&lt;/span&gt; (&lt;span style=&quot; color:#000000;&quot;&gt;the +/- sign for Dec &lt;/span&gt;&lt;span style=&quot; font-weight:600; font-style:italic; text-decoration: underline; color:#fc0107;&quot;&gt;MUST&lt;/span&gt;&lt;span style=&quot; color:#000000;&quot;&gt;  be present !!&lt;/span&gt;)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
   </widget>
-  <widget class="QWidget" name="">
+  <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
      <x>61</x>
@@ -339,7 +339,7 @@
     </item>
    </layout>
   </widget>
-  <widget class="QWidget" name="">
+  <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
      <x>100</x>
@@ -361,7 +361,7 @@
     </item>
    </layout>
   </widget>
-  <widget class="QWidget" name="">
+  <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
      <x>30</x>
