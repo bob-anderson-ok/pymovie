@@ -8,6 +8,10 @@ The helpDialog module was created by typing
    !pyuic5 helpDialog.ui -o helpDialog.py
 in the IPython console while in src/pymovie directory
 
+The apertureEditDialog module was created by typing
+   !pyuic5 apertureEditDialog.ui -o apertureEditDialog.py
+in the IPython console while in src/pymovie directory
+
 The apertureNameDialog module was created by typing
    !pyuic5 apertureNameDialog.ui -o apertureNameDialog.py
 in the IPython console while in src/pymovie directory
@@ -183,7 +187,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # Use 'sticky' settings (from earlier session) to size and position the main screen
         self.resize(self.settings.value('size', QSize(800, 800)))
         self.move(self.settings.value('pos', QPoint(50, 50)))
-        self.logScalingCheckBox.setChecked( self.settings.value('logscale', False) == 'true' )
+        # self.logScalingCheckBox.setChecked( self.settings.value('logscale', False) == 'true' )
         self.plotSymbolSizeSpinBox.setValue(int(self.settings.value('plot_symbol_size', 4)))
 
         if self.settings.value('splitterOne') is not None:
@@ -373,6 +377,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.showImageControlCheckBox.clicked.connect(self.toggleImageControl)
         self.showImageControlCheckBox.installEventFilter(self)
 
+        self.editAperturesButton.clicked.connect(self.editApertures)
+        self.editAperturesButton.installEventFilter(self)
+
         # Captures the toolTip info and displays it in our own helpDialog
         self.textOutLabel.installEventFilter(self)
 
@@ -430,8 +437,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.saveTargetLocButton.clicked.connect(self.saveTargetInFolder)
         self.saveTargetLocButton.installEventFilter(self)
 
-        self.logScalingCheckBox.clicked.connect(self.showFrame)
-        self.logScalingCheckBox.installEventFilter(self)
+        # self.logScalingCheckBox.clicked.connect(self.showFrame)
+        # self.logScalingCheckBox.installEventFilter(self)
 
         self.threshValueEdit.valueChanged.connect(self.changeThreshold)
         # self.threshValueEdit.installEventFilter(self)
@@ -507,6 +514,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.copy_desktop_icon_file_to_home_directory()
 
+    def editApertures(self):
+        self.showMsg('Edit apertures has been requested')
+        
     def copy_desktop_icon_file_to_home_directory(self):
         if platform.mac_ver()[0]:
             icon_dest_path = f"{os.environ['HOME']}{r'/Desktop/run-pymovie'}"
@@ -2670,15 +2680,15 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             if self.viewFieldsCheckBox.isChecked():
                 self.createImageFields()
-                if self.logScalingCheckBox.isChecked():
-                    self.frameView.setImage(log_gray(self.image_fields))
-                else:
-                    self.frameView.setImage(self.image_fields)
+                # if self.logScalingCheckBox.isChecked():
+                #     self.frameView.setImage(log_gray(self.image_fields))
+                # else:
+                self.frameView.setImage(self.image_fields)
             else:
-                if self.logScalingCheckBox.isChecked():
-                    self.frameView.setImage(log_gray(self.image))
-                else:
-                    self.frameView.setImage(self.image)
+                # if self.logScalingCheckBox.isChecked():
+                #     self.frameView.setImage(log_gray(self.image))
+                # else:
+                self.frameView.setImage(self.image)
 
             if self.levels:
                 self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
@@ -2906,7 +2916,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         c = astrometry_client.Client(tracer=self.showMsg, trace=False)
         try:
             # This will create a new session.  There is apparently no need to close
-            # a sesion --- no API call provided to do so anyway.
+            # a session --- no API call provided to do so anyway.
             c.login(self.api_key)
         except astrometry_client.RequestError as e:
             self.showMsg(f'Login attempt failed: {e}')
@@ -3356,7 +3366,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # Capture the close request and update 'sticky' settings
         self.settings.setValue('size', self.size())
         self.settings.setValue('pos', self.pos())
-        self.settings.setValue('logscale', self.logScalingCheckBox.isChecked())
+        # self.settings.setValue('logscale', self.logScalingCheckBox.isChecked())
         self.settings.setValue('plot_symbol_size', self.plotSymbolSizeSpinBox.value())
         self.settings.setValue('splitterOne', self.splitterOne.saveState())
         self.settings.setValue('splitterTwo', self.splitterTwo.saveState())

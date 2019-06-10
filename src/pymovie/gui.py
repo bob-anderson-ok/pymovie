@@ -76,12 +76,9 @@ class Ui_MainWindow(object):
         self.horizontalLayout_3.addWidget(self.showImageControlCheckBox)
         spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_3.addItem(spacerItem1)
-        self.logScalingCheckBox = QtWidgets.QCheckBox(self.layoutWidget)
-        self.logScalingCheckBox.setEnabled(True)
-        self.logScalingCheckBox.setLayoutDirection(QtCore.Qt.RightToLeft)
-        self.logScalingCheckBox.setChecked(True)
-        self.logScalingCheckBox.setObjectName("logScalingCheckBox")
-        self.horizontalLayout_3.addWidget(self.logScalingCheckBox)
+        self.editAperturesButton = QtWidgets.QPushButton(self.layoutWidget)
+        self.editAperturesButton.setObjectName("editAperturesButton")
+        self.horizontalLayout_3.addWidget(self.editAperturesButton)
         self.verticalLayout_12.addLayout(self.horizontalLayout_3)
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
@@ -582,15 +579,7 @@ class Ui_MainWindow(object):
         self.invertImagesCheckBox.setText(_translate("MainWindow", "Invert images"))
         self.showImageControlCheckBox.setToolTip(_translate("MainWindow", "<html><head/><body><p>If this box is checked, an image control widget will appear to the right of the main image.</p><p>This widget shows a useful/interesting histogram of the image pixel values and gives you the ability to change how pixel values are mapped to the black-to-white grayscale.</p><p>To change the pixel mappings, click and drag the horizontal bars (in the left portion of the widget) that enclose the histogram display and that connect visually to the black-white colorbar.</p><p><span style=\" font-weight:600; color:#fc0107;\">NOTE:</span> changes made via this control do <span style=\" font-weight:600; text-decoration: underline;\">not</span> affect the data that is used for generating lightcurves. It only changes what you see in the main image display. But when you right click on the main image and select \'export\', the display values are what gets exported; this is the <span style=\" font-weight:600; text-decoration: underline;\">only</span> time that \'display\' values are used.</p><p>Until this image control is opened, the grayscale mapping of each image changes based on the minimum and maximum pixel values in that image. This automatic rescaling is usually acceptable but can cause apparent \'flashing\' of the images during playback. Opening and then closing this image control will freeze the automatic rescaling.</p></body></html>"))
         self.showImageControlCheckBox.setText(_translate("MainWindow", "Show image contrast control"))
-        self.logScalingCheckBox.setToolTip(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:14pt;\">\'Checking\' this box scales the pixel values in the image to make details easier to see.</span></p><p><span style=\" font-size:14pt;\">The scaling equation used is:</span></p><p><span style=\" font-family:\'Menlo\'; font-size:13.5pt; color:#000000;\">\n"
-"<pre><code>  # x is a 2D matrix of image pixels</code></pre>\n"
-"<pre><code>  a = np.min(x) # a will be set to the smallest pixel value in the image</code></pre>\n"
-"<pre><code>  b = np.max(x) # b will be set to the highest pixel value in the image</code></pre>\n"
-"<pre><code>  # linval will be a 2D matrix (because x is 2D) of pixel values between 10.0 and 990.0</code></pre>\n"
-"<pre><code>  linval = 10.0 + 990.0 * (x-float(a))/(b-a)</code></pre>\n"
-"<pre><code>  # return a 2D matrix of pixel values log scaled with values between 0.0 and 255.0</span>\n"
-"<pre><code>  return (np.log10(linval) - 1.0 * 0.5 * 255.0</pre></code></span><br/></p></body></html>"))
-        self.logScalingCheckBox.setText(_translate("MainWindow", "log scale image"))
+        self.editAperturesButton.setText(_translate("MainWindow", "Examine/change aperture settings"))
         self.setMskthLabel.setToolTip(_translate("MainWindow", "<html><head/><body><p>If there is a currently \'green\' aperture showing, its threshold value will be set to any new value from this spinner and <span style=\" font-weight:600; color:#fc0107;\">Thumbnail Two</span> in the lower right corner will update dynamically to show the effect of the change on the binary sample mask generation.</p><p>The mask threshold is always set as counts above average background.  A good starting point for setting this value is to set it equal to the background noise (found in the column labelled <span style=\" font-weight:600; color:#fc0107;\">bkstd</span> in the text box) rounded up. The program tries to do this automatically so, in most cases, this value will already be preset. This is sometimes referred to as <span style=\" color:#0000ff;\">\'setting the threshold to 1 sigma\'</span>.</p></body></html>"))
         self.setMskthLabel.setText(_translate("MainWindow", "set mskth counts above bkavg"))
         self.back25Button.setToolTip(_translate("MainWindow", "<html><head/><body><p>Jump back 25 frames.</p></body></html>"))

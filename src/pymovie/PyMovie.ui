@@ -166,28 +166,9 @@
             </spacer>
            </item>
            <item>
-            <widget class="QCheckBox" name="logScalingCheckBox">
-             <property name="enabled">
-              <bool>true</bool>
-             </property>
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:14pt;&quot;&gt;'Checking' this box scales the pixel values in the image to make details easier to see.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:14pt;&quot;&gt;The scaling equation used is:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Menlo'; font-size:13.5pt; color:#000000;&quot;&gt;
-&lt;pre&gt;&lt;code&gt;  # x is a 2D matrix of image pixels&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;  a = np.min(x) # a will be set to the smallest pixel value in the image&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;  b = np.max(x) # b will be set to the highest pixel value in the image&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;  # linval will be a 2D matrix (because x is 2D) of pixel values between 10.0 and 990.0&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;  linval = 10.0 + 990.0 * (x-float(a))/(b-a)&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;  # return a 2D matrix of pixel values log scaled with values between 0.0 and 255.0&lt;/span&gt;
-&lt;pre&gt;&lt;code&gt;  return (np.log10(linval) - 1.0 * 0.5 * 255.0&lt;/pre&gt;&lt;/code&gt;&lt;/span&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="layoutDirection">
-              <enum>Qt::RightToLeft</enum>
-             </property>
+            <widget class="QPushButton" name="editAperturesButton">
              <property name="text">
-              <string>log scale image</string>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
+              <string>Examine/change aperture settings</string>
              </property>
             </widget>
            </item>
