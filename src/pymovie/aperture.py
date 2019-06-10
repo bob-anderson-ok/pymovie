@@ -41,6 +41,8 @@ class MeasurementAperture(pg.GraphicsObject):
         self.auto_display = False
         self.thumbnail_source = False
 
+        self.default_mask_radius = 5.3
+
         self.theta = None   # Holds angle to yellow #1 (if present)
         self.dx = None      # Holds x distance from yellow #1
         self.dy = None      # Holds y distance from yellow #1

@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Aperture properties (view and edit)</string>
   </property>
   <widget class="QDialogButtonBox" name="buttonBox">
    <property name="geometry">
@@ -34,7 +34,7 @@
     <rect>
      <x>60</x>
      <y>40</y>
-     <width>841</width>
+     <width>941</width>
      <height>261</height>
     </rect>
    </property>
@@ -45,7 +45,7 @@
     <number>3</number>
    </property>
    <property name="columnCount">
-    <number>8</number>
+    <number>9</number>
    </property>
    <row/>
    <row/>
@@ -88,6 +88,11 @@
    <column>
     <property name="text">
      <string>thumbnail source</string>
+    </property>
+   </column>
+   <column>
+    <property name="text">
+     <string>output order</string>
     </property>
    </column>
   </widget>

@@ -56,7 +56,7 @@ from PyQt5.QtWidgets import QFileDialog, QGraphicsRectItem, QButtonGroup, QMessa
 from PyQt5.QtCore import QSettings, QSize, QPoint, QRectF, QTimer
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtGui import QPainter
-from pymovie import gui, helpDialog, version
+from pymovie import gui, helpDialog, version, apertureEditDialog
 import cv2
 import glob
 import astropy.io.fits as pyfits  # Used for reading/writing FITS files
@@ -115,6 +115,12 @@ class FixedImageExporter(pex.ImageExporter):
 class HelpDialog(QDialog, helpDialog.Ui_Dialog):
     def __init__(self):
         super(HelpDialog, self).__init__()
+        self.setupUi(self)
+
+
+class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
+    def __init__(self):
+        super(EditApertureDialog, self).__init__()
         self.setupUi(self)
 
 
@@ -369,6 +375,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # self.erode_mask = False
         # self.inflate_mask = False
 
+        self.apertureEditor = None
+
         # end instance variable declarations
 
         self.invertImagesCheckBox.clicked.connect(self.invertImages)
@@ -516,7 +524,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def editApertures(self):
         self.showMsg('Edit apertures has been requested')
-        
+        self.apertureEditor = EditApertureDialog()
+        self.apertureEditor.show()
+
     def copy_desktop_icon_file_to_home_directory(self):
         if platform.mac_ver()[0]:
             icon_dest_path = f"{os.environ['HOME']}{r'/Desktop/run-pymovie'}"
@@ -1816,30 +1826,41 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if self.image is not None:
             ylim, xlim = self.image.shape
             if 0 <= y < ylim and 0 <= x < xlim:
-                # test code
+                # Compose a list of all apertures at the current cursor position
+                # for output to the status bar.
                 appsStacked = ""
-                if self.pointed_at_aperture is None:
-                    for app in self.getApertureList():
-                        if inBbox(x, y, app.getBbox()):
-                            appsStacked += app.name + " "
 
-                    if appsStacked:
-                        self.showMsg(f'apertures under cursor: {appsStacked}')
-                        self.pointed_at_aperture = app
-
-                app_name = ""
                 for app in self.getApertureList():
                     if inBbox(x, y, app.getBbox()):
-                        app_name = app.name
-                        if self.pointed_at_aperture is None:  # We've just entered an aperture
-                            self.pointed_at_aperture = app  # for use in dynamic display
-                            if self.pauseRadioButton.isChecked():
-                                self.getApertureStats(self.pointed_at_aperture)
-                        break
+                        appsStacked += app.name + " "
 
-                if app_name:  # The cursor was in an aperture
-                    status = statusMsg(app)
-                    self.statusbar.showMessage(f'x={x} y={y} intensity={self.image[y,x]} {status} {add_on}')
+                if appsStacked:
+                    # set pointed_at to last aperture in the list (should be
+                    # the most recent addition)  If it was None, we have entered
+                    # for the first time and should show stats
+                    if self.pointed_at_aperture is None:
+                        self.pointed_at_aperture = app
+                        if self.pauseRadioButton.isChecked():
+                            self.getApertureStats(self.pointed_at_aperture)
+                else:
+                    # Cursor is not in any aperture so reset pointed_at_aperture
+                    self.pointed_at_aperture = None
+
+                # app_name = ""
+                # for app in self.getApertureList():
+                #     if inBbox(x, y, app.getBbox()):
+                #         app_name = app.name
+                #         if self.pointed_at_aperture is None:  # We've just entered an aperture
+                #             self.pointed_at_aperture = app  # for use in dynamic display
+                #             if self.pauseRadioButton.isChecked():
+                #                 self.getApertureStats(self.pointed_at_aperture)
+                #         break
+
+                if appsStacked:  # The cursor was one or more apertures
+                    # status = statusMsg(app)
+                    # self.statusbar.showMessage(f'x={x} y={y} intensity={self.image[y,x]} {status} {add_on}')
+                    self.statusbar.showMessage(
+                        f'x={x} y={y} intensity={self.image[y,x]} Apertures under cursor: {appsStacked} {add_on}')
                 else:
                     self.pointed_at_aperture = None
                     self.statusbar.showMessage(f'x={x} y={y} intensity={self.image[y,x]} {add_on}')

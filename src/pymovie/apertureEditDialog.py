@@ -19,10 +19,10 @@ class Ui_Dialog(object):
         self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
         self.buttonBox.setObjectName("buttonBox")
         self.tableWidget = QtWidgets.QTableWidget(Dialog)
-        self.tableWidget.setGeometry(QtCore.QRect(60, 40, 841, 261))
+        self.tableWidget.setGeometry(QtCore.QRect(60, 40, 941, 261))
         self.tableWidget.setAlternatingRowColors(True)
         self.tableWidget.setRowCount(3)
-        self.tableWidget.setColumnCount(8)
+        self.tableWidget.setColumnCount(9)
         self.tableWidget.setObjectName("tableWidget")
         item = QtWidgets.QTableWidgetItem()
         self.tableWidget.setHorizontalHeaderItem(0, item)
@@ -40,6 +40,8 @@ class Ui_Dialog(object):
         self.tableWidget.setHorizontalHeaderItem(6, item)
         item = QtWidgets.QTableWidgetItem()
         self.tableWidget.setHorizontalHeaderItem(7, item)
+        item = QtWidgets.QTableWidgetItem()
+        self.tableWidget.setHorizontalHeaderItem(8, item)
 
         self.retranslateUi(Dialog)
         self.buttonBox.accepted.connect(Dialog.accept)
@@ -48,7 +50,7 @@ class Ui_Dialog(object):
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
+        Dialog.setWindowTitle(_translate("Dialog", "Aperture properties (view and edit)"))
         item = self.tableWidget.horizontalHeaderItem(0)
         item.setText(_translate("Dialog", "name"))
         item = self.tableWidget.horizontalHeaderItem(1)
@@ -65,5 +67,7 @@ class Ui_Dialog(object):
         item.setText(_translate("Dialog", "auto textOut"))
         item = self.tableWidget.horizontalHeaderItem(7)
         item.setText(_translate("Dialog", "thumbnail source"))
+        item = self.tableWidget.horizontalHeaderItem(8)
+        item.setText(_translate("Dialog", "output order"))
 
 
