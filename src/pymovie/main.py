@@ -52,7 +52,7 @@ from numpy import sqrt, arcsin
 from numpy import pi as PI
 import PyQt5
 from PyQt5.QtCore import *
-from PyQt5.QtWidgets import QFileDialog, QGraphicsRectItem, QButtonGroup, QMessageBox
+from PyQt5.QtWidgets import QFileDialog, QGraphicsRectItem, QButtonGroup, QMessageBox, QTableWidgetItem
 from PyQt5.QtCore import QSettings, QSize, QPoint, QRectF, QTimer
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtGui import QPainter
@@ -119,9 +119,16 @@ class HelpDialog(QDialog, helpDialog.Ui_Dialog):
 
 
 class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
-    def __init__(self):
+    def __init__(self, messager, saver):
         super(EditApertureDialog, self).__init__()
         self.setupUi(self)
+        self.msgRoutine = messager
+        self.settingsSaver = saver
+
+    def closeEvent(self, event):
+        self.msgRoutine("Saving aperture dialog settings")
+        self.settingsSaver.setValue('appEditDialogSize', self.size())
+        self.settingsSaver.setValue('appEditDialogPos', self.pos())
 
 
 class StarPositionDialog(QDialog, starPositionDialog.Ui_Dialog):
@@ -522,9 +529,72 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.copy_desktop_icon_file_to_home_directory()
 
+    def fillApertureDictionaries(self):
+        # This will become a list of dictionaries, one for each aperture.  The customer
+        # for this list is fillApertureTable()
+        self.appDictList = []
+        for app in self.getApertureList():
+            appDict = dict(
+                appRef = app,
+                name = app.name,
+                threshDelta = app.thresh,
+                xy = app.getCenter(),
+                defMskRadius = app.default_mask_radius,
+                color = app.color,
+                joggable = app.jogging_enabled,
+                autoTextOut = app.auto_display,
+                thumbnailSource = app.thumbnail_source,
+                outputOrder = app.order_number,
+            )
+            self.appDictList.append(appDict)
+
+        self.showMsg('appDictList has been filled')
+
+    def fillApertureTable(self):
+        self.showMsg('Aperture table filled from appDictList')
+        for rowDict in self.appDictList:
+            numRows = self.apertureEditor.tableWidget.rowCount()
+            self.apertureEditor.tableWidget.insertRow(numRows)
+            self.apertureEditor.tableWidget.setItem(
+                numRows, 0, QTableWidgetItem(repr(rowDict['name']))
+            )
+            self.apertureEditor.tableWidget.setItem(
+                numRows, 1, QTableWidgetItem(repr(rowDict['xy']))
+            )
+            self.apertureEditor.tableWidget.setItem(
+                numRows, 2, QTableWidgetItem(repr(rowDict['threshDelta']))
+            )
+            self.apertureEditor.tableWidget.setItem(
+                numRows, 3, QTableWidgetItem(repr(rowDict['defMskRadius']))
+            )
+            self.apertureEditor.tableWidget.setItem(
+                numRows, 4, QTableWidgetItem(repr(rowDict['color']))
+            )
+            self.apertureEditor.tableWidget.setItem(
+                numRows, 5, QTableWidgetItem(repr(rowDict['joggable']))
+            )
+            self.apertureEditor.tableWidget.setItem(
+                numRows, 6, QTableWidgetItem(repr(rowDict['autoTextOut']))
+            )
+            self.apertureEditor.tableWidget.setItem(
+                numRows, 7, QTableWidgetItem(repr(rowDict['thumbnailSource']))
+            )
+            self.apertureEditor.tableWidget.setItem(
+                numRows, 8, QTableWidgetItem(repr(rowDict['outputOrder']))
+            )
+
     def editApertures(self):
-        self.showMsg('Edit apertures has been requested')
-        self.apertureEditor = EditApertureDialog()
+        self.fillApertureDictionaries()
+        self.apertureEditor = EditApertureDialog(self.showMsg, saver=self.settings)
+        newSize = self.settings.value('appEditDialogSize')
+        newPos = self.settings.value('appEditDialogPos')
+        if newSize is not None:
+            self.apertureEditor.resize(newSize)
+        if newPos is not None:
+            self.apertureEditor.move(newPos)
+        # self.resize(self.settings.value('size', QSize(800, 800)))
+        # self.move(self.settings.value('pos', QPoint(50, 50)))
+        self.fillApertureTable()
         self.apertureEditor.show()
 
     def copy_desktop_icon_file_to_home_directory(self):
@@ -1488,6 +1558,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # Give it a default name.  The user can change it later with a context menu
         aperture = MeasurementAperture(f'app{self.apertureId:02d}', bbox, self.roi_max_x, self.roi_max_y)
 
+        aperture.order_number = self.apertureId
+
         self.connectAllSlots(aperture)
 
         self.apertureId += 1
@@ -1845,16 +1917,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 else:
                     # Cursor is not in any aperture so reset pointed_at_aperture
                     self.pointed_at_aperture = None
-
-                # app_name = ""
-                # for app in self.getApertureList():
-                #     if inBbox(x, y, app.getBbox()):
-                #         app_name = app.name
-                #         if self.pointed_at_aperture is None:  # We've just entered an aperture
-                #             self.pointed_at_aperture = app  # for use in dynamic display
-                #             if self.pauseRadioButton.isChecked():
-                #                 self.getApertureStats(self.pointed_at_aperture)
-                #         break
 
                 if appsStacked:  # The cursor was one or more apertures
                     # status = statusMsg(app)
