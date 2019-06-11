@@ -68,6 +68,7 @@ from skimage import measure, exposure
 
 
 from pymovie.aperture import *
+from pymovie.apertureEdit import *
 # from scipy.signal import savgol_filter
 from pymovie import alias_lnk_resolver
 if not os.name == 'posix':
@@ -117,52 +118,6 @@ class HelpDialog(QDialog, helpDialog.Ui_Dialog):
         super(HelpDialog, self).__init__()
         self.setupUi(self)
 
-
-class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
-    def __init__(self, messager, saver):
-        super(EditApertureDialog, self).__init__()
-        self.setupUi(self)
-        self.msgRoutine = messager
-        self.settingsSaver = saver
-
-    def closeEvent(self, event):
-        self.msgRoutine("Saving aperture dialog settings")
-        self.settingsSaver.setValue('appEditDialogSize', self.size())
-        self.settingsSaver.setValue('appEditDialogPos', self.pos())
-
-    def contextMenuEvent(self, event):
-        self.msgRoutine("Got a right-click event")
-        # row = self.tableWidget.rowAt(event.pos().y())
-        qPoint = event.pos()
-        col = self.tableWidget.currentColumn()
-        row = self.tableWidget.currentRow()
-        items = self.tableWidget.selectedItems()
-        if not items:
-            self.msgRoutine('Nothing selected')
-            return
-        self.msgRoutine(f'row: {row}  column: {col} items: {items[0]}')
-
-        if 5 <= col <= 7:
-            self.menu = QtGui.QMenu()
-            doTrue = QtGui.QAction("Set True", self)
-            doFalse = QtGui.QAction("Set False", self)
-            self.menu.addAction(doTrue)
-            self.menu.addAction(doFalse)
-            self.menu.popup(QtGui.QCursor.pos())
-        elif col == 4:
-            self.menu = QtGui.QMenu()
-            setRed = QtGui.QAction("Set 'red'", self)
-            setGreen = QtGui.QAction("Set 'green'", self)
-            setYellow = QtGui.QAction("Set 'yellow'", self)
-            setWhite = QtGui.QAction("Set 'white'", self)
-            self.menu.addAction(setRed)
-            self.menu.addAction(setGreen)
-            self.menu.addAction(setYellow)
-            self.menu.addAction(setWhite)
-            self.menu.popup(QtGui.QCursor.pos())
-
-    # def cellClicked(self, row, col):
-    #     self.msgRoutine(f'row: {row}  column: {col}')
 
 
 class StarPositionDialog(QDialog, starPositionDialog.Ui_Dialog):
@@ -590,37 +545,37 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             numRows = self.apertureEditor.tableWidget.rowCount()
             self.apertureEditor.tableWidget.insertRow(numRows)
 
-            item = QTableWidgetItem(repr(rowDict['name']))
+            item = QTableWidgetItem(str(rowDict['name']))
             # item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled)
             self.apertureEditor.tableWidget.setItem(numRows, 0, item)
 
-            item = QTableWidgetItem(repr(rowDict['xy']))
+            item = QTableWidgetItem(str(rowDict['xy']))
             item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
             self.apertureEditor.tableWidget.setItem(numRows, 1, item)
 
-            item = QTableWidgetItem(repr(rowDict['threshDelta']))
+            item = QTableWidgetItem(str(rowDict['threshDelta']))
             self.apertureEditor.tableWidget.setItem(numRows, 2, item)
 
-            item = QTableWidgetItem(repr(rowDict['defMskRadius']))
+            item = QTableWidgetItem(str(rowDict['defMskRadius']))
             self.apertureEditor.tableWidget.setItem(numRows, 3, item)
 
-            item = QTableWidgetItem(repr(rowDict['color']))
+            item = QTableWidgetItem(str(rowDict['color']))
             item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
             self.apertureEditor.tableWidget.setItem(numRows, 4, item)
 
-            item = QTableWidgetItem(repr(rowDict['joggable']))
+            item = QTableWidgetItem(str(rowDict['joggable']))
             item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
             self.apertureEditor.tableWidget.setItem(numRows, 5, item)
 
-            item = QTableWidgetItem(repr(rowDict['autoTextOut']))
+            item = QTableWidgetItem(str(rowDict['autoTextOut']))
             item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
             self.apertureEditor.tableWidget.setItem(numRows, 6, item)
 
-            item = QTableWidgetItem(repr(rowDict['thumbnailSource']))
+            item = QTableWidgetItem(str(rowDict['thumbnailSource']))
             item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
             self.apertureEditor.tableWidget.setItem(numRows, 7, item)
 
-            item = QTableWidgetItem(repr(rowDict['outputOrder']))
+            item = QTableWidgetItem(str(rowDict['outputOrder']))
             self.apertureEditor.tableWidget.setItem(numRows, 8, item)
 
     def editApertures(self):
@@ -632,8 +587,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.apertureEditor.resize(newSize)
         if newPos is not None:
             self.apertureEditor.move(newPos)
-        # self.resize(self.settings.value('size', QSize(800, 800)))
-        # self.move(self.settings.value('pos', QPoint(50, 50)))
         self.fillApertureTable()
         self.apertureEditor.show()
 
@@ -3145,37 +3098,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'WCS calibration failed.')
 
     def runExperimentalCode(self):
-        # if not self.avi_wcs_folder_in_use:
-        #     self.showMsg(f'This function only works from within an AVI-WCS folder')
-        #     return
-        # dir_path = self.settings.value('avidir', "./")
-        # try:
-        #     with open(dir_path + r'/target-location.txt', 'r') as f:
-        #         star_loc = f.read()
-        # except FileNotFoundError:
-        #     self.showMsg(f'Could not find star location file in folder', blankLine=False)
-        #     self.showMsg(f'The correct filename is: target-location.txt')
-        #     return
-        #
-        # wcs_fits_list = glob.glob(dir_path + '/wcs*.fit')
-        # if not len(wcs_fits_list) == 1:
-        #     self.showMsg(f'A single wcs-nnnnn.fit file was not found')
-        #     return
-        #
-        # # self.setApertureFromWcsData('06h32m33.4855s +22d27m45.925s', wcs_fits_list[0])
-        # self.setApertureFromWcsData(star_loc, wcs_fits_list[0])
 
-        # for i in range(50):
-        #     QtGui.QGuiApplication.processEvents()
-
-        # exporter = pex.ImageExporter(self.save_p1)
-        exporter = FixedImageExporter(self.save_p1.sceneObj)
-        # exporter.parameters()['width'] = 900
-        # exporter.parameters()['height'] = 600
-        exporter.makeWidthHeightInts()
-        targetFile = self.folder_dir + '/composite.png'
-        exporter.export(targetFile)
-        self.showMsg(f'A work in progress')
+        # exporter = FixedImageExporter(self.save_p1.sceneObj)
+        # exporter.makeWidthHeightInts()
+        # targetFile = self.folder_dir + '/composite.png'
+        # exporter.export(targetFile)
+        # self.showMsg(f'A work in progress')
+        pass
 
     def manualWcsCalibration(self):
         if not (self.avi_wcs_folder_in_use or self.fits_folder_in_use):
