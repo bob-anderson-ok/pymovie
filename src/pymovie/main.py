@@ -130,6 +130,40 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
         self.settingsSaver.setValue('appEditDialogSize', self.size())
         self.settingsSaver.setValue('appEditDialogPos', self.pos())
 
+    def contextMenuEvent(self, event):
+        self.msgRoutine("Got a right-click event")
+        # row = self.tableWidget.rowAt(event.pos().y())
+        qPoint = event.pos()
+        col = self.tableWidget.currentColumn()
+        row = self.tableWidget.currentRow()
+        items = self.tableWidget.selectedItems()
+        if not items:
+            self.msgRoutine('Nothing selected')
+            return
+        self.msgRoutine(f'row: {row}  column: {col} items: {items[0]}')
+
+        if 5 <= col <= 7:
+            self.menu = QtGui.QMenu()
+            doTrue = QtGui.QAction("Set True", self)
+            doFalse = QtGui.QAction("Set False", self)
+            self.menu.addAction(doTrue)
+            self.menu.addAction(doFalse)
+            self.menu.popup(QtGui.QCursor.pos())
+        elif col == 4:
+            self.menu = QtGui.QMenu()
+            setRed = QtGui.QAction("Set 'red'", self)
+            setGreen = QtGui.QAction("Set 'green'", self)
+            setYellow = QtGui.QAction("Set 'yellow'", self)
+            setWhite = QtGui.QAction("Set 'white'", self)
+            self.menu.addAction(setRed)
+            self.menu.addAction(setGreen)
+            self.menu.addAction(setYellow)
+            self.menu.addAction(setWhite)
+            self.menu.popup(QtGui.QCursor.pos())
+
+    # def cellClicked(self, row, col):
+    #     self.msgRoutine(f'row: {row}  column: {col}')
+
 
 class StarPositionDialog(QDialog, starPositionDialog.Ui_Dialog):
     def __init__(self):
@@ -548,40 +582,46 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             )
             self.appDictList.append(appDict)
 
-        self.showMsg('appDictList has been filled')
+        # self.showMsg('appDictList has been filled')
 
     def fillApertureTable(self):
-        self.showMsg('Aperture table filled from appDictList')
+        # self.showMsg('Aperture table filled from appDictList')
         for rowDict in self.appDictList:
             numRows = self.apertureEditor.tableWidget.rowCount()
             self.apertureEditor.tableWidget.insertRow(numRows)
-            self.apertureEditor.tableWidget.setItem(
-                numRows, 0, QTableWidgetItem(repr(rowDict['name']))
-            )
-            self.apertureEditor.tableWidget.setItem(
-                numRows, 1, QTableWidgetItem(repr(rowDict['xy']))
-            )
-            self.apertureEditor.tableWidget.setItem(
-                numRows, 2, QTableWidgetItem(repr(rowDict['threshDelta']))
-            )
-            self.apertureEditor.tableWidget.setItem(
-                numRows, 3, QTableWidgetItem(repr(rowDict['defMskRadius']))
-            )
-            self.apertureEditor.tableWidget.setItem(
-                numRows, 4, QTableWidgetItem(repr(rowDict['color']))
-            )
-            self.apertureEditor.tableWidget.setItem(
-                numRows, 5, QTableWidgetItem(repr(rowDict['joggable']))
-            )
-            self.apertureEditor.tableWidget.setItem(
-                numRows, 6, QTableWidgetItem(repr(rowDict['autoTextOut']))
-            )
-            self.apertureEditor.tableWidget.setItem(
-                numRows, 7, QTableWidgetItem(repr(rowDict['thumbnailSource']))
-            )
-            self.apertureEditor.tableWidget.setItem(
-                numRows, 8, QTableWidgetItem(repr(rowDict['outputOrder']))
-            )
+
+            item = QTableWidgetItem(repr(rowDict['name']))
+            # item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled)
+            self.apertureEditor.tableWidget.setItem(numRows, 0, item)
+
+            item = QTableWidgetItem(repr(rowDict['xy']))
+            item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+            self.apertureEditor.tableWidget.setItem(numRows, 1, item)
+
+            item = QTableWidgetItem(repr(rowDict['threshDelta']))
+            self.apertureEditor.tableWidget.setItem(numRows, 2, item)
+
+            item = QTableWidgetItem(repr(rowDict['defMskRadius']))
+            self.apertureEditor.tableWidget.setItem(numRows, 3, item)
+
+            item = QTableWidgetItem(repr(rowDict['color']))
+            item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+            self.apertureEditor.tableWidget.setItem(numRows, 4, item)
+
+            item = QTableWidgetItem(repr(rowDict['joggable']))
+            item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+            self.apertureEditor.tableWidget.setItem(numRows, 5, item)
+
+            item = QTableWidgetItem(repr(rowDict['autoTextOut']))
+            item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+            self.apertureEditor.tableWidget.setItem(numRows, 6, item)
+
+            item = QTableWidgetItem(repr(rowDict['thumbnailSource']))
+            item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+            self.apertureEditor.tableWidget.setItem(numRows, 7, item)
+
+            item = QTableWidgetItem(repr(rowDict['outputOrder']))
+            self.apertureEditor.tableWidget.setItem(numRows, 8, item)
 
     def editApertures(self):
         self.fillApertureDictionaries()
@@ -3454,6 +3494,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.settings.setValue('splitterOne', self.splitterOne.saveState())
         self.settings.setValue('splitterTwo', self.splitterTwo.saveState())
         self.settings.setValue('splitterThree', self.splitterThree.saveState())
+
+        if self.apertureEditor:
+            self.apertureEditor.close()
 
         if self.helperThing:
             self.helperThing.close()
