@@ -982,6 +982,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 if (i - c)**2 + (j - c)**2 <= radius**2:
                     self.defaultMaskPixelCount += 1
                     self.defaultMask[i,j] = 1
+        self.showMsg(f'The current default mask contains {self.defaultMaskPixelCount} pixels')
 
     def resetMaxStopAtFrameValue(self):
         self.stopAtFrameSpinBox.setValue(self.stopAtFrameSpinBox.maximum())
@@ -1532,6 +1533,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         aperture.thresh = self.big_thresh
         self.handleSetGreenSignal(aperture)
 
+        # Make an aperture specific default mask
+        self.buildDefaultMask(aperture.default_mask_radius)
+        aperture.defaultMask = self.defaultMask[:, :]
+        aperture.defaultMaskPixelCount = self.defaultMaskPixelCount
+
         return aperture
 
     def connectAllSlots(self, aperture):
@@ -1970,8 +1976,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         if max_area == 0:
             default_mask_used = True
-            mask = self.defaultMask
-            max_area = self.defaultMaskPixelCount
+            # TODO default mask project
+            # mask = self.defaultMask
+            # max_area = self.defaultMaskPixelCount
+            mask = aperture.defaultMask
+            max_area = aperture.defaultMaskPixelCount
+
             centroid = (self.roi_center, self.roi_center)
             comment = f'default mask used'
 

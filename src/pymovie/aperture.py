@@ -43,6 +43,8 @@ class MeasurementAperture(pg.GraphicsObject):
 
         self.default_mask_radius = 5.3
         self.order_number = 0
+        self.defaultMask = None
+        self.defaultMaskPixelCount = None
 
         self.theta = None   # Holds angle to yellow #1 (if present)
         self.dx = None      # Holds x distance from yellow #1
@@ -263,6 +265,11 @@ class MeasurementAperture(pg.GraphicsObject):
     def setWhite(self):
         self.pen = pg.mkPen('w')
         self.color = 'white'
+        self.update()
+
+    def setYellowNoCheck(self):
+        self.pen = pg.mkPen('y')
+        self.color = 'yellow'
         self.update()
 
     def setYellow(self):

@@ -75,7 +75,7 @@
        </column>
        <column>
         <property name="text">
-         <string>output order</string>
+         <string>csv output order</string>
         </property>
        </column>
       </widget>

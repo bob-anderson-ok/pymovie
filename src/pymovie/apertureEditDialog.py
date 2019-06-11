@@ -71,6 +71,6 @@ class Ui_Dialog(object):
         item = self.tableWidget.horizontalHeaderItem(7)
         item.setText(_translate("Dialog", "thumbnail source"))
         item = self.tableWidget.horizontalHeaderItem(8)
-        item.setText(_translate("Dialog", "output order"))
+        item.setText(_translate("Dialog", "csv output order"))
 
 
