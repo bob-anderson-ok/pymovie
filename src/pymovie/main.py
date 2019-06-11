@@ -539,55 +539,24 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         # self.showMsg('appDictList has been filled')
 
-    def fillApertureTable(self):
-        # self.showMsg('Aperture table filled from appDictList')
-        for rowDict in self.appDictList:
-            numRows = self.apertureEditor.tableWidget.rowCount()
-            self.apertureEditor.tableWidget.insertRow(numRows)
-
-            item = QTableWidgetItem(str(rowDict['name']))
-            # item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled)
-            self.apertureEditor.tableWidget.setItem(numRows, 0, item)
-
-            item = QTableWidgetItem(str(rowDict['xy']))
-            item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
-            self.apertureEditor.tableWidget.setItem(numRows, 1, item)
-
-            item = QTableWidgetItem(str(rowDict['threshDelta']))
-            self.apertureEditor.tableWidget.setItem(numRows, 2, item)
-
-            item = QTableWidgetItem(str(rowDict['defMskRadius']))
-            self.apertureEditor.tableWidget.setItem(numRows, 3, item)
-
-            item = QTableWidgetItem(str(rowDict['color']))
-            item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
-            self.apertureEditor.tableWidget.setItem(numRows, 4, item)
-
-            item = QTableWidgetItem(str(rowDict['joggable']))
-            item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
-            self.apertureEditor.tableWidget.setItem(numRows, 5, item)
-
-            item = QTableWidgetItem(str(rowDict['autoTextOut']))
-            item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
-            self.apertureEditor.tableWidget.setItem(numRows, 6, item)
-
-            item = QTableWidgetItem(str(rowDict['thumbnailSource']))
-            item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
-            self.apertureEditor.tableWidget.setItem(numRows, 7, item)
-
-            item = QTableWidgetItem(str(rowDict['outputOrder']))
-            self.apertureEditor.tableWidget.setItem(numRows, 8, item)
-
     def editApertures(self):
+        # Fill self.appDictList from apertures --- this will be passed to EditApertureDialog
         self.fillApertureDictionaries()
-        self.apertureEditor = EditApertureDialog(self.showMsg, saver=self.settings)
+
+        self.apertureEditor = EditApertureDialog(
+            self.showMsg,
+            saver=self.settings,
+            dictList=self.appDictList
+        )
+
+        # Set size and position of the dialog window to last known...
         newSize = self.settings.value('appEditDialogSize')
         newPos = self.settings.value('appEditDialogPos')
         if newSize is not None:
             self.apertureEditor.resize(newSize)
         if newPos is not None:
             self.apertureEditor.move(newPos)
-        self.fillApertureTable()
+
         self.apertureEditor.show()
 
     def copy_desktop_icon_file_to_home_directory(self):
