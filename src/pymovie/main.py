@@ -803,7 +803,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             return False
         for app in app_list:
             if app.jogging_enabled:
-                self.showMsg(f'The jog will be applied to {app.name}', blankLine=False)
+                # self.showMsg(f'The jog will be applied to {app.name}', blankLine=False)
                 jogAperture(app, -dx, -dy)
                 if app.auto_display:
                     self.getApertureStats(app, show_stats=True)
@@ -1240,7 +1240,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def eventFilter(self, obj, event):
         if event.type() == QtCore.QEvent.KeyPress:
-            self.showMsg(f'key:{event.key()}')
+            # self.showMsg(f'key:{event.key()}')
             handled = self.processKeystroke(event)
             if handled:
                 return True
@@ -1250,19 +1250,19 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if event.type() == QtCore.QEvent.MouseButtonPress:
             if event.button() == Qt.RightButton:
                 if obj.toolTip():
-                    # self.helperThing = HelpDialog()
-                    # self.helperThing.resize(1000,400)
                     self.helperThing.textEdit.clear()
                     self.helperThing.textEdit.insertHtml(obj.toolTip())
                     self.helperThing.raise_()
                     self.helperThing.show()
                     return True
-            return False
+            return super(PyMovie, self).eventFilter(obj, event)
+            # return False
 
         if event.type() == QtCore.QEvent.ToolTip:
             return True
 
-        return False
+        return super(PyMovie, self).eventFilter(obj, event)
+        # return False
 
     @pyqtSlot('PyQt_PyObject')
     def handleAppSignal(self, aperture):  # aperture is an instance of MeasurementAperture
@@ -2709,7 +2709,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     try:
                         self.image = pyfits.getdata(
                             self.fits_filenames[frame_to_show], 0).astype('int16', casting='unsafe')
-                        self.showMsg(f'image shape: {self.image.shape}')
+                        # self.showMsg(f'image shape: {self.image.shape}')
                     except:
                         self.image = None
 
