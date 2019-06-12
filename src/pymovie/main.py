@@ -36,6 +36,8 @@ from mpl_toolkits.mplot3d import Axes3D  # !!!! Don't take me out
 
 import matplotlib.pyplot as plt
 
+from more_itertools import sort_together
+
 import warnings
 from astropy.utils.exceptions import AstropyWarning
 import sys
@@ -1129,17 +1131,24 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             appdata = []  # Will become a list of list of lists
             names = []    # A simple list of aperture names
+            order = []
             num_data_pts = None
 
             for app in self.getApertureList():
                 names.append(app.name)
+                order.append(app.order_number)
                 # Sort the data points into frame order (to support running backwards)
                 app.data.sort(key=sortOnFrame)
                 # app.data is a list of  lists, so appdata will become a list of list of lists
                 appdata.append(app.data)
                 num_data_pts = len(app.data)
 
-            num_apps = len(names)
+            num_apps = len(names)  # Number of apertures
+
+            # Sort names and appData in user specified order
+            answer = sort_together([order, names, appdata], key_list=[0])
+            names = answer[1]
+            appdata = answer[2]
 
             with open(filename, 'w') as f:
                 # Standard header (single line)
