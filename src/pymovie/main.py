@@ -290,8 +290,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.image_fields = None
         self.thumbOneImage = None
         self.thumbTwoImage = None
-        self.defaultMask = None
-        self.defaultMaskPixelCount = None
+        # self.defaultMask = None
+        # self.defaultMaskPixelCount = None
 
         # A True/False to indicate when a first frame has been read and displayed.  This
         # is used in self.showFrame() and set in self.readFitsFile() and self.readAviFile()
@@ -445,12 +445,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # self.logScalingCheckBox.installEventFilter(self)
 
         self.threshValueEdit.valueChanged.connect(self.changeThreshold)
-        # self.threshValueEdit.installEventFilter(self)
         self.setMskthLabel.installEventFilter(self)
 
-        self.defaultMaskRadiusDoubleSpinBox.valueChanged.connect(self.changeDefaultMask)
-        # self.defaultMaskRadiusDoubleSpinBox.installEventFilter(self)
-        self.setRadiusLabel.installEventFilter(self)
+        # self.defaultMaskRadiusDoubleSpinBox.valueChanged.connect(self.changeDefaultMask)
+        # self.setRadiusLabel.installEventFilter(self)
 
         self.metadataButton.clicked.connect(self.showFitsMetadata)
         self.metadataButton.installEventFilter(self)
@@ -471,7 +469,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.demoMeanPushButton.installEventFilter(self)
 
         self.plotSymbolSizeSpinBox.valueChanged.connect(self.changePlotSymbolSize)
-        # self.plotSymbolSizeSpinBox.installEventFilter(self)
         self.plotSymbolSizeLabel.installEventFilter(self)
 
         self.displayPlotsButton.clicked.connect(self.showLightcurves)
@@ -510,7 +507,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.view3DButton.clicked.connect(self.show3DThumbnail)
         self.view3DButton.installEventFilter(self)
 
-        self.buildDefaultMask(radius=5.3)
+        # self.buildDefaultMask(radius=5.3)
 
         self.changePlotSymbolSize()
 
@@ -546,7 +543,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.apertureEditor = EditApertureDialog(
             self.showMsg,
             saver=self.settings,
-            dictList=self.appDictList
+            dictList=self.appDictList,
+            appSize=self.roi_size
         )
 
         # Set size and position of the dialog window to last known...
@@ -962,14 +960,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.clearApertures()
         self.roi_size = int(self.roiComboBox.currentText())
         self.roi_center = int(self.roi_size / 2)
-        self.changeDefaultMask()
+        # self.changeDefaultMask()
 
-
-    def changeDefaultMask(self):
-        new_radius = self.defaultMaskRadiusDoubleSpinBox.value()
-        self.buildDefaultMask(new_radius)
-        self.thumbTwoImage = self.defaultMask
-        self.thumbTwoView.setImage(self.thumbTwoImage)
+    # def changeDefaultMask(self):
+    #     new_radius = self.defaultMaskRadiusDoubleSpinBox.value()
+    #     self.buildDefaultMask(new_radius)
+    #     self.thumbTwoImage = self.defaultMask
+    #     self.thumbTwoView.setImage(self.thumbTwoImage)
 
     def buildDefaultMask(self, radius=4.5):
         # Create the default mask
@@ -982,7 +979,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 if (i - c)**2 + (j - c)**2 <= radius**2:
                     self.defaultMaskPixelCount += 1
                     self.defaultMask[i,j] = 1
-        self.showMsg(f'The current default mask contains {self.defaultMaskPixelCount} pixels')
+        # self.showMsg(f'The current default mask contains {self.defaultMaskPixelCount} pixels')
 
     def resetMaxStopAtFrameValue(self):
         self.stopAtFrameSpinBox.setValue(self.stopAtFrameSpinBox.maximum())
@@ -1529,14 +1526,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         view = self.frameView.getView()
         view.addItem(aperture)
 
-        aperture.auto_display = True
-        aperture.thresh = self.big_thresh
-        self.handleSetGreenSignal(aperture)
-
         # Make an aperture specific default mask
         self.buildDefaultMask(aperture.default_mask_radius)
         aperture.defaultMask = self.defaultMask[:, :]
         aperture.defaultMaskPixelCount = self.defaultMaskPixelCount
+
+        aperture.auto_display = True
+        aperture.thresh = self.big_thresh
+        self.handleSetGreenSignal(aperture)
 
         return aperture
 
@@ -1872,7 +1869,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
                 for app in self.getApertureList():
                     if inBbox(x, y, app.getBbox()):
-                        appsStacked += app.name + " "
+                        # appsStacked += app.name + " "
+                        appsStacked += f'"{app.name}"  '
 
                 if appsStacked:
                     # set pointed_at to last aperture in the list (should be
@@ -1890,7 +1888,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     # status = statusMsg(app)
                     # self.statusbar.showMessage(f'x={x} y={y} intensity={self.image[y,x]} {status} {add_on}')
                     self.statusbar.showMessage(
-                        f'x={x} y={y} intensity={self.image[y,x]} Apertures under cursor: {appsStacked} {add_on}')
+                        f'x={x} y={y} intensity={self.image[y,x]}   Apertures under cursor: {appsStacked} {add_on}')
                 else:
                     self.pointed_at_aperture = None
                     self.statusbar.showMessage(f'x={x} y={y} intensity={self.image[y,x]} {add_on}')
@@ -1976,9 +1974,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         if max_area == 0:
             default_mask_used = True
-            # TODO default mask project
-            # mask = self.defaultMask
-            # max_area = self.defaultMaskPixelCount
             mask = aperture.defaultMask
             max_area = aperture.defaultMaskPixelCount
 

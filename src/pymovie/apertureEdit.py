@@ -3,16 +3,18 @@ from PyQt5.QtWidgets import QDialog
 from PyQt5 import QtGui
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QTableWidgetItem
+import numpy as np
 
 
 class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
-    def __init__(self, messager, saver, dictList):
+    def __init__(self, messager, saver, dictList, appSize):
         super(EditApertureDialog, self).__init__()
         self.setupUi(self)
         self.msgRoutine = messager
         self.settingsSaver = saver
         self.dictList = dictList
         self.fillApertureTable()
+        self.appSize = appSize
 
     def fillApertureTable(self):
         # self.showMsg('Aperture table filled from appDictList')
@@ -52,6 +54,19 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
             item = QTableWidgetItem(str(rowDict['outputOrder']))
             self.tableWidget.setItem(numRows, 8, item)
 
+    def createDefaultMask(self, radius):
+        mask = np.zeros((self.appSize, self.appSize), 'int16')
+        maskPixelCount = 0
+        roi_center = int(self.appSize / 2)
+        c = roi_center
+        r = int(np.ceil(radius))
+        for i in range(c - r - 1, c + r + 2):
+            for j in range(c - r - 1, c + r + 2):
+                if (i - c) ** 2 + (j - c) ** 2 <= radius ** 2:
+                    maskPixelCount += 1
+                    mask[i, j] = 1
+        return mask, maskPixelCount
+
     def closeEvent(self, event):
         # self.msgRoutine("Saving aperture dialog settings")
         self.settingsSaver.setValue('appEditDialogSize', self.size())
@@ -88,6 +103,8 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
                 self.msgRoutine(f'In {aperture.name}(def mask radius): {text} is not in range 2.0 to 24.0')
                 return
             aperture.default_mask_radius = radius
+
+            aperture.defaultMask, aperture.defaultMaskPixelCount = self.createDefaultMask(radius)
 
             aperture.color = self.tableWidget.item(row, 4).text()
             if aperture.color == 'green':
