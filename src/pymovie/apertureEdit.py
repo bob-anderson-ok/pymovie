@@ -60,12 +60,15 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
         roi_center = int(self.appSize / 2)
         c = roi_center
         r = int(np.ceil(radius))
+        if r > c - 1:
+            r = c - 1
+            radius = r
         for i in range(c - r - 1, c + r + 2):
             for j in range(c - r - 1, c + r + 2):
                 if (i - c) ** 2 + (j - c) ** 2 <= radius ** 2:
                     maskPixelCount += 1
                     mask[i, j] = 1
-        return mask, maskPixelCount
+        return mask, maskPixelCount, radius
 
     def closeEvent(self, event):
         # self.msgRoutine("Saving aperture dialog settings")
@@ -99,12 +102,12 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
             except ValueError:
                 self.msgRoutine(f'In {aperture.name}(def mask radius): {text} is not a valid float')
                 return
-            if radius < 2.0 or radius > 24.0:
-                self.msgRoutine(f'In {aperture.name}(def mask radius): {text} is not in range 2.0 to 24.0')
+            if radius < 2.0:
+                self.msgRoutine(f'In {aperture.name}(def mask radius): {text} cannot be less than 2.0')
                 return
             aperture.default_mask_radius = radius
 
-            aperture.defaultMask, aperture.defaultMaskPixelCount = self.createDefaultMask(radius)
+            aperture.defaultMask, aperture.defaultMaskPixelCount, aperture.default_mask_radius = self.createDefaultMask(radius)
 
             aperture.color = self.tableWidget.item(row, 4).text()
             if aperture.color == 'green':
@@ -213,9 +216,12 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
 
     def setGreen(self):
         for row in range(self.tableWidget.rowCount()):
+            # To automatically enforce the 'only one green' policy, turn any existing
+            # 'green' to 'red'
             if self.tableWidget.item(row, self.col).text() == 'green':
-                self.msgRoutine(f'!!! There can only be a single green aperture at a time !!!')
-                return
+                item = QTableWidgetItem('red')
+                item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
+                self.tableWidget.setItem(row, self.col, item)
         item = QTableWidgetItem('green')
         item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
         self.tableWidget.setItem(self.row, self.col, item)

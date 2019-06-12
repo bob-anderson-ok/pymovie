@@ -1133,8 +1133,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             for app in self.getApertureList():
                 names.append(app.name)
-                # app.data is a list of  lists, so appdata will become a list of list of lists
+                # Sort the data points into frame order (to support running backwards)
                 app.data.sort(key=sortOnFrame)
+                # app.data is a list of  lists, so appdata will become a list of list of lists
                 appdata.append(app.data)
                 num_data_pts = len(app.data)
 
@@ -1663,7 +1664,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def centerAllApertures(self):
 
-        # TODO experimental code
         if self.preserve_apertures:
             return
 
@@ -1869,15 +1869,15 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
                 for app in self.getApertureList():
                     if inBbox(x, y, app.getBbox()):
-                        # appsStacked += app.name + " "
                         appsStacked += f'"{app.name}"  '
+                        aperture_to_point_at = app
 
                 if appsStacked:
                     # set pointed_at to last aperture in the list (should be
                     # the most recent addition)  If it was None, we have entered
                     # for the first time and should show stats
                     if self.pointed_at_aperture is None:
-                        self.pointed_at_aperture = app
+                        self.pointed_at_aperture = aperture_to_point_at
                         if self.pauseRadioButton.isChecked():
                             self.getApertureStats(self.pointed_at_aperture)
                 else:
@@ -1957,12 +1957,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             cvxhull = max_area
             mask = np.ones((self.roi_size, self.roi_size), dtype='int')
             for i in range(self.roi_size):
+                # Create a black border one pixel wide around the edges
                 mask[0, i] = 0
                 mask[i, 0] = 0
                 mask[self.roi_size-1, i] = 0
                 mask[i, self.roi_size-1] = 0
             max_area = np.sum(mask)
         else:
+            # This handles 'red' and 'green' apertures
             max_area, mask, t_mask, centroid, cvxhull, nblobs, extent = \
                 get_mask(thumbnail, ksize=self.gaussian_blur, cut=threshold, outlier_fraction=0.5,
                          apply_centroid_distance_constraint=True, max_centroid_distance=self.allowed_centroid_delta)
