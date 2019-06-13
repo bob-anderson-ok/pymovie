@@ -7,7 +7,7 @@ import numpy as np
 
 
 class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
-    def __init__(self, messager, saver, dictList, appSize):
+    def __init__(self, messager, saver, dictList, appSize, radiusSpinner, threshSpinner):
         super(EditApertureDialog, self).__init__()
         self.setupUi(self)
         self.msgRoutine = messager
@@ -15,6 +15,8 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
         self.dictList = dictList
         self.fillApertureTable()
         self.appSize = appSize
+        self.radiusSpinner = radiusSpinner
+        self.threshSpinner = threshSpinner
 
     def fillApertureTable(self):
         # self.showMsg('Aperture table filled from appDictList')
@@ -107,7 +109,8 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
                 return
             aperture.default_mask_radius = radius
 
-            aperture.defaultMask, aperture.defaultMaskPixelCount, aperture.default_mask_radius = self.createDefaultMask(radius)
+            aperture.defaultMask, aperture.defaultMaskPixelCount, aperture.default_mask_radius = \
+                self.createDefaultMask(radius)
 
             aperture.color = self.tableWidget.item(row, 4).text()
             if aperture.color == 'green':
@@ -225,6 +228,24 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
         item = QTableWidgetItem('green')
         item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
         self.tableWidget.setItem(self.row, self.col, item)
+
+        try:
+            radius = float(self.tableWidget.item(self.row, 3).text())
+        except ValueError:
+            radius = 5.3
+        if radius < 2.0:
+            radius = 2.0
+
+        self.radiusSpinner.setValue(radius)
+
+        try:
+            thresh = int(self.tableWidget.item(self.row, 2).text())
+        except ValueError:
+            thresh = 0
+        if thresh < 0:
+            thresh = 0
+
+        self.threshSpinner.setValue(thresh)
 
     def setYellow(self):
         numYellow = 0

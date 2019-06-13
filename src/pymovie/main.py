@@ -443,8 +443,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.saveTargetLocButton.clicked.connect(self.saveTargetInFolder)
         self.saveTargetLocButton.installEventFilter(self)
 
-        # self.logScalingCheckBox.clicked.connect(self.showFrame)
-        # self.logScalingCheckBox.installEventFilter(self)
+        self.defRadiusSpinner.valueChanged.connect(self.changeDefaultMaskRadius)
+        self.maskRadiusLabel.installEventFilter(self)
 
         self.threshValueEdit.valueChanged.connect(self.changeThreshold)
         self.setMskthLabel.installEventFilter(self)
@@ -517,6 +517,17 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.copy_desktop_icon_file_to_home_directory()
 
+    def changeDefaultMaskRadius(self):
+        for app in self.getApertureList():
+            if app.color == 'green':
+                radius = self.defRadiusSpinner.value()
+                radius = min(radius, self.roi_center - 1)
+                app.default_mask_radius = radius
+                self.buildDefaultMask(radius)
+                app.defaultMask = self.defaultMask
+                app.defaultMaskPixelCount = self.defaultMaskPixelCount
+                self.getApertureStats(app)
+
     def fillApertureDictionaries(self):
         # This will become a list of dictionaries, one for each aperture.  The customer
         # for this list is fillApertureTable()
@@ -546,7 +557,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.showMsg,
             saver=self.settings,
             dictList=self.appDictList,
-            appSize=self.roi_size
+            appSize=self.roi_size,
+            radiusSpinner=self.defRadiusSpinner,
+            threshSpinner=self.threshValueEdit
         )
 
         # Set size and position of the dialog window to last known...
@@ -1282,9 +1295,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             if app.color == 'green':
                 app.setRed()
         aperture.setGreen()
+        self.defRadiusSpinner.setValue(aperture.default_mask_radius)
         if aperture.thresh is not None:
             self.one_time_suppress_stats = True
             self.threshValueEdit.setValue(aperture.thresh)
+
 
     @pyqtSlot('PyQt_PyObject')
     def handleSetYellowSignal(self, aperture):
@@ -1543,6 +1558,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.buildDefaultMask(aperture.default_mask_radius)
         aperture.defaultMask = self.defaultMask[:, :]
         aperture.defaultMaskPixelCount = self.defaultMaskPixelCount
+
+        self.defRadiusSpinner.setValue(aperture.default_mask_radius)
 
         aperture.auto_display = True
         aperture.thresh = self.big_thresh

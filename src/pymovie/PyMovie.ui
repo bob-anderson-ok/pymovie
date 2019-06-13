@@ -180,6 +180,45 @@
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout">
            <item>
+            <spacer name="horizontalSpacer_7">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QDoubleSpinBox" name="defRadiusSpinner">
+             <property name="minimum">
+              <double>2.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>24.000000000000000</double>
+             </property>
+             <property name="singleStep">
+              <double>0.500000000000000</double>
+             </property>
+             <property name="value">
+              <double>5.300000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="maskRadiusLabel">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If there is a 'green' aperture showing, changing this spinner, either through the up/down tabs or by direct edit, will update the default mask radius for that aperture. &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Thumbnail Two&lt;/span&gt; in the lower right corner will update dynamically to show the effect of the change on the binary sample mask generation.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>Set radius (pixels) of default mask</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <spacer name="horizontalSpacer_3">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
