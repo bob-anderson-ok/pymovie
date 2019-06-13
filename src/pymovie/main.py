@@ -962,7 +962,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.clearApertures()
         self.roi_size = int(self.roiComboBox.currentText())
         self.roi_center = int(self.roi_size / 2)
-        # self.changeDefaultMask()
+        if self.image is not None:
+            height, width = self.image.shape
+            self.roi_max_x = width - self.roi_size
+            self.roi_max_y = height - self.roi_size
 
     # def changeDefaultMask(self):
     #     new_radius = self.defaultMaskRadiusDoubleSpinBox.value()
