@@ -252,6 +252,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         # Initialize all instance variables as a block (to satisfy PEP 8 standard)
 
+        self.frameJumpSmall = 25
+        self.frameJumpBig = 200
+
         self.avi_location = None
 
         self.big_thresh = 9999
@@ -494,17 +497,17 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.thumbnailOneLabel.installEventFilter(self)
         self.thumbnailTwoLabel.installEventFilter(self)
 
-        self.back25Button.clicked.connect(self.jump25FramesBack)
-        self.back25Button.installEventFilter(self)
+        self.backSmallButton.clicked.connect(self.jumpSmallFramesBack)
+        self.backSmallButton.installEventFilter(self)
 
-        self.back200Button.clicked.connect(self.jump200FramesBack)
-        self.back200Button.installEventFilter(self)
+        self.backBigButton.clicked.connect(self.jumpBigFramesBack)
+        self.backBigButton.installEventFilter(self)
 
-        self.forward25Button.clicked.connect(self.jump25FramesForward)
-        self.forward25Button.installEventFilter(self)
+        self.forwardSmallButton.clicked.connect(self.jumpSmallFramesForward)
+        self.forwardSmallButton.installEventFilter(self)
 
-        self.forward200Button.clicked.connect(self.jump200FramesForward)
-        self.forward200Button.installEventFilter(self)
+        self.forwardBigButton.clicked.connect(self.jumpBigFramesForward)
+        self.forwardBigButton.installEventFilter(self)
 
         self.view3DButton.clicked.connect(self.show3DThumbnail)
         self.view3DButton.installEventFilter(self)
@@ -516,6 +519,19 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.disableControlsWhenNoData()
 
         self.copy_desktop_icon_file_to_home_directory()
+
+    def changeNavButtonTitles(self):
+        # self.showMsg('Changing nav button titles')
+        if self.frameJumpBig == 200:  # FITS titling needed
+            self.backSmallButton.setText(f'< {self.frameJumpSmall} frames')
+            self.forwardSmallButton.setText(f'{self.frameJumpSmall} frames >')
+            self.backBigButton.setText(f'< {self.frameJumpBig} frames')
+            self.forwardBigButton.setText(f'{self.frameJumpBig} frames >')
+        else:
+            self.backSmallButton.setText(f'< 1 sec')
+            self.forwardSmallButton.setText(f'1 sec >')
+            self.backBigButton.setText(f'< 10 sec')
+            self.forwardBigButton.setText(f'10 sec >')
 
     def changeDefaultMaskRadius(self):
         for app in self.getApertureList():
@@ -857,21 +873,21 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.levels = self.frameView.ui.histogram.getLevels()
             self.showMsg(f'New scaling levels: black={self.levels[0]:0.1f}  white={self.levels[1]:0.1f}')
 
-    def jump25FramesBack(self):
-        newFrame = self.currentFrameSpinBox.value() - 25
+    def jumpSmallFramesBack(self):
+        newFrame = self.currentFrameSpinBox.value() - self.frameJumpSmall
         self.currentFrameSpinBox.setValue(max(0, newFrame))
 
-    def jump200FramesBack(self):
-        newFrame = self.currentFrameSpinBox.value() - 200
+    def jumpBigFramesBack(self):
+        newFrame = self.currentFrameSpinBox.value() - self.frameJumpBig
         self.currentFrameSpinBox.setValue(max(0, newFrame))
 
-    def jump25FramesForward(self):
-        newFrame = self.currentFrameSpinBox.value() + 25
+    def jumpSmallFramesForward(self):
+        newFrame = self.currentFrameSpinBox.value() + self.frameJumpSmall
         maxFrame = self.stopAtFrameSpinBox.maximum()
         self.currentFrameSpinBox.setValue(min(maxFrame, newFrame))
 
-    def jump200FramesForward(self):
-        newFrame = self.currentFrameSpinBox.value() + 200
+    def jumpBigFramesForward(self):
+        newFrame = self.currentFrameSpinBox.value() + self.frameJumpBig
         maxFrame = self.stopAtFrameSpinBox.maximum()
         self.currentFrameSpinBox.setValue(min(maxFrame, newFrame))
 
@@ -891,10 +907,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.processAsFieldsCheckBox.setEnabled(False)
         self.topFieldFirstRadioButton.setEnabled(False)
         self.bottomFieldFirstRadioButton.setEnabled(False)
-        self.forward25Button.setEnabled(False)
-        self.forward200Button.setEnabled(False)
-        self.back25Button.setEnabled(False)
-        self.back200Button.setEnabled(False)
+        self.forwardSmallButton.setEnabled(False)
+        self.forwardBigButton.setEnabled(False)
+        self.backSmallButton.setEnabled(False)
+        self.backBigButton.setEnabled(False)
 
     def enableControlsForAviData(self):
         self.viewFieldsCheckBox.setEnabled(True)
@@ -904,19 +920,19 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.processAsFieldsCheckBox.setEnabled(True)
         self.topFieldFirstRadioButton.setEnabled(True)
         self.bottomFieldFirstRadioButton.setEnabled(True)
-        self.forward25Button.setEnabled(True)
-        self.forward200Button.setEnabled(True)
-        self.back25Button.setEnabled(True)
-        self.back200Button.setEnabled(True)
+        self.forwardSmallButton.setEnabled(True)
+        self.forwardBigButton.setEnabled(True)
+        self.backSmallButton.setEnabled(True)
+        self.backBigButton.setEnabled(True)
 
     def enableControlsForFitsData(self):
         self.currentFrameSpinBox.setEnabled(True)
         self.runRadioButton.setEnabled(True)
         self.pauseRadioButton.setEnabled(True)
-        self.forward25Button.setEnabled(True)
-        self.forward200Button.setEnabled(True)
-        self.back25Button.setEnabled(True)
-        self.back200Button.setEnabled(True)
+        self.forwardSmallButton.setEnabled(True)
+        self.forwardBigButton.setEnabled(True)
+        self.backSmallButton.setEnabled(True)
+        self.backBigButton.setEnabled(True)
 
     def getStarPositionString(self):
         starPos = StarPositionDialog()
@@ -2207,6 +2223,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.disableControlsWhenNoData()
             self.enableControlsForFitsData()
 
+            # self.showMsg('Changing navigation buttons to 25 frames')
+            self.frameJumpSmall = 25
+            self.frameJumpBig = 200
+            self.changeNavButtonTitles()
+
             frame_count = len(self.fits_filenames)
             self.currentFrameSpinBox.setMaximum(frame_count - 1)
             self.currentFrameSpinBox.setValue(0)
@@ -2347,7 +2368,21 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 fourcc = int(self.cap.get(cv2.CAP_PROP_FOURCC))
                 fourcc_str = f'{fourcc & 0xff:c}{fourcc >> 8 & 0xff:c}{fourcc >> 16 & 0xff:c}{fourcc >> 24 & 0xff:c}'
                 self.showMsg(f'FOURCC codec ID: {fourcc_str}')
-                self.showMsg(f'frames per second:{self.cap.get(cv2.CAP_PROP_FPS):0.6f}')
+
+                fps = self.cap.get(cv2.CAP_PROP_FPS)
+                if fps > 29.0:
+                    # self.showMsg('Changing navigation buttons to 30 frames')
+                    self.frameJumpSmall = 30
+                    self.frameJumpBig = 300
+                    self.changeNavButtonTitles()
+                else:
+                    # self.showMsg('Changing navigation buttons to 25 frames')
+                    self.frameJumpSmall = 25
+                    self.frameJumpBig = 250
+                    self.changeNavButtonTitles()
+
+
+                self.showMsg(f'frames per second:{fps:0.6f}')
 
                 frame_count = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
                 self.showMsg(f'There are {frame_count} frames in the file.')
@@ -3282,6 +3317,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'There are no measurement apertures defined yet.')
             return
 
+        cascadePosition = 50
+        cascadeDelta = 26
+
         color_index = 0
         for app in appList:
             # Trap user asking for plots before data is present
@@ -3294,7 +3332,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             # Start a new plot for each aperture
             self.plots.append(pg.GraphicsWindow(title="PyMovie lightcurve plot"))
             self.plots[-1].resize(1000, 600)
+            self.plots[-1].move(QPoint(cascadePosition, cascadePosition))
+            cascadePosition += cascadeDelta
             self.plots[-1].setWindowTitle(f'PyMovie {version.version()} lightcurve for aperture: {app.name}')
+
+            # TODO cascade plots code goes here
 
             yvalues = []
             xvalues = []
@@ -3368,6 +3410,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # pw = PlotWidget(title=f'PyMovie {version.version()} composite lightcurve')
         # self.plots.append(pw.getPlotItem())
         self.plots[-1].resize(1000, 600)
+        self.plots[-1].move(QPoint(cascadePosition, cascadePosition))
         p1 = self.plots[-1].addPlot(title=f'Composite lightcurve plot')
         p1.addLegend()
 
