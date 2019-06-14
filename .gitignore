@@ -13,3 +13,4 @@ src/pymovie/__pycache__/
 PyMovie.ini
 src/pymovie/PyMovie.ini
 src/pymovie.egg-info/PKG-INFO
+src/pymovie.egg-info/SOURCES.txt
