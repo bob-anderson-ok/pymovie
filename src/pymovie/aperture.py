@@ -77,6 +77,11 @@ class MeasurementAperture(pg.GraphicsObject):
     def getCenter(self):
         return self.x0 + int(self.xsize / 2), self.y0 + int(self.ysize / 2)
 
+    def setCenter(self, xc, yc):
+        delta = int(self.xsize / 2)
+        bbox = (xc - delta, yc - delta, self.xsize, self.ysize)
+        self.enforcePositioningConstraints(bbox)
+
     def addData(self, data_tuple):
         self.data.append(data_tuple)
 

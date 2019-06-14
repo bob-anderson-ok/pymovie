@@ -7,7 +7,7 @@ import numpy as np
 
 
 class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
-    def __init__(self, messager, saver, dictList, appSize, radiusSpinner, threshSpinner):
+    def __init__(self, messager, saver, dictList, appSize, radiusSpinner, threshSpinner, imageUpdate):
         super(EditApertureDialog, self).__init__()
         self.setupUi(self)
         self.msgRoutine = messager
@@ -17,6 +17,12 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
         self.appSize = appSize
         self.radiusSpinner = radiusSpinner
         self.threshSpinner = threshSpinner
+        self.writeTableButton.clicked.connect(self.writeTable)
+        self.imageUpdate = imageUpdate
+
+    def writeTable(self):
+        # self.msgRoutine('writeTable() called')
+        self.updateAperturesFromTable()
 
     def fillApertureTable(self):
         # self.showMsg('Aperture table filled from appDictList')
@@ -28,7 +34,7 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
             self.tableWidget.setItem(numRows, 0, item)
 
             item = QTableWidgetItem(str(rowDict['xy']))
-            item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
+            # item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
             self.tableWidget.setItem(numRows, 1, item)
 
             item = QTableWidgetItem(str(rowDict['threshDelta']))
@@ -76,12 +82,33 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
         # self.msgRoutine("Saving aperture dialog settings")
         self.settingsSaver.setValue('appEditDialogSize', self.size())
         self.settingsSaver.setValue('appEditDialogPos', self.pos())
+        self.updateAperturesFromTable()
+
+    def parseXY(self, xyText):
+        try:
+            parts = xyText.split(",")
+            xc = int(parts[0].strip().strip("(").strip())
+            yc = int(parts[1].strip().strip(")").strip())
+        except:
+            self.msgRoutine(f'"{xyText}" is an invalid format for x,y')
+            return None, None
+        return xc, yc
+
+    def updateAperturesFromTable(self):
 
         # Now comes the hard work of validating and using the tableWidget data
         # to update the aperture properties
 
         for row in range(self.tableWidget.rowCount()):
+
             aperture = self.dictList[row]['appRef']
+
+            # TODO Remove this experimental code
+            xyText = self.tableWidget.item(row, 1).text()
+            xc, yc = self.parseXY(xyText=xyText)
+            if xc is not None:
+                aperture.setCenter(xc, yc)
+                self.imageUpdate()
 
             aperture.name = self.tableWidget.item(row, 0).text()
 
@@ -115,6 +142,7 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
             aperture.color = self.tableWidget.item(row, 4).text()
             if aperture.color == 'green':
                 aperture.setGreen()
+                self.updateSpinnersFromRow(row)
             elif aperture.color == 'red':
                 aperture.setRed()
             elif aperture.color == 'white':
@@ -229,8 +257,11 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
         item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
         self.tableWidget.setItem(self.row, self.col, item)
 
+        self.updateSpinnersFromRow(self.row)
+
+    def updateSpinnersFromRow(self, row):
         try:
-            radius = float(self.tableWidget.item(self.row, 3).text())
+            radius = float(self.tableWidget.item(row, 3).text())
         except ValueError:
             radius = 5.3
         if radius < 2.0:
@@ -239,7 +270,7 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
         self.radiusSpinner.setValue(radius)
 
         try:
-            thresh = int(self.tableWidget.item(self.row, 2).text())
+            thresh = int(self.tableWidget.item(row, 2).text())
         except ValueError:
             thresh = 0
         if thresh < 0:

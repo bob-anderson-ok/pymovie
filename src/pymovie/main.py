@@ -559,7 +559,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             dictList=self.appDictList,
             appSize=self.roi_size,
             radiusSpinner=self.defRadiusSpinner,
-            threshSpinner=self.threshValueEdit
+            threshSpinner=self.threshValueEdit,
+            imageUpdate=self.frameView.getView().update
         )
 
         # Set size and position of the dialog window to last known...
@@ -3479,52 +3480,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         rect_item.setPen(pen)
         view_box.addItem(rect_item)
         self.rect_list.append(rect_item)
-
-    # def highlight_probable_stars(self, img, num_sigmas=3, min_pixels_in_blob=10, direct_threshold=None):
-    #     # Convert img from float64 to int16 --- needed by measure.label
-    #     int_img = img.astype(np.int16)
-    #
-    #     # TODO figure out how to handle image clipping to remove VTI timestamps
-    #     # note that the following works for avi.  It would be upside down for FITS, and
-    #     # would change the coordinate system for rectangle placement, so we'll wait to
-    #     # deal with this issue later
-    #     height, width = int_img.shape
-    #     print(f'width: {width}  height: {height}')
-    #     if self.avi_in_use:
-    #         int_img = int_img[0:height-self.vti_trim, :]
-    #     # else:
-    #     #     int_img = int_img[self.vti_trim:, :]
-    #
-    #     # We count on the median being a robust-enough estimator of the noise floor.
-    #     # The std is more problematic: it's good if there is not a VTI overlay, but will be artificially
-    #     # increased in the presence of bright timestamp characters
-    #     background = np.median(int_img)
-    #     background_noise_sigma = np.std(int_img)
-    #     self.showMsg(f'background level: {background}  stdev: {background_noise_sigma:0.1f}')
-    #     if direct_threshold is None:
-    #         threshold = background + num_sigmas * background_noise_sigma
-    #     else:
-    #         threshold = direct_threshold
-    #
-    #     ret, t_img = cv2.threshold(int_img, threshold, 1, cv2.THRESH_BINARY)
-    #
-    #     labels = measure.label(t_img, neighbors=8, background=0)
-    #
-    #     props = regionprops(labels, int_img)
-    #
-    #     boxes = []
-    #     thumbnails = []
-    #     pixel_sum = []
-    #     net_net = []
-    #     for prop in props[1:]:
-    #         if prop.area > min_pixels_in_blob:
-    #             boxes.append(prop.bbox)
-    #             thumbnails.append(prop.intensity_image)
-    #             pixel_sum.append(prop.intensity_image.sum())
-    #             net_net.append((prop.max_intensity, prop.bbox, prop.area))
-    #     top_blobs = sorted(net_net, reverse=True)
-    #
-    #     return top_blobs
 
 
 def jogAperture(aperture, delta_xc, delta_yc):
