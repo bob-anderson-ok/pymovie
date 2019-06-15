@@ -1301,7 +1301,7 @@ If you think that you know the plate scale more precisely than what can be calcu
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking this button deletes all data that has been accumulated in the apertures. (The apertures are 'objects' with properties like color, location, threshold, and also hold the recorded data itself).&lt;/p&gt;&lt;p&gt;It is often the case that one will 'experiment' with the video by running short stretches of it.&lt;/p&gt;&lt;p&gt;All of the data produced while in the 'run' state is accumulated, even when you do it piecemeal. This can cause data points to be recorded multiple times.&lt;/p&gt;&lt;p&gt;Best practice is, before starting a production by setting the starting and stopping frame numbers, that one clears any previous data.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
-              <string>Clear plot data</string>
+              <string>Clear aperture data</string>
              </property>
              <property name="flat">
               <bool>false</bool>
