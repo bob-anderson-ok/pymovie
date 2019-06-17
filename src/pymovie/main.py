@@ -43,6 +43,7 @@ from astropy.utils.exceptions import AstropyWarning
 import sys
 import os
 import platform
+import pickle
 from urllib.request import urlopen
 import numpy as np
 from pymovie import starPositionDialog
@@ -70,6 +71,8 @@ from skimage import measure, exposure
 
 
 from pymovie.aperture import *
+from pymovie.ocrCharacterBox import *
+from pymovie.ocr import *
 from pymovie.apertureEdit import *
 # from scipy.signal import savgol_filter
 from pymovie import alias_lnk_resolver
@@ -246,11 +249,58 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.roiComboBox.addItem("31")
         self.roiComboBox.addItem("21")
 
+        self.vtiSelectLabel.installEventFilter(self)
+        self.repositionOcrBoxesLabel.installEventFilter(self)
+
         self.roiComboBox.currentIndexChanged.connect(self.setRoiFromComboBox)
         self.roiComboBox.installEventFilter(self)
         self.selectApertureSizeLabel.installEventFilter(self)
 
+        # We need to change to a different vtiList pickle name with each version
+        # change in order to capture any changes we make to the list --- we cannot
+        # expect a user to find and delete that file on their own.
+        vtiListFilename = f'vtiList-{version.version()}.p'
+        if os.path.exists(vtiListFilename):
+            self.VTIlist = pickle.load(open(vtiListFilename, "rb"))
+            self.showMsg(f'VTIlist loaded from {vtiListFilename}')
+        else:
+            # Create initial list --- a new installation
+            self.VTIlist = [
+                {'xoffset': None, 'yoffset': None, 'name': 'None'},
+                {'xoffset': 0, 'yoffset': 0, 'name': 'IOTA 3: ntsc 640x480 full-screen'},
+                {'xoffset': 0, 'yoffset': 0, 'name': 'IOTA 3: ntsc 640x480 safe-mode'},
+                {'xoffset': 0, 'yoffset': 0, 'name': 'BoxSprite: ntsc 640x480 one-line'},
+                {'xoffset': 0, 'yoffset': 0, 'name': 'Kiwi: ntsc 640x480'},
+            ]
+            pickle.dump(self.VTIlist, open(vtiListFilename, "wb"))
+            self.showMsg(f'pickled self.VTIlist to {vtiListFilename}')
+
+        for vtiDict in self.VTIlist:
+            self.vtiSelectComboBox.addItem(vtiDict['name'])
+
+        self.currentVTIindex = 0
+        self.ocrBoxesXoffset = self.VTIlist[self.currentVTIindex]['xoffset']
+        self.ocrBoxesYoffset = self.VTIlist[self.currentVTIindex]['yoffset']
+
+        self.vtiSelectComboBox.installEventFilter(self)
+        self.vtiSelectComboBox.currentIndexChanged.connect(self.vtiSelected)
+
+        self.jogOcrBoxesLeftButton.installEventFilter(self)
+        self.jogOcrBoxesLeftButton.clicked.connect(self.jogOcrBoxesLeft)
+
+        self.jogOcrBoxesRightButton.installEventFilter(self)
+        self.jogOcrBoxesRightButton.clicked.connect(self.jogOcrBoxesRight)
+
+        self.jogOcrBoxesUpButton.installEventFilter(self)
+        self.jogOcrBoxesUpButton.clicked.connect(self.jogOcrBoxesUp)
+
+        self.jogOcrBoxesDownButton.installEventFilter(self)
+        self.jogOcrBoxesDownButton.clicked.connect(self.jogOcrBoxesDown)
+
         # Initialize all instance variables as a block (to satisfy PEP 8 standard)
+
+        self.upperOcrBoxes = None
+        self.lowerOcrBoxes = None
 
         self.frameJumpSmall = 25
         self.frameJumpBig = 200
@@ -436,6 +486,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.bg2.addButton(self.bottomFieldFirstRadioButton)
         self.topFieldFirstRadioButton.setChecked(True)
 
+        self.topFieldFirstRadioButton.clicked.connect(self.fieldTimeOrderChanged)
+        self.bottomFieldFirstRadioButton.clicked.connect(self.fieldTimeOrderChanged)
+
         self.queryVizierButton.clicked.connect(self.queryVizier)
         self.queryVizierButton.installEventFilter(self)
 
@@ -519,6 +572,69 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.disableControlsWhenNoData()
 
         self.copy_desktop_icon_file_to_home_directory()
+
+    def fieldTimeOrderChanged(self):
+        self.showMsg(f'top field earlist is {self.topFieldFirstRadioButton.isChecked()}')
+
+    def jogOcrBoxesLeft(self):
+        self.showMsg('OCR boxes jogged left')
+
+    def jogOcrBoxesRight(self):
+        self.showMsg('OCR boxes jogged right')
+
+    def jogOcrBoxesUp(self):
+        self.showMsg('OCR boxes jogged up')
+
+    def jogOcrBoxesDown(self):
+        self.showMsg('OCR boxes jogged down')
+
+    def vtiSelected(self):
+        def repositionLowerOcrBoxes():
+            y_adjust = int(self.image.shape[0] / 2)
+            # self.showMsg(f'y_adjust: {y_adjust}')
+            newLowerOcrBoxes = []
+            for ocrbox in self.lowerOcrBoxes:
+                xL, xR, yU, yL = ocrbox
+                newLowerOcrBoxes.append((xL, xR, yU + y_adjust, yL + y_adjust))
+            self.lowerOcrBoxes = newLowerOcrBoxes[:]
+
+        self.currentVTIindex = self.vtiSelectComboBox.currentIndex()
+        dictionaryOfSelection = repr(self.VTIlist[self.currentVTIindex])
+        self.showMsg(f'VTI: {dictionaryOfSelection}')
+
+        if not self.avi_in_use or self.image is None:
+            return
+
+        if self.currentVTIindex == 0:  # None
+            self.clearOcrBoxes()
+            return
+
+        if self.currentVTIindex == 1:  # IOTA full screen mode
+            self.viewFieldsCheckBox.setChecked(True)
+            self.showFrame()
+            # self.showMsg(f'index = {self.currentVTIindex}')
+            self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_iota_full_screen_mode()
+            repositionLowerOcrBoxes()
+            for ocrbox in self.upperOcrBoxes:
+                self.addOcrAperture(ocrbox)
+            for ocrbox in self.lowerOcrBoxes:
+                self.addOcrAperture(ocrbox)
+            return
+
+        if self.currentVTIindex == 2:  # IOTA safe mode
+            self.viewFieldsCheckBox.setChecked(True)
+            self.showFrame()
+            # self.showMsg(f'index = {self.currentVTIindex}')
+            self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_iota_safe_mode()
+            repositionLowerOcrBoxes()
+            for ocrbox in self.upperOcrBoxes:
+                self.addOcrAperture(ocrbox)
+            for ocrbox in self.lowerOcrBoxes:
+                self.addOcrAperture(ocrbox)
+            return
+
+        self.showMsg('Not yet implemented')
+        return
 
     def changeNavButtonTitles(self):
         # self.showMsg('Changing nav button titles')
@@ -1552,6 +1668,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.nameAperture(aperture)
 
+    def addOcrAperture(self, fieldbox):
+        aperture = OcrAperture(fieldbox)
+        view = self.frameView.getView()
+        view.addItem(aperture)
+
     def addApertureAtPosition(self, x, y):
         x0 = x - self.roi_center
         y0 = y - self.roi_center
@@ -2176,6 +2297,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             for aperture in apertures:
                 self.removeAperture(aperture)
 
+    def clearOcrBoxes(self):
+        # Remove OcrBoxes (if any)
+        ocrboxes = self.getOcrBoxList()
+        if ocrboxes:
+            for ocrbox in ocrboxes:
+                self.removeOcrBox(ocrbox)
+
     def readFitsFile(self):
 
         # If a bitmap has just been loaded, it is assumed that the user is employing
@@ -2396,6 +2524,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.initialFrame = True
                 self.showFrame()
 
+                self.vtiSelected()
+
                 self.thumbOneView.clear()
                 self.thumbTwoView.clear()
 
@@ -2553,6 +2683,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 # This will get our image display initialized with default pan/zoom state
                 self.initialFrame = True
                 self.showFrame()
+
+                self.vtiSelected()
 
                 self.thumbOneView.clear()
                 self.thumbTwoView.clear()
@@ -2797,14 +2929,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             if self.viewFieldsCheckBox.isChecked():
                 self.createImageFields()
-                # if self.logScalingCheckBox.isChecked():
-                #     self.frameView.setImage(log_gray(self.image_fields))
-                # else:
                 self.frameView.setImage(self.image_fields)
             else:
-                # if self.logScalingCheckBox.isChecked():
-                #     self.frameView.setImage(log_gray(self.image))
-                # else:
                 self.frameView.setImage(self.image)
 
             if self.levels:
@@ -2818,6 +2944,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             else:
                 self.initialFrame = False
                 height, width = self.image.shape
+
+                self.showMsg(f'image shape: width={width}  height={height}')
 
                 # The following variables are used by MeasurementAperture to limit
                 # aperture placement so that it stays within the image at all times
@@ -2856,11 +2984,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'There are no frames to display.  Have you read a file?')
 
     def removeAperture(self, aperture):
-        # Belts and suspenders trying to deal with the delete aperture crashes
-        # aperture.deleteLater()
         self.disconnectAllSlots(aperture)
-        # self.pointed_at_aperture = None
         self.frameView.getView().removeItem(aperture)
+
+    def removeOcrBox(self, ocrbox):
+        # self.disconnectAllSlots(ocrbox)
+        self.frameView.getView().removeItem(ocrbox)
 
     def getApertureList(self):
         """
@@ -2875,6 +3004,19 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # Not all objects in frameView are apertures, so we need to filter the list
         for item in items:
             if type(item) is MeasurementAperture:
+                app_list.append(item)
+
+        return app_list
+
+    def getOcrBoxList(self):
+
+        # Get all objects that have been added to frameView
+        items = self.frameView.getView().allChildItems()
+        app_list = []
+
+        # Not all objects in frameView are ocr boxes, so we need to filter the list
+        for item in items:
+            if type(item) is OcrAperture:
                 app_list.append(item)
 
         return app_list

@@ -33,11 +33,8 @@
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <widget class="QWidget" name="layoutWidget">
+       <widget class="QWidget" name="">
         <layout class="QVBoxLayout" name="verticalLayout_12">
-         <property name="spacing">
-          <number>0</number>
-         </property>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_10" stretch="1,2,2">
            <item>
@@ -874,14 +871,131 @@
           </layout>
          </item>
          <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_17">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="vtiSelectLabel">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This control provides a drop-down list of VTI (video time inserter) models for which OCR (optical character recognition) timestamp processing is available. Selecting an entry will cause a constellation of character extraction boxes to be displayed on the image (which automatically switches to field view).&lt;/p&gt;&lt;p&gt;If the character selection boxes enclose the correct characters and are well-aligned, then you're ready to go.&lt;/p&gt;&lt;p&gt;If the character boxes are not well aligned, use the jogging buttons to the right to achieve a better alignment.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>select VTI: </string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="vtiSelectComboBox">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This control provides a drop-down list of VTI (video time inserter) models for which OCR (optical character recognition) timestamp processing is available. Selecting an entry will cause a constellation of character extraction boxes to be displayed on the image (which automatically switches to field view).&lt;/p&gt;&lt;p&gt;If the character selection boxes enclose the correct characters and are well-aligned, then you're ready to go.&lt;/p&gt;&lt;p&gt;If the character boxes are not well aligned, use the jogging buttons to the right to achieve a better alignment.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="currentText">
+              <string/>
+             </property>
+             <property name="currentIndex">
+              <number>-1</number>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="repositionOcrBoxesLabel">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Because of the way that frame grabbers work, it will often be the case that the character selection boxes are not perfectly aligned. Different frame grabbers will trim a different number of lines from the top and bottom of the display --- there is no standard govening this. So, you may well need to shift the position of the character selection box constellation to match your camera/frame-grabber combination. The position changes that you make will be 'sticky', so if your equipment pipeline doesn't change, you will only need to make this alignment once.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>  reposition OCR boxes: </string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="jogOcrBoxesUpButton">
+             <property name="minimumSize">
+              <size>
+               <width>72</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>Jog OCR character selection boxes up one pixel.</string>
+             </property>
+             <property name="text">
+              <string>up</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="jogOcrBoxesLeftButton">
+             <property name="minimumSize">
+              <size>
+               <width>72</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>Jog OCR character selection boxes left one pixel.</string>
+             </property>
+             <property name="text">
+              <string>left</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="jogOcrBoxesRightButton">
+             <property name="minimumSize">
+              <size>
+               <width>72</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>Jog OCR character selection boxes right one pixel.</string>
+             </property>
+             <property name="text">
+              <string>right</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="jogOcrBoxesDownButton">
+             <property name="minimumSize">
+              <size>
+               <width>72</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>Jog OCR character selection boxes down one pixel.</string>
+             </property>
+             <property name="text">
+              <string>down</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer_10">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </item>
+         <item>
           <spacer name="verticalSpacer">
            <property name="orientation">
             <enum>Qt::Vertical</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
-             <width>529</width>
-             <height>13</height>
+             <width>20</width>
+             <height>40</height>
             </size>
            </property>
           </spacer>
