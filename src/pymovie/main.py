@@ -117,12 +117,10 @@ class FixedImageExporter(pex.ImageExporter):
         self.params.param('width').setValue(int(self.params['height'] * ar),
                                             blockSignal=self.widthChanged)
 
-
 class HelpDialog(QDialog, helpDialog.Ui_Dialog):
     def __init__(self):
         super(HelpDialog, self).__init__()
         self.setupUi(self)
-
 
 
 class StarPositionDialog(QDialog, starPositionDialog.Ui_Dialog):
@@ -325,6 +323,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # self.filename is set to the full path of the selected image file (or folder) once
         # the user has made a valid selection
         self.filename = None
+
+        self.fourcc = ''
 
         # We use this variable to automatically number apertures as they are added.  It is set
         # to zero when the user makes a valid selection of a file (or folder)
@@ -2348,6 +2348,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.folder_dir = dir_path
             self.fits_filenames = sorted(glob.glob(dir_path + '/*.fits'))
 
+            self.fourcc = ''
+
             self.disableControlsWhenNoData()
             self.enableControlsForFitsData()
 
@@ -2438,6 +2440,58 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.roi_max_x = width - self.roi_size
             self.roi_max_y = height - self.roi_size
 
+    def getFrame(self, fr_num):
+
+        trace = True
+
+        if self.cap is None or not self.cap.isOpened():
+            return False, None
+
+        next_frame = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
+        if trace:
+            self.showMsg(f'requested frame: {fr_num}  next in line for cap.read(): {next_frame}')
+
+        if fr_num == next_frame - 1:
+            # User is asking for the frame that is currently being displayed
+            return True, self.image
+
+        if fr_num == next_frame:
+            if trace:
+                self.showMsg('frame requested is next to be read by cap.read()')
+            success, frame = self.cap.read()
+            if not success:
+                if trace:
+                    self.showMsg('read() failed')
+            return (success, frame)
+
+        if fr_num > next_frame:
+            frames_to_read = fr_num - next_frame + 1
+            if trace:
+                self.showMsg(f'We will read forward {frames_to_read} frames')
+            while frames_to_read > 0:
+                frames_to_read -= 1
+                success, frame = self.cap.read()
+            return success, frame
+
+        if fr_num < next_frame:
+            if trace:
+                self.showMsg(f'Closing and reopening avi_file: {self.filename}')
+            self.cap.release()
+            self.cap = cv2.VideoCapture(self.filename, cv2.CAP_FFMPEG)
+            next_frame = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
+            if trace:
+                self.showMsg(f'requested frame: {fr_num}  next in line for cap.read(): {next_frame}')
+            frames_to_read = fr_num - next_frame + 1
+            if trace:
+                self.showMsg(f'We will read forward {frames_to_read} frames')
+
+            while frames_to_read > 0:
+                frames_to_read -= 1
+                success, frame = self.cap.read()
+            return success, frame
+
+        return False, None
+
     def readAviFile(self):
 
         # If a bitmap has just been loaded, it is assumed that the user is employing
@@ -2486,15 +2540,19 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.levels = []
 
             self.showMsg(f'Opened: {self.filename}')
-            self.cap = cv2.VideoCapture(self.filename)
+            if self.cap:
+                self.cap.release()
+            self.cap = cv2.VideoCapture(self.filename, cv2.CAP_FFMPEG)
             if not self.cap.isOpened():
                 self.showMsg(f'  {self.filename} could not be opened!')
+                self.fourcc = ''
             else:
                 self.avi_in_use = True
                 self.enableControlsForAviData()
                 # Let's get the FOURCC code
                 fourcc = int(self.cap.get(cv2.CAP_PROP_FOURCC))
                 fourcc_str = f'{fourcc & 0xff:c}{fourcc >> 8 & 0xff:c}{fourcc >> 16 & 0xff:c}{fourcc >> 24 & 0xff:c}'
+                self.fourcc = fourcc_str
                 self.showMsg(f'FOURCC codec ID: {fourcc_str}')
 
                 fps = self.cap.get(cv2.CAP_PROP_FPS)
@@ -2660,6 +2718,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.levels = []
 
             self.showMsg(f'Opened: {avi_location}')
+            if self.cap:
+                self.cap.release()
             self.cap = cv2.VideoCapture(avi_location)
             if not self.cap.isOpened():
                 self.showMsg(f'  {avi_location} could not be opened!')
@@ -2885,10 +2945,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             if self.avi_in_use:
                 try:
-                    self.cap.set(cv2.CAP_PROP_POS_FRAMES, frame_to_show)
-                    status, frame = self.cap.read()
-                    self.image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                    pass
+                    if self.fourcc == 'dvsd':
+                        success, frame = self.getFrame(frame_to_show)
+                        if len(frame.shape) == 3:
+                            self.image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                    else:
+                        self.cap.set(cv2.CAP_PROP_POS_FRAMES, frame_to_show)
+                        status, frame = self.cap.read()
+                        self.image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
                 except Exception as e:
                     self.showMsg(f'Problem reading avi file: {e}')
