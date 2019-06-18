@@ -15,3 +15,4 @@ src/pymovie/PyMovie.ini
 src/pymovie.egg-info/PKG-INFO
 src/pymovie.egg-info/SOURCES.txt
 src/pymovie/vtiList*.p
+src/pymovie/*boxes*.p
