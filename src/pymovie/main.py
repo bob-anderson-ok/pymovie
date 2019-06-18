@@ -264,11 +264,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         else:
             # Create initial list --- a new installation
             self.VTIlist = [
-                {'xoffset': None, 'yoffset': None, 'name': 'None'},
-                {'xoffset': 0, 'yoffset': 0, 'name': 'IOTA 3: ntsc 640x480 full-screen'},
-                {'xoffset': 0, 'yoffset': 0, 'name': 'IOTA 3: ntsc 640x480 safe-mode'},
-                {'xoffset': 0, 'yoffset': 0, 'name': 'BoxSprite: ntsc 640x480 one-line'},
-                {'xoffset': 0, 'yoffset': 0, 'name': 'Kiwi: ntsc 640x480'},
+                {'name': 'None', 'path': ''},
+                {'name': 'IOTA 3: full-screen', 'path': 'I3fs-boxes'},
+                {'name': 'IOTA 3: safe-mode', 'path': 'I3sm-boxes'},
+                {'name': 'IOTA 2: full-screen', 'path': 'I2fs-boxes'},
+                {'name': 'IOTA 2: safe-mode', 'path': 'I2sm-boxes'},
+                {'name': 'BoxSprite: one-line', 'path': 'BSol-boxes'},
+                {'name': 'Kiwi', 'path': 'Kiwi-boxes'},
             ]
             pickle.dump(self.VTIlist, open(vtiListFilename, "wb"))
             self.showMsg(f'pickled self.VTIlist to {vtiListFilename}')
@@ -277,8 +279,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.vtiSelectComboBox.addItem(vtiDict['name'])
 
         self.currentVTIindex = 0
-        self.ocrBoxesXoffset = self.VTIlist[self.currentVTIindex]['xoffset']
-        self.ocrBoxesYoffset = self.VTIlist[self.currentVTIindex]['yoffset']
 
         self.vtiSelectComboBox.installEventFilter(self)
         self.vtiSelectComboBox.currentIndexChanged.connect(self.vtiSelected)
@@ -575,6 +575,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def fieldTimeOrderChanged(self):
         self.showMsg(f'top field earlist is {self.topFieldFirstRadioButton.isChecked()}')
+        self.vtiSelected()
 
     def jogOcrBoxesLeft(self):
         self.showMsg('OCR boxes jogged left')
@@ -588,15 +589,101 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
     def jogOcrBoxesDown(self):
         self.showMsg('OCR boxes jogged down')
 
-    def vtiSelected(self):
-        def repositionLowerOcrBoxes():
-            y_adjust = int(self.image.shape[0] / 2)
-            # self.showMsg(f'y_adjust: {y_adjust}')
+    def placeOcrBoxesOnImage(self):
+        y_adjust = int(self.image.shape[0] / 2)
+
+        if self.topFieldFirstRadioButton.isChecked():
             newLowerOcrBoxes = []
             for ocrbox in self.lowerOcrBoxes:
                 xL, xR, yU, yL = ocrbox
                 newLowerOcrBoxes.append((xL, xR, yU + y_adjust, yL + y_adjust))
-            self.lowerOcrBoxes = newLowerOcrBoxes[:]
+
+            boxnum = 0
+            for ocrbox in self.upperOcrBoxes:
+                self.addOcrAperture(ocrbox, boxnum, 'upper')
+                boxnum += 1
+            boxnum = 0
+            for ocrbox in newLowerOcrBoxes:
+                self.addOcrAperture(ocrbox, boxnum, 'lower')
+                boxnum += 1
+        elif self.currentVTIindex == 5:  # BoxSprite 3 is number 5 in the list
+            newUpperOcrBoxes = []
+            newLowerOcrBoxes = []
+            for ocrbox in self.upperOcrBoxes:
+                xL, xR, yU, yL = ocrbox
+                # These now appear as lower
+                newUpperOcrBoxes.append((xL, xR, yU + y_adjust - 1, yL + y_adjust - 1))
+            for ocrbox in self.lowerOcrBoxes:
+                xL, xR, yU, yL = ocrbox
+                newLowerOcrBoxes.append((xL, xR, yU + 1, yL + 1))  # These appear now as upper
+
+            boxnum = 0
+            for ocrbox in newUpperOcrBoxes:
+                self.addOcrAperture(ocrbox, boxnum, 'upper')
+                boxnum += 1
+            boxnum = 0
+            for ocrbox in newLowerOcrBoxes:
+                self.addOcrAperture(ocrbox, boxnum, 'lower')
+                boxnum += 1
+        elif self.currentVTIindex == 6: # This path is only for Kiwi
+            newUpperOcrBoxes = []
+            newLowerOcrBoxes = []
+            for ocrbox in self.upperOcrBoxes:
+                xL, xR, yU, yL = ocrbox
+                # These now appear as lower
+                newUpperOcrBoxes.append((xL + 1, xR + 1, yU + y_adjust - 1, yL + y_adjust - 1))
+            for ocrbox in self.lowerOcrBoxes:
+                xL, xR, yU, yL = ocrbox
+                newLowerOcrBoxes.append((xL - 1, xR - 1, yU + 1, yL + 1))  # These appear now as upper
+
+            boxnum = 0
+            for ocrbox in newUpperOcrBoxes:
+                self.addOcrAperture(ocrbox, boxnum, 'upper')
+                boxnum += 1
+            boxnum = 0
+            for ocrbox in newLowerOcrBoxes:
+                self.addOcrAperture(ocrbox, boxnum, 'lower')
+                boxnum += 1
+        else:  # IOTA VTI does not need special handling
+            newUpperOcrBoxes = []
+            for ocrbox in self.upperOcrBoxes:
+                xL, xR, yU, yL = ocrbox
+                newUpperOcrBoxes.append((xL, xR, yU + y_adjust, yL + y_adjust))
+
+            boxnum = 0
+            for ocrbox in newUpperOcrBoxes:
+                self.addOcrAperture(ocrbox, boxnum, 'upper')
+                boxnum += 1
+            boxnum = 0
+            for ocrbox in self.lowerOcrBoxes:
+                self.addOcrAperture(ocrbox, boxnum, 'lower')
+                boxnum += 1
+
+    def pickleOcrBoxes(self):
+        base_path = self.VTIlist[self.currentVTIindex]['path']
+        upper_boxes = f'{base_path}-upper.p'
+        lower_boxes = f'{base_path}-lower.p'
+
+        pickle.dump(self.upperOcrBoxes, open(upper_boxes, "wb"))
+        pickle.dump(self.lowerOcrBoxes, open(lower_boxes, "wb"))
+
+        return
+
+    def loadPickledOcrBoxes(self):
+        base_path = self.VTIlist[self.currentVTIindex]['path']
+        upper_boxes = f'{base_path}-upper.p'
+        lower_boxes = f'{base_path}-lower.p'
+
+        if os.path.exists(upper_boxes) and os.path.exists(lower_boxes):
+            self.upperOcrBoxes = pickle.load(open(upper_boxes, "rb"))
+            # self.showMsg(f'upper OCR boxes loaded from {upper_boxes}')
+            self.lowerOcrBoxes = pickle.load(open(lower_boxes, "rb"))
+            # self.showMsg(f'upper OCR boxes loaded from {lower_boxes}')
+            return True
+        else:
+            return False
+
+    def vtiSelected(self):
 
         self.currentVTIindex = self.vtiSelectComboBox.currentIndex()
         dictionaryOfSelection = repr(self.VTIlist[self.currentVTIindex])
@@ -609,35 +696,43 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.clearOcrBoxes()
             return
 
-        if self.currentVTIindex == 1:  # IOTA full screen mode
-            self.viewFieldsCheckBox.setChecked(True)
-            self.showFrame()
-            # self.showMsg(f'index = {self.currentVTIindex}')
-            self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_iota_full_screen_mode()
-            repositionLowerOcrBoxes()
-            for ocrbox in self.upperOcrBoxes:
-                self.addOcrAperture(ocrbox)
-            for ocrbox in self.lowerOcrBoxes:
-                self.addOcrAperture(ocrbox)
+        self.clearOcrBoxes()
+
+        self.viewFieldsCheckBox.setChecked(True)
+        self.showFrame()
+
+        if self.currentVTIindex == 1:  # IOTA-3 full screen mode
+            if not self.loadPickledOcrBoxes():
+                self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_iota_full_screen_mode()
+                self.pickleOcrBoxes()
+            self.placeOcrBoxesOnImage()
             return
 
-        if self.currentVTIindex == 2:  # IOTA safe mode
-            self.viewFieldsCheckBox.setChecked(True)
-            self.showFrame()
-            # self.showMsg(f'index = {self.currentVTIindex}')
-            self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_iota_safe_mode()
-            repositionLowerOcrBoxes()
-            for ocrbox in self.upperOcrBoxes:
-                self.addOcrAperture(ocrbox)
-            for ocrbox in self.lowerOcrBoxes:
-                self.addOcrAperture(ocrbox)
+        if self.currentVTIindex == 2:  # IOTA-3 safe mode
+            if not self.loadPickledOcrBoxes():
+                self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_iota_safe_mode()
+                self.pickleOcrBoxes()
+            self.placeOcrBoxesOnImage()
+            return
+
+        if self.currentVTIindex == 5:  # BoxSprite 3
+            if not self.loadPickledOcrBoxes():
+                self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_boxsprite3()
+                self.pickleOcrBoxes()
+            self.placeOcrBoxesOnImage()
+            return
+
+        if self.currentVTIindex == 6:  # Kiwi
+            if not self.loadPickledOcrBoxes():
+                self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_kiwi_vti()
+                self.pickleOcrBoxes()
+            self.placeOcrBoxesOnImage()
             return
 
         self.showMsg('Not yet implemented')
         return
 
     def changeNavButtonTitles(self):
-        # self.showMsg('Changing nav button titles')
         if self.frameJumpBig == 200:  # FITS titling needed
             self.backSmallButton.setText(f'< {self.frameJumpSmall} frames')
             self.forwardSmallButton.setText(f'{self.frameJumpSmall} frames >')
@@ -1668,8 +1763,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.nameAperture(aperture)
 
-    def addOcrAperture(self, fieldbox):
-        aperture = OcrAperture(fieldbox)
+    def addOcrAperture(self, fieldbox, boxnum, position):
+        aperture = OcrAperture(fieldbox, boxnum, position, msgRoutine=self.showMsg)
         view = self.frameView.getView()
         view.addItem(aperture)
 
@@ -2734,6 +2829,18 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
                 frame_count = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
                 self.showMsg(f'There are {frame_count} frames in the file.')
+
+                fps = self.cap.get(cv2.CAP_PROP_FPS)
+                if fps > 29.0:
+                    # self.showMsg('Changing navigation buttons to 30 frames')
+                    self.frameJumpSmall = 30
+                    self.frameJumpBig = 300
+                    self.changeNavButtonTitles()
+                else:
+                    # self.showMsg('Changing navigation buttons to 25 frames')
+                    self.frameJumpSmall = 25
+                    self.frameJumpBig = 250
+                    self.changeNavButtonTitles()
 
                 self.currentFrameSpinBox.setMaximum(frame_count-1)
                 self.currentFrameSpinBox.setValue(0)

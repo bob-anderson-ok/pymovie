@@ -61,8 +61,8 @@ def setup_for_iota_safe_mode():
 
     # Turn box corners into full box coordinate tuples
     for i in range(len(xcL)):
-        upper_field_boxes[i] = (xcU[i], xcU[i] + 23, ycU[i], ycU[i] + 15)
-        lower_field_boxes[i] = (xcL[i], xcL[i] + 23, ycL[i], ycL[i] + 15)
+        upper_field_boxes[i] = (xcU[i], xcU[i] + 23, ycU[i], ycU[i] + 14)
+        lower_field_boxes[i] = (xcL[i], xcL[i] + 23, ycL[i], ycL[i] + 14)
 
     return upper_field_boxes, lower_field_boxes
 
@@ -84,7 +84,50 @@ def setup_for_iota_full_screen_mode():
 
     # Turn box corners into full box coordinate tuples
     for i in range(len(xcL)):
-        upper_field_boxes[i] = (xcU[i], xcU[i] + 23, ycU[i], ycU[i] + 15)
-        lower_field_boxes[i] = (xcL[i], xcL[i] + 23, ycL[i], ycL[i] + 15)
+        upper_field_boxes[i] = (xcU[i], xcU[i] + 23, ycU[i], ycU[i] + 14)
+        lower_field_boxes[i] = (xcL[i], xcL[i] + 23, ycL[i], ycL[i] + 14)
+
+    return upper_field_boxes, lower_field_boxes
+
+
+def setup_for_kiwi_vti():
+    # Do initializations needed for KIWI VTI timestamp extraction
+
+    # Define xy coordinates of lower field character box corners
+    xcL = [60, 84, 130, 154, 201, 225, 414, 438, 462]
+    ycL = [204] * 9
+
+    # Define xy coordinates of upper field character box corners
+    xcU = [59, 83, 129, 153, 200, 224, 295, 319, 343]
+    ycU = [205] * 9
+
+    # Turn box corners into full box coordinate tuples
+    upper_field_boxes = [None] * len(xcL)
+    lower_field_boxes = [None] * len(xcL)
+    for i in range(len(xcL)):
+        upper_field_boxes[i] = ((xcU[i], xcU[i] + 23, ycU[i], ycU[i] + 13))
+        lower_field_boxes[i] = ((xcL[i], xcL[i] + 23, ycL[i], ycL[i] + 13))
+
+    return upper_field_boxes, lower_field_boxes
+
+
+def setup_for_boxsprite3():
+    # Parameters for BOXSPRITE3 VTI timestamp characters
+
+    # Define xy coordinates of lower field character box corners
+    xcL = [137, 148, 168, 180, 200, 211, 232, 243, 253, 263, 284]
+    ycL = [210] * len(xcL)
+
+    # Define xy coordinates of upper field character box corners
+    xcU = [137, 148, 168, 180, 200, 211, 232, 243, 253, 263, 284]
+    ycU = [211] * len(xcL)
+
+    # Turn box corners into full box coordinate tuples
+    upper_field_boxes = [None] * len(xcL)
+    lower_field_boxes = [None] * len(xcL)
+
+    for i in range(len(xcL)):
+        upper_field_boxes[i] = ((xcU[i], xcU[i] + 10, ycU[i], ycU[i] + 14))
+        lower_field_boxes[i] = ((xcL[i], xcL[i] + 10, ycL[i], ycL[i] + 14))
 
     return upper_field_boxes, lower_field_boxes

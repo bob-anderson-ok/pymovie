@@ -8,8 +8,10 @@ class OcrAperture(pg.GraphicsObject):
     raise a custom context menu.
     """
 
-    def __init__(self, fieldbox):  # Intialize aperture specified by a field box
-        # self.name = name
+    def __init__(self, fieldbox, boxnum, position, msgRoutine):  # Intialize aperture specified by a field box
+        self.boxnum = boxnum
+        self.msgRoutine = msgRoutine
+        self.position = position  # 'upper'  or 'lower'
         self.pen = pg.mkPen('r')
         self.color = 'red'
         xL, xR, yU, yL = fieldbox
@@ -51,13 +53,30 @@ class OcrAperture(pg.GraphicsObject):
     def getContextMenus(self, event=None):
         if self.menu is None:
             self.menu = QtGui.QMenu()
-            self.menu.setTitle(self.name + " options..")  # This appears to do nothing
+            # self.menu.setTitle(self.name + " options..")  # This appears to do nothing
 
-            setnoaction = QtGui.QAction("No action defined", self.menu)
-            setnoaction.triggered.connect(self.noAction)
-            self.menu.addAction(setnoaction)
+            setshowprops = QtGui.QAction("Show properties", self.menu)
+            setshowprops.triggered.connect(self.showProps)
+            self.menu.addAction(setshowprops)
+
+            self.menu.addSeparator()
+
+            setjogleft = QtGui.QAction("Jog left", self.menu)
+            setjogleft.triggered.connect(self.jogLeft)
+            self.menu.addAction(setjogleft)
+
+            setjogright = QtGui.QAction("Jog right", self.menu)
+            setjogright.triggered.connect(self.jogRight)
+            self.menu.addAction(setjogright)
 
         return self.menu
 
-    def noAction(self):
-        pass
+    def showProps(self):
+        msg = f'aperture {self.position}-{self.boxnum}  upper left corner@ x: {self.x0} y:{self.y0}'
+        self.msgRoutine(msg=msg)
+
+    def jogLeft(self):
+        self.msgRoutine( 'jog left: not yet implemented')
+
+    def jogRight(self):
+        self.msgRoutine( 'jog right: not yet implemented')
