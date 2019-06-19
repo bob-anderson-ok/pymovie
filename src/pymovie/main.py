@@ -264,13 +264,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         else:
             # Create initial list --- a new installation
             self.VTIlist = [
-                {'name': 'None', 'path': ''},
-                {'name': 'IOTA 3: full-screen', 'path': 'I3fs-boxes'},
-                {'name': 'IOTA 3: safe-mode', 'path': 'I3sm-boxes'},
-                {'name': 'IOTA 2: full-screen', 'path': 'I2fs-boxes'},
-                {'name': 'IOTA 2: safe-mode', 'path': 'I2sm-boxes'},
-                {'name': 'BoxSprite: one-line', 'path': 'BSol-boxes'},
-                {'name': 'Kiwi', 'path': 'Kiwi-boxes'},
+                {'name': 'None', 'boxes': '', 'digits': ''},
+                {'name': 'IOTA 3: full-screen', 'boxes': 'I3fs-boxes', 'digits': 'I3-digits'},
+                {'name': 'IOTA 3: safe-mode', 'boxes': 'I3sm-boxes', 'digits': 'I3-digits'},
+                {'name': 'BoxSprite: one-line w=640', 'boxes': 'BS640-boxes', 'digits': 'BS-digits'},
+                {'name': 'BoxSprite: one-line w=720', 'boxes': 'BS720-boxes', 'digits': 'BS-digits'},
+                {'name': 'Kiwi: w=720', 'boxes': 'Kiwi720-boxes', 'digits': 'Kiwi-digits'},
+                {'name': 'Kiwi: w=640', 'boxes': 'Kiwi640-boxes', 'digits': 'Kiwi-digits'},
             ]
             pickle.dump(self.VTIlist, open(vtiListFilename, "wb"))
             self.showMsg(f'pickled self.VTIlist to {vtiListFilename}')
@@ -578,16 +578,51 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.vtiSelected()
 
     def jogOcrBoxesLeft(self):
-        self.showMsg('OCR boxes jogged left')
+        if self.currentVTIindex == 0:
+            self.showMsg('No OCR boxes to jog.')
+            return
+        dx = -1
+        dy = 0
+        self.jogOcrBoxes(dx, dy)
 
     def jogOcrBoxesRight(self):
-        self.showMsg('OCR boxes jogged right')
+        if self.currentVTIindex == 0:
+            self.showMsg('No OCR boxes to jog.')
+            return
+        dx = 1
+        dy = 0
+        self.jogOcrBoxes(dx, dy)
 
     def jogOcrBoxesUp(self):
-        self.showMsg('OCR boxes jogged up')
+        if self.currentVTIindex == 0:
+            self.showMsg('No OCR boxes to jog.')
+            return
+        dx = 0
+        dy = -1
+        self.jogOcrBoxes(dx, dy)
 
     def jogOcrBoxesDown(self):
-        self.showMsg('OCR boxes jogged down')
+        if self.currentVTIindex == 0:
+            self.showMsg('No OCR boxes to jog.')
+            return
+        dx = 0
+        dy = 1
+        self.jogOcrBoxes(dx, dy)
+
+    def jogOcrBoxes(self, dx, dy):
+        newUpperBoxes = []
+        for ocrbox in self.upperOcrBoxes:
+            xL, xR, yU, yL = ocrbox
+            newUpperBoxes.append((xL + dx, xR + dx, yU + dy, yL + dy))
+        newLowerBoxes = []
+        for ocrbox in self.lowerOcrBoxes:
+            xL, xR, yU, yL = ocrbox
+            newLowerBoxes.append((xL + dx, xR + dx, yU + dy, yL + dy))
+        self.upperOcrBoxes = newUpperBoxes[:]
+        self.lowerOcrBoxes = newLowerBoxes[:]
+        self.clearOcrBoxes()
+        self.placeOcrBoxesOnImage()
+        self.pickleOcrBoxes()
 
     def placeOcrBoxesOnImage(self):
         y_adjust = int(self.image.shape[0] / 2)
@@ -606,7 +641,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             for ocrbox in newLowerOcrBoxes:
                 self.addOcrAperture(ocrbox, boxnum, 'lower')
                 boxnum += 1
-        elif self.currentVTIindex == 3 or self.currentVTIindex == 3:  # Old model IOTA safe and full-screen
+        elif self.currentVTIindex == 3:  # BoxSprite is number 3 and 4 in the list
             newUpperOcrBoxes = []
             newLowerOcrBoxes = []
             for ocrbox in self.upperOcrBoxes:
@@ -625,26 +660,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             for ocrbox in newLowerOcrBoxes:
                 self.addOcrAperture(ocrbox, boxnum, 'lower')
                 boxnum += 1
-        elif self.currentVTIindex == 5:  # BoxSprite 3 is number 5 in the list
-            newUpperOcrBoxes = []
-            newLowerOcrBoxes = []
-            for ocrbox in self.upperOcrBoxes:
-                xL, xR, yU, yL = ocrbox
-                # These now appear as lower
-                newUpperOcrBoxes.append((xL, xR, yU + y_adjust - 1, yL + y_adjust - 1))
-            for ocrbox in self.lowerOcrBoxes:
-                xL, xR, yU, yL = ocrbox
-                newLowerOcrBoxes.append((xL, xR, yU + 1, yL + 1))  # These appear now as upper
-
-            boxnum = 0
-            for ocrbox in newUpperOcrBoxes:
-                self.addOcrAperture(ocrbox, boxnum, 'upper')
-                boxnum += 1
-            boxnum = 0
-            for ocrbox in newLowerOcrBoxes:
-                self.addOcrAperture(ocrbox, boxnum, 'lower')
-                boxnum += 1
-        elif self.currentVTIindex == 6: # This path is only for Kiwi
+        elif self.currentVTIindex == 5 or self.currentVTIindex == 6: # Kiwi is number 5 and 6 in the list
             newUpperOcrBoxes = []
             newLowerOcrBoxes = []
             for ocrbox in self.upperOcrBoxes:
@@ -663,7 +679,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             for ocrbox in newLowerOcrBoxes:
                 self.addOcrAperture(ocrbox, boxnum, 'lower')
                 boxnum += 1
-        else:  # IOTA VTI does not need special handling
+        else:  # IOTA VTI does not need special handling nor does BoxSprite 720
             newUpperOcrBoxes = []
             for ocrbox in self.upperOcrBoxes:
                 xL, xR, yU, yL = ocrbox
@@ -679,7 +695,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 boxnum += 1
 
     def pickleOcrBoxes(self):
-        base_path = self.VTIlist[self.currentVTIindex]['path']
+        base_path = self.VTIlist[self.currentVTIindex]['boxes']
         upper_boxes = f'{base_path}-upper.p'
         lower_boxes = f'{base_path}-lower.p'
 
@@ -689,7 +705,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         return
 
     def loadPickledOcrBoxes(self):
-        base_path = self.VTIlist[self.currentVTIindex]['path']
+        base_path = self.VTIlist[self.currentVTIindex]['boxes']
         upper_boxes = f'{base_path}-upper.p'
         lower_boxes = f'{base_path}-lower.p'
 
@@ -734,30 +750,30 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.placeOcrBoxesOnImage()
             return
 
-        if self.currentVTIindex == 3:  # IOTA-old full-screen mode
+        if self.currentVTIindex == 3:  # BoxSprite 3 w=640
             if not self.loadPickledOcrBoxes():
-                self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_old_iota_full_screen_mode()
+                self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_boxsprite3_640()
                 self.pickleOcrBoxes()
             self.placeOcrBoxesOnImage()
             return
 
-        if self.currentVTIindex == 4:  # IOTA-old safe mode
+        if self.currentVTIindex == 4:  # BoxSprite 3 w=720
             if not self.loadPickledOcrBoxes():
-                self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_old_iota_safe_mode()
+                self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_boxsprite3_720()
                 self.pickleOcrBoxes()
             self.placeOcrBoxesOnImage()
             return
 
-        if self.currentVTIindex == 5:  # BoxSprite 3
+        if self.currentVTIindex == 5:  # Kiwi w=720
             if not self.loadPickledOcrBoxes():
-                self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_boxsprite3()
+                self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_kiwi_vti_720()
                 self.pickleOcrBoxes()
             self.placeOcrBoxesOnImage()
             return
 
-        if self.currentVTIindex == 6:  # Kiwi
+        if self.currentVTIindex == 6:  # Kiwi w=640
             if not self.loadPickledOcrBoxes():
-                self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_kiwi_vti()
+                self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_kiwi_vti_640()
                 self.pickleOcrBoxes()
             self.placeOcrBoxesOnImage()
             return
@@ -2710,6 +2726,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.initialFrame = True
                 self.showFrame()
 
+                self.vtiSelectComboBox.setCurrentIndex(0)
                 self.vtiSelected()
 
                 self.thumbOneView.clear()
