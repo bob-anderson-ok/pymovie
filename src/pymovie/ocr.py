@@ -131,3 +131,49 @@ def setup_for_boxsprite3():
         lower_field_boxes[i] = ((xcL[i], xcL[i] + 10, ycL[i], ycL[i] + 14))
 
     return upper_field_boxes, lower_field_boxes
+
+
+def setup_for_old_iota_safe_mode():
+    # Do initializations needed for older model IOTA VTI timestamp extraction
+    # Parameters for IOTA VTI timestamp characters when in safe mode
+
+    # Define xy coordinates of lower field character box corners
+    xcL = [77, 101, 149, 173, 220, 244, 414, 438, 462, 487]
+    ycL = [199] * 10
+
+    # Define xy coordinates of upper field character box corners
+    xcU = [77, 101, 149, 173, 220, 244, 293, 317, 342, 366]
+    ycU = [200] * 10
+
+    upper_field_boxes = [None] * len(xcL)
+    lower_field_boxes = [None] * len(xcL)
+
+    # Turn box corners into full box coordinate tuples
+    for i in range(len(xcL)):
+        upper_field_boxes[i] = (xcU[i], xcU[i] + 23, ycU[i], ycU[i] + 14)
+        lower_field_boxes[i] = (xcL[i], xcL[i] + 23, ycL[i], ycL[i] + 14)
+
+    return upper_field_boxes, lower_field_boxes
+
+
+def setup_for_old_iota_full_screen_mode():
+    # Do initializations needed for older model IOTA VTI timestamp extraction
+    # Parameters for IOTA VTI timestamp characters when in safe mode
+
+    # Define xy coordinates of lower field character box corners
+    xcL = [77, 101, 149, 173, 220, 244, 414, 438, 462, 487]
+    ycL = [199 + 18] * 10
+
+    # Define xy coordinates of upper field character box corners
+    xcU = [77, 101, 149, 173, 220, 244, 293, 317, 342, 366]
+    ycU = [200 + 18] * 10
+
+    upper_field_boxes = [None] * len(xcL)
+    lower_field_boxes = [None] * len(xcL)
+
+    # Turn box corners into full box coordinate tuples
+    for i in range(len(xcL)):
+        upper_field_boxes[i] = (xcU[i], xcU[i] + 23, ycU[i], ycU[i] + 14)
+        lower_field_boxes[i] = (xcL[i], xcL[i] + 23, ycL[i], ycL[i] + 14)
+
+    return upper_field_boxes, lower_field_boxes
