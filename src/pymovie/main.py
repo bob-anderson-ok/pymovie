@@ -202,6 +202,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.api_key = self.settings.value('api_key', '')
 
+        self.enableOcrTemplateSampling = self.settings.value('ocrsamplemenu', 'false') == 'true'
+
         # Clean up the frame display by hiding the 'extras' that pyqtgraph
         # standardly includes in an ImageView widget
         self.frameView.ui.menuBtn.hide()
@@ -780,8 +782,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
     def vtiSelected(self):
 
         self.currentVTIindex = self.vtiSelectComboBox.currentIndex()
-        dictionaryOfSelection = repr(self.VTIlist[self.currentVTIindex])
-        self.showMsg(f'VTI: {dictionaryOfSelection}')
+        # dictionaryOfSelection = repr(self.VTIlist[self.currentVTIindex])
+        # self.showMsg(f'VTI: {dictionaryOfSelection}')
 
         if not self.avi_in_use or self.image is None:
             return
@@ -1896,15 +1898,22 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
     # def ocrBoxJogger(self, dx, boxnum, position):
     #     self.showMsg(f'dx: {dx}  boxnum: {boxnum}  position: {position}')
 
-    def addOcrAperture(self, fieldbox, boxnum, position):
+    def addOcrAperture(self, fieldbox, boxnum, position, ):
         aperture = OcrAperture(
             fieldbox,
             boxnum,
             position,
-            msgRoutine=self.showMsg
+            msgRoutine=self.showMsg,
+            templater=self.processOcrTemplate,
+            samplemenu=self.enableOcrTemplateSampling
         )
         view = self.frameView.getView()
         view.addItem(aperture)
+
+    def processOcrTemplate(self, digit, ocrbox):
+        self.showMsg(f'Recording digit {digit} from pixels in {ocrbox}')
+        img = timestamp_box_image(self.image_fields, ocrbox)
+        self.thumbOneView.setImage(img)
 
     def addApertureAtPosition(self, x, y):
         x0 = x - self.roi_center

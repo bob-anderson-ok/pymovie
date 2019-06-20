@@ -1,6 +1,6 @@
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
-from PyQt5.QtCore import pyqtSignal
+
 
 class OcrAperture(pg.GraphicsObject):
     """
@@ -8,7 +8,10 @@ class OcrAperture(pg.GraphicsObject):
     raise a custom context menu.
     """
 
-    def __init__(self, fieldbox, boxnum, position, msgRoutine):  # Intialize aperture specified by a field box
+    # Intialize aperture specified by a field box
+    def __init__(self, fieldbox, boxnum, position, msgRoutine, templater, samplemenu=True):
+        self.samplemenu = samplemenu
+        self.templateWriter = templater
         self.boxnum = boxnum
         self.msgRoutine = msgRoutine
         self.joggable = False
@@ -34,6 +37,10 @@ class OcrAperture(pg.GraphicsObject):
         self.xsize = xR - xL
         self.ysize = yL - yU
 
+    def getBox(self):
+        xR = self.xsize + self.x0
+        yL = self.ysize + self.y0
+        return self.x0, xR, self.y0, yL  #(xL, xR, yU, yL)
 
     # All graphics items must have boundingRect() defined.
     def boundingRect(self):
@@ -43,9 +50,6 @@ class OcrAperture(pg.GraphicsObject):
     def paint(self, p, *args):
         p.setPen(self.pen)
         p.drawRect(self.boundingRect())
-        # p.setPen(pg.mkPen('y'))
-        # p.drawLine(self.x0, self.y0, self.x0 + self.xsize, self.y0 + self.ysize)
-        # p.drawLine(self.x0, self.y0 + self.ysize, self.x0 + self.xsize, self.y0)
 
     # On right-click, raise the context menu
     def mouseClickEvent(self, ev):
@@ -79,7 +83,80 @@ class OcrAperture(pg.GraphicsObject):
             setjogoff.triggered.connect(self.disableJogging)
             self.menu.addAction(setjogoff)
 
+            if self.samplemenu:
+                self.menu.addSeparator()
+
+                set0 = QtGui.QAction("record 0", self.menu)
+                set0.triggered.connect(self.write0)
+                self.menu.addAction(set0)
+
+                set1 = QtGui.QAction("record 1", self.menu)
+                set1.triggered.connect(self.write1)
+                self.menu.addAction(set1)
+
+                set2 = QtGui.QAction("record 2", self.menu)
+                set2.triggered.connect(self.write2)
+                self.menu.addAction(set2)
+
+                set3 = QtGui.QAction("record 3", self.menu)
+                set3.triggered.connect(self.write3)
+                self.menu.addAction(set3)
+
+                set4 = QtGui.QAction("record 4", self.menu)
+                set4.triggered.connect(self.write4)
+                self.menu.addAction(set4)
+
+                set5 = QtGui.QAction("record 5", self.menu)
+                set5.triggered.connect(self.write5)
+                self.menu.addAction(set5)
+
+                set6 = QtGui.QAction("record 6", self.menu)
+                set6.triggered.connect(self.write6)
+                self.menu.addAction(set6)
+
+                set7 = QtGui.QAction("record 7", self.menu)
+                set7.triggered.connect(self.write7)
+                self.menu.addAction(set7)
+
+                set8 = QtGui.QAction("record 8", self.menu)
+                set8.triggered.connect(self.write8)
+                self.menu.addAction(set8)
+
+                set9 = QtGui.QAction("record 9", self.menu)
+                set9.triggered.connect(self.write9)
+                self.menu.addAction(set9)
+
         return self.menu
+
+    def write0(self):
+        self.templateWriter(0, self.getBox())
+
+    def write1(self):
+        self.templateWriter(1, self.getBox())
+
+    def write2(self):
+        self.templateWriter(2, self.getBox())
+
+    def write3(self):
+        self.templateWriter(3, self.getBox())
+
+    def write4(self):
+        self.templateWriter(4, self.getBox())
+
+    def write5(self):
+        self.templateWriter(5, self.getBox())
+
+    def write6(self):
+        self.templateWriter(6, self.getBox())
+
+    def write7(self):
+        self.templateWriter(7, self.getBox())
+
+    def write8(self):
+        self.templateWriter(8, self.getBox())
+
+    def write9(self):
+        self.templateWriter(9, self.getBox())
 
     def showProps(self):
         msg = f'ocrbox: {self.position}-{self.boxnum}  upper-left-corner@ x: {self.x0} y:{self.y0}'

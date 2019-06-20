@@ -1,47 +1,5 @@
 import numpy as np
-
-
-def jog_character_boxes(deltax, deltay, upper_field_boxes, lower_field_boxes):
-    for i, box in enumerate(lower_field_boxes):
-        xL, xR, yL, yU = box
-        xL += deltax
-        xR += deltax
-        yL += deltay
-        yU += deltay
-        lower_field_boxes[i] = (xL, xR, yL, yU)
-
-    for i, box in enumerate(upper_field_boxes):
-        xL, xR, yL, yU = box
-        xL += deltax
-        xR += deltax
-        yL += deltay
-        yU += deltay
-        upper_field_boxes[i] = (xL, xR, yL, yU)
-
-
-def reset_character_boxes(xorg_upper, xorg_lower, yorg_upper, yorg_lower, upper_field_boxes, lower_field_boxes):
-    xL, xR, yL, yU = lower_field_boxes[0]
-    deltax = xorg_lower - xL
-    deltay = yorg_lower - yL
-    for i, box in enumerate(lower_field_boxes):
-        xL, xR, yL, yU = box
-        xL += deltax
-        xR += deltax
-        yL += deltay
-        yU += deltay
-        lower_field_boxes[i] = (xL, xR, yL, yU)
-
-    xL, xR, yL, yU = upper_field_boxes[0]
-    deltax = xorg_upper - xL
-    deltay = yorg_upper - yL
-
-    for i, box in enumerate(upper_field_boxes):
-        xL, xR, yL, yU = box
-        xL += deltax
-        xR += deltax
-        yL += deltay
-        yU += deltay
-        upper_field_boxes[i] = (xL, xR, yL, yU)
+import cv2
 
 
 def setup_for_iota_safe_mode():
@@ -175,47 +133,95 @@ def setup_for_boxsprite3_720():
     return upper_field_boxes, lower_field_boxes
 
 
-# def setup_for_old_iota_safe_mode():
-#     # Do initializations needed for older model IOTA VTI timestamp extraction
-#     # Parameters for IOTA VTI timestamp characters when in safe mode
-#
-#     # Define xy coordinates of lower field character box corners
-#     xcL = [77, 101, 149, 173, 220, 244, 414, 438, 462, 487]
-#     ycL = [199] * 10
-#
-#     # Define xy coordinates of upper field character box corners
-#     xcU = [77, 101, 149, 173, 220, 244, 293, 317, 342, 366]
-#     ycU = [200] * 10
-#
-#     upper_field_boxes = [None] * len(xcL)
-#     lower_field_boxes = [None] * len(xcL)
-#
-#     # Turn box corners into full box coordinate tuples
-#     for i in range(len(xcL)):
-#         upper_field_boxes[i] = (xcU[i], xcU[i] + 23, ycU[i], ycU[i] + 14)
-#         lower_field_boxes[i] = (xcL[i], xcL[i] + 23, ycL[i], ycL[i] + 14)
-#
-#     return upper_field_boxes, lower_field_boxes
+method = eval('cv2.TM_CCOEFF_NORMED')
 
 
-# def setup_for_old_iota_full_screen_mode():
-#     # Do initializations needed for older model IOTA VTI timestamp extraction
-#     # Parameters for IOTA VTI timestamp characters when in safe mode
-#
-#     # Define xy coordinates of lower field character box corners
-#     xcL = [77, 101, 149, 173, 222, 246, 414, 438, 462, 486]
-#     ycL = [199 + 18] * 10
-#
-#     # Define xy coordinates of upper field character box corners
-#     xcU = [77, 101, 149, 173, 222, 246, 294, 318, 342, 366]
-#     ycU = [200 + 18] * 10
-#
-#     upper_field_boxes = [None] * len(xcL)
-#     lower_field_boxes = [None] * len(xcL)
-#
-#     # Turn box corners into full box coordinate tuples
-#     for i in range(len(xcL)):
-#         upper_field_boxes[i] = (xcU[i], xcU[i] + 23, ycU[i], ycU[i] + 14)
-#         lower_field_boxes[i] = (xcL[i], xcL[i] + 23, ycL[i], ycL[i] + 14)
-#
-#     return upper_field_boxes, lower_field_boxes
+def cv2_score(image, field_digits):
+    img = cv2.copyMakeBorder(image, 2,2,2,2, cv2.BORDER_CONSTANT, value=0)
+    max_found = 0.0
+    ans = None
+    max_vals = [None] * 10
+    for i in range(10):
+        # Apply template Matching
+        res = cv2.matchTemplate(img, field_digits[i], method)
+        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
+        max_vals[i] = max_val
+        if max_val > max_found:
+            max_found = max_val
+            ans = i
+    return (ans, max_found, max_vals)
+
+
+def extract_lower_field_timestamp(frame, lower_field_boxes, field_digits):
+    ts = ''  # ts 'means' timestamp
+    q_factor = 0
+    for k in range(len(lower_field_boxes)):
+        t_img = timestamp_box_image(frame, lower_field_boxes[k])
+        ans, score, _ = cv2_score(t_img, field_digits)
+        # KIWI timestamp character can be blank.  We detect that as a low score
+        if score < 0.5:
+            ans = 0
+        ts += f'{ans}'
+        q_factor += score
+    return ts, q_factor / len(lower_field_boxes)
+
+
+def extract_upper_field_timestamp(frame, upper_field_boxes, field_digits):
+    ts = ''  # ts 'means' timestamp
+    q_factor = 0
+    for k in range(len(upper_field_boxes)):
+        t_img = timestamp_box_image(frame, upper_field_boxes[k])
+        ans, score, _ = cv2_score(t_img, field_digits)
+        # KIWI timestamp character can be blank.  We detect that as a low score
+        if score < 0.5:
+            ans = 0
+        ts += f'{ans}'
+        q_factor += score
+    return ts, q_factor / len(upper_field_boxes)
+
+
+def format_iota_timestamp(ts):
+    assert len(ts) == 10
+    hh = 10 * int(ts[0]) + int(ts[1])
+    mm = 10 * int(ts[2]) + int(ts[3])
+    ss = 10 * int(ts[4]) + int(ts[5])
+    ff = 1000 * int(ts[6]) + 100 * int(ts[7]) + 10 * int(ts[8]) + int(ts[9])
+    time = 3600 * hh + 60 * mm + ss + ff / 10000
+    return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[6]}{ts[7]}{ts[8]}{ts[9]}]', time
+
+
+def format_kiwi_timestamp(ts):
+    assert len(ts) == 9
+    hh = 10 * int(ts[0]) + int(ts[1])
+    mm = 10 * int(ts[2]) + int(ts[3])
+    ss = 10 * int(ts[4]) + int(ts[5])
+    ff = 100 * int(ts[6]) + 10 * int(ts[7]) + int(ts[8])
+    time = 3600 * hh + 60 * mm + ss + ff / 1000
+    return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[6]}{ts[7]}{ts[8]}]', time
+
+
+def format_boxsprite3_timestamp(ts):
+    assert len(ts) == 11
+    hh = 10 * int(ts[0]) + int(ts[1])
+    mm = 10 * int(ts[2]) + int(ts[3])
+    ss = 10 * int(ts[4]) + int(ts[5])
+    ff = 1000 * int(ts[7]) + 100 * int(ts[8]) + 10 * int(ts[9]) + int(ts[10])
+    time = 3600 * hh + 60 * mm + ss + ff / 10000
+    return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[7]}{ts[8]}{ts[9]}{ts[10]}]', time
+
+
+def extract_timestamps(frame, upper_field_boxes, lower_field_boxes,
+                       field_digits, formatter=None, watch=False):
+    ts, q_factor_lower = extract_lower_field_timestamp(frame, lower_field_boxes, field_digits)
+    s1, t1 = formatter(ts)
+    ts, q_factor_upper = extract_upper_field_timestamp(frame, upper_field_boxes, field_digits)
+    s2, t2 = formatter(ts)
+    if watch:
+        print(f'q_lower={q_factor_lower:4.2f}  q_upper={q_factor_upper:4.2f}')
+    return s1, t1, q_factor_lower, s2, t2, q_factor_upper
+
+
+# Note: img must be a frame displayed in field mode
+def timestamp_box_image(img, box):
+    (xL, xR, yL, yU) = box
+    return img[yL:yU+1, xL:xR+1].copy()
