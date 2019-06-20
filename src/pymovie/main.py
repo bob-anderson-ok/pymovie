@@ -297,6 +297,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         # Initialize all instance variables as a block (to satisfy PEP 8 standard)
 
+        self.savedApertures = None
+
         self.upperOcrBoxes = None
         self.lowerOcrBoxes = None
 
@@ -445,7 +447,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.frameView.installEventFilter(self)
         self.mainImageLabel.installEventFilter(self)
 
-        self.viewFieldsCheckBox.clicked.connect(self.showFrame)
+        # self.viewFieldsCheckBox.clicked.connect(self.showFrame)
+        self.viewFieldsCheckBox.toggled.connect(self.handleChangeOfDisplayMode)
         self.viewFieldsCheckBox.installEventFilter(self)
 
         self.useYellowMaskCheckBox.clicked.connect(self.handleYellowMaskClick)
@@ -573,6 +576,28 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.copy_desktop_icon_file_to_home_directory()
 
+    def handleChangeOfDisplayMode(self):
+        # self.showMsg(f'View avi fields: {self.viewFieldsCheckBox.isChecked()}')
+        if self.viewFieldsCheckBox.isChecked():
+            # preserve all apertures
+            self.savedApertures = self.getApertureList()
+            # clear all apertures
+            self.clearApertures()
+            self.showFrame()
+            if self.lowerOcrBoxes:
+                self.placeOcrBoxesOnImage()
+        else:
+            # clear ocr boxes (if any)
+            if self.lowerOcrBoxes:
+                self.clearOcrBoxes()
+            # restore any saved apertures
+            if self.savedApertures:
+                view = self.frameView.getView()
+                for aperture in self.savedApertures:
+                    view.addItem(aperture)
+                    self.connectAllSlots(aperture)
+            self.showFrame()
+
     def fieldTimeOrderChanged(self):
         self.showMsg(f'top field earlist is {self.topFieldFirstRadioButton.isChecked()}')
         self.vtiSelected()
@@ -609,7 +634,41 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         dy = 1
         self.jogOcrBoxes(dx, dy)
 
+    def jogSingleOcrBox(self, dx, dy, boxnum, position, ocr):
+
+        # Frame 0 is often messed up (somehow).  So we protect the user by not
+        # letting him change ocr box positions while on frame 0
+        if self.currentFrameSpinBox.value() == 0:
+            self.showMsg(f'!!!! Move past frame 0 first.  It is not representative. !!!!')
+            return
+
+        assert(position == 'upper' or position == 'lower')
+        if position == 'upper':
+            selected_box = self.upperOcrBoxes[boxnum]
+            xL, xR, yU, yL = selected_box
+            self.upperOcrBoxes[boxnum] = (xL + dx, xR + dx, yU + dy, yL + dy)
+            ocr.setBox(self.upperOcrBoxes[boxnum])
+        else:
+            selected_box = self.lowerOcrBoxes[boxnum]
+            xL, xR, yU, yL = selected_box
+            self.lowerOcrBoxes[boxnum] = (xL + dx, xR + dx, yU + dy, yL + dy)
+            ocr.setBox(self.lowerOcrBoxes[boxnum])
+
+
+        # self.clearOcrBoxes()
+        # self.placeOcrBoxesOnImage()
+        self.frameView.getView().update()
+
+        self.pickleOcrBoxes()
+
     def jogOcrBoxes(self, dx, dy):
+
+        # Frame 0 is often messed up (somehow).  So we protect the user by not
+        # letting him change ocr box positions while on frame 0
+        if self.currentFrameSpinBox.value() == 0:
+            self.showMsg(f'!!!! Move past frame 0 first.  It is not representative. !!!!')
+            return
+
         newUpperBoxes = []
         for ocrbox in self.upperOcrBoxes:
             xL, xR, yU, yL = ocrbox
@@ -734,6 +793,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.clearOcrBoxes()
 
         self.viewFieldsCheckBox.setChecked(True)
+
+        # There is often something messed up with frame 0, so we protect the user
+        # by automatically moving to frame 1 in that case
+        if self.currentFrameSpinBox.value() == 0:
+            self.currentFrameSpinBox.setValue(1)
+
         self.showFrame()
 
         if self.currentVTIindex == 1:  # IOTA-3 full screen mode
@@ -1061,11 +1126,20 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         joggable_aperture_available = False
         app_list = self.getApertureList()
 
+        joggable_ocr_box_available = False
+        ocr_list = self.getOcrBoxList()
+
         for app in app_list:
             if app.jogging_enabled:
                 joggable_aperture_available = True
                 break
-        if not joggable_aperture_available:
+
+        for ocr in ocr_list:
+            if ocr.joggable:
+                joggable_ocr_box_available = True
+                break
+
+        if not joggable_aperture_available and not joggable_ocr_box_available:
             return False
 
         key = event.key()
@@ -1091,14 +1165,21 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         if not got_arrow_key:
             return False
+
         for app in app_list:
             if app.jogging_enabled:
                 # self.showMsg(f'The jog will be applied to {app.name}', blankLine=False)
                 jogAperture(app, -dx, -dy)
                 if app.auto_display:
                     self.getApertureStats(app, show_stats=True)
+
+        for ocr in ocr_list:
+            if ocr.joggable:
+                self.jogSingleOcrBox(dx=dx, dy=dy,
+                                     boxnum=ocr.boxnum,
+                                     position=ocr.position, ocr=ocr)
+
         self.frameView.getView().update()
-        self.showMsg("")
 
         return True
 
@@ -1812,8 +1893,16 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.nameAperture(aperture)
 
+    # def ocrBoxJogger(self, dx, boxnum, position):
+    #     self.showMsg(f'dx: {dx}  boxnum: {boxnum}  position: {position}')
+
     def addOcrAperture(self, fieldbox, boxnum, position):
-        aperture = OcrAperture(fieldbox, boxnum, position, msgRoutine=self.showMsg)
+        aperture = OcrAperture(
+            fieldbox,
+            boxnum,
+            position,
+            msgRoutine=self.showMsg
+        )
         view = self.frameView.getView()
         view.addItem(aperture)
 
@@ -2586,7 +2675,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def getFrame(self, fr_num):
 
-        trace = True
+        trace = False
 
         if self.cap is None or not self.cap.isOpened():
             return False, None
@@ -2692,6 +2781,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.fourcc = ''
             else:
                 self.avi_in_use = True
+                self.savedApertures = None
                 self.enableControlsForAviData()
                 # Let's get the FOURCC code
                 fourcc = int(self.cap.get(cv2.CAP_PROP_FOURCC))
@@ -2870,6 +2960,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.showMsg(f'  {avi_location} could not be opened!')
             else:
                 self.avi_in_use = True
+                self.savedApertures = None
                 self.enableControlsForAviData()
                 # Let's get the FOURCC code
                 fourcc = int(self.cap.get(cv2.CAP_PROP_FOURCC))

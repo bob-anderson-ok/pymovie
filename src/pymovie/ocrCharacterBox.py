@@ -11,9 +11,11 @@ class OcrAperture(pg.GraphicsObject):
     def __init__(self, fieldbox, boxnum, position, msgRoutine):  # Intialize aperture specified by a field box
         self.boxnum = boxnum
         self.msgRoutine = msgRoutine
+        self.joggable = False
         self.position = position  # 'upper'  or 'lower'
         self.pen = pg.mkPen('r')
         self.color = 'red'
+        # self.setBox(fieldbox)
         xL, xR, yU, yL = fieldbox
         self.x0 = xL
         self.y0 = yU
@@ -24,6 +26,14 @@ class OcrAperture(pg.GraphicsObject):
         # note that the use of super() is often avoided because Qt does not
         # allow to inherit from multiple QObject subclasses.
         pg.GraphicsObject.__init__(self)
+
+    def setBox(self, fieldbox):
+        xL, xR, yU, yL = fieldbox
+        self.x0 = xL
+        self.y0 = yU
+        self.xsize = xR - xL
+        self.ysize = yL - yU
+
 
     # All graphics items must have boundingRect() defined.
     def boundingRect(self):
@@ -61,22 +71,32 @@ class OcrAperture(pg.GraphicsObject):
 
             self.menu.addSeparator()
 
-            setjogleft = QtGui.QAction("Jog left", self.menu)
-            setjogleft.triggered.connect(self.jogLeft)
-            self.menu.addAction(setjogleft)
+            setjogon = QtGui.QAction("Enable jogging", self.menu)
+            setjogon.triggered.connect(self.enableJogging)
+            self.menu.addAction(setjogon)
 
-            setjogright = QtGui.QAction("Jog right", self.menu)
-            setjogright.triggered.connect(self.jogRight)
-            self.menu.addAction(setjogright)
+            setjogoff = QtGui.QAction("Disable jogging", self.menu)
+            setjogoff.triggered.connect(self.disableJogging)
+            self.menu.addAction(setjogoff)
 
         return self.menu
 
     def showProps(self):
-        msg = f'aperture {self.position}-{self.boxnum}  upper left corner@ x: {self.x0} y:{self.y0}'
+        msg = f'ocrbox: {self.position}-{self.boxnum}  upper-left-corner@ x: {self.x0} y:{self.y0}'
+        if self.joggable:
+            msg += f' (jogging enabled)'
         self.msgRoutine(msg=msg)
 
     def jogLeft(self):
-        self.msgRoutine( 'jog left: not yet implemented')
+        # self.msgRoutine( 'jog left: Given to jogger()')
+        self.jogger(dx = -1, dy = 0, boxnum=self.boxnum, position=self.position)
 
     def jogRight(self):
-        self.msgRoutine( 'jog right: not yet implemented')
+        # self.msgRoutine( 'jog right: Given to jogger()')
+        self.jogger(dx = 1, dy = 0, boxnum=self.boxnum, position=self.position)
+
+    def enableJogging(self):
+        self.joggable = True
+
+    def disableJogging(self):
+        self.joggable = False
