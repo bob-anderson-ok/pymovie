@@ -68,6 +68,7 @@ def setup_for_kiwi_vti_720():
 
     return upper_field_boxes, lower_field_boxes
 
+
 def setup_for_kiwi_vti_640():
     # Do initializations needed for KIWI VTI timestamp extraction
 
@@ -152,32 +153,33 @@ def cv2_score(image, field_digits):
     return (ans, max_found, max_vals)
 
 
-def extract_lower_field_timestamp(frame, lower_field_boxes, field_digits):
+def extract_timestamp(field, field_boxes, field_digits, formatter):
     ts = ''  # ts 'means' timestamp
     q_factor = 0
-    for k in range(len(lower_field_boxes)):
-        t_img = timestamp_box_image(frame, lower_field_boxes[k])
+    for k in range(len(field_boxes)):
+        t_img = timestamp_box_image(field, field_boxes[k])
         ans, score, _ = cv2_score(t_img, field_digits)
         # KIWI timestamp character can be blank.  We detect that as a low score
         if score < 0.5:
             ans = 0
         ts += f'{ans}'
         q_factor += score
-    return ts, q_factor / len(lower_field_boxes)
+    timestamp, time = formatter(ts)
+    return timestamp, time, ts, q_factor / len(field_boxes)
 
 
-def extract_upper_field_timestamp(frame, upper_field_boxes, field_digits):
-    ts = ''  # ts 'means' timestamp
-    q_factor = 0
-    for k in range(len(upper_field_boxes)):
-        t_img = timestamp_box_image(frame, upper_field_boxes[k])
-        ans, score, _ = cv2_score(t_img, field_digits)
-        # KIWI timestamp character can be blank.  We detect that as a low score
-        if score < 0.5:
-            ans = 0
-        ts += f'{ans}'
-        q_factor += score
-    return ts, q_factor / len(upper_field_boxes)
+# def extract_upper_field_timestamp(frame, upper_field_boxes, field_digits):
+#     ts = ''  # ts 'means' timestamp
+#     q_factor = 0
+#     for k in range(len(upper_field_boxes)):
+#         t_img = timestamp_box_image(frame, upper_field_boxes[k])
+#         ans, score, _ = cv2_score(t_img, field_digits)
+#         # KIWI timestamp character can be blank.  We detect that as a low score
+#         if score < 0.5:
+#             ans = 0
+#         ts += f'{ans}'
+#         q_factor += score
+#     return ts, q_factor / len(upper_field_boxes)
 
 
 def format_iota_timestamp(ts):
@@ -210,18 +212,18 @@ def format_boxsprite3_timestamp(ts):
     return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[7]}{ts[8]}{ts[9]}{ts[10]}]', time
 
 
-def extract_timestamps(frame, upper_field_boxes, lower_field_boxes,
-                       field_digits, formatter=None, watch=False):
-    ts, q_factor_lower = extract_lower_field_timestamp(frame, lower_field_boxes, field_digits)
-    s1, t1 = formatter(ts)
-    ts, q_factor_upper = extract_upper_field_timestamp(frame, upper_field_boxes, field_digits)
-    s2, t2 = formatter(ts)
-    if watch:
-        print(f'q_lower={q_factor_lower:4.2f}  q_upper={q_factor_upper:4.2f}')
-    return s1, t1, q_factor_lower, s2, t2, q_factor_upper
+# def extract_timestamps(frame, upper_field_boxes, lower_field_boxes,
+#                        field_digits, formatter=None, watch=False):
+#     ts, q_factor_lower = extract_lower_field_timestamp(frame, lower_field_boxes, field_digits)
+#     s1, t1 = formatter(ts)
+#     ts, q_factor_upper = extract_upper_field_timestamp(frame, upper_field_boxes, field_digits)
+#     s2, t2 = formatter(ts)
+#     if watch:
+#         print(f'q_lower={q_factor_lower:4.2f}  q_upper={q_factor_upper:4.2f}')
+#     return s1, t1, q_factor_lower, s2, t2, q_factor_upper
 
 
-# Note: img must be a frame displayed in field mode
+# Note: img must be in field mode
 def timestamp_box_image(img, box):
     (xL, xR, yL, yU) = box
     return img[yL:yU+1, xL:xR+1].copy()

@@ -37,10 +37,10 @@ class OcrAperture(pg.GraphicsObject):
         self.xsize = xR - xL
         self.ysize = yL - yU
 
-    def getBox(self):
+    def getBox(self):  # Return 'internal' box
         xR = self.xsize + self.x0
         yL = self.ysize + self.y0
-        return self.x0, xR, self.y0, yL  #(xL, xR, yU, yL)
+        return self.x0, xR - 1, self.y0, yL - 1  #(xL, xR, yU, yL)
 
     # All graphics items must have boundingRect() defined.
     def boundingRect(self):
@@ -159,7 +159,7 @@ class OcrAperture(pg.GraphicsObject):
         self.templateWriter(9, self.getBox())
 
     def showProps(self):
-        msg = f'ocrbox: {self.position}-{self.boxnum}  upper-left-corner@ x: {self.x0} y:{self.y0}'
+        msg = f'ocrbox: {self.position}-{self.boxnum}   box is: {self.getBox()}'
         if self.joggable:
             msg += f' (jogging enabled)'
         self.msgRoutine(msg=msg)
