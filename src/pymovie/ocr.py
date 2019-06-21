@@ -6,13 +6,13 @@ def setup_for_iota_safe_mode():
     # Do initializations needed for IOTA VTI timestamp extraction
     # Parameters for IOTA VTI timestamp characters when in safe mode
 
-    # Define xy coordinates of lower field character box corners
-    xcL = [72, 96, 146, 170, 220, 244, 417, 441, 465, 490]
-    ycL = [199] * 10
-
     # Define xy coordinates of upper field character box corners
     xcU = [72, 96, 146, 170, 220, 244, 294, 318, 343, 367]
     ycU = [199] * 10
+
+    # Define xy coordinates of lower field character box corners
+    xcL = [72, 96, 146, 170, 220, 244, 417, 441, 465, 490]
+    ycL = [199] * 10
 
     upper_field_boxes = [None] * len(xcL)
     lower_field_boxes = [None] * len(xcL)
@@ -29,13 +29,13 @@ def setup_for_iota_full_screen_mode():
     # Do initializations needed for IOTA VTI timestamp extraction
     # Parameters for IOTA VTI timestamp characters when in full screen mode
 
-    # Define xy coordinates of lower field character box corners
-    xcL = [72, 96, 146, 170, 220, 244, 416, 441, 465, 490]
-    ycL = [199+18] * 10
-
     # Define xy coordinates of upper field character box corners
     xcU = [72, 96, 146, 170, 220, 244, 293, 318, 343, 367]
     ycU = [199+18] * 10
+
+    # Define xy coordinates of lower field character box corners
+    xcL = [72, 96, 146, 170, 220, 244, 416, 441, 465, 490]
+    ycL = [199+18] * 10
 
     upper_field_boxes = [None] * len(xcL)
     lower_field_boxes = [None] * len(xcL)
@@ -51,13 +51,13 @@ def setup_for_iota_full_screen_mode():
 def setup_for_kiwi_vti_720():
     # Do initializations needed for KIWI VTI timestamp extraction
 
-    # Define xy coordinates of lower field character box corners
-    xcL = [60, 84, 130, 154, 201, 225, 414, 438, 462]
-    ycL = [204] * 9
-
     # Define xy coordinates of upper field character box corners
     xcU = [59, 83, 129, 153, 200, 224, 295, 319, 343]
     ycU = [205] * 9
+
+    # Define xy coordinates of lower field character box corners
+    xcL = [60, 84, 130, 154, 201, 225, 414, 438, 462]
+    ycL = [204] * 9
 
     # Turn box corners into full box coordinate tuples
     upper_field_boxes = [None] * len(xcL)
@@ -72,13 +72,13 @@ def setup_for_kiwi_vti_720():
 def setup_for_kiwi_vti_640():
     # Do initializations needed for KIWI VTI timestamp extraction
 
-    # Define xy coordinates of lower field character box corners
-    xcL = [61, 84, 124, 147, 189, 212, 376, 399, 419]
-    ycL = [204] * 9
-
     # Define xy coordinates of upper field character box corners
     xcU = [60, 83, 123, 146, 188, 211, 272, 294, 314]
     ycU = [205] * 9
+
+    # Define xy coordinates of lower field character box corners
+    xcL = [61, 84, 124, 147, 189, 212, 376, 399, 419]
+    ycL = [204] * 9
 
     # Turn box corners into full box coordinate tuples
     upper_field_boxes = [None] * len(xcL)
@@ -166,20 +166,6 @@ def extract_timestamp(field, field_boxes, field_digits, formatter):
         q_factor += score
     timestamp, time = formatter(ts)
     return timestamp, time, ts, q_factor / len(field_boxes)
-
-
-# def extract_upper_field_timestamp(frame, upper_field_boxes, field_digits):
-#     ts = ''  # ts 'means' timestamp
-#     q_factor = 0
-#     for k in range(len(upper_field_boxes)):
-#         t_img = timestamp_box_image(frame, upper_field_boxes[k])
-#         ans, score, _ = cv2_score(t_img, field_digits)
-#         # KIWI timestamp character can be blank.  We detect that as a low score
-#         if score < 0.5:
-#             ans = 0
-#         ts += f'{ans}'
-#         q_factor += score
-#     return ts, q_factor / len(upper_field_boxes)
 
 
 def format_iota_timestamp(ts):

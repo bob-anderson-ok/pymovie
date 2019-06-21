@@ -1,6 +1,5 @@
 pyqtgraph
 opencv-python
-numpy
 astroquery
 scikit-image>=0.15.0
 

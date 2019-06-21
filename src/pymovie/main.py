@@ -284,6 +284,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.currentVTIindex = 0
         self.timestampFormatter = None
+        self.upperTimestamp = ''
+        self.lowerTimestamp = ''
 
         self.vtiSelectComboBox.installEventFilter(self)
         self.vtiSelectComboBox.currentIndexChanged.connect(self.vtiSelected)
@@ -657,7 +659,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             selected_box = self.lowerOcrBoxes[boxnum]
             xL, xR, yU, yL = selected_box
             self.lowerOcrBoxes[boxnum] = (xL + dx, xR + dx, yU + dy, yL + dy)
-            ocr.setBox(self.lowerOcrBoxes[boxnum])
+            yadj = int(self.image.shape[0] / 2)
+            ocr.setBox((xL + dx, xR + dx, yU + dy + yadj, yL + dy + yadj))
 
         self.frameView.getView().update()
 
@@ -688,6 +691,28 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
     def placeOcrBoxesOnImage(self):
         y_adjust = int(self.image.shape[0] / 2)
 
+        if not self.topFieldFirstRadioButton.isChecked():
+            temp = self.lowerOcrBoxes[:]
+            self.lowerOcrBoxes = self.upperOcrBoxes[:]
+            self.upperOcrBoxes = temp[:]
+
+        newLowerOcrBoxes = []
+        for ocrbox in self.lowerOcrBoxes:
+            xL, xR, yU, yL = ocrbox
+            newLowerOcrBoxes.append((xL, xR, yU + y_adjust, yL + y_adjust))
+
+        boxnum = 0
+        for ocrbox in self.upperOcrBoxes:
+            self.addOcrAperture(ocrbox, boxnum, 'upper')
+            boxnum += 1
+        boxnum = 0
+        for ocrbox in newLowerOcrBoxes:
+            self.addOcrAperture(ocrbox, boxnum, 'lower')
+            boxnum += 1
+
+    def placeOcrBoxesOnImageOld(self):
+        y_adjust = int(self.image.shape[0] / 2)
+
         if self.topFieldFirstRadioButton.isChecked():
             newLowerOcrBoxes = []
             for ocrbox in self.lowerOcrBoxes:
@@ -707,19 +732,19 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             newLowerOcrBoxes = []
             for ocrbox in self.upperOcrBoxes:
                 xL, xR, yU, yL = ocrbox
-                # These now appear as lower
+                # These will now appear as lower
                 newUpperOcrBoxes.append((xL, xR, yU + y_adjust - 1, yL + y_adjust - 1))
             for ocrbox in self.lowerOcrBoxes:
                 xL, xR, yU, yL = ocrbox
-                newLowerOcrBoxes.append((xL, xR, yU + 1, yL + 1))  # These appear now as upper
+                newLowerOcrBoxes.append((xL, xR, yU + 1, yL + 1))  # These will appear now as upper
 
             boxnum = 0
             for ocrbox in newUpperOcrBoxes:
-                self.addOcrAperture(ocrbox, boxnum, 'upper')
+                self.addOcrAperture(ocrbox, boxnum, 'lower')
                 boxnum += 1
             boxnum = 0
             for ocrbox in newLowerOcrBoxes:
-                self.addOcrAperture(ocrbox, boxnum, 'lower')
+                self.addOcrAperture(ocrbox, boxnum, 'upper')
                 boxnum += 1
         elif self.currentVTIindex == 5 or self.currentVTIindex == 6: # Kiwi is number 5 and 6 in the list
             newUpperOcrBoxes = []
@@ -734,11 +759,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             boxnum = 0
             for ocrbox in newUpperOcrBoxes:
-                self.addOcrAperture(ocrbox, boxnum, 'upper')
+                self.addOcrAperture(ocrbox, boxnum, 'lower')
                 boxnum += 1
             boxnum = 0
             for ocrbox in newLowerOcrBoxes:
-                self.addOcrAperture(ocrbox, boxnum, 'lower')
+                self.addOcrAperture(ocrbox, boxnum, 'upper')
                 boxnum += 1
         else:  # IOTA VTI does not need special handling nor does BoxSprite 720
             newUpperOcrBoxes = []
@@ -748,11 +773,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             boxnum = 0
             for ocrbox in newUpperOcrBoxes:
-                self.addOcrAperture(ocrbox, boxnum, 'upper')
+                self.addOcrAperture(ocrbox, boxnum, 'lower')
                 boxnum += 1
             boxnum = 0
             for ocrbox in self.lowerOcrBoxes:
-                self.addOcrAperture(ocrbox, boxnum, 'lower')
+                self.addOcrAperture(ocrbox, boxnum, 'upper')
                 boxnum += 1
 
     def pickleOcrBoxes(self):
@@ -760,9 +785,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         upper_boxes = f'{base_path}-upper.p'
         lower_boxes = f'{base_path}-lower.p'
 
-        pickle.dump(self.upperOcrBoxes, open(upper_boxes, "wb"))
-        pickle.dump(self.lowerOcrBoxes, open(lower_boxes, "wb"))
-
+        if self.topFieldFirstRadioButton.isChecked():
+            pickle.dump(self.upperOcrBoxes, open(upper_boxes, "wb"))
+            pickle.dump(self.lowerOcrBoxes, open(lower_boxes, "wb"))
+        else:
+            # self.upperOcrBoxes and self.lowerOcrBoxes have been interchanges
+            pickle.dump(self.lowerOcrBoxes, open(upper_boxes, "wb"))
+            pickle.dump(self.upperOcrBoxes, open(lower_boxes, "wb"))
         return
 
     def loadPickledOcrBoxes(self):
@@ -809,21 +838,21 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if self.vtiSelectComboBox.currentIndex() == 0:
             return None, None, None, None, None, None
 
-        if self.topFieldFirstRadioButton.isChecked():
-            upper_timestamp, upper_time, upper_ts, upper_score = extract_timestamp(
-                self.upper_field, self.upperOcrBoxes, self.modelDigits, self.timestampFormatter)
-            self.showMsg(f'upper field timestamp:{upper_timestamp}  time:{upper_time:0.4f}  score:{upper_score:0.2f}', blankLine=False)
-            lower_timestamp, lower_time, lower_ts, lower_score = extract_timestamp(
-                self.lower_field, self.lowerOcrBoxes, self.modelDigits, self.timestampFormatter)
-            self.showMsg(f'lower field timestamp:{lower_timestamp}  time:{lower_time:0.4f}  score:{lower_score:0.2f}')
+        # if self.topFieldFirstRadioButton.isChecked():
+        upper_timestamp, upper_time, upper_ts, upper_score = extract_timestamp(
+            self.upper_field, self.upperOcrBoxes, self.modelDigits, self.timestampFormatter)
+        self.showMsg(f'upper field timestamp:{upper_timestamp}  time:{upper_time:0.4f}  score:{upper_score:0.2f}', blankLine=False)
+        lower_timestamp, lower_time, lower_ts, lower_score = extract_timestamp(
+            self.lower_field, self.lowerOcrBoxes, self.modelDigits, self.timestampFormatter)
+        self.showMsg(f'lower field timestamp:{lower_timestamp}  time:{lower_time:0.4f}  score:{lower_score:0.2f}')
 
-        else:
-            upper_timestamp, upper_time, upper_ts, upper_score = extract_timestamp(
-                self.lower_field, self.upperOcrBoxes, self.modelDigits, self.timestampFormatter)
-            self.showMsg(f'upper field timestamp:{upper_timestamp}  time:{upper_time:0.4f}  score:{upper_score:0.2f}', blankLine=False)
-            lower_timestamp, lower_time, lower_ts, lower_score = extract_timestamp(
-                self.upper_field, self.lowerOcrBoxes, self.modelDigits, self.timestampFormatter)
-            self.showMsg(f'lower field timestamp:{lower_timestamp}  time:{lower_time:0.4f}  score:{lower_score:0.2f}')
+        # else:
+        #     upper_timestamp, upper_time, upper_ts, upper_score = extract_timestamp(
+        #         self.lower_field, self.upperOcrBoxes, self.modelDigits, self.timestampFormatter)
+        #     self.showMsg(f'upper field timestamp:{upper_timestamp}  time:{upper_time:0.4f}  score:{upper_score:0.2f}', blankLine=False)
+        #     lower_timestamp, lower_time, lower_ts, lower_score = extract_timestamp(
+        #         self.upper_field, self.lowerOcrBoxes, self.modelDigits, self.timestampFormatter)
+        #     self.showMsg(f'lower field timestamp:{lower_timestamp}  time:{lower_time:0.4f}  score:{lower_score:0.2f}')
 
         return upper_timestamp, upper_time, upper_score, lower_timestamp, lower_time, lower_score
 
@@ -839,6 +868,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if self.currentVTIindex == 0:  # None
             self.clearOcrBoxes()
             self.timestampFormatter = None
+            self.upperTimestamp = ''
+            self.lowerTimestamp = ''
             return
 
         self.clearOcrBoxes()
@@ -1950,13 +1981,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.nameAperture(aperture)
 
-    def addOcrAperture(self, fieldbox, boxnum, position, ):
+    def addOcrAperture(self, fieldbox, boxnum, position):
         aperture = OcrAperture(
             fieldbox,
             boxnum,
             position,
             msgRoutine=self.showMsg,
             templater=self.processOcrTemplate,
+            clearjogs=self.clearAllOcrBoxJogging,
             samplemenu=self.enableOcrTemplateSampling
         )
         view = self.frameView.getView()
@@ -2177,7 +2209,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                             # that mask.
                             if self.use_yellow_mask:
                                 self.getApertureStats(app, show_stats=False, save_yellow_mask=True)
-
 
                     elif num_yellow_apertures == 2:
                         # We've found a second yellow aperture
@@ -2586,9 +2617,15 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             timestamp = self.fits_timestamp
         else:
             if self.topFieldFirstRadioButton.isChecked():
-                timestamp = self.upperTimestamp
+                if self.upperTimestamp:
+                    timestamp = self.upperTimestamp
+                else:
+                    timestamp = ''
             else:
-                timestamp = self.lowerTimestamp
+                if self.lowerTimestamp:
+                    timestamp = self.lowerTimestamp
+                else:
+                    timestamp = ''
 
 
 
@@ -2609,6 +2646,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if ocrboxes:
             for ocrbox in ocrboxes:
                 self.removeOcrBox(ocrbox)
+
+    def clearAllOcrBoxJogging(self):
+        ocrboxes = self.getOcrBoxList()
+        if ocrboxes:
+            for ocrbox in ocrboxes:
+                ocrbox.joggable = False
 
     def readFitsFile(self):
 
@@ -2882,7 +2925,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
                 # We need to do this before self.showFrame() is called either directly
                 # or indirectly (when self.currentFrameSpinBox is changed, it invokes
-                # self.showFrame()
+                # self.showFrame())
+
                 self.vtiSelectComboBox.setCurrentIndex(0)
                 self.vtiSelected()
 
@@ -2894,6 +2938,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 # This will get our image display initialized with default pan/zoom state
                 self.initialFrame = True
                 self.showFrame()
+                self.clearOcrBoxes()
 
                 self.thumbOneView.clear()
                 self.thumbTwoView.clear()
@@ -3068,6 +3113,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.initialFrame = True
                 self.showFrame()
 
+                self.clearOcrBoxes()
+                self.vtiSelectComboBox.setCurrentIndex(0)
                 self.vtiSelected()
 
                 self.thumbOneView.clear()
