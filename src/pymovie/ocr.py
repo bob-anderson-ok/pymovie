@@ -7,12 +7,12 @@ def setup_for_iota_safe_mode():
     # Parameters for IOTA VTI timestamp characters when in safe mode
 
     # Define xy coordinates of upper field character box corners
-    xcU = [72, 96, 146, 170, 220, 244, 294, 318, 343, 367]
-    ycU = [199] * 10
+    xcU = [72, 96, 146, 170, 220, 244, 294, 318, 343, 367, 417, 441, 465, 490]
+    ycU = [199] * 14
 
     # Define xy coordinates of lower field character box corners
-    xcL = [72, 96, 146, 170, 220, 244, 417, 441, 465, 490]
-    ycL = [199] * 10
+    xcL = [72, 96, 146, 170, 220, 244, 294, 318, 343, 367, 417, 441, 465, 490]
+    ycL = [199] * 14
 
     upper_field_boxes = [None] * len(xcL)
     lower_field_boxes = [None] * len(xcL)
@@ -30,12 +30,12 @@ def setup_for_iota_full_screen_mode():
     # Parameters for IOTA VTI timestamp characters when in full screen mode
 
     # Define xy coordinates of upper field character box corners
-    xcU = [72, 96, 146, 170, 220, 244, 293, 318, 343, 367]
-    ycU = [199+18] * 10
+    xcU = [72, 96, 146, 170, 220, 244, 293, 318, 343, 367, 416, 441, 465, 490]
+    ycU = [199+18] * 14
 
     # Define xy coordinates of lower field character box corners
-    xcL = [72, 96, 146, 170, 220, 244, 416, 441, 465, 490]
-    ycL = [199+18] * 10
+    xcL = [72, 96, 146, 170, 220, 244, 293, 318, 343, 367,416, 441, 465, 490]
+    ycL = [199+18] * 14
 
     upper_field_boxes = [None] * len(xcL)
     lower_field_boxes = [None] * len(xcL)
@@ -160,26 +160,35 @@ def extract_timestamp(field, field_boxes, field_digits, formatter):
         t_img = timestamp_box_image(field, field_boxes[k])
         ans, score, _ = cv2_score(t_img, field_digits)
         # KIWI timestamp character can be blank.  We detect that as a low score
+        # IOTA can also have empty selection boxes
         if score < 0.5:
-            ans = 0
-        ts += f'{ans}'
+            ans = ' '
         q_factor += score
+        ts += f'{ans}'
     timestamp, time = formatter(ts)
     return timestamp, time, ts, q_factor / len(field_boxes)
 
 
 def format_iota_timestamp(ts):
-    assert len(ts) == 10
+    assert len(ts) == 14
     hh = 10 * int(ts[0]) + int(ts[1])
     mm = 10 * int(ts[2]) + int(ts[3])
     ss = 10 * int(ts[4]) + int(ts[5])
-    ff = 1000 * int(ts[6]) + 100 * int(ts[7]) + 10 * int(ts[8]) + int(ts[9])
+    if not ts[6] == ' ':
+        ff = 1000 * int(ts[6]) + 100 * int(ts[7]) + 10 * int(ts[8]) + int(ts[9])
+    else:
+        ff = 1000 * int(ts[10]) + 100 * int(ts[11]) + 10 * int(ts[12]) + int(ts[13])
+
     time = 3600 * hh + 60 * mm + ss + ff / 10000
-    return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[6]}{ts[7]}{ts[8]}{ts[9]}]', time
+    # return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[6]}{ts[7]}{ts[8]}{ts[9]}]', time
+    return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ff:04d}]', time
 
 
 def format_kiwi_timestamp(ts):
     assert len(ts) == 9
+    for i, value in enumerate(ts):
+        if value ==  ' ':
+            ts[i] = '0'
     hh = 10 * int(ts[0]) + int(ts[1])
     mm = 10 * int(ts[2]) + int(ts[3])
     ss = 10 * int(ts[4]) + int(ts[5])
@@ -196,17 +205,6 @@ def format_boxsprite3_timestamp(ts):
     ff = 1000 * int(ts[7]) + 100 * int(ts[8]) + 10 * int(ts[9]) + int(ts[10])
     time = 3600 * hh + 60 * mm + ss + ff / 10000
     return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[7]}{ts[8]}{ts[9]}{ts[10]}]', time
-
-
-# def extract_timestamps(frame, upper_field_boxes, lower_field_boxes,
-#                        field_digits, formatter=None, watch=False):
-#     ts, q_factor_lower = extract_lower_field_timestamp(frame, lower_field_boxes, field_digits)
-#     s1, t1 = formatter(ts)
-#     ts, q_factor_upper = extract_upper_field_timestamp(frame, upper_field_boxes, field_digits)
-#     s2, t2 = formatter(ts)
-#     if watch:
-#         print(f'q_lower={q_factor_lower:4.2f}  q_upper={q_factor_upper:4.2f}')
-#     return s1, t1, q_factor_lower, s2, t2, q_factor_upper
 
 
 # Note: img must be in field mode
