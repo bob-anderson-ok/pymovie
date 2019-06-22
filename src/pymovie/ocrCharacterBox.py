@@ -9,10 +9,10 @@ class OcrAperture(pg.GraphicsObject):
     """
 
     # Intialize aperture specified by a field box
-    def __init__(self, fieldbox, boxnum, position, msgRoutine, templater, clearjogs, samplemenu=True):
+    def __init__(self, fieldbox, boxnum, position, msgRoutine, templater, jogcontroller, samplemenu=True):
         self.samplemenu = samplemenu
         self.templateWriter = templater
-        self.disableAllJogs = clearjogs
+        self.controlAllJogs = jogcontroller
         self.boxnum = boxnum
         self.msgRoutine = msgRoutine
         self.joggable = False
@@ -85,9 +85,13 @@ class OcrAperture(pg.GraphicsObject):
             self.menu.addAction(setjogoff)
 
             self.menu.addSeparator()
-            clearalljogs = QtGui.QAction("Disable all jogging", self.menu)
+            clearalljogs = QtGui.QAction("Disable jogging for all boxes", self.menu)
             clearalljogs.triggered.connect(self.disableAllJogging)
             self.menu.addAction(clearalljogs)
+
+            setalljogs = QtGui.QAction("Enable jogging for all boxes", self.menu)
+            setalljogs.triggered.connect(self.enableAllJogging)
+            self.menu.addAction(setalljogs)
 
             if self.samplemenu:
                 self.menu.addSeparator()
@@ -135,7 +139,10 @@ class OcrAperture(pg.GraphicsObject):
         return self.menu
 
     def disableAllJogging(self):
-        self.disableAllJogs()
+        self.controlAllJogs(enable=False)
+
+    def enableAllJogging(self):
+        self.controlAllJogs(enable=True)
 
     def write0(self):
         self.templateWriter(0, self.getBox())

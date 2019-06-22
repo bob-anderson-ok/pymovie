@@ -181,6 +181,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # modeless dialog box.
         self.helperThing = HelpDialog()
 
+        self.homeDir = os.path.split(__file__)[0]
+
         self.clearTextBox()
         title = f'PyMovie  Version: {version.version()}'
         self.setWindowTitle(title)
@@ -252,7 +254,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.roiComboBox.addItem("21")
 
         self.vtiSelectLabel.installEventFilter(self)
-        self.repositionOcrBoxesLabel.installEventFilter(self)
 
         self.roiComboBox.currentIndexChanged.connect(self.setRoiFromComboBox)
         self.roiComboBox.installEventFilter(self)
@@ -261,7 +262,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # We need to change to a different vtiList pickle name with each version
         # change in order to capture any changes we make to the list --- we cannot
         # expect a user to find and delete that file on their own.
-        vtiListFilename = f'vtiList-{version.version()}.p'
+        vtiListfn = f'vtiList-{version.version()}.p'
+        vtiListFilename = os.path.join(self.homeDir, vtiListfn)
         if os.path.exists(vtiListFilename):
             self.VTIlist = pickle.load(open(vtiListFilename, "rb"))
             self.showMsg(f'VTIlist loaded from {vtiListFilename}')
@@ -290,19 +292,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.vtiSelectComboBox.installEventFilter(self)
         self.vtiSelectComboBox.currentIndexChanged.connect(self.vtiSelected)
 
-        self.jogOcrBoxesLeftButton.installEventFilter(self)
-        self.jogOcrBoxesLeftButton.clicked.connect(self.jogOcrBoxesLeft)
-
-        self.jogOcrBoxesRightButton.installEventFilter(self)
-        self.jogOcrBoxesRightButton.clicked.connect(self.jogOcrBoxesRight)
-
-        self.jogOcrBoxesUpButton.installEventFilter(self)
-        self.jogOcrBoxesUpButton.clicked.connect(self.jogOcrBoxesUp)
-
-        self.jogOcrBoxesDownButton.installEventFilter(self)
-        self.jogOcrBoxesDownButton.clicked.connect(self.jogOcrBoxesDown)
-
         # Initialize all instance variables as a block (to satisfy PEP 8 standard)
+
+        self.timestampOcrPossible = False
 
         self.savedApertures = None
 
@@ -609,38 +601,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.showMsg(f'top field earlist is {self.topFieldFirstRadioButton.isChecked()}')
         self.vtiSelected()
 
-    def jogOcrBoxesLeft(self):
-        if self.currentVTIindex == 0:
-            self.showMsg('No OCR boxes to jog.')
-            return
-        dx = -1
-        dy = 0
-        self.jogOcrBoxes(dx, dy)
-
-    def jogOcrBoxesRight(self):
-        if self.currentVTIindex == 0:
-            self.showMsg('No OCR boxes to jog.')
-            return
-        dx = 1
-        dy = 0
-        self.jogOcrBoxes(dx, dy)
-
-    def jogOcrBoxesUp(self):
-        if self.currentVTIindex == 0:
-            self.showMsg('No OCR boxes to jog.')
-            return
-        dx = 0
-        dy = -1
-        self.jogOcrBoxes(dx, dy)
-
-    def jogOcrBoxesDown(self):
-        if self.currentVTIindex == 0:
-            self.showMsg('No OCR boxes to jog.')
-            return
-        dx = 0
-        dy = 1
-        self.jogOcrBoxes(dx, dy)
-
     def jogSingleOcrBox(self, dx, dy, boxnum, position, ocr):
 
         # Frame 0 is often messed up (somehow).  So we protect the user by not
@@ -782,8 +742,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def pickleOcrBoxes(self):
         base_path = self.VTIlist[self.currentVTIindex]['boxes']
-        upper_boxes = f'{base_path}-upper.p'
-        lower_boxes = f'{base_path}-lower.p'
+        upper_boxes_fn = f'{base_path}-upper.p'
+        lower_boxes_fn = f'{base_path}-lower.p'
+
+        upper_boxes = os.path.join(self.homeDir, upper_boxes_fn)
+        lower_boxes = os.path.join(self.homeDir, lower_boxes_fn)
 
         if self.topFieldFirstRadioButton.isChecked():
             pickle.dump(self.upperOcrBoxes, open(upper_boxes, "wb"))
@@ -796,14 +759,17 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def loadPickledOcrBoxes(self):
         base_path = self.VTIlist[self.currentVTIindex]['boxes']
-        upper_boxes = f'{base_path}-upper.p'
-        lower_boxes = f'{base_path}-lower.p'
+        upper_boxes_fn = f'{base_path}-upper.p'
+        lower_boxes_fn = f'{base_path}-lower.p'
+
+        upper_boxes = os.path.join(self.homeDir, upper_boxes_fn)
+        lower_boxes = os.path.join(self.homeDir, lower_boxes_fn)
 
         if os.path.exists(upper_boxes) and os.path.exists(lower_boxes):
             self.upperOcrBoxes = pickle.load(open(upper_boxes, "rb"))
             # self.showMsg(f'upper OCR boxes loaded from {upper_boxes}')
             self.lowerOcrBoxes = pickle.load(open(lower_boxes, "rb"))
-            # self.showMsg(f'upper OCR boxes loaded from {lower_boxes}')
+            # self.showMsg(f'lower OCR boxes loaded from {lower_boxes}')
             return True
         else:
             return False
@@ -815,18 +781,23 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 missing_model_digits += f'{i} '
         if missing_model_digits:
             self.showMsg(f'!!! Model digits {missing_model_digits}are missing !!!')
+            self.timestampOcrPossible = False
             return True
         else:
             self.showMsg(f'All model digits (0...9) are present.')
+            self.timestampOcrPossible = True
             return False
 
     def saveModelDigits(self):
-        pickled_digits_path = self.VTIlist[self.currentVTIindex]['digits'] + '.p'
+        pickled_digits_fn = self.VTIlist[self.currentVTIindex]['digits'] + '.p'
+        pickled_digits_path= os.path.join(self.homeDir, pickled_digits_fn)
         pickle.dump(self.modelDigits, open(pickled_digits_path, "wb"))
 
     def loadModelDigits(self):
         self.enableOcrTemplateSampling = False
-        pickled_digits_path = self.VTIlist[self.currentVTIindex]['digits'] + '.p'
+        pickled_digits_fn = self.VTIlist[self.currentVTIindex]['digits'] + '.p'
+        pickled_digits_path= os.path.join(self.homeDir, pickled_digits_fn)
+
         if os.path.exists(pickled_digits_path):
             self.modelDigits = pickle.load(open(pickled_digits_path, "rb"))
             self.enableOcrTemplateSampling = self.showMissingModelDigits()
@@ -835,24 +806,15 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.enableOcrTemplateSampling = self.showMissingModelDigits()
 
     def extractTimestamps(self):
-        if self.vtiSelectComboBox.currentIndex() == 0:
+        if self.vtiSelectComboBox.currentIndex() == 0 or not self.timestampOcrPossible:
             return None, None, None, None, None, None
 
-        # if self.topFieldFirstRadioButton.isChecked():
         upper_timestamp, upper_time, upper_ts, upper_score = extract_timestamp(
             self.upper_field, self.upperOcrBoxes, self.modelDigits, self.timestampFormatter)
         self.showMsg(f'upper field timestamp:{upper_timestamp}  time:{upper_time:0.4f}  score:{upper_score:0.2f}', blankLine=False)
         lower_timestamp, lower_time, lower_ts, lower_score = extract_timestamp(
             self.lower_field, self.lowerOcrBoxes, self.modelDigits, self.timestampFormatter)
         self.showMsg(f'lower field timestamp:{lower_timestamp}  time:{lower_time:0.4f}  score:{lower_score:0.2f}')
-
-        # else:
-        #     upper_timestamp, upper_time, upper_ts, upper_score = extract_timestamp(
-        #         self.lower_field, self.upperOcrBoxes, self.modelDigits, self.timestampFormatter)
-        #     self.showMsg(f'upper field timestamp:{upper_timestamp}  time:{upper_time:0.4f}  score:{upper_score:0.2f}', blankLine=False)
-        #     lower_timestamp, lower_time, lower_ts, lower_score = extract_timestamp(
-        #         self.upper_field, self.lowerOcrBoxes, self.modelDigits, self.timestampFormatter)
-        #     self.showMsg(f'lower field timestamp:{lower_timestamp}  time:{lower_time:0.4f}  score:{lower_score:0.2f}')
 
         return upper_timestamp, upper_time, upper_score, lower_timestamp, lower_time, lower_score
 
@@ -1988,7 +1950,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             position,
             msgRoutine=self.showMsg,
             templater=self.processOcrTemplate,
-            clearjogs=self.clearAllOcrBoxJogging,
+            jogcontroller=self.setAllOcrBoxJogging,
             samplemenu=self.enableOcrTemplateSampling
         )
         view = self.frameView.getView()
@@ -2647,11 +2609,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             for ocrbox in ocrboxes:
                 self.removeOcrBox(ocrbox)
 
-    def clearAllOcrBoxJogging(self):
+    def setAllOcrBoxJogging(self, enable):
         ocrboxes = self.getOcrBoxList()
         if ocrboxes:
             for ocrbox in ocrboxes:
-                ocrbox.joggable = False
+                ocrbox.joggable = enable
 
     def readFitsFile(self):
 
@@ -4033,6 +3995,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.textOut.clear()
         title = f'PyMovie  Version: {version.version()}'
         self.showMsg(title)
+        self.showMsg(f'Home directory: {self.homeDir}')
 
     def showMsg(self, msg, blankLine=True):
         self.textOut.append(msg)
