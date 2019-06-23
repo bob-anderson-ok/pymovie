@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 
 
-def setup_for_iota_safe_mode3():
+def setup_for_iota_720_safe_mode3():
     # Do initializations needed for IOTA VTI timestamp extraction
     # Parameters for IOTA VTI timestamp characters when in safe mode
 
@@ -12,6 +12,29 @@ def setup_for_iota_safe_mode3():
 
     # Define xy coordinates of lower field character box corners
     xcL = [72, 96, 146, 170, 220, 244, 294, 318, 343, 367, 417, 441, 465, 490]
+    ycL = [199] * 14
+
+    upper_field_boxes = [None] * len(xcL)
+    lower_field_boxes = [None] * len(xcL)
+
+    # Turn box corners into full box coordinate tuples
+    for i in range(len(xcL)):
+        upper_field_boxes[i] = (xcU[i], xcU[i] + 21, ycU[i], ycU[i] + 14)
+        lower_field_boxes[i] = (xcL[i], xcL[i] + 21, ycL[i], ycL[i] + 14)
+
+    return upper_field_boxes, lower_field_boxes
+
+
+def setup_for_iota_640_safe_mode3():
+    # Do initializations needed for IOTA VTI timestamp extraction
+    # Parameters for IOTA VTI timestamp characters when in safe mode
+
+    # Define xy coordinates of upper field character box corners
+    xcU = [64, 87, 129, 151, 194, 217, 260, 282, 303, 325, 369, 391, 413, 435]
+    ycU = [199] * 14
+
+    # Define xy coordinates of lower field character box corners
+    xcL = [64, 87, 129, 151, 194, 217, 260, 282, 303, 325, 369, 391, 413, 435]
     ycL = [199] * 14
 
     upper_field_boxes = [None] * len(xcL)
@@ -71,7 +94,7 @@ def setup_for_iota_640_safe_mode2():
     return upper_field_boxes, lower_field_boxes
 
 
-def setup_for_iota_full_screen_mode3():
+def setup_for_iota_720_full_screen_mode3():
     # Do initializations needed for IOTA VTI timestamp extraction
     # Parameters for IOTA VTI timestamp characters when in full screen mode
 
@@ -82,6 +105,29 @@ def setup_for_iota_full_screen_mode3():
     # Define xy coordinates of lower field character box corners
     xcL = [72, 96, 146, 170, 220, 244, 293, 318, 343, 367,416, 441, 465, 490]
     ycL = [199+18] * 14
+
+    upper_field_boxes = [None] * len(xcL)
+    lower_field_boxes = [None] * len(xcL)
+
+    # Turn box corners into full box coordinate tuples
+    for i in range(len(xcL)):
+        upper_field_boxes[i] = (xcU[i], xcU[i] + 21, ycU[i], ycU[i] + 14)
+        lower_field_boxes[i] = (xcL[i], xcL[i] + 21, ycL[i], ycL[i] + 14)
+
+    return upper_field_boxes, lower_field_boxes
+
+
+def setup_for_iota_640_full_screen_mode3():
+    # Do initializations needed for IOTA VTI timestamp extraction
+    # Parameters for IOTA VTI timestamp characters when in full screen mode
+
+    # Define xy coordinates of upper field character box corners
+    xcU = [62, 85, 129, 151, 193, 216, 259, 281, 303, 325, 368, 390, 412, 434]
+    ycU = [217] * 14
+
+    # Define xy coordinates of lower field character box corners
+    xcL = [62, 85, 129, 151, 193, 216, 259, 281, 303, 325, 368, 390, 412, 434]
+    ycL = [217] * 14
 
     upper_field_boxes = [None] * len(xcL)
     lower_field_boxes = [None] * len(xcL)
@@ -268,7 +314,7 @@ def extract_timestamp(field, field_boxes, field_digits, formatter, thresh):
     scores += f'sum: {intcumscore}'
     timestamp, time = formatter(ts)
     # return timestamp, time, ts, q_factor / len(field_boxes)
-    return timestamp, time, ts, scores
+    return timestamp, time, ts, scores, intcumscore
 
 
 def format_iota_timestamp(ts):

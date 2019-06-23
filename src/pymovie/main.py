@@ -275,11 +275,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             # Create initial list --- a new installation
             self.VTIlist = [
                 {'name': 'None', 'boxes': '', 'digits': ''},
+                {'name': 'IOTA 3(F): full-screen w=640', 'boxes': 'I3-640-fs-boxes', 'digits': 'I3-digits'},
+                {'name': 'IOTA 3(F): safe-mode w=640', 'boxes': 'I3-640-sm-boxes', 'digits': 'I3-digits'},
                 {'name': 'IOTA 3(F): full-screen w=720', 'boxes': 'I3-720-fs-boxes', 'digits': 'I3-digits'},
                 {'name': 'IOTA 3(F): safe-mode w=720', 'boxes': 'I3-720-sm-boxes', 'digits': 'I3-digits'},
                 {'name': 'IOTA 2(P): safe-mode w=640', 'boxes': 'I2-640-sm-boxes', 'digits': 'I2-digits'},
                 {'name': 'IOTA 2(P): full-screen w=640', 'boxes': 'I2-640-fs-boxes', 'digits': 'I2-digits'},
-                {'name': 'IOTA 2(P): safe-mode w=720', 'boxes': 'I2-640-sm-boxes', 'digits': 'I2-digits'},
+                {'name': 'IOTA 2(P): safe-mode w=720', 'boxes': 'I2-720-sm-boxes', 'digits': 'I2-digits'},
                 {'name': 'IOTA 2(P): full-screen w=720', 'boxes': 'I2-720-fs-boxes', 'digits': 'I2-digits'},
                 {'name': 'BoxSprite: one-line w=640', 'boxes': 'BS640-boxes', 'digits': 'BS-digits'},
                 {'name': 'BoxSprite: one-line w=720', 'boxes': 'BS720-boxes', 'digits': 'BS-digits'},
@@ -302,6 +304,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         # Initialize all instance variables as a block (to satisfy PEP 8 standard)
 
+        self.suppressExtractTimestampCallInSpinnerResponder = False
         self.timestampOcrPossible = False
         self.detectFieldTimeOrder = False
         self.autoSetThreshold = False
@@ -591,7 +594,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.showOcrCharacter(self.currentOcrBox)
         if self.timestampOcrPossible:
             self.detectFieldTimeOrder = True
-            self.extractTimestamps()
+            if not self.suppressExtractTimestampCallInSpinnerResponder:
+                self.extractTimestamps()
+            else:
+                self.suppressExtractTimestampCallInSpinnerResponder = False
 
     def handleChangeOfDisplayMode(self):
         # self.showMsg(f'View avi fields: {self.viewFieldsCheckBox.isChecked()}')
@@ -601,7 +607,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             # clear all apertures
             self.clearApertures()
             self.showFrame()
-            if self.lowerOcrBoxes:
+            if self.lowerOcrBoxes and not self.currentVTIindex == 0:
                 self.placeOcrBoxesOnImage()
         else:
             # clear ocr boxes (if any)
@@ -823,35 +829,61 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.modelDigits = [None] * 10
             self.enableOcrTemplateSampling = self.showMissingModelDigits()
 
+    def setOcrThreshold(self):
+        self.showMsg(f'Searching for best threshold setting ...')
+        QtGui.QGuiApplication.processEvents()
+
+        thresh = 255
+        max_score = 0
+        thresh_at_max = 0
+
+        while thresh > 0:
+            upper_timestamp, upper_time, upper_ts, upper_scores, upper_cum = extract_timestamp(
+                self.upper_field, self.upperOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
+            lower_timestamp, lower_time, lower_ts, lower_scores, lower_cum = extract_timestamp(
+                self.lower_field, self.lowerOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
+            total_score = upper_cum + lower_cum
+            if total_score > max_score:
+                max_score = total_score
+                thresh_at_max = thresh
+            # self.showMsg(f'thresh: {thresh:3d} {upper_cum + lower_cum}', blankLine=False)
+            thresh -= 5
+
+        self.showMsg(f'Setting threshold to {thresh_at_max} where score was {max_score}')
+        self.suppressExtractTimestampCallInSpinnerResponder = True
+        self.vtiThresholdSpinner.setValue(thresh_at_max)
+
     def extractTimestamps(self, printresults = True):
         if self.vtiSelectComboBox.currentIndex() == 0 or not self.timestampOcrPossible:
             return None, None, None, None, None, None
 
         if self.autoSetThreshold:
-            self.showMsg(f'A request was made to auto set threshold')
-            self.autoSetThreshold = False  # Assume it was actually done
+            self.setOcrThreshold()
+            self.autoSetThreshold = False  # Clear flag so we don't do it again
+
         thresh = self.vtiThresholdSpinner.value()
 
-        upper_timestamp, upper_time, upper_ts, upper_score = extract_timestamp(
+        upper_timestamp, upper_time, upper_ts, upper_scores, upper_cum_score = extract_timestamp(
             self.upper_field, self.upperOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
-        lower_timestamp, lower_time, lower_ts, lower_score = extract_timestamp(
+        lower_timestamp, lower_time, lower_ts, lower_scores, lower_cum_score = extract_timestamp(
             self.lower_field, self.lowerOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
 
         if printresults:
-            self.showMsg(f'upper field timestamp:{upper_timestamp}  time:{upper_time:0.4f}  scores:{upper_score}', blankLine=False)
-            self.showMsg(f'lower field timestamp:{lower_timestamp}  time:{lower_time:0.4f}  scores:{lower_score}')
+            self.showMsg(f'upper field timestamp:{upper_timestamp}  time:{upper_time:0.4f}  scores:{upper_scores}', blankLine=False)
+            self.showMsg(f'lower field timestamp:{lower_timestamp}  time:{lower_time:0.4f}  scores:{lower_scores}')
 
         if self.detectFieldTimeOrder:
             if lower_time >= 0 and upper_time >= 0:
                 if lower_time < upper_time:
-                    # self.showMsg(f'Detected bottom field is first in time')
+                    self.showMsg(f'Detected bottom field is first in time')
                     self.bottomFieldFirstRadioButton.setChecked(True)
                 else:
-                    # self.showMsg(f'Detected top field is first in time')
+                    self.showMsg(f'Detected top field is first in time')
                     self.topFieldFirstRadioButton.setChecked(True)
                 self.detectFieldTimeOrder = False
 
-        return upper_timestamp, upper_time, upper_score, lower_timestamp, lower_time, lower_score
+        return upper_timestamp, upper_time, upper_scores, upper_cum_score, \
+               lower_timestamp, lower_time, lower_scores, lower_cum_score
 
     def vtiSelected(self):
 
@@ -890,9 +922,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.showFrame()
 
-        if self.currentVTIindex == 1:  # IOTA-3 w=720 full screen mode
+        if self.currentVTIindex == 1:  # IOTA-3 w=640 full screen mode
             if not self.loadPickledOcrBoxes():
-                self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_iota_full_screen_mode3()
+                self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_iota_640_full_screen_mode3()
                 self.pickleOcrBoxes()
             self.loadModelDigits()
             self.placeOcrBoxesOnImage()
@@ -900,9 +932,29 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.extractTimestamps()
             return
 
-        if self.currentVTIindex == 2:  # IOTA-3 w=720 safe mode
+        if self.currentVTIindex == 2:  # IOTA-3 w=640 safe mode
             if not self.loadPickledOcrBoxes():
-                self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_iota_safe_mode3()
+                self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_iota_640_safe_mode3()
+                self.pickleOcrBoxes()
+            self.loadModelDigits()
+            self.placeOcrBoxesOnImage()
+            self.timestampFormatter = format_iota_timestamp
+            self.extractTimestamps()
+            return
+
+        if self.currentVTIindex == 3:  # IOTA-3 w=720 full screen mode
+            if not self.loadPickledOcrBoxes():
+                self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_iota_720_full_screen_mode3()
+                self.pickleOcrBoxes()
+            self.loadModelDigits()
+            self.placeOcrBoxesOnImage()
+            self.timestampFormatter = format_iota_timestamp
+            self.extractTimestamps()
+            return
+
+        if self.currentVTIindex == 4:  # IOTA-3 w=720 safe mode
+            if not self.loadPickledOcrBoxes():
+                self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_iota_720_safe_mode3()
                 self.pickleOcrBoxes()
             self.loadModelDigits()
             # print_confusion_matrix(self.modelDigits, self.showMsg)
@@ -911,7 +963,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.extractTimestamps()
             return
 
-        if self.currentVTIindex == 3:  # IOTA-2 w=640 safe mode
+        if self.currentVTIindex == 5:  # IOTA-2 w=640 safe mode
             if not self.loadPickledOcrBoxes():
                 self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_iota_640_safe_mode2()
                 self.pickleOcrBoxes()
@@ -921,7 +973,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.extractTimestamps()
             return
 
-        if self.currentVTIindex == 4:  # IOTA-2 w=640 full screen mode
+        if self.currentVTIindex == 6:  # IOTA-2 w=640 full screen mode
             if not self.loadPickledOcrBoxes():
                 self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_iota_640_full_screen_mode2()
                 self.pickleOcrBoxes()
@@ -931,7 +983,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.extractTimestamps()
             return
 
-        if self.currentVTIindex == 5:  # IOTA-2 w=720 safe mode
+        if self.currentVTIindex == 7:  # IOTA-2 w=720 safe mode
             if not self.loadPickledOcrBoxes():
                 self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_iota_720_safe_mode2()
                 self.pickleOcrBoxes()
@@ -941,7 +993,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.extractTimestamps()
             return
 
-        if self.currentVTIindex == 6:  # IOTA-2 w=720 full screen mode
+        if self.currentVTIindex == 8:  # IOTA-2 w=720 full screen mode
             if not self.loadPickledOcrBoxes():
                 self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_iota_720_full_screen_mode2()
                 self.pickleOcrBoxes()
@@ -951,7 +1003,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.extractTimestamps()
             return
 
-        if self.currentVTIindex == 7:  # BoxSprite 3 w=640
+        if self.currentVTIindex == 9:  # BoxSprite 3 w=640
             if not self.loadPickledOcrBoxes():
                 self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_boxsprite3_640()
                 self.pickleOcrBoxes()
@@ -959,7 +1011,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.placeOcrBoxesOnImage()
             return
 
-        if self.currentVTIindex == 8:  # BoxSprite 3 w=720
+        if self.currentVTIindex == 10:  # BoxSprite 3 w=720
             if not self.loadPickledOcrBoxes():
                 self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_boxsprite3_720()
                 self.pickleOcrBoxes()
@@ -967,7 +1019,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.placeOcrBoxesOnImage()
             return
 
-        if self.currentVTIindex == 9:  # Kiwi w=720
+        if self.currentVTIindex == 11:  # Kiwi w=720
             if not self.loadPickledOcrBoxes():
                 self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_kiwi_vti_720()
                 self.pickleOcrBoxes()
@@ -975,7 +1027,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.placeOcrBoxesOnImage()
             return
 
-        if self.currentVTIindex == 10:  # Kiwi w=640
+        if self.currentVTIindex == 12:  # Kiwi w=640
             if not self.loadPickledOcrBoxes():
                 self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_kiwi_vti_640()
                 self.pickleOcrBoxes()
@@ -3432,7 +3484,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.createImageFields()
 
             if self.timestampFormatter is not None:
-                self.upperTimestamp, time1, score1, self.lowerTimestamp, time2, score2 = self.extractTimestamps()
+                self.upperTimestamp, time1, score1, _, self.lowerTimestamp, time2, score2, _ = \
+                    self.extractTimestamps()
 
             if self.levels:
                 self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
