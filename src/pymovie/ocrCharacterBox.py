@@ -9,10 +9,12 @@ class OcrAperture(pg.GraphicsObject):
     """
 
     # Intialize aperture specified by a field box
-    def __init__(self, fieldbox, boxnum, position, msgRoutine, templater, jogcontroller, samplemenu=True):
+    def __init__(self, fieldbox, boxnum, position, msgRoutine, templater,
+                 jogcontroller, showcharacter, samplemenu=True):
         self.samplemenu = samplemenu
         self.templateWriter = templater
         self.controlAllJogs = jogcontroller
+        self.showCharacter = showcharacter
         self.boxnum = boxnum
         self.msgRoutine = msgRoutine
         self.joggable = False
@@ -179,6 +181,7 @@ class OcrAperture(pg.GraphicsObject):
         if self.joggable:
             msg += f' (jogging enabled)'
         self.msgRoutine(msg=msg)
+        self.showCharacter(self.getBox())
 
     def jogLeft(self):
         # self.msgRoutine( 'jog left: Given to jogger()')
