@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import matplotlib.pyplot as plt
 
 
 def setup_for_iota_720_safe_mode3():
@@ -335,16 +336,20 @@ def format_iota_timestamp(ts):
         return f'[00:00:00.0000]', -1.0  # Indicate invalid timestamp by returning negative time
 
 
-def format_kiwi_timestamp(ts):
-    assert len(ts) == 9
+def format_kiwi_timestamp(ts_str):
+    assert len(ts_str) == 9
+    ts = [0] * 9
     try:
-        for i, value in enumerate(ts):
+        for i, value in enumerate(ts_str):
             if value == ' ':
-                ts[i] = '0'
-        hh = 10 * int(ts[0]) + int(ts[1])
-        mm = 10 * int(ts[2]) + int(ts[3])
-        ss = 10 * int(ts[4]) + int(ts[5])
-        ff = 100 * int(ts[6]) + 10 * int(ts[7]) + int(ts[8])
+                ts[i] = 0
+            else:
+                ts[i] = int(value)
+
+        hh = 10 * ts[0] + ts[1]
+        mm = 10 * ts[2] + ts[3]
+        ss = 10 * ts[4] + ts[5]
+        ff = 100 * ts[6] + 10 * ts[7] + ts[8]
         time = 3600 * hh + 60 * mm + ss + ff / 1000
         return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[6]}{ts[7]}{ts[8]}]', time
     except ValueError:
@@ -392,3 +397,38 @@ def print_confusion_matrix(field_digits, printer):
         line_format += f'{c[i,6]:5.2f}{c[i,7]:5.2f}'
         line_format += f'{c[i,8]:5.2f}{c[i,9]:5.2f}'
         printer(msg=line_format, blankLine=False)
+
+
+def locate_timestamp_vertically(img, fig):
+    vert_profile = []
+    for i in range(img.shape[0]):
+        vert_profile.append(np.mean(img[i, :]))
+
+    med_val = np.median(vert_profile)
+    max_val = np.max(vert_profile)
+    thresh = (max_val - med_val) / 2 + med_val
+
+    top = None
+    bottom = None
+
+    for i in range(len(vert_profile)):
+        if vert_profile[i] >= thresh:
+            top = i
+            break
+
+    for i in range(len(vert_profile) - 1, 0, -1):
+        if vert_profile[i] >= thresh:
+            bottom = i
+            break
+
+    # print(top, bottom)
+    plt.figure(fig, figsize=(10, 6))
+    plt.plot(vert_profile, 'bo')
+    plt.xlabel('y (row) coordinate within field')
+    plt.ylabel('Pixel averages across row')
+    plt.title('The red lines show where, on the y axis, the timestamp characters are located')
+    plt.vlines([top, bottom], ymin=np.min(vert_profile), ymax=np.max(vert_profile), color='r')
+    plt.grid()
+    plt.show()
+
+    return top, bottom

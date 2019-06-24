@@ -205,8 +205,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.api_key = self.settings.value('api_key', '')
 
-        # self.enableOcrTemplateSampling = self.settings.value('ocrsamplemenu', 'false') == 'true'
-        self.enableOcrTemplateSampling = False
+        self.enableOcrTemplateSampling = self.settings.value('ocrsamplemenu', 'false') == 'true'
+        # self.enableOcrTemplateSampling = False
         self.modelDigits = [None] * 10
 
         # Clean up the frame display by hiding the 'extras' that pyqtgraph
@@ -274,19 +274,15 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         else:
             # Create initial list --- a new installation
             self.VTIlist = [
-                {'name': 'None', 'boxes': '', 'digits': ''},
-                {'name': 'IOTA 3(F): full-screen w=640', 'boxes': 'I3-640-fs-boxes', 'digits': 'I3-digits'},
-                {'name': 'IOTA 3(F): safe-mode w=640', 'boxes': 'I3-640-sm-boxes', 'digits': 'I3-digits'},
-                {'name': 'IOTA 3(F): full-screen w=720', 'boxes': 'I3-720-fs-boxes', 'digits': 'I3-digits'},
-                {'name': 'IOTA 3(F): safe-mode w=720', 'boxes': 'I3-720-sm-boxes', 'digits': 'I3-digits'},
-                {'name': 'IOTA 2(P): safe-mode w=640', 'boxes': 'I2-640-sm-boxes', 'digits': 'I2-digits'},
-                {'name': 'IOTA 2(P): full-screen w=640', 'boxes': 'I2-640-fs-boxes', 'digits': 'I2-digits'},
-                {'name': 'IOTA 2(P): safe-mode w=720', 'boxes': 'I2-720-sm-boxes', 'digits': 'I2-digits'},
-                {'name': 'IOTA 2(P): full-screen w=720', 'boxes': 'I2-720-fs-boxes', 'digits': 'I2-digits'},
-                {'name': 'BoxSprite: one-line w=640', 'boxes': 'BS640-boxes', 'digits': 'BS-digits'},
-                {'name': 'BoxSprite: one-line w=720', 'boxes': 'BS720-boxes', 'digits': 'BS-digits'},
-                {'name': 'Kiwi: w=720', 'boxes': 'Kiwi-720-boxes', 'digits': 'Kiwi-digits'},
-                {'name': 'Kiwi: w=640', 'boxes': 'Kiwi-640-boxes', 'digits': 'Kiwi-digits'},
+                {'name': 'None', 'digits': ''},
+                {'name': 'IOTA VTI 3: one line (with F)', 'digits': 'I3-digits'},
+                {'name': 'IOTA VTI 3: two line (with F)', 'digits': 'I3-digits'},
+                {'name': 'IOTA VTI 2: one line (with P)', 'digits': 'I2-digits'},
+                {'name': 'IOTA VTI 2: two line (with P)', 'digits': 'I2-digits'},
+                {'name': 'BoxSprite: one-line w=640', 'digits': 'BS-digits'},
+                {'name': 'BoxSprite: one-line w=720', 'digits': 'BS-digits'},
+                {'name': 'Kiwi: w=720', 'digits': 'Kiwi-digits'},
+                {'name': 'Kiwi: w=640', 'digits': 'Kiwi-digits'},
             ]
             pickle.dump(self.VTIlist, open(vtiListFilename, "wb"))
             self.showMsg(f'pickled self.VTIlist to {vtiListFilename}')
@@ -298,6 +294,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.timestampFormatter = None
         self.upperTimestamp = ''
         self.lowerTimestamp = ''
+        self.ocrboxBasePath = None
 
         self.vtiSelectComboBox.installEventFilter(self)
         self.vtiSelectComboBox.currentIndexChanged.connect(self.vtiSelected)
@@ -765,24 +762,30 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 boxnum += 1
 
     def pickleOcrBoxes(self):
-        base_path = self.VTIlist[self.currentVTIindex]['boxes']
+        # base_path = self.VTIlist[self.currentVTIindex]['boxes']
+        base_path = self.ocrboxBasePath
         upper_boxes_fn = f'{base_path}-upper.p'
         lower_boxes_fn = f'{base_path}-lower.p'
 
         upper_boxes = os.path.join(self.homeDir, upper_boxes_fn)
         lower_boxes = os.path.join(self.homeDir, lower_boxes_fn)
 
-        if self.topFieldFirstRadioButton.isChecked():
-            pickle.dump(self.upperOcrBoxes, open(upper_boxes, "wb"))
-            pickle.dump(self.lowerOcrBoxes, open(lower_boxes, "wb"))
-        else:
-            # self.upperOcrBoxes and self.lowerOcrBoxes have been interchanges
-            pickle.dump(self.lowerOcrBoxes, open(upper_boxes, "wb"))
-            pickle.dump(self.upperOcrBoxes, open(lower_boxes, "wb"))
+        # if self.topFieldFirstRadioButton.isChecked():
+        #     pickle.dump(self.upperOcrBoxes, open(upper_boxes, "wb"))
+        #     pickle.dump(self.lowerOcrBoxes, open(lower_boxes, "wb"))
+        # else:
+        #     # self.upperOcrBoxes and self.lowerOcrBoxes have been interchanges
+        #     pickle.dump(self.lowerOcrBoxes, open(upper_boxes, "wb"))
+        #     pickle.dump(self.upperOcrBoxes, open(lower_boxes, "wb"))
+
+        pickle.dump(self.upperOcrBoxes, open(upper_boxes, "wb"))
+        pickle.dump(self.lowerOcrBoxes, open(lower_boxes, "wb"))
+
         return
 
     def loadPickledOcrBoxes(self):
-        base_path = self.VTIlist[self.currentVTIindex]['boxes']
+        # base_path = self.VTIlist[self.currentVTIindex]['boxes']
+        base_path = self.ocrboxBasePath
         upper_boxes_fn = f'{base_path}-upper.p'
         lower_boxes_fn = f'{base_path}-lower.p'
 
@@ -818,16 +821,18 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         pickle.dump(self.modelDigits, open(pickled_digits_path, "wb"))
 
     def loadModelDigits(self):
-        self.enableOcrTemplateSampling = False
+        # self.enableOcrTemplateSampling = False
         pickled_digits_fn = self.VTIlist[self.currentVTIindex]['digits'] + '.p'
         pickled_digits_path= os.path.join(self.homeDir, pickled_digits_fn)
 
         if os.path.exists(pickled_digits_path):
             self.modelDigits = pickle.load(open(pickled_digits_path, "rb"))
-            self.enableOcrTemplateSampling = self.showMissingModelDigits()
+            # self.enableOcrTemplateSampling = self.showMissingModelDigits()
+            self.showMissingModelDigits()
         else:
             self.modelDigits = [None] * 10
-            self.enableOcrTemplateSampling = self.showMissingModelDigits()
+            # self.enableOcrTemplateSampling = self.showMissingModelDigits()
+            self.showMissingModelDigits()
 
     def setOcrThreshold(self):
         self.showMsg(f'Searching for best threshold setting ...')
@@ -860,6 +865,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if self.autoSetThreshold:
             self.setOcrThreshold()
             self.autoSetThreshold = False  # Clear flag so we don't do it again
+            thresh = self.vtiThresholdSpinner.value()
+            _, top_img = cv2.threshold(self.upper_field, thresh - 1, 1, cv2.THRESH_BINARY)
+            top, bottom = locate_timestamp_vertically(top_img, fig='top')
+            self.showMsg(f'top: {top}  bottom: {bottom}')
+
+            _, bot_img = cv2.threshold(self.lower_field, thresh - 1, 1, cv2.THRESH_BINARY)
+            top, bottom = locate_timestamp_vertically(bot_img, fig='bottom')
+            self.showMsg(f'top: {top}  bottom: {bottom}')
 
         thresh = self.vtiThresholdSpinner.value()
 
@@ -922,9 +935,28 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.showFrame()
 
-        if self.currentVTIindex == 1:  # IOTA-3 w=640 full screen mode
+        # top, bottom = locate_timestamp_vertically(self.upper_field, fig='top')
+        # self.showMsg(f'top: {top}  bottom: {bottom}')
+        #
+        # top, bottom = locate_timestamp_vertically(self.lower_field, fig='bottom')
+        # self.showMsg(f'top: {top}  bottom: {bottom}')
+
+        width = self.image.shape[1]
+
+        if self.currentVTIindex == 1:  # IOTA-3 w=640 or 720 full screen mode
+            if width == 640:
+                self.ocrboxBasePath = 'I3-640-fs-boxes'
+            elif width == 720:
+                self.ocrboxBasePath = 'I3-720-fs-boxes'
+            else:
+                self.showMsg(f'Unexpected image width of {width}')
+                return
+
             if not self.loadPickledOcrBoxes():
-                self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_iota_640_full_screen_mode3()
+                if width == 640:
+                    self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_iota_640_full_screen_mode3()
+                else:
+                    self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_iota_720_full_screen_mode3()
                 self.pickleOcrBoxes()
             self.loadModelDigits()
             self.placeOcrBoxesOnImage()
@@ -932,9 +964,20 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.extractTimestamps()
             return
 
-        if self.currentVTIindex == 2:  # IOTA-3 w=640 safe mode
+        if self.currentVTIindex == 2:  # IOTA-3 w=640 or 720 safe mode
+            if width == 640:
+                self.ocrboxBasePath = 'I3-640-sm-boxes'
+            elif width == 720:
+                self.ocrboxBasePath = 'I3-720-sm-boxes'
+            else:
+                self.showMsg(f'Unexpected image width of {width}')
+                return
+
             if not self.loadPickledOcrBoxes():
-                self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_iota_640_safe_mode3()
+                if width == 640:
+                    self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_iota_640_safe_mode3()
+                else:
+                    self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_iota_720_safe_mode3()
                 self.pickleOcrBoxes()
             self.loadModelDigits()
             self.placeOcrBoxesOnImage()
@@ -942,9 +985,19 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.extractTimestamps()
             return
 
-        if self.currentVTIindex == 3:  # IOTA-3 w=720 full screen mode
+        if self.currentVTIindex == 3:  # IOTA-2 w=640 and 720  full screen mode
+            if width == 640:
+                self.ocrboxBasePath = 'I2-640-fs-boxes'
+            elif width == 720:
+                self.ocrboxBasePath = 'I2-720-fs-boxes'
+            else:
+                self.showMsg(f'Unexpected image width of {width}')
+                return
             if not self.loadPickledOcrBoxes():
-                self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_iota_720_full_screen_mode3()
+                if width == 640:
+                    self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_iota_640_full_screen_mode2()
+                else:
+                    self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_iota_720_full_screen_mode2()
                 self.pickleOcrBoxes()
             self.loadModelDigits()
             self.placeOcrBoxesOnImage()
@@ -952,30 +1005,20 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.extractTimestamps()
             return
 
-        if self.currentVTIindex == 4:  # IOTA-3 w=720 safe mode
-            if not self.loadPickledOcrBoxes():
-                self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_iota_720_safe_mode3()
-                self.pickleOcrBoxes()
-            self.loadModelDigits()
-            # print_confusion_matrix(self.modelDigits, self.showMsg)
-            self.placeOcrBoxesOnImage()
-            self.timestampFormatter = format_iota_timestamp
-            self.extractTimestamps()
-            return
+        if self.currentVTIindex == 4:  # IOTA-2 w=640 and 720 safe mode
+            if width == 640:
+                self.ocrboxBasePath = 'I2-640-sm-boxes'
+            elif width == 720:
+                self.ocrboxBasePath = 'I2-720-sm-boxes'
+            else:
+                self.showMsg(f'Unexpected image width of {width}')
+                return
 
-        if self.currentVTIindex == 5:  # IOTA-2 w=640 safe mode
             if not self.loadPickledOcrBoxes():
-                self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_iota_640_safe_mode2()
-                self.pickleOcrBoxes()
-            self.loadModelDigits()
-            self.placeOcrBoxesOnImage()
-            self.timestampFormatter = format_iota_timestamp
-            self.extractTimestamps()
-            return
-
-        if self.currentVTIindex == 6:  # IOTA-2 w=640 full screen mode
-            if not self.loadPickledOcrBoxes():
-                self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_iota_640_full_screen_mode2()
+                if width == 640:
+                    self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_iota_640_safe_mode2()
+                else:
+                    self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_iota_720_safe_mode2()
                 self.pickleOcrBoxes()
             self.loadModelDigits()
             self.placeOcrBoxesOnImage()
@@ -983,27 +1026,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.extractTimestamps()
             return
 
-        if self.currentVTIindex == 7:  # IOTA-2 w=720 safe mode
-            if not self.loadPickledOcrBoxes():
-                self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_iota_720_safe_mode2()
-                self.pickleOcrBoxes()
-            self.loadModelDigits()
-            self.placeOcrBoxesOnImage()
-            self.timestampFormatter = format_iota_timestamp
-            self.extractTimestamps()
-            return
-
-        if self.currentVTIindex == 8:  # IOTA-2 w=720 full screen mode
-            if not self.loadPickledOcrBoxes():
-                self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_iota_720_full_screen_mode2()
-                self.pickleOcrBoxes()
-            self.loadModelDigits()
-            self.placeOcrBoxesOnImage()
-            self.timestampFormatter = format_iota_timestamp
-            self.extractTimestamps()
-            return
-
-        if self.currentVTIindex == 9:  # BoxSprite 3 w=640
+        if self.currentVTIindex == 5:  # BoxSprite 3 w=640
+            self.ocrboxBasePath = 'BS-640-boxes'
             if not self.loadPickledOcrBoxes():
                 self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_boxsprite3_640()
                 self.pickleOcrBoxes()
@@ -1011,7 +1035,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.placeOcrBoxesOnImage()
             return
 
-        if self.currentVTIindex == 10:  # BoxSprite 3 w=720
+        if self.currentVTIindex == 6:  # BoxSprite 3 w=720
+            self.ocrboxBasePath = 'BS-720-boxes'
             if not self.loadPickledOcrBoxes():
                 self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_boxsprite3_720()
                 self.pickleOcrBoxes()
@@ -1019,20 +1044,26 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.placeOcrBoxesOnImage()
             return
 
-        if self.currentVTIindex == 11:  # Kiwi w=720
+        if self.currentVTIindex == 7:  # Kiwi w=720
+            self.ocrboxBasePath = 'Kiwi-720-boxes'
             if not self.loadPickledOcrBoxes():
                 self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_kiwi_vti_720()
                 self.pickleOcrBoxes()
             self.loadModelDigits()
             self.placeOcrBoxesOnImage()
+            self.timestampFormatter = format_kiwi_timestamp
+            self.extractTimestamps()
             return
 
-        if self.currentVTIindex == 12:  # Kiwi w=640
+        if self.currentVTIindex == 8:  # Kiwi w=640
+            self.ocrboxBasePath = 'Kiwi-640-boxes'
             if not self.loadPickledOcrBoxes():
                 self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_kiwi_vti_640()
                 self.pickleOcrBoxes()
             self.loadModelDigits()
             self.placeOcrBoxesOnImage()
+            self.timestampFormatter = format_kiwi_timestamp
+            self.extractTimestamps()
             return
 
         self.showMsg('Not yet implemented')
@@ -2090,10 +2121,50 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             templater=self.processOcrTemplate,
             jogcontroller=self.setAllOcrBoxJogging,
             showcharacter=self.showOcrCharacter,
+            showtemplates=self.showDigitTemplates,
             samplemenu=self.enableOcrTemplateSampling
         )
         view = self.frameView.getView()
         view.addItem(aperture)
+
+    def showDigitTemplates(self):
+        x_size = None
+        y_size = None
+        max_pixel = None
+
+        for img in self.modelDigits:
+            if not img is None:
+                y_size, x_size = img.shape
+                max_pixel = img.max()
+                break
+
+        if x_size is None:
+            self.showMsg(f'There are no model digits to display.')
+            return
+        else:
+            self.showMsg(f'model digits height:{y_size}  width:{x_size}')
+
+        if max_pixel == 1:
+            border_value = 1
+        else:
+            border_value = 255
+
+        blank = np.zeros((y_size, x_size), dtype='uint8')
+
+        digits = self.modelDigits.copy()
+        spaced_digits = []
+        for i, digit in enumerate(digits):
+            if digit is None:
+                digits[i] = blank
+            blk_border = cv2.copyMakeBorder(digits[i], 1, 1, 1, 1, cv2.BORDER_CONSTANT, value=0)
+            wht_border = cv2.copyMakeBorder(blk_border, 1, 1, 1, 1, cv2.BORDER_CONSTANT, value=border_value)
+            spaced_digits.append(wht_border)
+        digits_strip = cv2.hconcat(spaced_digits[:])
+
+        p = pg.image(digits_strip)
+        p.ui.menuBtn.hide()
+        p.ui.roiBtn.hide()
+        p.ui.histogram.hide()
 
     def showOcrCharacter(self, ocrbox):
         self.currentOcrBox = ocrbox

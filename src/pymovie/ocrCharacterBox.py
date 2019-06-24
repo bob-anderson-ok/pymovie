@@ -10,9 +10,10 @@ class OcrAperture(pg.GraphicsObject):
 
     # Intialize aperture specified by a field box
     def __init__(self, fieldbox, boxnum, position, msgRoutine, templater,
-                 jogcontroller, showcharacter, samplemenu=True):
+                 jogcontroller, showcharacter, showtemplates, samplemenu=True):
         self.samplemenu = samplemenu
         self.templateWriter = templater
+        self.displayDigitTemplates = showtemplates
         self.controlAllJogs = jogcontroller
         self.showCharacter = showcharacter
         self.boxnum = boxnum
@@ -98,6 +99,12 @@ class OcrAperture(pg.GraphicsObject):
             if self.samplemenu:
                 self.menu.addSeparator()
 
+                showdigits = QtGui.QAction('show digit templates', self.menu)
+                showdigits.triggered.connect(self.showTemplates)
+                self.menu.addAction(showdigits)
+
+                self.menu.addSeparator()
+
                 set0 = QtGui.QAction("record 0", self.menu)
                 set0.triggered.connect(self.write0)
                 self.menu.addAction(set0)
@@ -139,6 +146,9 @@ class OcrAperture(pg.GraphicsObject):
                 self.menu.addAction(set9)
 
         return self.menu
+
+    def showTemplates(self):
+        self.displayDigitTemplates()
 
     def disableAllJogging(self):
         self.controlAllJogs(enable=False)
