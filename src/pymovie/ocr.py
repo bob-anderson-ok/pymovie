@@ -399,7 +399,7 @@ def print_confusion_matrix(field_digits, printer):
         printer(msg=line_format, blankLine=False)
 
 
-def locate_timestamp_vertically(img, fig):
+def locate_timestamp_vertically(img, fig, showplot=False):
     vert_profile = []
     for i in range(img.shape[0]):
         vert_profile.append(np.mean(img[i, :]))
@@ -421,14 +421,14 @@ def locate_timestamp_vertically(img, fig):
             bottom = i
             break
 
-    # print(top, bottom)
-    plt.figure(fig, figsize=(10, 6))
-    plt.plot(vert_profile, 'bo')
-    plt.xlabel('y (row) coordinate within field')
-    plt.ylabel('Pixel averages across row')
-    plt.title('The red lines show where, on the y axis, the timestamp characters are located')
-    plt.vlines([top, bottom], ymin=np.min(vert_profile), ymax=np.max(vert_profile), color='r')
-    plt.grid()
-    plt.show()
+    if showplot:
+        plt.figure(fig, figsize=(10, 6))
+        plt.plot(vert_profile, 'bo')
+        plt.xlabel('y (row) coordinate within field')
+        plt.ylabel('Pixel averages across row')
+        plt.title('The red lines show where, on the y axis, the timestamp characters are located')
+        plt.vlines([top, bottom], ymin=np.min(vert_profile), ymax=np.max(vert_profile), color='r')
+        plt.grid()
+        plt.show()
 
     return top, bottom

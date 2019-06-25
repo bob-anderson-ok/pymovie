@@ -205,8 +205,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.api_key = self.settings.value('api_key', '')
 
+        # This is a 'secret' switch that I use for experimental purposes.  It causes
+        # an extended context menu to be generated for ocr charcter selection boxes.
+        # However, if one or modelDigits are found missing, the menu will appear for
+        # normal users too.
         self.enableOcrTemplateSampling = self.settings.value('ocrsamplemenu', 'false') == 'true'
-        # self.enableOcrTemplateSampling = False
+
         self.modelDigits = [None] * 10
 
         # Clean up the frame display by hiding the 'extras' that pyqtgraph
@@ -280,8 +284,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 {'name': 'IOTA VTI 2: one line (with P)'},
                 {'name': 'IOTA VTI 2: two line (with P)'},
                 {'name': 'BoxSprite: one-line'},
-                {'name': 'Kiwi: w=720'},
-                {'name': 'Kiwi: w=640'},
+                {'name': 'Kiwi'},
             ]
             pickle.dump(self.VTIlist, open(vtiListFilename, "wb"))
             self.showMsg(f'pickled self.VTIlist to {vtiListFilename}')
@@ -733,16 +736,23 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if missing_model_digits:
             self.showMsg(f'!!! Model digits {missing_model_digits}are missing !!!')
             self.timestampOcrPossible = False
+            self.enableOcrTemplateSampling = True
             return True
         else:
             self.showMsg(f'All model digits (0...9) are present.')
             self.timestampOcrPossible = True
+            self.enableOcrTemplateSampling = self.settings.value('ocrsamplemenu', 'false') == 'true'
             return False
 
     def saveModelDigits(self):
         pickled_digits_fn = self.modelDigitsPath
-        pickled_digits_path= os.path.join(self.homeDir, pickled_digits_fn)
+        pickled_digits_path = os.path.join(self.homeDir, pickled_digits_fn)
         pickle.dump(self.modelDigits, open(pickled_digits_path, "wb"))
+
+    def deleteModelDigits(self):
+        digits_fn = self.modelDigitsPath
+        digits_path = os.path.join(self.homeDir, digits_fn)
+        os.remove(digits_path)
 
     def loadModelDigits(self):
         pickled_digits_fn = self.modelDigitsPath
@@ -781,7 +791,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def extractTimestamps(self, printresults = True):
         if self.vtiSelectComboBox.currentIndex() == 0 or not self.timestampOcrPossible:
-            return None, None, None, None, None, None
+            return None, None, None, None, None, None, None, None
 
         if self.autoSetThreshold:
             self.setOcrThreshold()
@@ -796,6 +806,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'top: {top}  bottom: {bottom}')
 
         thresh = self.vtiThresholdSpinner.value()
+
+        if self.modelDigitsPath == 'BS-digits.p':
+            thresh = 0
 
         upper_timestamp, upper_time, upper_ts, upper_scores, upper_cum_score = extract_timestamp(
             self.upper_field, self.upperOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
@@ -962,6 +975,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 return
 
             self.modelDigitsPath = 'BS-digits.p'
+
+            # Force a re-training for BoxSprite (because the characters are so poorly
+            # formed and vary from run to run.  Converting to a binary image makes it worse.)
+            self.deleteModelDigits()
+
             if not self.loadPickledOcrBoxes():
                 if width == 640:
                     self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_boxsprite3_640()
@@ -974,25 +992,27 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.extractTimestamps()
             return
 
-        if self.currentVTIindex == 6:  # Kiwi w=720
-            self.ocrboxBasePath = 'Kiwi-720-boxes'
+        if self.currentVTIindex == 6:  # Kiwi w=720 and 640
+            if width == 640:
+                self.ocrboxBasePath = 'Kiwi-640-boxes'
+            elif width == 720:
+                self.ocrboxBasePath = 'Kiwi-720-boxes'
+            else:
+                self.showMsg(f'Unexpected image width of {width}')
+                return
+
             self.modelDigitsPath = 'Kiwi-digits.p'
 
-            if not self.loadPickledOcrBoxes():
-                self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_kiwi_vti_720()
-                self.pickleOcrBoxes()
-            self.loadModelDigits()
-            self.placeOcrBoxesOnImage()
-            self.timestampFormatter = format_kiwi_timestamp
-            self.extractTimestamps()
-            return
-
-        if self.currentVTIindex == 7:  # Kiwi w=640
-            self.ocrboxBasePath = 'Kiwi-640-boxes'
-            self.modelDigitsPath = 'Kiwi-digits.p'
+            # Force a re-training for Kiwi (because the characters are often poorly
+            # formed and vary in intensity from run to run and instrument to instrument).
+            # Converting to a binary image makes it worse.
+            self.deleteModelDigits()
 
             if not self.loadPickledOcrBoxes():
-                self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_kiwi_vti_640()
+                if width == 640:
+                    self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_kiwi_vti_640()
+                else:
+                    self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_kiwi_vti_720()
                 self.pickleOcrBoxes()
             self.loadModelDigits()
             self.placeOcrBoxesOnImage()
@@ -2112,7 +2132,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         _, t_img = cv2.threshold(img, cut, 1, cv2.THRESH_BINARY)
         self.thumbTwoImage = t_img
         self.thumbTwoView.setImage(t_img)
-        return t_img
+        # return t_img
+        return img
 
     def processOcrTemplate(self, digit, ocrbox):
         self.showMsg(f'Recording digit {digit} from pixels in {ocrbox}')
