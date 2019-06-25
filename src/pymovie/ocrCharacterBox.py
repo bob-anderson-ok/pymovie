@@ -10,12 +10,13 @@ class OcrAperture(pg.GraphicsObject):
 
     # Intialize aperture specified by a field box
     def __init__(self, fieldbox, boxnum, position, msgRoutine, templater,
-                 jogcontroller, showcharacter, showtemplates, samplemenu=True):
+                 jogcontroller, showcharacter, showtemplates, neededdigits, samplemenu=True):
         self.samplemenu = samplemenu
         self.templateWriter = templater
         self.displayDigitTemplates = showtemplates
         self.controlAllJogs = jogcontroller
         self.showCharacter = showcharacter
+        self.neededDigits = neededdigits
         self.boxnum = boxnum
         self.msgRoutine = msgRoutine
         self.joggable = False
@@ -69,78 +70,96 @@ class OcrAperture(pg.GraphicsObject):
         return True
 
     def getContextMenus(self, event=None):
-        if self.menu is None:
-            self.menu = QtGui.QMenu()
-            # self.menu.setTitle(self.name + " options..")  # This appears to do nothing
+        # if self.menu is None:
+        self.menu = QtGui.QMenu()
+        # self.menu.setTitle(self.name + " options..")  # This appears to do nothing
 
-            setshowprops = QtGui.QAction("Show properties", self.menu)
-            setshowprops.triggered.connect(self.showProps)
-            self.menu.addAction(setshowprops)
+        setshowprops = QtGui.QAction("Show properties", self.menu)
+        setshowprops.triggered.connect(self.showProps)
+        self.menu.addAction(setshowprops)
+
+        self.menu.addSeparator()
+
+        setjogon = QtGui.QAction("Enable jogging", self.menu)
+        setjogon.triggered.connect(self.enableJogging)
+        self.menu.addAction(setjogon)
+
+        setjogoff = QtGui.QAction("Disable jogging", self.menu)
+        setjogoff.triggered.connect(self.disableJogging)
+        self.menu.addAction(setjogoff)
+
+        self.menu.addSeparator()
+        clearalljogs = QtGui.QAction("Disable jogging for all boxes", self.menu)
+        clearalljogs.triggered.connect(self.disableAllJogging)
+        self.menu.addAction(clearalljogs)
+
+        setalljogs = QtGui.QAction("Enable jogging for all boxes", self.menu)
+        setalljogs.triggered.connect(self.enableAllJogging)
+        self.menu.addAction(setalljogs)
+
+        self.menu.addSeparator()
+
+        showdigits = QtGui.QAction('show digit templates', self.menu)
+        showdigits.triggered.connect(self.showTemplates)
+        self.menu.addAction(showdigits)
+
+        if self.samplemenu:
+            # self.menu.addSeparator()
+            #
+            # showdigits = QtGui.QAction('show digit templates', self.menu)
+            # showdigits.triggered.connect(self.showTemplates)
+            # self.menu.addAction(showdigits)
 
             self.menu.addSeparator()
 
-            setjogon = QtGui.QAction("Enable jogging", self.menu)
-            setjogon.triggered.connect(self.enableJogging)
-            self.menu.addAction(setjogon)
+            needed = self.neededDigits()
 
-            setjogoff = QtGui.QAction("Disable jogging", self.menu)
-            setjogoff.triggered.connect(self.disableJogging)
-            self.menu.addAction(setjogoff)
-
-            self.menu.addSeparator()
-            clearalljogs = QtGui.QAction("Disable jogging for all boxes", self.menu)
-            clearalljogs.triggered.connect(self.disableAllJogging)
-            self.menu.addAction(clearalljogs)
-
-            setalljogs = QtGui.QAction("Enable jogging for all boxes", self.menu)
-            setalljogs.triggered.connect(self.enableAllJogging)
-            self.menu.addAction(setalljogs)
-
-            if self.samplemenu:
-                self.menu.addSeparator()
-
-                showdigits = QtGui.QAction('show digit templates', self.menu)
-                showdigits.triggered.connect(self.showTemplates)
-                self.menu.addAction(showdigits)
-
-                self.menu.addSeparator()
-
+            if needed[0]:
                 set0 = QtGui.QAction("record 0", self.menu)
                 set0.triggered.connect(self.write0)
                 self.menu.addAction(set0)
 
+            if needed[1]:
                 set1 = QtGui.QAction("record 1", self.menu)
                 set1.triggered.connect(self.write1)
                 self.menu.addAction(set1)
 
+            if needed[2]:
                 set2 = QtGui.QAction("record 2", self.menu)
                 set2.triggered.connect(self.write2)
                 self.menu.addAction(set2)
 
+            if needed[3]:
                 set3 = QtGui.QAction("record 3", self.menu)
                 set3.triggered.connect(self.write3)
                 self.menu.addAction(set3)
 
+            if needed[4]:
                 set4 = QtGui.QAction("record 4", self.menu)
                 set4.triggered.connect(self.write4)
                 self.menu.addAction(set4)
 
+            if needed[5]:
                 set5 = QtGui.QAction("record 5", self.menu)
                 set5.triggered.connect(self.write5)
                 self.menu.addAction(set5)
 
+            if needed[6]:
                 set6 = QtGui.QAction("record 6", self.menu)
                 set6.triggered.connect(self.write6)
                 self.menu.addAction(set6)
 
+            if needed[7]:
                 set7 = QtGui.QAction("record 7", self.menu)
                 set7.triggered.connect(self.write7)
                 self.menu.addAction(set7)
 
+            if needed[8]:
                 set8 = QtGui.QAction("record 8", self.menu)
                 set8.triggered.connect(self.write8)
                 self.menu.addAction(set8)
 
+            if needed[9]:
                 set9 = QtGui.QAction("record 9", self.menu)
                 set9.triggered.connect(self.write9)
                 self.menu.addAction(set9)

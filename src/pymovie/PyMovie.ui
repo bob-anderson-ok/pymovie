@@ -587,6 +587,34 @@
             </widget>
            </item>
            <item>
+            <widget class="QCheckBox" name="cascadeCheckBox">
+             <property name="maximumSize">
+              <size>
+               <width>80</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="sizeIncrement">
+              <size>
+               <width>0</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If checked, lightcurve plots will cascade from the upper left of the monitor diagonally toward the lower right.&lt;/p&gt;&lt;p&gt;If unchecked, lightcurve plots will stack on top of each other in the center of the monitor.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="layoutDirection">
+              <enum>Qt::RightToLeft</enum>
+             </property>
+             <property name="text">
+              <string>cascade</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QPushButton" name="writeCsvButton">
              <property name="toolTip">
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking this button opens a Save File dialog. Use this dialog to name and, optionally select the directory where you wish the csv file to be written. The default directory is the directory from which the video data was read.&lt;/p&gt;&lt;p&gt;A set of columns is created for each aperture with the column naming incorporating the aperture name for identification.&lt;/p&gt;&lt;p&gt;Hopefully you named each aperture in a logical manner. While there is an automatic unique name given to each aperture at creation time, providing user-friendly aperture names will help greatly in identifying the csv file columns.&lt;/p&gt;&lt;p&gt;Apertures can be renamed at any time without losing any data, so please make use of this feature: it will make consumers of your csv file happy.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>

@@ -183,6 +183,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.helperThing = HelpDialog()
 
         self.homeDir = os.path.split(__file__)[0]
+        self.ocrBoxesDir = self.homeDir
+        self.ocrDigitsDir = self.homeDir
 
         self.clearTextBox()
         title = f'PyMovie  Version: {version.version()}'
@@ -196,6 +198,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.resize(self.settings.value('size', QSize(800, 800)))
         self.move(self.settings.value('pos', QPoint(50, 50)))
         # self.logScalingCheckBox.setChecked( self.settings.value('logscale', False) == 'true' )
+        self.cascadeCheckBox.setChecked(self.settings.value('cascade', False) == 'true')
         self.plotSymbolSizeSpinBox.setValue(int(self.settings.value('plot_symbol_size', 4)))
 
         if self.settings.value('splitterOne') is not None:
@@ -359,8 +362,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.image_fields = None
         self.thumbOneImage = None
         self.thumbTwoImage = None
-        # self.defaultMask = None
-        # self.defaultMaskPixelCount = None
 
         # A True/False to indicate when a first frame has been read and displayed.  This
         # is used in self.showFrame() and set in self.readFitsFile() and self.readAviFile()
@@ -547,6 +548,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.displayPlotsButton.clicked.connect(self.showLightcurves)
         self.displayPlotsButton.installEventFilter(self)
 
+        self.cascadeCheckBox.installEventFilter(self)
+
         self.manualWcsButton.clicked.connect(self.manualWcsCalibration)
         self.manualWcsButton.installEventFilter(self)
 
@@ -694,16 +697,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         upper_boxes_fn = f'{base_path}-upper.p'
         lower_boxes_fn = f'{base_path}-lower.p'
 
-        upper_boxes = os.path.join(self.homeDir, upper_boxes_fn)
-        lower_boxes = os.path.join(self.homeDir, lower_boxes_fn)
+        upper_boxes = os.path.join(self.ocrBoxesDir, upper_boxes_fn)
+        lower_boxes = os.path.join(self.ocrBoxesDir, lower_boxes_fn)
 
-        # if self.topFieldFirstRadioButton.isChecked():
-        #     pickle.dump(self.upperOcrBoxes, open(upper_boxes, "wb"))
-        #     pickle.dump(self.lowerOcrBoxes, open(lower_boxes, "wb"))
-        # else:
-        #     # self.upperOcrBoxes and self.lowerOcrBoxes have been interchanges
-        #     pickle.dump(self.lowerOcrBoxes, open(upper_boxes, "wb"))
-        #     pickle.dump(self.upperOcrBoxes, open(lower_boxes, "wb"))
 
         pickle.dump(self.upperOcrBoxes, open(upper_boxes, "wb"))
         pickle.dump(self.lowerOcrBoxes, open(lower_boxes, "wb"))
@@ -716,8 +712,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         upper_boxes_fn = f'{base_path}-upper.p'
         lower_boxes_fn = f'{base_path}-lower.p'
 
-        upper_boxes = os.path.join(self.homeDir, upper_boxes_fn)
-        lower_boxes = os.path.join(self.homeDir, lower_boxes_fn)
+        # upper_boxes = os.path.join(self.homeDir, upper_boxes_fn)
+        # lower_boxes = os.path.join(self.homeDir, lower_boxes_fn)
+
+        upper_boxes = os.path.join(self.ocrBoxesDir, upper_boxes_fn)
+        lower_boxes = os.path.join(self.ocrBoxesDir, lower_boxes_fn)
 
         if os.path.exists(upper_boxes) and os.path.exists(lower_boxes):
             self.upperOcrBoxes = pickle.load(open(upper_boxes, "rb"))
@@ -746,18 +745,18 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def saveModelDigits(self):
         pickled_digits_fn = self.modelDigitsPath
-        pickled_digits_path = os.path.join(self.homeDir, pickled_digits_fn)
+        pickled_digits_path = os.path.join(self.ocrDigitsDir, pickled_digits_fn)
         pickle.dump(self.modelDigits, open(pickled_digits_path, "wb"))
 
     def deleteModelDigits(self):
         digits_fn = self.modelDigitsPath
-        digits_path = os.path.join(self.homeDir, digits_fn)
+        digits_path = os.path.join(self.ocrDigitsDir, digits_fn)
         if os.path.exists(digits_path):
             os.remove(digits_path)
 
     def loadModelDigits(self):
         pickled_digits_fn = self.modelDigitsPath
-        pickled_digits_path= os.path.join(self.homeDir, pickled_digits_fn)
+        pickled_digits_path= os.path.join(self.ocrDigitsDir, pickled_digits_fn)
 
         if os.path.exists(pickled_digits_path):
             self.modelDigits = pickle.load(open(pickled_digits_path, "rb"))
@@ -837,6 +836,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         # Clear the flag that we use to automatically detect which field is earliest in time.
         self.detectFieldTimeOrder = False
+
+        # Clear the flag that controls automatic setting of threshold (used for IOTA VTI models)
         self.autoSetThreshold = False
 
         self.currentVTIindex = self.vtiSelectComboBox.currentIndex()
@@ -866,7 +867,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # We only want to do this test once (or at threshold changes)
 
         self.detectFieldTimeOrder = True
-        self.autoSetThreshold = True
+        # self.autoSetThreshold = True
 
         self.showFrame()
 
@@ -886,6 +887,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             else:
                 self.showMsg(f'Unexpected image width of {width}')
                 return
+
+            if self.avi_wcs_folder_in_use:
+                self.ocrBoxesDir = self.folder_dir
+            else:
+                self.ocrBoxesDir = self.homeDir
+            self.ocrDigitsDir = self.homeDir
+            self.autoSetThreshold = True
 
             self.modelDigitsPath = 'I3-digits.p'
             if not self.loadPickledOcrBoxes():
@@ -909,6 +917,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.showMsg(f'Unexpected image width of {width}')
                 return
 
+            if self.avi_wcs_folder_in_use:
+                self.ocrBoxesDir = self.folder_dir
+            else:
+                self.ocrBoxesDir = self.homeDir
+            self.ocrDigitsDir = self.homeDir
+            self.autoSetThreshold = True
+
             self.modelDigitsPath = 'I3-digits.p'
             if not self.loadPickledOcrBoxes():
                 if width == 640:
@@ -931,6 +946,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.showMsg(f'Unexpected image width of {width}')
                 return
 
+            if self.avi_wcs_folder_in_use:
+                self.ocrBoxesDir = self.folder_dir
+            else:
+                self.ocrBoxesDir = self.homeDir
+            self.ocrDigitsDir = self.homeDir
+            self.autoSetThreshold = True
+
             self.modelDigitsPath = 'I2-digits.p'
             if not self.loadPickledOcrBoxes():
                 if width == 640:
@@ -952,6 +974,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             else:
                 self.showMsg(f'Unexpected image width of {width}')
                 return
+
+            if self.avi_wcs_folder_in_use:
+                self.ocrBoxesDir = self.folder_dir
+            else:
+                self.ocrBoxesDir = self.homeDir
+            self.ocrDigitsDir = self.homeDir
+            self.autoSetThreshold = True
 
             self.modelDigitsPath = 'I2-digits.p'
             if not self.loadPickledOcrBoxes():
@@ -979,7 +1008,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             # Force a re-training for BoxSprite (because the characters are so poorly
             # formed and vary from run to run.  Converting to a binary image makes it worse.)
-            self.deleteModelDigits()
+            if not self.avi_wcs_folder_in_use:
+                self.ocrDigitsDir = self.homeDir
+                self.ocrBoxesDir = self.homeDir
+                self.deleteModelDigits()
+            else:
+                self.ocrDigitsDir = self.folder_dir
+                self.ocrBoxesDir = self.folder_dir
 
             if not self.loadPickledOcrBoxes():
                 if width == 640:
@@ -1007,7 +1042,15 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             # Force a re-training for Kiwi (because the characters are often poorly
             # formed and vary in intensity from run to run and instrument to instrument).
             # Converting to a binary image makes it worse.
-            self.deleteModelDigits()
+            if not self.avi_wcs_folder_in_use:
+                self.ocrDigitsDir = self.homeDir
+                self.ocrBoxesDir = self.homeDir
+                self.deleteModelDigits()
+            else:
+                # Don't delete model digits if file is in a wcs folder (so user
+                # can customize model digits and have them be sticky.
+                self.ocrDigitsDir = self.folder_dir
+                self.ocrBoxesDir = self.folder_dir
 
             if not self.loadPickledOcrBoxes():
                 if width == 640:
@@ -2077,10 +2120,17 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             jogcontroller=self.setAllOcrBoxJogging,
             showcharacter=self.showOcrCharacter,
             showtemplates=self.showDigitTemplates,
+            neededdigits=self.needDigits,
             samplemenu=self.enableOcrTemplateSampling
         )
         view = self.frameView.getView()
         view.addItem(aperture)
+
+    def needDigits(self):
+        needs_list = []
+        for img in self.modelDigits:
+            needs_list.append(img is None)
+        return needs_list
 
     def showDigitTemplates(self):
         x_size = None
@@ -4055,11 +4105,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             # Start a new plot for each aperture
             self.plots.append(pg.GraphicsWindow(title="PyMovie lightcurve plot"))
             self.plots[-1].resize(1000, 600)
-            self.plots[-1].move(QPoint(cascadePosition, cascadePosition))
+            if self.cascadeCheckBox.isChecked():
+                self.plots[-1].move(QPoint(cascadePosition, cascadePosition))
             cascadePosition += cascadeDelta
             self.plots[-1].setWindowTitle(f'PyMovie {version.version()} lightcurve for aperture: {app.name}')
-
-            # TODO cascade plots code goes here
 
             yvalues = []
             xvalues = []
@@ -4133,7 +4182,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # pw = PlotWidget(title=f'PyMovie {version.version()} composite lightcurve')
         # self.plots.append(pw.getPlotItem())
         self.plots[-1].resize(1000, 600)
-        self.plots[-1].move(QPoint(cascadePosition, cascadePosition))
+        if self.cascadeCheckBox.isChecked():
+            self.plots[-1].move(QPoint(cascadePosition, cascadePosition))
         p1 = self.plots[-1].addPlot(title=f'Composite lightcurve plot')
         p1.addLegend()
 
@@ -4192,6 +4242,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.settings.setValue('size', self.size())
         self.settings.setValue('pos', self.pos())
         # self.settings.setValue('logscale', self.logScalingCheckBox.isChecked())
+        self.settings.setValue('cascade', self.cascadeCheckBox.isChecked())
         self.settings.setValue('plot_symbol_size', self.plotSymbolSizeSpinBox.value())
         self.settings.setValue('splitterOne', self.splitterOne.saveState())
         self.settings.setValue('splitterTwo', self.splitterTwo.saveState())
