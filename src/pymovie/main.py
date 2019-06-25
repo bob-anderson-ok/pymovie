@@ -752,7 +752,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
     def deleteModelDigits(self):
         digits_fn = self.modelDigitsPath
         digits_path = os.path.join(self.homeDir, digits_fn)
-        os.remove(digits_path)
+        if os.path.exists(digits_path):
+            os.remove(digits_path)
 
     def loadModelDigits(self):
         pickled_digits_fn = self.modelDigitsPath
