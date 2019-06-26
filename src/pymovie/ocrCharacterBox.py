@@ -89,19 +89,35 @@ class OcrAperture(pg.GraphicsObject):
         self.menu.addAction(setjogoff)
 
         self.menu.addSeparator()
-        clearalljogs = QtGui.QAction("Disable jogging for all boxes", self.menu)
-        clearalljogs.triggered.connect(self.disableAllJogging)
-        self.menu.addAction(clearalljogs)
 
-        setalljogs = QtGui.QAction("Enable jogging for all boxes", self.menu)
-        setalljogs.triggered.connect(self.enableAllJogging)
-        self.menu.addAction(setalljogs)
+        setupperjogs = QtGui.QAction("Enable jogging for upper boxes", self.menu)
+        setupperjogs.triggered.connect(self.enableUpperJogging)
+        self.menu.addAction(setupperjogs)
+
+        setlowerjogs = QtGui.QAction("Enable jogging for lower boxes", self.menu)
+        setlowerjogs.triggered.connect(self.enableLowerJogging)
+        self.menu.addAction(setlowerjogs)
 
         self.menu.addSeparator()
 
-        showdigits = QtGui.QAction('show digit templates', self.menu)
-        showdigits.triggered.connect(self.showTemplates)
+        clearupperjogs = QtGui.QAction("Disable jogging for upper boxes", self.menu)
+        clearupperjogs.triggered.connect(self.disableUpperJogging)
+        self.menu.addAction(clearupperjogs)
+
+        clearlowerjogs = QtGui.QAction("Disable jogging for lower boxes", self.menu)
+        clearlowerjogs.triggered.connect(self.disableLowerJogging)
+        self.menu.addAction(clearlowerjogs)
+
+
+        self.menu.addSeparator()
+
+        showdigits = QtGui.QAction('show model digits', self.menu)
+        showdigits.triggered.connect(self.showDigits)
         self.menu.addAction(showdigits)
+
+        retraindigits = QtGui.QAction('retrain model digits', self.menu)
+        retraindigits.triggered.connect(self.retrainDigits)
+        self.menu.addAction(retraindigits)
 
         if self.samplemenu:
             # self.menu.addSeparator()
@@ -166,14 +182,23 @@ class OcrAperture(pg.GraphicsObject):
 
         return self.menu
 
-    def showTemplates(self):
+    def showDigits(self):
         self.displayDigitTemplates()
 
-    def disableAllJogging(self):
-        self.controlAllJogs(enable=False)
+    def retrainDigits(self):
+        self.displayDigitTemplates(retrain=True)
 
-    def enableAllJogging(self):
-        self.controlAllJogs(enable=True)
+    def disableUpperJogging(self):
+        self.controlAllJogs(enable=False, position='upper')
+
+    def disableLowerJogging(self):
+        self.controlAllJogs(enable=False, position='lower')
+
+    def enableUpperJogging(self):
+        self.controlAllJogs(enable=True, position='upper')
+
+    def enableLowerJogging(self):
+        self.controlAllJogs(enable=True, position='lower')
 
     def write0(self):
         self.templateWriter(0, self.getBox())
