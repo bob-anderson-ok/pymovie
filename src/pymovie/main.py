@@ -300,7 +300,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.upperTimestamp = ''
         self.lowerTimestamp = ''
         self.ocrboxBasePath = None
-        self.modelDigitsPath = None
+        self.modelDigitsFilename = None
 
         self.vtiSelectComboBox.installEventFilter(self)
         self.vtiSelectComboBox.currentIndexChanged.connect(self.vtiSelected)
@@ -700,20 +700,15 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         upper_boxes = os.path.join(self.ocrBoxesDir, upper_boxes_fn)
         lower_boxes = os.path.join(self.ocrBoxesDir, lower_boxes_fn)
 
-
         pickle.dump(self.upperOcrBoxes, open(upper_boxes, "wb"))
         pickle.dump(self.lowerOcrBoxes, open(lower_boxes, "wb"))
 
         return
 
     def loadPickledOcrBoxes(self):
-        # base_path = self.VTIlist[self.currentVTIindex]['boxes']
-        base_path = self.ocrboxBasePath
+        base_path = self.ocrDigitsDir
         upper_boxes_fn = f'{base_path}-upper.p'
         lower_boxes_fn = f'{base_path}-lower.p'
-
-        # upper_boxes = os.path.join(self.homeDir, upper_boxes_fn)
-        # lower_boxes = os.path.join(self.homeDir, lower_boxes_fn)
 
         upper_boxes = os.path.join(self.ocrBoxesDir, upper_boxes_fn)
         lower_boxes = os.path.join(self.ocrBoxesDir, lower_boxes_fn)
@@ -744,18 +739,18 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             return False
 
     def saveModelDigits(self):
-        pickled_digits_fn = self.modelDigitsPath
+        pickled_digits_fn = self.modelDigitsFilename
         pickled_digits_path = os.path.join(self.ocrDigitsDir, pickled_digits_fn)
         pickle.dump(self.modelDigits, open(pickled_digits_path, "wb"))
 
     def deleteModelDigits(self):
-        digits_fn = self.modelDigitsPath
+        digits_fn = self.modelDigitsFilename
         digits_path = os.path.join(self.ocrDigitsDir, digits_fn)
         if os.path.exists(digits_path):
             os.remove(digits_path)
 
     def loadModelDigits(self):
-        pickled_digits_fn = self.modelDigitsPath
+        pickled_digits_fn = self.modelDigitsFilename
         pickled_digits_path= os.path.join(self.ocrDigitsDir, pickled_digits_fn)
 
         if os.path.exists(pickled_digits_path):
@@ -794,6 +789,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             return None, None, None, None, None, None, None, None
 
         if self.autoSetThreshold:
+            # TODO verify that we don't need this anymore
             self.setOcrThreshold()
             self.autoSetThreshold = False  # Clear flag so we don't do it again
             thresh = self.vtiThresholdSpinner.value()
@@ -807,8 +803,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         thresh = self.vtiThresholdSpinner.value()
 
-        if self.modelDigitsPath == 'BS-digits.p':
+        if self.modelDigitsFilename == 'BS-digits.p':
             thresh = 0
+        # TODO  verify that we don't need thresh
+        thresh = 0
 
         upper_timestamp, upper_time, upper_ts, upper_scores, upper_cum_score = extract_timestamp(
             self.upper_field, self.upperOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
@@ -834,6 +832,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def vtiSelected(self):
 
+        def write_index():
+            f_path = os.path.join(self.folder_dir, 'vti-combo-box-index.txt')
+            with open(f_path, 'w') as f:
+                f.writelines(f'{self.currentVTIindex}')
+
         # Clear the flag that we use to automatically detect which field is earliest in time.
         self.detectFieldTimeOrder = False
 
@@ -847,6 +850,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if not self.avi_in_use or self.image is None:
             return
 
+        if not self.avi_wcs_folder_in_use:
+            if not self.vtiSelectComboBox.currentIndex() == 0:
+                self.showMsg(f'VTI timestamp extraction only supported for AVI-WCS folders')
+            self.vtiSelectComboBox.setCurrentIndex(0)
+
         if self.currentVTIindex == 0:  # None
             self.clearOcrBoxes()
             self.timestampFormatter = None
@@ -855,6 +863,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             return
 
         self.clearOcrBoxes()
+
+        write_index()
 
         self.viewFieldsCheckBox.setChecked(True)
 
@@ -888,14 +898,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.showMsg(f'Unexpected image width of {width}')
                 return
 
-            if self.avi_wcs_folder_in_use:
-                self.ocrBoxesDir = self.folder_dir
-            else:
-                self.ocrBoxesDir = self.homeDir
-            self.ocrDigitsDir = self.homeDir
-            self.autoSetThreshold = True
+            self.ocrBoxesDir = self.folder_dir
+            self.ocrDigitsDir = self.folder_dir
 
-            self.modelDigitsPath = 'I3-digits.p'
+            self.modelDigitsFilename = 'I3-digits.p'
+
             if not self.loadPickledOcrBoxes():
                 if width == 640:
                     self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_iota_640_full_screen_mode3()
@@ -917,14 +924,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.showMsg(f'Unexpected image width of {width}')
                 return
 
-            if self.avi_wcs_folder_in_use:
-                self.ocrBoxesDir = self.folder_dir
-            else:
-                self.ocrBoxesDir = self.homeDir
-            self.ocrDigitsDir = self.homeDir
-            self.autoSetThreshold = True
+            self.ocrBoxesDir = self.folder_dir
+            self.ocrDigitsDir = self.folder_dir
 
-            self.modelDigitsPath = 'I3-digits.p'
+            self.modelDigitsFilename = 'I3-digits.p'
             if not self.loadPickledOcrBoxes():
                 if width == 640:
                     self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_iota_640_safe_mode3()
@@ -946,14 +949,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.showMsg(f'Unexpected image width of {width}')
                 return
 
-            if self.avi_wcs_folder_in_use:
-                self.ocrBoxesDir = self.folder_dir
-            else:
-                self.ocrBoxesDir = self.homeDir
-            self.ocrDigitsDir = self.homeDir
-            self.autoSetThreshold = True
+            self.ocrBoxesDir = self.folder_dir
+            self.ocrDigitsDir = self.folder_dir
 
-            self.modelDigitsPath = 'I2-digits.p'
+            self.modelDigitsFilename = 'I2-digits.p'
             if not self.loadPickledOcrBoxes():
                 if width == 640:
                     self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_iota_640_full_screen_mode2()
@@ -975,14 +974,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.showMsg(f'Unexpected image width of {width}')
                 return
 
-            if self.avi_wcs_folder_in_use:
-                self.ocrBoxesDir = self.folder_dir
-            else:
-                self.ocrBoxesDir = self.homeDir
-            self.ocrDigitsDir = self.homeDir
-            self.autoSetThreshold = True
+            self.ocrBoxesDir = self.folder_dir
+            self.ocrDigitsDir = self.folder_dir
 
-            self.modelDigitsPath = 'I2-digits.p'
+            self.modelDigitsFilename = 'I2-digits.p'
             if not self.loadPickledOcrBoxes():
                 if width == 640:
                     self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_iota_640_safe_mode2()
@@ -1004,17 +999,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.showMsg(f'Unexpected image width of {width}')
                 return
 
-            self.modelDigitsPath = 'BS-digits.p'
+            self.modelDigitsFilename = 'BS-digits.p'
 
-            # Force a re-training for BoxSprite (because the characters are so poorly
-            # formed and vary from run to run.  Converting to a binary image makes it worse.)
-            if not self.avi_wcs_folder_in_use:
-                self.ocrDigitsDir = self.homeDir
-                self.ocrBoxesDir = self.homeDir
-                self.deleteModelDigits()
-            else:
-                self.ocrDigitsDir = self.folder_dir
-                self.ocrBoxesDir = self.folder_dir
+
+            self.ocrDigitsDir = self.folder_dir
+            self.ocrBoxesDir = self.folder_dir
 
             if not self.loadPickledOcrBoxes():
                 if width == 640:
@@ -1037,20 +1026,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.showMsg(f'Unexpected image width of {width}')
                 return
 
-            self.modelDigitsPath = 'Kiwi-digits.p'
+            self.modelDigitsFilename = 'Kiwi-digits.p'
 
-            # Force a re-training for Kiwi (because the characters are often poorly
-            # formed and vary in intensity from run to run and instrument to instrument).
-            # Converting to a binary image makes it worse.
-            if not self.avi_wcs_folder_in_use:
-                self.ocrDigitsDir = self.homeDir
-                self.ocrBoxesDir = self.homeDir
-                self.deleteModelDigits()
-            else:
-                # Don't delete model digits if file is in a wcs folder (so user
-                # can customize model digits and have them be sticky.
-                self.ocrDigitsDir = self.folder_dir
-                self.ocrBoxesDir = self.folder_dir
+            self.ocrDigitsDir = self.folder_dir
+            self.ocrBoxesDir = self.folder_dir
 
             if not self.loadPickledOcrBoxes():
                 if width == 640:
@@ -2179,11 +2158,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         img = timestamp_box_image(self.image_fields, ocrbox)
         self.thumbOneImage = img
         self.thumbOneView.setImage(img)
-        cut = self.vtiThresholdSpinner.value() - 1
-        _, t_img = cv2.threshold(img, cut, 1, cv2.THRESH_BINARY)
-        self.thumbTwoImage = t_img
-        self.thumbTwoView.setImage(t_img)
-        # return t_img
+        # TODO verify that this code change is good
+        # cut = self.vtiThresholdSpinner.value() - 1
+        # _, t_img = cv2.threshold(img, cut, 1, cv2.THRESH_BINARY)
+        # self.thumbTwoImage = t_img
+        # self.thumbTwoView.setImage(t_img)
+        self.thumbTwoImage = img
+        self.thumbTwoView.setImage(img)
         return img
 
     def processOcrTemplate(self, digit, ocrbox):
@@ -3135,6 +3116,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def selectAviFolder(self):
 
+        def read_vti_index():
+            f_path = os.path.join(self.folder_dir, 'vti-combo-box-index.txt')
+            if not os.path.exists(f_path):
+                return None
+            with open(f_path, 'r') as f:
+                index_str = f.readline()
+                return int(index_str)
+
         # If a bitmap has just been loaded, it is assumed that the user is employing
         # a 'stacked' star locator to place his apertures.  It is crucial to maintaing the correct
         # offsets between the apertures that at least one of them is yellow, otherwise
@@ -3160,7 +3149,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         QtGui.QGuiApplication.processEvents()
 
         if dir_path:
-            # TODO considering removing in production
             self.showMsg(f'dir_path= {dir_path}')
         else:
             self.showMsg(f'User cancelled')
@@ -3244,8 +3232,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                             f'{len(lnk_list)} avi shortcut files were found.  Only one is allowed in an AVI folder')
                         self.image = None
                         return
-                    # avi_location = winshell.shortcut(lnk_filenames[0])
-                    # self.showMsg(f'Windows: resolved avi location: {avi_location.path}')
 
             elif num_avifiles > 1:
                 self.showMsg(f'{num_avifiles} avi files were found.  Only one is allowed in an AVI folder')
@@ -3254,6 +3240,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 avi_location = avi_filenames[0]
                 # Save as instance variable for use in stacker
                 self.avi_location = avi_location
+                self.filename = avi_location
 
             # remove the star rectangles (possibly) left from previous file
             if not self.preserve_apertures:
@@ -3270,6 +3257,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             if not self.cap.isOpened():
                 self.showMsg(f'  {avi_location} could not be opened!')
             else:
+                self.vtiSelectComboBox.setCurrentIndex(0)
                 self.avi_in_use = True
                 self.savedApertures = None
                 self.enableControlsForAviData()
@@ -3305,8 +3293,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
                 self.currentOcrBox = None
                 self.clearOcrBoxes()
-                self.vtiSelectComboBox.setCurrentIndex(0)
-                self.vtiSelected()
+                vti_index = read_vti_index()
+                if not vti_index is None:
+                    self.vtiSelectComboBox.setCurrentIndex(vti_index)
+                else:
+                    self.vtiSelectComboBox.setCurrentIndex(0)
 
                 self.thumbOneView.clear()
                 self.thumbTwoView.clear()
