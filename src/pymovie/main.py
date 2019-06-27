@@ -656,6 +656,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             return
         my_profile_fn = '/pymovie-ocr-profiles-' + self.userName + '.p'
         mine = self.readSavedOcrProfiles(my_profile_fn)
+        self.formatterCode = self.readFormatTypeFile()
         mine.append({'id': profile_title, 'upper-boxes': self.upperOcrBoxes,
                      'lower-boxes': self.lowerOcrBoxes, 'digits': self.modelDigits,
                      'formatter-code': self.formatterCode})
@@ -3181,7 +3182,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if self.formatterCode is None:
             self.showMsg(f'Timestamp formatter code was missing.')
             self.timestampFormatter = None
-            self.formatterCode = None
         elif self.formatterCode == 'iota':
             self.timestampFormatter = format_iota_timestamp
         elif self.formatterCode == 'boxsprite':
@@ -3192,15 +3192,23 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'Unknown timestamp formatter code: {self.formatterCode}.  Defaulting to Iota')
             self.timestampFormatter = format_iota_timestamp
 
+    def readFormatTypeFile(self):
+        f_path = os.path.join(self.folder_dir, 'formatter.txt')
+        if not os.path.exists(f_path):
+            return None
+        with open(f_path, 'r') as f:
+            code = f.readline()
+            return code
+
     def selectAviFolder(self):
 
-        def read_format_code():
-            f_path = os.path.join(self.folder_dir, 'formatter.txt')
-            if not os.path.exists(f_path):
-                return None
-            with open(f_path, 'r') as f:
-                code = f.readline()
-                return code
+        # def read_format_code():
+        #     f_path = os.path.join(self.folder_dir, 'formatter.txt')
+        #     if not os.path.exists(f_path):
+        #         return None
+        #     with open(f_path, 'r') as f:
+        #         code = f.readline()
+        #         return code
 
         # If a bitmap has just been loaded, it is assumed that the user is employing
         # a 'stacked' star locator to place his apertures.  It is crucial to maintaing the correct
@@ -3383,7 +3391,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.loadModelDigits()
                 self.viewFieldsCheckBox.setChecked(True)
                 self.placeOcrBoxesOnImage()
-                formatter_code = read_format_code()
+                # formatter_code = read_format_code()
+                formatter_code = self.readFormatTypeFile()
                 self.formatterCode = formatter_code
                 self.setTimestampFormatter()
                 self.timestampReadingEnabled = not self.formatterCode is None
