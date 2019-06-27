@@ -20,6 +20,10 @@ The ocrProfileNameDialog module was created by typing
    !pyuic5 ocrProfileNameDialog.ui -o ocrProfileNameDialog.py
 in the IPython console while in src/pymovie directory
 
+The selectProfile module was created by typing
+   !pyuic5 selectProfile.ui -o selectProfile.py
+in the IPython console while in src/pymovie directory
+
 The starPositionDialog module was created by typing
    !pyuic5 starPositionDialog.ui -o starPositionDialog.py
 in the IPython console while in src/pymovie directory
@@ -52,6 +56,7 @@ from urllib.request import urlopen
 import numpy as np
 from pymovie import starPositionDialog
 from pymovie import ocrProfileNameDialog
+from pymovie import selectProfile
 from pymovie import astrometry_client
 from pymovie import wcs_helper_functions
 from pymovie import stacker
@@ -133,6 +138,12 @@ class HelpDialog(QDialog, helpDialog.Ui_Dialog):
 class OcrProfileNameDialog(QDialog, ocrProfileNameDialog.Ui_ocrNameDialog):
     def __init__(self):
         super(OcrProfileNameDialog, self).__init__()
+        self.setupUi(self)
+
+
+class SelectProfileDialog(QDialog, selectProfile.Ui_Dialog):
+    def __init__(self):
+        super(SelectProfileDialog, self).__init__()
         self.setupUi(self)
 
 
@@ -221,7 +232,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.api_key = self.settings.value('api_key', '')
 
         # This is a 'secret' switch that I use for experimental purposes.  It causes
-        # an extended context menu to be generated for ocr charcter selection boxes.
+        # an extended context menu to be generated for ocr character selection boxes.
         # However, if one or modelDigits are found missing, the menu will appear for
         # normal users too.
         self.enableOcrTemplateSampling = self.settings.value('ocrsamplemenu', 'false') == 'true'
@@ -316,9 +327,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.loadCustomProfilesButton.clicked.connect(self.loadCustomOcrProfiles)
         self.loadCustomProfilesButton.installEventFilter(self)
+        self.loadCustomProfilesButton.setEnabled(False)
 
         self.saveProfileButton.installEventFilter(self)
         self.saveProfileButton.clicked.connect(self.saveCurrentOcrProfile)
+        self.saveProfileButton.setEnabled(False)
 
         # For now, we will save OCR profiles in the users home directory. If
         # later we find a better place, this is the only line we need to change
@@ -331,7 +344,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # Initialize all instance variables as a block (to satisfy PEP 8 standard)
 
         self.suppressExtractTimestampCallInSpinnerResponder = False
-        self.timestampOcrPossible = False
+        self.timestampReadingEnabled = False
         self.detectFieldTimeOrder = False
 
         self.savedApertures = None
@@ -624,7 +637,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 # self.showMsg(f'{file}', blankLine=False)
                 # unpickle the list of profile dictionaries ---
                 # {'id': 'profile info', 'upper-boxes': upperOcrBoxes[], 'lower-boxes': lowerOcrBoxes[],
-                #  'digits': modelDigits}[]
+                #  'digits': modelDigits}, 'formatter-code': 'iota'}[]
                 # Keep apending until all profile files have been read
                 dict_list = pickle.load(open(file, "rb"))
                 for entry in dict_list:
@@ -632,17 +645,17 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             return dictionary_list
 
     def saveCurrentOcrProfile(self):
+        if not self.avi_wcs_folder_in_use:
+            self.showMsg(f'This operation only available when an AVI-WCS folder is in use.')
+            return
         title_getter = OcrProfileNameDialog()
         return_value = title_getter.exec_()
         if return_value == QDialog.Accepted:
-            # self.showMsg('Mikey liked it')
             profile_title = title_getter.profileNameEdit.text()
         else:
-            # self.showMsg('refused')
             return
         my_profile_fn = '/pymovie-ocr-profiles-' + self.userName + '.p'
         mine = self.readSavedOcrProfiles(my_profile_fn)
-        # all = self.readSavedOcrProfiles(pattern='/pymovie-ocr-profiles*.p')
         mine.append({'id': profile_title, 'upper-boxes': self.upperOcrBoxes,
                      'lower-boxes': self.lowerOcrBoxes, 'digits': self.modelDigits,
                      'formatter-code': self.formatterCode})
@@ -777,12 +790,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 missing_model_digits += f'{i} '
         if missing_model_digits:
             self.showMsg(f'!!! Model digits {missing_model_digits}are missing !!!')
-            self.timestampOcrPossible = False
+            self.timestampReadingEnabled = False
             self.enableOcrTemplateSampling = True
             return True
         else:
             self.showMsg(f'All model digits (0...9) are present.')
-            self.timestampOcrPossible = True
+            self.timestampReadingEnabled = True
             self.enableOcrTemplateSampling = self.settings.value('ocrsamplemenu', 'false') == 'true'
             return False
 
@@ -860,12 +873,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         return upper_timestamp, upper_time, upper_scores, upper_cum_score, \
                lower_timestamp, lower_time, lower_scores, lower_cum_score
 
-    def vtiSelected(self):
+    def writeFormatTypeFile(self, format_type):
+        f_path = os.path.join(self.folder_dir, 'formatter.txt')
+        with open(f_path, 'w') as f:
+            f.writelines(f'{format_type}')
 
-        def write_format_type(format_type):
-            f_path = os.path.join(self.folder_dir, 'formatter.txt')
-            with open(f_path, 'w') as f:
-                f.writelines(f'{format_type}')
+    def vtiSelected(self):
 
         # Clear the flag that we use to automatically detect which field is earliest in time.
         self.detectFieldTimeOrder = False
@@ -891,7 +904,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             # self.lowerTimestamp = ''
             return
 
-        # self.clearOcrBoxes()
+        self.clearOcrBoxes()
 
         self.viewFieldsCheckBox.setChecked(True)
 
@@ -932,7 +945,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             self.placeOcrBoxesOnImage()
             self.timestampFormatter = format_iota_timestamp
-            write_format_type('iota')
+            self.writeFormatTypeFile('iota')
             self.extractTimestamps()
             return
 
@@ -952,7 +965,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             self.placeOcrBoxesOnImage()
             self.timestampFormatter = format_iota_timestamp
-            write_format_type('iota')
+            self.writeFormatTypeFile('iota')
             self.extractTimestamps()
             return
 
@@ -972,7 +985,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             self.placeOcrBoxesOnImage()
             self.timestampFormatter = format_iota_timestamp
-            write_format_type('iota')
+            self.writeFormatTypeFile('iota')
             self.extractTimestamps()
             return
 
@@ -992,7 +1005,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             self.placeOcrBoxesOnImage()
             self.timestampFormatter = format_iota_timestamp
-            write_format_type('iota')
+            self.writeFormatTypeFile('iota')
             self.extractTimestamps()
             return
 
@@ -1012,7 +1025,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             self.placeOcrBoxesOnImage()
             self.timestampFormatter = format_boxsprite3_timestamp
-            write_format_type('boxsprite')
+            self.writeFormatTypeFile('boxsprite')
             self.extractTimestamps()
             return
 
@@ -1032,7 +1045,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             self.placeOcrBoxesOnImage()
             self.timestampFormatter = format_kiwi_timestamp
-            write_format_type('kiwi')
+            self.writeFormatTypeFile('iota')
             self.extractTimestamps()
             return
 
@@ -1040,11 +1053,45 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         return
 
     def loadCustomOcrProfiles(self):
+        if not self.avi_wcs_folder_in_use:
+            self.showMsg(f'This function only available when an AVI-WCS folder is in use.')
+            return
+        selector = SelectProfileDialog()
         all = self.readSavedOcrProfiles(pattern='/pymovie-ocr-profiles*.p')
         for item in all:
             title = item['id']
-            self.showMsg(f'custom title: {title}', blankLine=False)
-        self.showMsg("", blankLine=False)
+            numRows = selector.selectionTable.rowCount()
+            selector.selectionTable.insertRow(numRows)
+            item = QTableWidgetItem(str(title))
+            selector.selectionTable.setItem(numRows, 0, item)
+        result = selector.exec_()
+        if result == QDialog.Accepted:
+            profile_selected = selector.selectionTable.currentIndex()
+            row = profile_selected.row()
+            # self.showMsg(f'row {row} was selected')
+            ocr_dict = all[row]
+            id_found = ocr_dict['id']
+            # self.showMsg(f'id: {id_found}')
+            # mine.append({'id': profile_title, 'upper-boxes': self.upperOcrBoxes,
+            #              'lower-boxes': self.lowerOcrBoxes, 'digits': self.modelDigits,
+            #              'formatter-code': self.formatterCode})
+            self.clearOcrBoxes()
+            self.upperOcrBoxes = ocr_dict['upper-boxes']
+            self.lowerOcrBoxes = ocr_dict['lower-boxes']
+            self.placeOcrBoxesOnImage()
+            self.modelDigits = ocr_dict['digits']
+            self.formatterCode = ocr_dict['formatter-code']
+            self.setTimestampFormatter()
+            self.showFrame()
+
+            # Next we pickle boxes, digits, and write format code txt file
+            self.pickleOcrBoxes()
+            self.saveModelDigits()
+            self.writeFormatTypeFile(self.formatterCode)
+
+        else:
+            self.showMsg(f'User opted out --- no selection')
+            return
 
     def changeNavButtonTitles(self):
         if self.frameJumpBig == 200:  # FITS titling needed
@@ -1475,6 +1522,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.forwardBigButton.setEnabled(True)
         self.backSmallButton.setEnabled(True)
         self.backBigButton.setEnabled(True)
+        self.viewFieldsCheckBox.setChecked(False)
+        self.viewFieldsCheckBox.setEnabled(False)
 
     def getStarPositionString(self):
         starPos = StarPositionDialog()
@@ -2874,7 +2923,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.fits_folder_in_use = True
             self.clearTextBox()
             self.saveTargetLocButton.setEnabled(True)
-
+            self.saveProfileButton.setEnabled(False)
+            self.loadCustomProfilesButton.setEnabled(False)
 
             self.levels = []
             # remove the star rectangles (possibly) left from previous file
@@ -3054,6 +3104,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.avi_wcs_folder_in_use = False
             self.fits_folder_in_use = False
             self.saveTargetLocButton.setEnabled(False)
+            self.saveProfileButton.setEnabled(False)
+            self.loadCustomProfilesButton.setEnabled(False)
 
             dirpath, _ = os.path.split(self.filename)
             self.folder_dir = dirpath
@@ -3125,6 +3177,21 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.thumbOneView.clear()
                 self.thumbTwoView.clear()
 
+    def setTimestampFormatter(self):
+        if self.formatterCode is None:
+            self.showMsg(f'Timestamp formatter code was missing.')
+            self.timestampFormatter = None
+            self.formatterCode = None
+        elif self.formatterCode == 'iota':
+            self.timestampFormatter = format_iota_timestamp
+        elif self.formatterCode == 'boxsprite':
+            self.timestampFormatter = format_boxsprite3_timestamp
+        elif self.formatterCode == 'kiwi':
+            self.timestampFormatter = format_kiwi_timestamp
+        else:
+            self.showMsg(f'Unknown timestamp formatter code: {self.formatterCode}.  Defaulting to Iota')
+            self.timestampFormatter = format_iota_timestamp
+
     def selectAviFolder(self):
 
         def read_format_code():
@@ -3171,6 +3238,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.avi_wcs_folder_in_use = True
             self.fits_folder_in_use = False
             self.saveTargetLocButton.setEnabled(True)
+            self.saveProfileButton.setEnabled(True)
+            self.loadCustomProfilesButton.setEnabled(True)
 
             self.settings.setValue('avidir', dir_path)  # Make dir 'sticky'"
             self.folder_dir = dir_path
@@ -3304,7 +3373,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.showFrame()
 
                 self.detectFieldTimeOrder = True
-                self.timestampReadingEnabled = True
                 self.ocrDigitsDir = self.folder_dir
                 self.ocrBoxesDir = self.folder_dir
                 self.currentOcrBox = None
@@ -3317,19 +3385,21 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.placeOcrBoxesOnImage()
                 formatter_code = read_format_code()
                 self.formatterCode = formatter_code
-                if formatter_code is None:
-                    self.showMsg(f'Timestamp formatter code was missing.  Defaulting to Iota')
-                    self.timestampFormatter = format_iota_timestamp
-                    self.formatterCode = 'iota'
-                elif formatter_code == 'iota':
-                    self.timestampFormatter = format_iota_timestamp
-                elif formatter_code == 'boxsprite':
-                    self.timestampFormatter = format_boxsprite3_timestamp
-                elif formatter_code == 'kiwi':
-                    self.timestampFormatter = format_kiwi_timestamp
-                else:
-                    self.showMsg(f'Unknown timestamp formatter code: {formatter_code}.  Defaulting to Iota')
-                    self.timestampFormatter = format_iota_timestamp
+                self.setTimestampFormatter()
+                self.timestampReadingEnabled = not self.formatterCode is None
+                # if self.formatterCode is None:
+                #     self.showMsg(f'Timestamp formatter code was missing.  Defaulting to Iota')
+                #     self.timestampFormatter = format_iota_timestamp
+                #     self.formatterCode = 'iota'
+                # elif self.formatterCode == 'iota':
+                #     self.timestampFormatter = format_iota_timestamp
+                # elif self.formatterCode == 'boxsprite':
+                #     self.timestampFormatter = format_boxsprite3_timestamp
+                # elif self.formatterCode == 'kiwi':
+                #     self.timestampFormatter = format_kiwi_timestamp
+                # else:
+                #     self.showMsg(f'Unknown timestamp formatter code: {formatter_code}.  Defaulting to Iota')
+                #     self.timestampFormatter = format_iota_timestamp
 
                 self.currentFrameSpinBox.setValue(1)
                 self.thumbOneView.clear()
