@@ -16,6 +16,10 @@ The apertureNameDialog module was created by typing
    !pyuic5 apertureNameDialog.ui -o apertureNameDialog.py
 in the IPython console while in src/pymovie directory
 
+The ocrProfileNameDialog module was created by typing
+   !pyuic5 ocrProfileNameDialog.ui -o ocrProfileNameDialog.py
+in the IPython console while in src/pymovie directory
+
 The starPositionDialog module was created by typing
    !pyuic5 starPositionDialog.ui -o starPositionDialog.py
 in the IPython console while in src/pymovie directory
@@ -47,6 +51,7 @@ import pickle
 from urllib.request import urlopen
 import numpy as np
 from pymovie import starPositionDialog
+from pymovie import ocrProfileNameDialog
 from pymovie import astrometry_client
 from pymovie import wcs_helper_functions
 from pymovie import stacker
@@ -118,9 +123,16 @@ class FixedImageExporter(pex.ImageExporter):
         self.params.param('width').setValue(int(self.params['height'] * ar),
                                             blockSignal=self.widthChanged)
 
+
 class HelpDialog(QDialog, helpDialog.Ui_Dialog):
     def __init__(self):
         super(HelpDialog, self).__init__()
+        self.setupUi(self)
+
+
+class OcrProfileNameDialog(QDialog, ocrProfileNameDialog.Ui_ocrNameDialog):
+    def __init__(self):
+        super(OcrProfileNameDialog, self).__init__()
         self.setupUi(self)
 
 
@@ -285,7 +297,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 {'name': 'IOTA VTI 2: two line (with P)'},
                 {'name': 'BoxSprite: one-line'},
                 {'name': 'Kiwi'},
-                {'name': 'from custom profile'}
             ]
             pickle.dump(self.VTIlist, open(vtiListFilename, "wb"))
             self.showMsg(f'pickled self.VTIlist to {vtiListFilename}')
@@ -302,6 +313,20 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.vtiSelectComboBox.installEventFilter(self)
         self.vtiSelectComboBox.currentIndexChanged.connect(self.vtiSelected)
+
+        self.loadCustomProfilesButton.clicked.connect(self.loadCustomOcrProfiles)
+        self.loadCustomProfilesButton.installEventFilter(self)
+
+        self.saveProfileButton.installEventFilter(self)
+        self.saveProfileButton.clicked.connect(self.saveCurrentOcrProfile)
+
+        # For now, we will save OCR profiles in the users home directory. If
+        # later we find a better place, this is the only line we need to change
+        self.profilesDir = os.path.expanduser('~')
+
+        # We will need the user name when we write a pickled list of profile dictionaries.
+        # We name them: pymovie-ocr-profiles-username.p to facilitate sharing among users
+        self.userName = os.path.basename(self.profilesDir)
 
         # Initialize all instance variables as a block (to satisfy PEP 8 standard)
 
@@ -580,13 +605,48 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.view3DButton.clicked.connect(self.show3DThumbnail)
         self.view3DButton.installEventFilter(self)
 
-        # self.buildDefaultMask(radius=5.3)
-
         self.changePlotSymbolSize()
 
         self.disableControlsWhenNoData()
 
         self.copy_desktop_icon_file_to_home_directory()
+
+    def readSavedOcrProfiles(self, pattern):
+        # pattern will be either '/pymovie-ocr-profiles*.p' or '/pymovie-ocr-profiles-username.p'
+        # get list of your pymovie custom profiles (from users root directory)
+        available_profiles = glob.glob(self.profilesDir + pattern)
+
+        dictionary_list = []
+        if len(available_profiles) == 0:
+            return dictionary_list
+        else:
+            for file in available_profiles:
+                # self.showMsg(f'{file}', blankLine=False)
+                # unpickle the list of profile dictionaries ---
+                # {'id': 'profile info', 'upper-boxes': upperOcrBoxes[], 'lower-boxes': lowerOcrBoxes[],
+                #  'digits': modelDigits}[]
+                # Keep apending until all profile files have been read
+                dict_list = pickle.load(open(file, "rb"))
+                for entry in dict_list:
+                    dictionary_list.append(entry)
+            return dictionary_list
+
+    def saveCurrentOcrProfile(self):
+        title_getter = OcrProfileNameDialog()
+        return_value = title_getter.exec_()
+        if return_value == QDialog.Accepted:
+            # self.showMsg('Mikey liked it')
+            profile_title = title_getter.profileNameEdit.text()
+        else:
+            # self.showMsg('refused')
+            return
+        my_profile_fn = '/pymovie-ocr-profiles-' + self.userName + '.p'
+        mine = self.readSavedOcrProfiles(my_profile_fn)
+        # all = self.readSavedOcrProfiles(pattern='/pymovie-ocr-profiles*.p')
+        mine.append({'id': profile_title, 'upper-boxes': self.upperOcrBoxes,
+                     'lower-boxes': self.lowerOcrBoxes, 'digits': self.modelDigits,
+                     'formatter-code': self.formatterCode})
+        pickle.dump(mine, open(self.profilesDir + my_profile_fn, "wb"))
 
     def handleChangeOfDisplayMode(self):
         # self.showMsg(f'View avi fields: {self.viewFieldsCheckBox.isChecked()}')
@@ -706,6 +766,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             # self.showMsg(f'lower OCR boxes loaded from {lower_boxes}')
             return True
         else:
+            self.upperOcrBoxes = []
+            self.lowerOcrBoxes = []
             return False
 
     def showMissingModelDigits(self):
@@ -809,6 +871,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.detectFieldTimeOrder = False
 
         self.currentVTIindex = self.vtiSelectComboBox.currentIndex()
+        # self.vtiSelectComboBox.setCurrentIndex(0)
+
         # dictionaryOfSelection = repr(self.VTIlist[self.currentVTIindex])
         # self.showMsg(f'VTI: {dictionaryOfSelection}')
 
@@ -821,15 +885,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.vtiSelectComboBox.setCurrentIndex(0)
 
         if self.currentVTIindex == 0:  # None
-            self.clearOcrBoxes()
-            self.timestampFormatter = None
-            self.upperTimestamp = ''
-            self.lowerTimestamp = ''
+            # self.clearOcrBoxes()
+            # self.timestampFormatter = None
+            # self.upperTimestamp = ''
+            # self.lowerTimestamp = ''
             return
 
-        self.clearOcrBoxes()
-
-        # write_index()
+        # self.clearOcrBoxes()
 
         self.viewFieldsCheckBox.setChecked(True)
 
@@ -839,7 +901,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.currentFrameSpinBox.setValue(1)
 
         # Set the flag that we use to automatically detect which field is earliest in time.
-        # We only want to do this test once (or at threshold changes)
+        # We only want to do this test once.
 
         self.detectFieldTimeOrder = True
 
@@ -976,6 +1038,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.showMsg('Not yet implemented')
         return
+
+    def loadCustomOcrProfiles(self):
+        all = self.readSavedOcrProfiles(pattern='/pymovie-ocr-profiles*.p')
+        for item in all:
+            title = item['id']
+            self.showMsg(f'custom title: {title}', blankLine=False)
+        self.showMsg("", blankLine=False)
 
     def changeNavButtonTitles(self):
         if self.frameJumpBig == 200:  # FITS titling needed
@@ -3247,9 +3316,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.viewFieldsCheckBox.setChecked(True)
                 self.placeOcrBoxesOnImage()
                 formatter_code = read_format_code()
+                self.formatterCode = formatter_code
                 if formatter_code is None:
                     self.showMsg(f'Timestamp formatter code was missing.  Defaulting to Iota')
                     self.timestampFormatter = format_iota_timestamp
+                    self.formatterCode = 'iota'
                 elif formatter_code == 'iota':
                     self.timestampFormatter = format_iota_timestamp
                 elif formatter_code == 'boxsprite':

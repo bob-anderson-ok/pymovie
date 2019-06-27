@@ -934,6 +934,20 @@
             </widget>
            </item>
            <item>
+            <widget class="QPushButton" name="saveProfileButton">
+             <property name="text">
+              <string>Save OCR profile</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="loadCustomProfilesButton">
+             <property name="text">
+              <string>Select custom ocr profile</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <spacer name="horizontalSpacer_10">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
