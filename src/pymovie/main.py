@@ -88,6 +88,7 @@ from pymovie.apertureEdit import *
 from pymovie import alias_lnk_resolver
 if not os.name == 'posix':
     import winshell
+    # from win32com.client import Dispatch
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=RuntimeWarning)
@@ -324,6 +325,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.vtiSelectComboBox.installEventFilter(self)
         self.vtiSelectComboBox.currentIndexChanged.connect(self.vtiSelected)
+
+        self.createAVIWCSfolderButton.clicked.connect(self.createAviWcsFolder)
+        self.createAVIWCSfolderButton.installEventFilter(self)
 
         self.loadCustomProfilesButton.clicked.connect(self.loadCustomOcrProfiles)
         self.loadCustomProfilesButton.installEventFilter(self)
@@ -624,6 +628,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.copy_desktop_icon_file_to_home_directory()
 
+    def createAviWcsFolder(self):
+        self.showMsg(f'Not yet implemented.')
+
     def readSavedOcrProfiles(self, pattern):
         # pattern will be either '/pymovie-ocr-profiles*.p' or '/pymovie-ocr-profiles-username.p'
         # get list of your pymovie custom profiles (from users root directory)
@@ -670,8 +677,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             # clear all apertures
             self.clearApertures()
             self.showFrame()
-            if self.lowerOcrBoxes and not self.currentVTIindex == 0:
-                self.placeOcrBoxesOnImage()
+            # if self.lowerOcrBoxes and not self.currentVTIindex == 0:
+            #     self.placeOcrBoxesOnImage()
         else:
             # clear ocr boxes (if any)
             if self.lowerOcrBoxes:
@@ -709,8 +716,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             yadj = int(self.image.shape[0] / 2)
             ocr.setBox((xL + dx, xR + dx, yU + dy + yadj, yL + dy + yadj))
 
-        self.frameView.getView().update()
-
         self.pickleOcrBoxes()
 
     def jogOcrBoxes(self, dx, dy):
@@ -731,6 +736,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             newLowerBoxes.append((xL + dx, xR + dx, yU + dy, yL + dy))
         self.upperOcrBoxes = newUpperBoxes[:]
         self.lowerOcrBoxes = newLowerBoxes[:]
+
         self.clearOcrBoxes()
         self.placeOcrBoxesOnImage()
         self.pickleOcrBoxes()
@@ -1079,10 +1085,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.clearOcrBoxes()
             self.upperOcrBoxes = ocr_dict['upper-boxes']
             self.lowerOcrBoxes = ocr_dict['lower-boxes']
-            self.placeOcrBoxesOnImage()
+            # self.placeOcrBoxesOnImage()
             self.modelDigits = ocr_dict['digits']
             self.formatterCode = ocr_dict['formatter-code']
-            self.setTimestampFormatter()
+            # self.setTimestampFormatter()
 
             # self.showFrame()
 
@@ -2894,6 +2900,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if ocrboxes:
             for ocrbox in ocrboxes:
                 self.removeOcrBox(ocrbox)
+        self.frameView.getView().update()
 
     def setAllOcrBoxJogging(self, enable, position):
         ocrboxes = self.getOcrBoxList()

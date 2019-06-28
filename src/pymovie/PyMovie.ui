@@ -88,7 +88,7 @@
           </layout>
          </item>
          <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_12" stretch="2,2">
+          <layout class="QHBoxLayout" name="horizontalLayout_12" stretch="2,2,0">
            <property name="spacing">
             <number>-1</number>
            </property>
@@ -109,6 +109,16 @@
              </property>
              <property name="text">
               <string>Open AVI file</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="createAVIWCSfolderButton">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;We'll fill in the tool-tip once we have the feature fully working.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>Create AVI-WCS folder from AVI file</string>
              </property>
             </widget>
            </item>
@@ -588,9 +598,15 @@
            </item>
            <item>
             <widget class="QCheckBox" name="cascadeCheckBox">
+             <property name="minimumSize">
+              <size>
+               <width>120</width>
+               <height>0</height>
+              </size>
+             </property>
              <property name="maximumSize">
               <size>
-               <width>80</width>
+               <width>120</width>
                <height>16777215</height>
               </size>
              </property>
@@ -604,7 +620,7 @@
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If checked, lightcurve plots will cascade from the upper left of the monitor diagonally toward the lower right.&lt;/p&gt;&lt;p&gt;If unchecked, lightcurve plots will stack on top of each other in the center of the monitor.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="layoutDirection">
-              <enum>Qt::RightToLeft</enum>
+              <enum>Qt::LeftToRight</enum>
              </property>
              <property name="text">
               <string>cascade</string>

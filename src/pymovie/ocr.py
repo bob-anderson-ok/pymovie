@@ -319,7 +319,8 @@ def extract_timestamp(field, field_boxes, field_digits, formatter, thresh):
 
 
 def format_iota_timestamp(ts):
-    assert len(ts) == 14
+    assert (len(ts) == 14), "len(ts) not equal to 14 in iota timestamp formatter"
+
     try:
         hh = 10 * int(ts[0]) + int(ts[1])
         mm = 10 * int(ts[2]) + int(ts[3])
@@ -337,7 +338,7 @@ def format_iota_timestamp(ts):
 
 
 def format_kiwi_timestamp(ts_str):
-    assert len(ts_str) == 9
+    assert (len(ts_str) == 9), "len(ts_str) not equal to 9 in kiwi timestamp formatter"
     ts = [0] * 9
     try:
         for i, value in enumerate(ts_str):
@@ -357,7 +358,7 @@ def format_kiwi_timestamp(ts_str):
 
 
 def format_boxsprite3_timestamp(ts):
-    assert len(ts) == 11
+    assert (len(ts) == 11), "len(ts) not equal to 11 in boxsprite timestamp formatter"
     try:
         hh = 10 * int(ts[0]) + int(ts[1])
         mm = 10 * int(ts[2]) + int(ts[3])
