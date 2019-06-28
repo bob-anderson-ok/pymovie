@@ -2171,6 +2171,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         y_size = None
         max_pixel = None
 
+        # TODO remove this test code --- it breaks things It tests leaving out Kiwi blank lines
+        # for i, img in enumerate(self.modelDigits):
+        #     self.modelDigits[i] = img[0::2, :]
+
         if retrain:
             for i, _ in enumerate(self.modelDigits):
                 self.modelDigits[i] = None
@@ -2209,6 +2213,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         p.ui.menuBtn.hide()
         p.ui.roiBtn.hide()
         p.ui.histogram.hide()
+
+        print_confusion_matrix(self.modelDigits, self.showMsg)
 
     def showOcrCharacter(self, ocrbox):
         self.currentOcrBox = ocrbox
@@ -3202,14 +3208,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def selectAviFolder(self):
 
-        # def read_format_code():
-        #     f_path = os.path.join(self.folder_dir, 'formatter.txt')
-        #     if not os.path.exists(f_path):
-        #         return None
-        #     with open(f_path, 'r') as f:
-        #         code = f.readline()
-        #         return code
-
         # If a bitmap has just been loaded, it is assumed that the user is employing
         # a 'stacked' star locator to place his apertures.  It is crucial to maintaing the correct
         # offsets between the apertures that at least one of them is yellow, otherwise
@@ -3663,9 +3661,15 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.frameView.setImage(self.image)
                 self.createImageFields()
 
-            if self.timestampFormatter is not None:
-                self.upperTimestamp, time1, score1, _, self.lowerTimestamp, time2, score2, _ = \
-                    self.extractTimestamps()
+            try:
+                if self.avi_wcs_folder_in_use:
+                    if self.timestampFormatter is not None:
+                        self.upperTimestamp, time1, score1, _, self.lowerTimestamp, time2, score2, _ = \
+                            self.extractTimestamps()
+            except Exception as e:
+                self.showMsg(f'The following exception occurred while trying to read timestamp:',
+                             blankLine=False)
+                self.showMsg(repr(e))
 
             if self.levels:
                 self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
