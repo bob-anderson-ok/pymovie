@@ -1083,12 +1083,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.modelDigits = ocr_dict['digits']
             self.formatterCode = ocr_dict['formatter-code']
             self.setTimestampFormatter()
-            self.showFrame()
 
-            # Next we pickle boxes, digits, and write format code txt file
+            # self.showFrame()
+
+            # Next we pickle boxes, digits, and write format code txt file and start reading timestamps
             self.pickleOcrBoxes()
             self.saveModelDigits()
             self.writeFormatTypeFile(self.formatterCode)
+            self.startTimestampReading()
 
         else:
             self.showMsg(f'User opted out --- no selection')
@@ -3258,6 +3260,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 if self.cap:
                     self.cap.release()
             except Exception as e:
+                self.showMsg(f'While trying to cleard FrameView got following exception:',
+                             blankLine=False)
                 self.showMsg(f'{e}')
 
             # We need to know what OS we're running under in order to look for
@@ -3328,7 +3332,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.avi_location = avi_location
                 self.filename = avi_location
 
-            # remove the star rectangles (possibly) left from previous file
+            # remove the apertures (possibly) left from previous file
             if not self.preserve_apertures:
                 self.clearApertures()
 
@@ -3378,41 +3382,56 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.initialFrame = True
                 self.showFrame()
 
-                self.detectFieldTimeOrder = True
+                # Initialize ocr related directories
                 self.ocrDigitsDir = self.folder_dir
                 self.ocrBoxesDir = self.folder_dir
                 self.currentOcrBox = None
-                self.clearOcrBoxes()
+                self.clearOcrBoxes()  # From any previous ocr setup
+
                 self.modelDigitsFilename = 'custom-digits.p'
                 self.ocrboxBasePath = 'custom-boxes'
-                self.loadPickledOcrBoxes()
-                self.loadModelDigits()
-                self.viewFieldsCheckBox.setChecked(True)
-                self.placeOcrBoxesOnImage()
-                # formatter_code = read_format_code()
-                formatter_code = self.readFormatTypeFile()
-                self.formatterCode = formatter_code
-                self.setTimestampFormatter()
-                self.timestampReadingEnabled = not self.formatterCode is None
-                # if self.formatterCode is None:
-                #     self.showMsg(f'Timestamp formatter code was missing.  Defaulting to Iota')
-                #     self.timestampFormatter = format_iota_timestamp
-                #     self.formatterCode = 'iota'
-                # elif self.formatterCode == 'iota':
-                #     self.timestampFormatter = format_iota_timestamp
-                # elif self.formatterCode == 'boxsprite':
-                #     self.timestampFormatter = format_boxsprite3_timestamp
-                # elif self.formatterCode == 'kiwi':
-                #     self.timestampFormatter = format_kiwi_timestamp
-                # else:
-                #     self.showMsg(f'Unknown timestamp formatter code: {formatter_code}.  Defaulting to Iota')
-                #     self.timestampFormatter = format_iota_timestamp
 
-                self.currentFrameSpinBox.setValue(1)
+                # This is how we starup timestamp extraction.  This should be moved
+                # into it's own method so that it can be invoked when a custon ocr
+                # profile is loaded
+                # self.loadPickledOcrBoxes()  # if any
+                # self.loadModelDigits()      # if any
+                #
+                # formatter_code = self.readFormatTypeFile()
+                # self.formatterCode = formatter_code
+                # self.timestampReadingEnabled = not self.formatterCode is None
+                #
+                # if self.timestampReadingEnabled:
+                #     self.detectFieldTimeOrder = True
+                #     self.setTimestampFormatter()
+                #     self.viewFieldsCheckBox.setChecked(True)
+                #     self.placeOcrBoxesOnImage()
+                #     self.currentFrameSpinBox.setValue(1)
+
+                self.startTimestampReading()
+
                 self.thumbOneView.clear()
                 self.thumbTwoView.clear()
 
             self.processTargetAperturePlacementFiles()
+
+    def startTimestampReading(self):
+        # This is how we starup timestamp extraction.
+
+        # We assume that if a valid timestamp formatter selection code is
+        # present, then timestamp reading should be attempted
+        formatter_code = self.readFormatTypeFile()
+        self.formatterCode = formatter_code
+        self.timestampReadingEnabled = not self.formatterCode is None
+
+        if self.timestampReadingEnabled:
+            self.loadPickledOcrBoxes()  # if any
+            self.loadModelDigits()  # if any
+            self.detectFieldTimeOrder = True
+            self.currentFrameSpinBox.setValue(1)  # This triggers a self.showFrame() call
+            self.setTimestampFormatter()
+            self.viewFieldsCheckBox.setChecked(True)
+            self.placeOcrBoxesOnImage()
 
     def getFrameNumberFromFile(self, filename):
         fullpath = self.folder_dir + r'/' + filename
