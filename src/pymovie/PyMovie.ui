@@ -115,7 +115,7 @@
            <item>
             <widget class="QPushButton" name="createAVIWCSfolderButton">
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;We'll fill in the tool-tip once we have the feature fully working.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button will only be active when a 'bare' avi is opened (rather than from an AVI-WCS folder).&lt;/p&gt;&lt;p&gt;This button has been added because of the decision to perform timestamp OCR only on avi files that live in an AVI-WCS folder. While that is a good way to collect the (many) files that result from OCR, WCS, PyMovie, and PyOTE operations, there are likely to be users that have opted for a flat (or flatter) directory structure. This button will ease (hopefully) the transition to an alternate file organization.&lt;/p&gt;&lt;p&gt;When clicked, a Directory dialog will appear to allow the user to select (or even create) the directory that is to hold the newly created (and filled) AVI-WCS folder. It defaults to the directory that holds the opened avi.&lt;/p&gt;&lt;p&gt;The name of the newly created AVI-WCS folder will always be the name of the avi file with its outermost extension removed.&lt;/p&gt;&lt;p&gt;The folder will then be populated with an alias (Mac) to the avi or a Shortcut (Windows) to the avi, so this file structure will be frugal with file space.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
               <string>Create AVI-WCS folder from AVI file</string>

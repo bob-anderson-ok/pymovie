@@ -86,6 +86,8 @@ from pymovie.ocr import *
 from pymovie.apertureEdit import *
 # from scipy.signal import savgol_filter
 from pymovie import alias_lnk_resolver
+import pathlib
+
 if not os.name == 'posix':
     import winshell
     # from win32com.client import Dispatch
@@ -328,6 +330,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.createAVIWCSfolderButton.clicked.connect(self.createAviWcsFolder)
         self.createAVIWCSfolderButton.installEventFilter(self)
+        self.createAVIWCSfolderButton.setEnabled(False)
 
         self.loadCustomProfilesButton.clicked.connect(self.loadCustomOcrProfiles)
         self.loadCustomProfilesButton.installEventFilter(self)
@@ -629,7 +632,42 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.copy_desktop_icon_file_to_home_directory()
 
     def createAviWcsFolder(self):
-        self.showMsg(f'Not yet implemented.')
+        options = QFileDialog.Options()
+        # options |= QFileDialog.DontUseNativeDialog
+        options |= QFileDialog.DirectoryOnly
+
+        dirname = QFileDialog.getExistingDirectory(
+            self,  # parent
+            "Select directory where AVI-WCS folder should be placed",  # title for dialog
+            self.settings.value('avidir', "./"),  # starting directory
+            options=options
+        )
+        if dirname:
+            self.showMsg(f'AVI-WCS folder will be created in: {dirname}', blankLine=False)
+            base_with_ext  = os.path.basename(self.filename)
+            base, _ = os.path.splitext(base_with_ext)
+            self.showMsg(f'and the directory will be named {base}')
+            full_dir_path = os.path.join(dirname, base)
+            pathlib.Path(full_dir_path).mkdir(parents=True, exist_ok=True)
+            if os.name == 'posix':
+                ok, file, dir, retval, source = alias_lnk_resolver.create_osx_alias_in_dir(self.filename, full_dir_path)
+                if not ok:
+                    self.showMsg('Failed to create and populate AVI-WCS folder')
+                else:
+                    self.showMsg('AVI-WCS folder created and populated')
+                # self.showMsg(f'  file: {file}\n  dir: {dir}\n  retval: {retval}\n  source: {source}')
+            else:
+                self.showMsg(f'os.name={os.name} not yet fully supported for AVI-WCS folder creation.')
+                # Make sure that there is a directory waiting for the shortcut file
+                os.makedirs(full_dir_path, exist_ok=True)
+
+                shortcut = winshell.shortcut(self.filename)
+                base_lnk_name = os.path.basename(shortcut.lnk_filepath)
+                dest_path = os.path.join(full_dir_path, base_lnk_name)
+                shortcut.lnk_filepath = dest_path
+                shortcut.write()
+        else:
+            self.showMsg(f'Operation was cancelled.')
 
     def readSavedOcrProfiles(self, pattern):
         # pattern will be either '/pymovie-ocr-profiles*.p' or '/pymovie-ocr-profiles-username.p'
@@ -2942,6 +2980,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.saveProfileButton.setEnabled(False)
             self.loadCustomProfilesButton.setEnabled(False)
 
+            self.createAVIWCSfolderButton.setEnabled(False)
+
             self.levels = []
             # remove the star rectangles (possibly) left from previous file
             self.clearApertures()
@@ -3025,6 +3065,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         QtGui.QGuiApplication.processEvents()
 
         if self.filename:
+            self.createAVIWCSfolderButton.setEnabled(False)
             self.clearTextBox()
             self.preserve_apertures = True
             # remove the apertures (possibly) left from previous file
@@ -3122,6 +3163,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.saveTargetLocButton.setEnabled(False)
             self.saveProfileButton.setEnabled(False)
             self.loadCustomProfilesButton.setEnabled(False)
+
+            self.createAVIWCSfolderButton.setEnabled(True)
 
             dirpath, _ = os.path.split(self.filename)
             self.folder_dir = dirpath
@@ -3256,6 +3299,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.saveProfileButton.setEnabled(True)
             self.loadCustomProfilesButton.setEnabled(True)
 
+            self.createAVIWCSfolderButton.setEnabled(False)
+
             self.settings.setValue('avidir', dir_path)  # Make dir 'sticky'"
             self.folder_dir = dir_path
 
@@ -3267,7 +3312,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 if self.cap:
                     self.cap.release()
             except Exception as e:
-                self.showMsg(f'While trying to cleard FrameView got following exception:',
+                self.showMsg(f'While trying to clear FrameView got following exception:',
                              blankLine=False)
                 self.showMsg(f'{e}')
 
@@ -3282,62 +3327,30 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 windows = True
                 # self.showMsg(f'os: Windows')
 
+            # TODO Make sure this does not break Mac  (picking up both regular and avi)
             # Find a .avi file in the given directory.  Enforce that there be only one.
-            avi_filenames = sorted(glob.glob(dir_path + '/*.avi'))
+            # Note: this picks up alias (mac) and shortcut (Windows) files too.
+            avi_filenames = glob.glob(dir_path + '/*.avi*')
 
-            num_avifiles = len(avi_filenames)
             avi_location = ''
+            num_avifiles = len(avi_filenames)
 
-            if num_avifiles == 0:
-                # Try to find alias or shortcut files --- the avi may be referenced that way
-                lnk_filenames = sorted(glob.glob(dir_path + '/*.lnk'))
-                alias_filenames = sorted(glob.glob(dir_path + '/*alias'))
-
-                if macOS and len(alias_filenames) == 0:
-                    self.showMsg(f'No avi files or aliases to avi files found.')
-                    return
-                elif macOS:
-                    # Get the actual location of the avi file from its alias
-                    alias_list = []
-                    for alias in alias_filenames:
-                        target = alias_lnk_resolver.resolve_osx_alias(alias)
-                        if target.endswith('.avi'):
-                            alias_list.append(target)
-                    if len(alias_list) == 1:
-                        avi_location = alias_list[0]
-                        self.avi_location = avi_location
-                        self.showMsg(f'MacOS resolved avi location: {avi_location}')
-                    else:
-                        self.showMsg(f'{len(alias_list)} avi alias files were found.  Only one is allowed in an AVI folder')
-                        return
-
-                if windows and len(lnk_filenames) == 0:
-                    self.showMsg(f'No avi files or shortcuts to avi files found.')
-                    return
-                elif windows:
-                    lnk_list = []
-                    for link in lnk_filenames:
-                        target = winshell.shortcut(link)
-                        if target.path.endswith('.avi'):
-                            lnk_list.append(target.path)
-                    if len(lnk_list) == 1:
-                        avi_location = lnk_list[0]
-                        self.avi_location = avi_location
-                        self.showMsg(f'Windows resolved avi location: {avi_location}')
-                    else:
-                        self.showMsg(
-                            f'{len(lnk_list)} avi shortcut files were found.  Only one is allowed in an AVI folder')
-                        self.image = None
-                        return
-
-            elif num_avifiles > 1:
-                self.showMsg(f'{num_avifiles} avi files were found.  Only one is allowed in an AVI folder')
-                return
-            else:  # one avi is physically in the folder
+            if num_avifiles == 1:  # one avi (or alias or shortcut) is in the folder)
                 avi_location = avi_filenames[0]
+                if macOS:
+                    avi_location = alias_lnk_resolver.resolve_osx_alias(avi_location)
+                else:
+                    target = winshell.shortcut(avi_location)
+                    avi_location = target.path
                 # Save as instance variable for use in stacker
                 self.avi_location = avi_location
                 self.filename = avi_location
+            elif num_avifiles > 1:
+                self.showMsg(f'{num_avifiles} avi files were found.  Only one is allowed in an AVI-WCS folder')
+                return
+            else:
+                self.showMsg(f'No avi files were found in that folder.')
+                return
 
             # remove the apertures (possibly) left from previous file
             if not self.preserve_apertures:
