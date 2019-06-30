@@ -643,11 +643,15 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             options=options
         )
         if dirname:
+
             self.showMsg(f'AVI-WCS folder will be created in: {dirname}', blankLine=False)
             base_with_ext  = os.path.basename(self.filename)
             base, _ = os.path.splitext(base_with_ext)
             self.showMsg(f'and the directory will be named {base}')
             full_dir_path = os.path.join(dirname, base)
+
+            self.settings.setValue('avidir', full_dir_path)  # Make dir 'sticky'"
+
             pathlib.Path(full_dir_path).mkdir(parents=True, exist_ok=True)
             if os.name == 'posix':
                 ok, file, dir, retval, source = alias_lnk_resolver.create_osx_alias_in_dir(self.filename, full_dir_path)
@@ -657,7 +661,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     self.showMsg('AVI-WCS folder created and populated')
                 # self.showMsg(f'  file: {file}\n  dir: {dir}\n  retval: {retval}\n  source: {source}')
             else:
-                self.showMsg(f'os.name={os.name} not yet fully supported for AVI-WCS folder creation.')
+                # self.showMsg(f'os.name={os.name} not yet fully supported for AVI-WCS folder creation.')
                 # Make sure that there is a directory waiting for the shortcut file
                 os.makedirs(full_dir_path, exist_ok=True)
 
@@ -2245,11 +2249,15 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         blank = np.zeros((y_size, x_size), dtype='uint8')
 
+        ok_to_print_confusion_matrix = True
+
         digits = self.modelDigits.copy()
         spaced_digits = []
         for i, digit in enumerate(digits):
             if digit is None:
                 digits[i] = blank
+                ok_to_print_confusion_matrix = False
+
             blk_border = cv2.copyMakeBorder(digits[i], 1, 1, 1, 1, cv2.BORDER_CONSTANT, value=0)
             wht_border = cv2.copyMakeBorder(blk_border, 1, 1, 1, 1, cv2.BORDER_CONSTANT, value=border_value)
             spaced_digits.append(wht_border)
@@ -2260,7 +2268,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         p.ui.roiBtn.hide()
         p.ui.histogram.hide()
 
-        print_confusion_matrix(self.modelDigits, self.showMsg)
+        if ok_to_print_confusion_matrix:
+            print_confusion_matrix(self.modelDigits, self.showMsg)
 
     def showOcrCharacter(self, ocrbox):
         self.currentOcrBox = ocrbox
