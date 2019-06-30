@@ -354,6 +354,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.timestampReadingEnabled = False
         self.detectFieldTimeOrder = False
 
+        self.acceptAviFolderDirectoryWithoutUserIntervention = False
+
         self.savedApertures = None
 
         self.upperOcrBoxes = None
@@ -670,6 +672,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 dest_path = os.path.join(full_dir_path, base_lnk_name)
                 shortcut.lnk_filepath = dest_path
                 shortcut.write()
+
+            self.acceptAviFolderDirectoryWithoutUserIntervention = True
+            self.selectAviFolder()
         else:
             self.showMsg(f'Operation was cancelled.')
 
@@ -3280,24 +3285,28 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         #     if not ok:
         #         return
 
-        options = QFileDialog.Options()
-        options |= QFileDialog.ShowDirsOnly
-        # options |= QFileDialog.DontUseNativeDialog
+        if not self.acceptAviFolderDirectoryWithoutUserIntervention:
+            options = QFileDialog.Options()
+            options |= QFileDialog.ShowDirsOnly
+            # options |= QFileDialog.DontUseNativeDialog
 
-        dir_path = QFileDialog.getExistingDirectory(
-            self,  # parent
-            "Select directory",  # title for dialog
-            self.settings.value('avidir', "./"),  # starting directory
-            options=options
-        )
+            dir_path = QFileDialog.getExistingDirectory(
+                self,  # parent
+                "Select directory",  # title for dialog
+                self.settings.value('avidir', "./"),  # starting directory
+                options=options
+            )
 
-        QtGui.QGuiApplication.processEvents()
+            QtGui.QGuiApplication.processEvents()
 
-        if dir_path:
-            self.showMsg(f'dir_path= {dir_path}')
+            if dir_path:
+                self.showMsg(f'dir_path= {dir_path}')
+            else:
+                self.showMsg(f'User cancelled')
+                return
         else:
-            self.showMsg(f'User cancelled')
-            return
+            dir_path = self.settings.value('avidir', "./")
+            self.acceptAviFolderDirectoryWithoutUserIntervention = False
 
         if dir_path:
             self.wcs_solution_available = False
