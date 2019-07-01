@@ -187,16 +187,24 @@ def setup_for_iota_640_full_screen_mode2():
     return upper_field_boxes, lower_field_boxes
 
 
-def setup_for_kiwi_vti_720():
-    # Do initializations needed for KIWI VTI timestamp extraction
-
+def kiwi_720_boxes(dx):
     # Define xy coordinates of upper field character box corners
-    xcU = [59, 83, 129, 153, 200, 224, 295, 319, 343]
-    ycU = [205] * 9
+    xcU = [59, 83, 130, 154, 200, 224, 295, 320, 345, 414, 438, 462]
+    ycU = [205] * 12
 
     # Define xy coordinates of lower field character box corners
-    xcL = [60, 84, 130, 154, 201, 225, 414, 438, 462]
-    ycL = [204] * 9
+    xcL = [60, 84, 130, 154, 201, 225, 295, 320, 343, 414, 438, 462]
+    ycL = [204] * 12
+
+    xcU = [x + dx for x in xcU]
+    xcL = [x + dx for x in xcL]
+
+    return xcU, ycU, xcL, ycL
+
+
+def setup_for_kiwi_vti_720_left():
+
+    xcU, ycU, xcL, ycL = kiwi_720_boxes(0)
 
     # Turn box corners into full box coordinate tuples
     upper_field_boxes = [None] * len(xcL)
@@ -208,16 +216,49 @@ def setup_for_kiwi_vti_720():
     return upper_field_boxes, lower_field_boxes
 
 
-def setup_for_kiwi_vti_640():
-    # Do initializations needed for KIWI VTI timestamp extraction
+def setup_for_kiwi_vti_720_right():
 
+    xcU, ycU, xcL, ycL = kiwi_720_boxes(11)
+
+    # Turn box corners into full box coordinate tuples
+    upper_field_boxes = [None] * len(xcL)
+    lower_field_boxes = [None] * len(xcL)
+    for i in range(len(xcL)):
+        upper_field_boxes[i] = ((xcU[i], xcU[i] + 23, ycU[i], ycU[i] + 13))
+        lower_field_boxes[i] = ((xcL[i], xcL[i] + 23, ycL[i], ycL[i] + 13))
+
+    return upper_field_boxes, lower_field_boxes
+
+
+def kiwi_640_boxes(dx):
     # Define xy coordinates of upper field character box corners
-    xcU = [60, 83, 123, 146, 188, 211, 272, 294, 314]
-    ycU = [205] * 9
+    xcU = [49, 72, 112, 135, 177, 197, 261, 282, 302, 365, 388, 408]
+    ycU = [205] * 12
 
     # Define xy coordinates of lower field character box corners
-    xcL = [61, 84, 124, 147, 189, 212, 376, 399, 419]
-    ycL = [204] * 9
+    xcL = [50, 73, 113, 136, 178, 198, 261, 282, 303, 365, 388, 408]
+    ycL = [204] * 12
+
+    xcU = [x + dx for x in xcU]
+    xcL = [x + dx for x in xcL]
+
+    return xcU, ycU, xcL, ycL
+
+
+def setup_for_kiwi_vti_640_left():
+    xcU, ycU, xcL, ycL = kiwi_640_boxes(0)
+
+    # Turn box corners into full box coordinate tuples
+    upper_field_boxes = [None] * len(xcL)
+    lower_field_boxes = [None] * len(xcL)
+    for i in range(len(xcL)):
+        upper_field_boxes[i] = ((xcU[i], xcU[i] + 23, ycU[i], ycU[i] + 13))
+        lower_field_boxes[i] = ((xcL[i], xcL[i] + 23, ycL[i], ycL[i] + 13))
+
+    return upper_field_boxes, lower_field_boxes
+
+def setup_for_kiwi_vti_640_right():
+    xcU, ycU, xcL, ycL = kiwi_640_boxes(11)
 
     # Turn box corners into full box coordinate tuples
     upper_field_boxes = [None] * len(xcL)
@@ -314,7 +355,6 @@ def extract_timestamp(field, field_boxes, field_digits, formatter, thresh):
     intcumscore = int(cum_score * 100)
     scores += f'sum: {intcumscore}'
     timestamp, time = formatter(ts)
-    # return timestamp, time, ts, q_factor / len(field_boxes)
     return timestamp, time, ts, scores, intcumscore
 
 
@@ -338,8 +378,8 @@ def format_iota_timestamp(ts):
 
 
 def format_kiwi_timestamp(ts_str):
-    assert (len(ts_str) == 9), "len(ts_str) not equal to 9 in kiwi timestamp formatter"
-    ts = [0] * 9
+    assert (len(ts_str) == 12), "len(ts_str) not equal to 12 in kiwi timestamp formatter"
+    ts = [0] * 12
     try:
         for i, value in enumerate(ts_str):
             if value == ' ':
@@ -350,9 +390,16 @@ def format_kiwi_timestamp(ts_str):
         hh = 10 * ts[0] + ts[1]
         mm = 10 * ts[2] + ts[3]
         ss = 10 * ts[4] + ts[5]
-        ff = 100 * ts[6] + 10 * ts[7] + ts[8]
-        time = 3600 * hh + 60 * mm + ss + ff / 1000
-        return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[6]}{ts[7]}{ts[8]}]', time
+        ff_left = 100 * ts[6] + 10 * ts[7] + ts[8]
+        ff_right = 100 * ts[9] + 10 * ts[10] + ts[11]
+        if ff_left > ff_right:
+            ff = ff_left
+            time = 3600 * hh + 60 * mm + ss + ff / 1000
+            return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[6]}{ts[7]}{ts[8]}]', time
+        else:
+            ff = ff_right
+            time = 3600 * hh + 60 * mm + ss + ff / 1000
+            return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[9]}{ts[10]}{ts[11]}]', time
     except ValueError:
         return f'[00:00:00.000]', -1.0  # Indicate invalid timestamp by returning negative time
 

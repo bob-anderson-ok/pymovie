@@ -120,11 +120,6 @@ class OcrAperture(pg.GraphicsObject):
         self.menu.addAction(retraindigits)
 
         if self.samplemenu:
-            # self.menu.addSeparator()
-            #
-            # showdigits = QtGui.QAction('show digit templates', self.menu)
-            # showdigits.triggered.connect(self.showTemplates)
-            # self.menu.addAction(showdigits)
 
             self.menu.addSeparator()
 

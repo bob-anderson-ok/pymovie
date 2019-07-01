@@ -310,7 +310,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 {'name': 'IOTA VTI 2: one line (with P)'},
                 {'name': 'IOTA VTI 2: two line (with P)'},
                 {'name': 'BoxSprite: one-line'},
-                {'name': 'Kiwi'},
+                {'name': 'Kiwi (left)'},
+                {'name': 'Kiwi (right)'}
             ]
             pickle.dump(self.VTIlist, open(vtiListFilename, "wb"))
             self.showMsg(f'pickled self.VTIlist to {vtiListFilename}')
@@ -360,6 +361,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.upperOcrBoxes = None
         self.lowerOcrBoxes = None
+
+        self.kiwiUpperOcrBoxes = None
+        self.kiwiLowerOcrBoxes = None
+        self.kiwiAltUpperOcrBoxes = None
+        self.kiwiAltLowerOcrBoxes = None
 
         self.frameJumpSmall = 25
         self.frameJumpBig = 200
@@ -849,7 +855,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             return True
         else:
             self.showMsg(f'All model digits (0...9) are present.')
-            self.timestampReadingEnabled = True
+            # self.timestampReadingEnabled = True
             self.enableOcrTemplateSampling = self.settings.value('ocrsamplemenu', 'false') == 'true'
             return False
 
@@ -905,10 +911,63 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         thresh = 0
 
-        upper_timestamp, upper_time, upper_ts, upper_scores, upper_cum_score = extract_timestamp(
-            self.upper_field, self.upperOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
-        lower_timestamp, lower_time, lower_ts, lower_scores, lower_cum_score = extract_timestamp(
-            self.lower_field, self.lowerOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
+        if self.formatterCode == 'kiwi-left' or self.formatterCode == 'kiwi-right':
+            reg_upper_timestamp, reg_upper_time, \
+            reg_upper_ts, reg_upper_scores, reg_upper_cum_score = \
+                extract_timestamp(
+                self.upper_field, self.kiwiUpperOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
+            alt_upper_timestamp, alt_upper_time, \
+            alt_upper_ts, alt_upper_scores, alt_upper_cum_score = \
+                extract_timestamp(
+                self.upper_field, self.kiwiAltUpperOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
+
+            reg_lower_timestamp, reg_lower_time, \
+            reg_lower_ts, reg_lower_scores, reg_lower_cum_score = \
+                extract_timestamp(
+                self.lower_field, self.kiwiLowerOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
+            alt_lower_timestamp, alt_lower_time, \
+            alt_lower_ts, alt_lower_scores, alt_lower_cum_score = \
+                extract_timestamp(
+                self.lower_field, self.kiwiAltLowerOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
+
+            if reg_upper_cum_score > alt_upper_cum_score:
+                upper_timestamp = reg_upper_timestamp
+                upper_time = reg_upper_time
+                upper_ts = reg_upper_ts
+                upper_scores = reg_upper_scores
+                upper_cum_score = reg_upper_cum_score
+                self.upperOcrBoxes = self.kiwiUpperOcrBoxes[:]
+            else:
+                upper_timestamp = alt_upper_timestamp
+                upper_time = alt_upper_time
+                upper_ts = alt_upper_ts
+                upper_scores = alt_upper_scores
+                upper_cum_score = alt_upper_cum_score
+                self.upperOcrBoxes = self.kiwiAltUpperOcrBoxes[:]
+
+            if reg_lower_cum_score > alt_lower_cum_score:
+                lower_timestamp = reg_lower_timestamp
+                lower_time = reg_lower_time
+                lower_ts = reg_lower_ts
+                lower_scores = reg_lower_scores
+                lower_cum_score = reg_lower_cum_score
+                self.lowerOcrBoxes = self.kiwiLowerOcrBoxes[:]
+            else:
+                lower_timestamp = alt_lower_timestamp
+                lower_time = alt_lower_time
+                lower_ts = alt_lower_ts
+                lower_scores = alt_lower_scores
+                lower_cum_score = alt_lower_cum_score
+                self.lowerOcrBoxes = self.kiwiAltLowerOcrBoxes[:]
+
+            self.clearOcrBoxes()
+            self.placeOcrBoxesOnImage()
+
+        else:
+            upper_timestamp, upper_time, upper_ts, upper_scores, upper_cum_score = extract_timestamp(
+                self.upper_field, self.upperOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
+            lower_timestamp, lower_time, lower_ts, lower_scores, lower_cum_score = extract_timestamp(
+                self.lower_field, self.lowerOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
 
         if printresults:
             self.showMsg(f'upper field timestamp:{upper_timestamp}  time:{upper_time:0.4f}  scores:{upper_scores}', blankLine=False)
@@ -1083,12 +1142,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.extractTimestamps()
             return
 
-        if self.currentVTIindex == 6:  # Kiwi w=720 and 640
+        if self.currentVTIindex == 6:  # Kiwi w=720 and 640 (left position)
 
             if width == 640:
-                self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_kiwi_vti_640()
+                self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_kiwi_vti_640_left()
             else:
-                self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_kiwi_vti_720()
+                self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_kiwi_vti_720_left()
 
             self.ocrboxBasePath = 'custom-boxes'
             self.pickleOcrBoxes()
@@ -1099,9 +1158,30 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             self.placeOcrBoxesOnImage()
             self.timestampFormatter = format_kiwi_timestamp
-            self.writeFormatTypeFile('iota')
+            self.writeFormatTypeFile('kiwi-left')
             self.extractTimestamps()
             return
+
+        if self.currentVTIindex == 7:  # Kiwi w=720 and 640 (right position)
+
+            if width == 640:
+                self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_kiwi_vti_640_right()
+            else:
+                self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_kiwi_vti_720_right()
+
+            self.ocrboxBasePath = 'custom-boxes'
+            self.pickleOcrBoxes()
+
+            self.modelDigitsFilename = 'custom-digits.p'
+            self.loadModelDigits()
+            self.saveModelDigits()
+
+            self.placeOcrBoxesOnImage()
+            self.timestampFormatter = format_kiwi_timestamp
+            self.writeFormatTypeFile('kiwi-right')
+            self.extractTimestamps()
+            return
+
 
         self.showMsg('Not yet implemented')
         return
@@ -1132,22 +1212,57 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.clearOcrBoxes()
             self.upperOcrBoxes = ocr_dict['upper-boxes']
             self.lowerOcrBoxes = ocr_dict['lower-boxes']
-            # self.placeOcrBoxesOnImage()
             self.modelDigits = ocr_dict['digits']
             self.formatterCode = ocr_dict['formatter-code']
-            # self.setTimestampFormatter()
-
-            # self.showFrame()
 
             # Next we pickle boxes, digits, and write format code txt file and start reading timestamps
             self.pickleOcrBoxes()
             self.saveModelDigits()
             self.writeFormatTypeFile(self.formatterCode)
+
             self.startTimestampReading()
 
         else:
             self.showMsg(f'User opted out --- no selection')
             return
+
+    def generateKiwiOcrBoxes(self):
+        self.showMsg(f'We are now generating the kiwi specific OcrBoxes')
+
+        if self.formatterCode == 'kiwi-left':
+            self.kiwiUpperOcrBoxes = self.upperOcrBoxes
+            self.kiwiLowerOcrBoxes = self.lowerOcrBoxes
+            # Compute alternate (right position)
+            newUpperBoxes = []
+            dx = 11
+            for ocrbox in self.upperOcrBoxes:
+                xL, xR, yU, yL = ocrbox
+                newUpperBoxes.append((xL + dx, xR + dx, yU, yL))
+            newLowerBoxes = []
+            for ocrbox in self.lowerOcrBoxes:
+                xL, xR, yU, yL = ocrbox
+                newLowerBoxes.append((xL + dx, xR + dx, yU, yL))
+            self.kiwiAltUpperOcrBoxes = newUpperBoxes[:]
+            self.kiwiAltLowerOcrBoxes = newLowerBoxes[:]
+        elif self.formatterCode == 'kiwi-right':
+            self.kiwiAltUpperOcrBoxes = self.upperOcrBoxes
+            self.kiwiAltLowerOcrBoxes = self.lowerOcrBoxes
+            # Compute standard (left position)
+            newUpperBoxes = []
+            dx = -11
+            for ocrbox in self.upperOcrBoxes:
+                xL, xR, yU, yL = ocrbox
+                newUpperBoxes.append((xL + dx, xR + dx, yU, yL))
+            newLowerBoxes = []
+            for ocrbox in self.lowerOcrBoxes:
+                xL, xR, yU, yL = ocrbox
+                newLowerBoxes.append((xL + dx, xR + dx, yU, yL))
+            self.kiwiUpperOcrBoxes = newUpperBoxes[:]
+            self.kiwiLowerOcrBoxes = newLowerBoxes[:]
+        else:
+            self.showMsg(f'   !!! unrecognized formatter code: {self.formatterCode} !!!')
+
+
 
     def changeNavButtonTitles(self):
         if self.frameJumpBig == 200:  # FITS titling needed
@@ -2226,14 +2341,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         y_size = None
         max_pixel = None
 
-        # TODO remove this test code --- it breaks things It tests leaving out Kiwi blank lines
-        # for i, img in enumerate(self.modelDigits):
-        #     self.modelDigits[i] = img[0::2, :]
-
         if retrain:
             for i, _ in enumerate(self.modelDigits):
                 self.modelDigits[i] = None
             self.saveModelDigits()
+            self.acceptAviFolderDirectoryWithoutUserIntervention = True
+            self.selectAviFolder()
 
         for img in self.modelDigits:
             if not img is None:
@@ -2297,8 +2410,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.showMsg(f'Recording digit {digit} from pixels in {ocrbox}')
         t_img = self.showOcrboxInThumbnails(ocrbox)
         self.modelDigits[digit] = t_img
-        self.showMissingModelDigits()
         self.saveModelDigits()
+        if not self.showMissingModelDigits():
+            self.acceptAviFolderDirectoryWithoutUserIntervention = True
+            self.selectAviFolder()
+
 
     def addApertureAtPosition(self, x, y):
         x0 = x - self.roi_center
@@ -2995,6 +3111,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.loadCustomProfilesButton.setEnabled(False)
 
             self.createAVIWCSfolderButton.setEnabled(False)
+            self.vtiSelectComboBox.setEnabled(False)
 
             self.levels = []
             # remove the star rectangles (possibly) left from previous file
@@ -3179,6 +3296,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.loadCustomProfilesButton.setEnabled(False)
 
             self.createAVIWCSfolderButton.setEnabled(True)
+            self.vtiSelectComboBox.setEnabled(False)
 
             dirpath, _ = os.path.split(self.filename)
             self.folder_dir = dirpath
@@ -3258,7 +3376,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.timestampFormatter = format_iota_timestamp
         elif self.formatterCode == 'boxsprite':
             self.timestampFormatter = format_boxsprite3_timestamp
-        elif self.formatterCode == 'kiwi':
+        elif self.formatterCode == 'kiwi-left' or self.formatterCode == 'kiwi-right':
             self.timestampFormatter = format_kiwi_timestamp
         else:
             self.showMsg(f'Unknown timestamp formatter code: {self.formatterCode}.  Defaulting to Iota')
@@ -3318,6 +3436,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.loadCustomProfilesButton.setEnabled(True)
 
             self.createAVIWCSfolderButton.setEnabled(False)
+            self.vtiSelectComboBox.setEnabled(True)
 
             self.settings.setValue('avidir', dir_path)  # Make dir 'sticky'"
             self.folder_dir = dir_path
@@ -3345,7 +3464,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 windows = True
                 # self.showMsg(f'os: Windows')
 
-            # TODO Make sure this does not break Mac  (picking up both regular and avi)
             # Find a .avi file in the given directory.  Enforce that there be only one.
             # Note: this picks up alias (mac) and shortcut (Windows) files too.
             avi_filenames = glob.glob(dir_path + '/*.avi*')
@@ -3401,12 +3519,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
                 fps = self.cap.get(cv2.CAP_PROP_FPS)
                 if fps > 29.0:
-                    # self.showMsg('Changing navigation buttons to 30 frames')
                     self.frameJumpSmall = 30
                     self.frameJumpBig = 300
                     self.changeNavButtonTitles()
                 else:
-                    # self.showMsg('Changing navigation buttons to 25 frames')
                     self.frameJumpSmall = 25
                     self.frameJumpBig = 250
                     self.changeNavButtonTitles()
@@ -3429,24 +3545,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.modelDigitsFilename = 'custom-digits.p'
                 self.ocrboxBasePath = 'custom-boxes'
 
-                # This is how we starup timestamp extraction.  This should be moved
-                # into it's own method so that it can be invoked when a custon ocr
-                # profile is loaded
-                # self.loadPickledOcrBoxes()  # if any
-                # self.loadModelDigits()      # if any
-                #
-                # formatter_code = self.readFormatTypeFile()
-                # self.formatterCode = formatter_code
-                # self.timestampReadingEnabled = not self.formatterCode is None
-                #
-                # if self.timestampReadingEnabled:
-                #     self.detectFieldTimeOrder = True
-                #     self.setTimestampFormatter()
-                #     self.viewFieldsCheckBox.setChecked(True)
-                #     self.placeOcrBoxesOnImage()
-                #     self.currentFrameSpinBox.setValue(1)
-
                 self.startTimestampReading()
+                self.showFrame()  # So that we get the first frame timestamp (if possible)
 
                 self.thumbOneView.clear()
                 self.thumbTwoView.clear()
@@ -3460,16 +3560,19 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # present, then timestamp reading should be attempted
         formatter_code = self.readFormatTypeFile()
         self.formatterCode = formatter_code
-        self.timestampReadingEnabled = not self.formatterCode is None
+        processTimestampProfile = not self.formatterCode is None
 
-        if self.timestampReadingEnabled:
+        if processTimestampProfile:
             self.loadPickledOcrBoxes()  # if any
             self.loadModelDigits()  # if any
             self.detectFieldTimeOrder = True
             self.currentFrameSpinBox.setValue(1)  # This triggers a self.showFrame() call
             self.setTimestampFormatter()
             self.viewFieldsCheckBox.setChecked(True)
+            if self.formatterCode == 'kiwi-left' or self.formatterCode == 'kiwi-right':
+                self.generateKiwiOcrBoxes()
             self.placeOcrBoxesOnImage()
+            self.timestampReadingEnabled = not self.showMissingModelDigits()
 
     def getFrameNumberFromFile(self, filename):
         fullpath = self.folder_dir + r'/' + filename
@@ -3719,7 +3822,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.createImageFields()
 
             try:
-                if self.avi_wcs_folder_in_use:
+                if self.avi_wcs_folder_in_use and self.timestampReadingEnabled:
                     if self.timestampFormatter is not None:
                         self.upperTimestamp, time1, score1, _, self.lowerTimestamp, time2, score2, _ = \
                             self.extractTimestamps()
