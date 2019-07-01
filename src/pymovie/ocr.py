@@ -392,14 +392,30 @@ def format_kiwi_timestamp(ts_str):
         ss = 10 * ts[4] + ts[5]
         ff_left = 100 * ts[6] + 10 * ts[7] + ts[8]
         ff_right = 100 * ts[9] + 10 * ts[10] + ts[11]
+
         if ff_left > ff_right:
-            ff = ff_left
-            time = 3600 * hh + 60 * mm + ss + ff / 1000
-            return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[6]}{ts[7]}{ts[8]}]', time
+            delta = ff_left - ff_right
+            if delta < 33:
+                ff = ff_left
+                time = 3600 * hh + 60 * mm + ss + ff / 1000
+                return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[6]}{ts[7]}{ts[8]}]', time
+            else:
+                ff = ff_right
+                time = 3600 * hh + 60 * mm + ss + ff / 1000
+                return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[9]}{ts[10]}{ts[11]}]', time
+
+
         else:
-            ff = ff_right
-            time = 3600 * hh + 60 * mm + ss + ff / 1000
-            return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[9]}{ts[10]}{ts[11]}]', time
+            delta = ff_right - ff_left
+            if delta < 33:
+                ff = ff_right
+                time = 3600 * hh + 60 * mm + ss + ff / 1000
+                return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[9]}{ts[10]}{ts[11]}]', time
+            else:
+                ff = ff_left
+                time = 3600 * hh + 60 * mm + ss + ff / 1000
+                return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[6]}{ts[7]}{ts[8]}]', time
+
     except ValueError:
         return f'[00:00:00.000]', -1.0  # Indicate invalid timestamp by returning negative time
 
