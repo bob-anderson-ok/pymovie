@@ -257,6 +257,7 @@ def setup_for_kiwi_vti_640_left():
 
     return upper_field_boxes, lower_field_boxes
 
+
 def setup_for_kiwi_vti_640_right():
     xcU, ycU, xcL, ycL = kiwi_640_boxes(11)
 

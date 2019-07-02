@@ -23,7 +23,6 @@ class OcrAperture(pg.GraphicsObject):
         self.position = position  # 'upper'  or 'lower'
         self.pen = pg.mkPen('r')
         self.color = 'red'
-        # self.setBox(fieldbox)
         xL, xR, yU, yL = fieldbox
         self.x0 = xL
         self.y0 = yU

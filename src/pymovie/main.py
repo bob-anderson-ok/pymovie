@@ -46,6 +46,8 @@ import matplotlib.pyplot as plt
 
 from more_itertools import sort_together
 
+# from resource import getrusage, RUSAGE_SELF
+# import gc
 import warnings
 from astropy.utils.exceptions import AstropyWarning
 import sys
@@ -350,6 +352,54 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.userName = os.path.basename(self.profilesDir)
 
         # Initialize all instance variables as a block (to satisfy PEP 8 standard)
+
+        self.currentUpperBoxPos = ''  # Used by Kiwi timestamp extraction
+        self.currentLowerBoxPos = ''  # Used by Kiwi timestamp extraction
+
+        self.upper_timestamp = ''
+        self.upper_time = 0.0
+        self.upper_ts = ''
+        self.upper_scores = ''
+        self.upper_cum_score = 0
+
+        self.lower_timestamp = ''
+        self.lower_time = 0.0
+        self.lower_ts = ''
+        self.lower_scores = ''
+        self.lower_cum_score = 0
+
+        self.reg_upper_timestamp = ''
+        self.reg_upper_time = 0.0
+        self.reg_upper_ts = ''
+        self.reg_upper_scores = ''
+        self.reg_upper_cum_score = 0
+
+        self.reg_lower_timestamp = ''
+        self.reg_lower_time = 0.0
+        self.reg_lower_ts = ''
+        self.reg_lower_scores = ''
+        self.reg_lower_cum_score = 0
+
+        self.alt_upper_timestamp = ''
+        self.alt_upper_time = 0.0
+        self.alt_upper_ts = ''
+        self.alt_upper_scores = ''
+        self.alt_upper_cum_score = 0
+
+        self.alt_lower_timestamp = ''
+        self.alt_lower_time = 0.0
+        self.alt_lower_ts = ''
+        self.alt_lower_scores = ''
+        self.alt_lower_cum_score = 0
+
+        # Workspace for self.placeOcrBoxesOnImage()
+        self.newLowerOcrBoxes = []
+
+        # Standard return list for self.getApertureList()
+        self.appList = []
+
+        # Standard return list for self.getOcrBoxList()
+        self.ocrBoxList = []
 
         self.suppressExtractTimestampCallInSpinnerResponder = False
         self.timestampReadingEnabled = False
@@ -729,13 +779,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.savedApertures = self.getApertureList()
             # clear all apertures
             self.clearApertures()
+            self.placeOcrBoxesOnImage()
             self.showFrame()
-            # if self.lowerOcrBoxes and not self.currentVTIindex == 0:
-            #     self.placeOcrBoxesOnImage()
         else:
             # clear ocr boxes (if any)
-            if self.lowerOcrBoxes:
-                self.clearOcrBoxes()
+            # if self.lowerOcrBoxes:
+            self.clearOcrBoxes()
             # restore any saved apertures
             if self.savedApertures:
                 view = self.frameView.getView()
@@ -797,17 +846,17 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
     def placeOcrBoxesOnImage(self):
         y_adjust = int(self.image.shape[0] / 2)
 
-        newLowerOcrBoxes = []
+        self.newLowerOcrBoxes = []
         for ocrbox in self.lowerOcrBoxes:
             xL, xR, yU, yL = ocrbox
-            newLowerOcrBoxes.append((xL, xR, yU + y_adjust, yL + y_adjust))
+            self.newLowerOcrBoxes.append((xL, xR, yU + y_adjust, yL + y_adjust))
 
         boxnum = 0
         for ocrbox in self.upperOcrBoxes:
             self.addOcrAperture(ocrbox, boxnum, 'upper')
             boxnum += 1
         boxnum = 0
-        for ocrbox in newLowerOcrBoxes:
+        for ocrbox in self.newLowerOcrBoxes:
             self.addOcrAperture(ocrbox, boxnum, 'lower')
             boxnum += 1
 
@@ -881,101 +930,97 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.modelDigits = [None] * 10
             self.showMissingModelDigits()
 
-    def setOcrThreshold(self):
-        self.showMsg(f'Searching for best threshold setting ...')
-        QtGui.QGuiApplication.processEvents()
-
-        thresh = 255
-        max_score = 0
-        thresh_at_max = 0
-
-        while thresh > 0:
-            upper_timestamp, upper_time, upper_ts, upper_scores, upper_cum = extract_timestamp(
-                self.upper_field, self.upperOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
-            lower_timestamp, lower_time, lower_ts, lower_scores, lower_cum = extract_timestamp(
-                self.lower_field, self.lowerOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
-            total_score = upper_cum + lower_cum
-            if total_score > max_score:
-                max_score = total_score
-                thresh_at_max = thresh
-            # self.showMsg(f'thresh: {thresh:3d} {upper_cum + lower_cum}', blankLine=False)
-            thresh -= 5
-
-        self.showMsg(f'Setting threshold to {thresh_at_max} where score was {max_score}')
-        self.suppressExtractTimestampCallInSpinnerResponder = True
-        self.vtiThresholdSpinner.setValue(thresh_at_max)
-
     def extractTimestamps(self, printresults = True):
         if not self.timestampReadingEnabled:
             return None, None, None, None, None, None, None, None
 
+        # kb = getrusage(RUSAGE_SELF).ru_maxrss
+        # self.showMsg(f'Mem usage: {kb / 1000000:.2f} (mb)')
+
         thresh = 0
 
         if self.formatterCode == 'kiwi-left' or self.formatterCode == 'kiwi-right':
-            reg_upper_timestamp, reg_upper_time, \
-            reg_upper_ts, reg_upper_scores, reg_upper_cum_score = \
-                extract_timestamp(
-                self.upper_field, self.kiwiUpperOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
-            alt_upper_timestamp, alt_upper_time, \
-            alt_upper_ts, alt_upper_scores, alt_upper_cum_score = \
-                extract_timestamp(
-                self.upper_field, self.kiwiAltUpperOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
 
-            reg_lower_timestamp, reg_lower_time, \
-            reg_lower_ts, reg_lower_scores, reg_lower_cum_score = \
+            self.reg_upper_timestamp, self.reg_upper_time, \
+                self.reg_upper_ts, self.reg_upper_scores, self.reg_upper_cum_score = \
                 extract_timestamp(
-                self.lower_field, self.kiwiLowerOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
-            alt_lower_timestamp, alt_lower_time, \
-            alt_lower_ts, alt_lower_scores, alt_lower_cum_score = \
+                    self.upper_field, self.kiwiUpperOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
+            self.alt_upper_timestamp, self.alt_upper_time, \
+                self.alt_upper_ts, self.alt_upper_scores, self.alt_upper_cum_score = \
                 extract_timestamp(
-                self.lower_field, self.kiwiAltLowerOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
+                    self.upper_field, self.kiwiAltUpperOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
 
-            if reg_upper_cum_score > alt_upper_cum_score:
-                upper_timestamp = reg_upper_timestamp
-                upper_time = reg_upper_time
-                upper_ts = reg_upper_ts
-                upper_scores = reg_upper_scores
-                upper_cum_score = reg_upper_cum_score
-                self.upperOcrBoxes = self.kiwiUpperOcrBoxes[:]
+            self.reg_lower_timestamp, self.reg_lower_time, \
+                self.reg_lower_ts, self.reg_lower_scores, self.reg_lower_cum_score = \
+                extract_timestamp(
+                    self.lower_field, self.kiwiLowerOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
+            self.alt_lower_timestamp, self.alt_lower_time, \
+                self.alt_lower_ts, self.alt_lower_scores, self.alt_lower_cum_score = \
+                extract_timestamp(
+                    self.lower_field, self.kiwiAltLowerOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
+
+            need_to_redisplay_ocr_boxes = False
+            if self.reg_upper_cum_score > self.alt_upper_cum_score:
+                if self.currentUpperBoxPos == 'alt':
+                    need_to_redisplay_ocr_boxes = True
+                    self.currentUpperBoxPos == 'left'
+                self.upper_timestamp = self.reg_upper_timestamp
+                self.upper_time = self.reg_upper_time
+                self.upper_ts = self.reg_upper_ts
+                self.upper_scores = self.reg_upper_scores
+                self.upper_cum_score = self.reg_upper_cum_score
+                self.upperOcrBoxes = self.kiwiUpperOcrBoxes
             else:
-                upper_timestamp = alt_upper_timestamp
-                upper_time = alt_upper_time
-                upper_ts = alt_upper_ts
-                upper_scores = alt_upper_scores
-                upper_cum_score = alt_upper_cum_score
-                self.upperOcrBoxes = self.kiwiAltUpperOcrBoxes[:]
+                if self.currentUpperBoxPos == 'left':
+                    need_to_redisplay_ocr_boxes = True
+                    self.currentUpperBoxPos = 'alt'
+                self.upper_timestamp = self.alt_upper_timestamp
+                self.upper_time = self.alt_upper_time
+                self.upper_ts = self.alt_upper_ts
+                self.upper_scores = self.alt_upper_scores
+                self.upper_cum_score = self.alt_upper_cum_score
+                self.upperOcrBoxes = self.kiwiAltUpperOcrBoxes
 
-            if reg_lower_cum_score > alt_lower_cum_score:
-                lower_timestamp = reg_lower_timestamp
-                lower_time = reg_lower_time
-                lower_ts = reg_lower_ts
-                lower_scores = reg_lower_scores
-                lower_cum_score = reg_lower_cum_score
-                self.lowerOcrBoxes = self.kiwiLowerOcrBoxes[:]
+            if self.reg_lower_cum_score > self.alt_lower_cum_score:
+                if self.currentLowerBoxPos == 'alt':
+                    need_to_redisplay_ocr_boxes = True
+                    self.currentLowerBoxPos == 'left'
+                self.lower_timestamp = self.reg_lower_timestamp
+                self.lower_time = self.reg_lower_time
+                self.lower_ts = self.reg_lower_ts
+                self.lower_scores = self.reg_lower_scores
+                self.lower_cum_score = self.reg_lower_cum_score
+                self.lowerOcrBoxes = self.kiwiLowerOcrBoxes
             else:
-                lower_timestamp = alt_lower_timestamp
-                lower_time = alt_lower_time
-                lower_ts = alt_lower_ts
-                lower_scores = alt_lower_scores
-                lower_cum_score = alt_lower_cum_score
-                self.lowerOcrBoxes = self.kiwiAltLowerOcrBoxes[:]
+                if self.currentLowerBoxPos == 'left':
+                    need_to_redisplay_ocr_boxes = True
+                    self.currentLowerBoxPos = 'alt'
+                self.lower_timestamp = self.alt_lower_timestamp
+                self.lower_time = self.alt_lower_time
+                self.lower_ts = self.alt_lower_ts
+                self.lower_scores = self.alt_lower_scores
+                self.lower_cum_score = self.alt_lower_cum_score
+                self.lowerOcrBoxes = self.kiwiAltLowerOcrBoxes
 
-            self.clearOcrBoxes()
-            self.placeOcrBoxesOnImage()
+            if need_to_redisplay_ocr_boxes and self.viewFieldsCheckBox.isChecked():
+                self.clearOcrBoxes()
+                self.placeOcrBoxesOnImage()
 
         else:
-            upper_timestamp, upper_time, upper_ts, upper_scores, upper_cum_score = extract_timestamp(
-                self.upper_field, self.upperOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
-            lower_timestamp, lower_time, lower_ts, lower_scores, lower_cum_score = extract_timestamp(
-                self.lower_field, self.lowerOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
+            self.upper_timestamp, self.upper_time, \
+                self.upper_ts, self.upper_scores, self.upper_cum_score = extract_timestamp(
+                    self.upper_field, self.upperOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
+            self.lower_timestamp, self.lower_time,\
+                self.lower_ts, self.lower_scores, self.lower_cum_score = extract_timestamp(
+                    self.lower_field, self.lowerOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
 
         if printresults:
-            self.showMsg(f'upper field timestamp:{upper_timestamp}  time:{upper_time:0.4f}  scores:{upper_scores}', blankLine=False)
-            self.showMsg(f'lower field timestamp:{lower_timestamp}  time:{lower_time:0.4f}  scores:{lower_scores}')
+            self.showMsg(f'upper field timestamp:{self.upper_timestamp}  time:{self.upper_time:0.4f}  scores:{self.upper_scores}', blankLine=False)
+            self.showMsg(f'lower field timestamp:{self.lower_timestamp}  time:{self.lower_time:0.4f}  scores:{self.lower_scores}')
 
         if self.detectFieldTimeOrder:
-            if lower_time >= 0 and upper_time >= 0:
-                if lower_time < upper_time:
+            if self.lower_time >= 0 and self.upper_time >= 0:
+                if self.lower_time < self.upper_time:
                     self.showMsg(f'Detected bottom field is first in time')
                     self.bottomFieldFirstRadioButton.setChecked(True)
                 else:
@@ -983,8 +1028,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     self.topFieldFirstRadioButton.setChecked(True)
                 self.detectFieldTimeOrder = False
 
-        return upper_timestamp, upper_time, upper_scores, upper_cum_score, \
-               lower_timestamp, lower_time, lower_scores, lower_cum_score
+        return self.upper_timestamp, self.upper_time, self.upper_scores, self.upper_cum_score, \
+               self.lower_timestamp, self.lower_time, self.lower_scores, self.lower_cum_score
 
     def writeFormatTypeFile(self, format_type):
         f_path = os.path.join(self.folder_dir, 'formatter.txt')
@@ -1205,10 +1250,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             # self.showMsg(f'row {row} was selected')
             ocr_dict = all[row]
             id_found = ocr_dict['id']
-            # self.showMsg(f'id: {id_found}')
-            # mine.append({'id': profile_title, 'upper-boxes': self.upperOcrBoxes,
-            #              'lower-boxes': self.lowerOcrBoxes, 'digits': self.modelDigits,
-            #              'formatter-code': self.formatterCode})
             self.clearOcrBoxes()
             self.upperOcrBoxes = ocr_dict['upper-boxes']
             self.lowerOcrBoxes = ocr_dict['lower-boxes']
@@ -1230,6 +1271,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.showMsg(f'We are now generating the kiwi specific OcrBoxes')
 
         if self.formatterCode == 'kiwi-left':
+            self.currentUpperBoxPos = 'left'
+            self.currentLowerBoxPos = 'left'
             self.kiwiUpperOcrBoxes = self.upperOcrBoxes
             self.kiwiLowerOcrBoxes = self.lowerOcrBoxes
             # Compute alternate (right position)
@@ -1245,6 +1288,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.kiwiAltUpperOcrBoxes = newUpperBoxes[:]
             self.kiwiAltLowerOcrBoxes = newLowerBoxes[:]
         elif self.formatterCode == 'kiwi-right':
+            self.currentUpperBoxPos = 'alt'
+            self.currentLowerBoxPos = 'alt'
             self.kiwiAltUpperOcrBoxes = self.upperOcrBoxes
             self.kiwiAltLowerOcrBoxes = self.lowerOcrBoxes
             # Compute standard (left position)
@@ -3886,7 +3931,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.frameView.getView().removeItem(aperture)
 
     def removeOcrBox(self, ocrbox):
-        # self.disconnectAllSlots(ocrbox)
         self.frameView.getView().removeItem(ocrbox)
 
     def getApertureList(self):
@@ -3897,27 +3941,27 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         # Get all objects that have been added to frameView
         items = self.frameView.getView().allChildItems()
-        app_list = []
+        self.appList = []
 
         # Not all objects in frameView are apertures, so we need to filter the list
         for item in items:
             if type(item) is MeasurementAperture:
-                app_list.append(item)
+                self.appList.append(item)
 
-        return app_list
+        return self.appList
 
     def getOcrBoxList(self):
 
         # Get all objects that have been added to frameView
         items = self.frameView.getView().allChildItems()
-        app_list = []
+        self.ocrBoxList = []
 
         # Not all objects in frameView are ocr boxes, so we need to filter the list
         for item in items:
             if type(item) is OcrAperture:
-                app_list.append(item)
+                self.ocrBoxList.append(item)
 
-        return app_list
+        return self.ocrBoxList
 
     def showInfo(self):
         self.openInfoFile()

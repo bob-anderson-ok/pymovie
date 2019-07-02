@@ -1,6 +1,7 @@
 pyqtgraph
 opencv-python
 astroquery
+resource
 scikit-image>=0.15.0
 
 [:platform_system == "Windows"]
