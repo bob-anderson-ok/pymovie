@@ -2459,7 +2459,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
     def processOcrTemplate(self, digit, ocrbox):
         self.showMsg(f'Recording digit {digit} from pixels in {ocrbox}')
         t_img = self.showOcrboxInThumbnails(ocrbox)
-        self.modelDigits[digit] = t_img
+
+        if self.formatterCode == 'kiwi-left' or self.formatterCode == 'kiwi-right':
+            blurred_t_img = cv2.GaussianBlur(t_img, ksize=(5, 5), sigmaX=0)
+            self.modelDigits[digit] = blurred_t_img
+        else:
+            self.modelDigits[digit] = t_img
+
         self.saveModelDigits()
         if not self.showMissingModelDigits():
             self.acceptAviFolderDirectoryWithoutUserIntervention = True

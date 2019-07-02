@@ -377,7 +377,7 @@ def format_iota_timestamp(ts):
         hh = 10 * int(ts[0]) + int(ts[1])
         mm = 10 * int(ts[2]) + int(ts[3])
         ss = 10 * int(ts[4]) + int(ts[5])
-        if not ts[6] == ' ':
+        if not (ts[6] == ' ' or ts[7] == ' ' or ts[8] == ' ' or ts[9] == ' '):
             ff = 1000 * int(ts[6]) + 100 * int(ts[7]) + 10 * int(ts[8]) + int(ts[9])
         else:
             ff = 1000 * int(ts[10]) + 100 * int(ts[11]) + 10 * int(ts[12]) + int(ts[13])
