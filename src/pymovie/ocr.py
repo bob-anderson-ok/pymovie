@@ -317,21 +317,32 @@ def setup_for_boxsprite3_720():
 
 method = eval('cv2.TM_CCOEFF_NORMED')
 
+# TODO Remove this change --- test to see if Kiwi improves
+# method = eval('cv2.TM_SQDIFF_NORMED')
+
 
 def cv2_score(image, field_digits):
-    img = cv2.copyMakeBorder(image, 2,2,2,2, cv2.BORDER_CONSTANT, value=0)
+    # img = cv2.copyMakeBorder(image, 2,2,2,2, cv2.BORDER_CONSTANT, value=0)
+    img = cv2.copyMakeBorder(image, 2,2,2,2, cv2.BORDER_REPLICATE, value=0)
     max_found = 0.0
+    # min_found = 1.0
     ans = None
     max_vals = [None] * 10
+    # min_vals = [None] * 10
     for i in range(10):
         # Apply template Matching
         res = cv2.matchTemplate(img, field_digits[i], method)
         min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
         max_vals[i] = max_val
+        # min_vals[i] = min_val
         if max_val > max_found:
             max_found = max_val
             ans = i
+        # if min_val < min_found:
+        #     min_found = min_val
+        #     ans = i
     return (ans, max_found, max_vals)
+    # return (ans, min_found, min_vals)
 
 
 def extract_timestamp(field, field_boxes, field_digits, formatter, thresh):
@@ -383,6 +394,7 @@ def format_kiwi_timestamp(ts_str):
     ts = [0] * 12
     try:
         for i, value in enumerate(ts_str):
+            # Convert spaces to zero; proper interger for rest
             if value == ' ':
                 ts[i] = 0
             else:
@@ -394,28 +406,24 @@ def format_kiwi_timestamp(ts_str):
         ff_left = 100 * ts[6] + 10 * ts[7] + ts[8]
         ff_right = 100 * ts[9] + 10 * ts[10] + ts[11]
 
-        if ff_left > ff_right:
-            delta = ff_left - ff_right
-            if delta < 33:
-                ff = ff_left
-                time = 3600 * hh + 60 * mm + ss + ff / 1000
-                return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[6]}{ts[7]}{ts[8]}]', time
-            else:
-                ff = ff_right
-                time = 3600 * hh + 60 * mm + ss + ff / 1000
-                return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[9]}{ts[10]}{ts[11]}]', time
-
-
+        seconds_rolled_over = (ff_left < 17 and ff_right > 300) or (ff_right < 17 and ff_left > 300)
+        if seconds_rolled_over:
+            use_ff_left  = (ff_left  < 17 and ff_right > 300)
+            use_ff_right = (ff_right < 17 and ff_left  > 300)
         else:
-            delta = ff_right - ff_left
-            if delta < 33:
-                ff = ff_right
-                time = 3600 * hh + 60 * mm + ss + ff / 1000
-                return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[9]}{ts[10]}{ts[11]}]', time
-            else:
-                ff = ff_left
-                time = 3600 * hh + 60 * mm + ss + ff / 1000
-                return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[6]}{ts[7]}{ts[8]}]', time
+            use_ff_left  = ff_left  > ff_right
+            use_ff_right = ff_right > ff_left
+
+        assert (not use_ff_left == use_ff_right, 'Error: use_ff_right == use_ff_left')
+
+        if use_ff_left:
+            ff = ff_left
+            time = 3600 * hh + 60 * mm + ss + ff / 1000
+            return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[6]}{ts[7]}{ts[8]}]', time
+        else:
+            ff = ff_right
+            time = 3600 * hh + 60 * mm + ss + ff / 1000
+            return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[9]}{ts[10]}{ts[11]}]', time
 
     except ValueError:
         return f'[00:00:00.000]', -1.0  # Indicate invalid timestamp by returning negative time

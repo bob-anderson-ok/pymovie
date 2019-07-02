@@ -935,72 +935,77 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             return None, None, None, None, None, None, None, None
 
         # kb = getrusage(RUSAGE_SELF).ru_maxrss
-        # self.showMsg(f'Mem usage: {kb / 1000000:.2f} (mb)')
+        # self.showMsg(f'Mem usage: {kb / 1024 / 1024:.2f} (mb)')
 
         thresh = 0
 
         if self.formatterCode == 'kiwi-left' or self.formatterCode == 'kiwi-right':
 
-            self.reg_upper_timestamp, self.reg_upper_time, \
-                self.reg_upper_ts, self.reg_upper_scores, self.reg_upper_cum_score = \
+            reg_upper_timestamp, reg_upper_time, \
+                reg_upper_ts, reg_upper_scores, reg_upper_cum_score = \
                 extract_timestamp(
                     self.upper_field, self.kiwiUpperOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
-            self.alt_upper_timestamp, self.alt_upper_time, \
-                self.alt_upper_ts, self.alt_upper_scores, self.alt_upper_cum_score = \
+            alt_upper_timestamp, alt_upper_time, \
+                alt_upper_ts, alt_upper_scores, alt_upper_cum_score = \
                 extract_timestamp(
                     self.upper_field, self.kiwiAltUpperOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
 
-            self.reg_lower_timestamp, self.reg_lower_time, \
-                self.reg_lower_ts, self.reg_lower_scores, self.reg_lower_cum_score = \
+            reg_lower_timestamp, reg_lower_time, \
+                reg_lower_ts, reg_lower_scores, reg_lower_cum_score = \
                 extract_timestamp(
                     self.lower_field, self.kiwiLowerOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
-            self.alt_lower_timestamp, self.alt_lower_time, \
-                self.alt_lower_ts, self.alt_lower_scores, self.alt_lower_cum_score = \
+            alt_lower_timestamp, alt_lower_time, \
+                alt_lower_ts, alt_lower_scores, alt_lower_cum_score = \
                 extract_timestamp(
                     self.lower_field, self.kiwiAltLowerOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
 
             need_to_redisplay_ocr_boxes = False
-            if self.reg_upper_cum_score > self.alt_upper_cum_score:
+            if reg_upper_cum_score > alt_upper_cum_score:
                 if self.currentUpperBoxPos == 'alt':
                     need_to_redisplay_ocr_boxes = True
-                    self.currentUpperBoxPos == 'left'
-                self.upper_timestamp = self.reg_upper_timestamp
-                self.upper_time = self.reg_upper_time
-                self.upper_ts = self.reg_upper_ts
-                self.upper_scores = self.reg_upper_scores
-                self.upper_cum_score = self.reg_upper_cum_score
+                self.currentUpperBoxPos == 'left'
+                self.upper_timestamp = reg_upper_timestamp
+                self.upper_time = reg_upper_time
+                self.upper_ts = reg_upper_ts
+                self.upper_scores = reg_upper_scores
+                self.upper_cum_score = reg_upper_cum_score
                 self.upperOcrBoxes = self.kiwiUpperOcrBoxes
             else:
                 if self.currentUpperBoxPos == 'left':
                     need_to_redisplay_ocr_boxes = True
-                    self.currentUpperBoxPos = 'alt'
-                self.upper_timestamp = self.alt_upper_timestamp
-                self.upper_time = self.alt_upper_time
-                self.upper_ts = self.alt_upper_ts
-                self.upper_scores = self.alt_upper_scores
-                self.upper_cum_score = self.alt_upper_cum_score
+                self.currentUpperBoxPos = 'alt'
+                self.upper_timestamp = alt_upper_timestamp
+                self.upper_time = alt_upper_time
+                self.upper_ts = alt_upper_ts
+                self.upper_scores = alt_upper_scores
+                self.upper_cum_score = alt_upper_cum_score
                 self.upperOcrBoxes = self.kiwiAltUpperOcrBoxes
 
-            if self.reg_lower_cum_score > self.alt_lower_cum_score:
+            if reg_lower_cum_score > alt_lower_cum_score:
                 if self.currentLowerBoxPos == 'alt':
                     need_to_redisplay_ocr_boxes = True
-                    self.currentLowerBoxPos == 'left'
-                self.lower_timestamp = self.reg_lower_timestamp
-                self.lower_time = self.reg_lower_time
-                self.lower_ts = self.reg_lower_ts
-                self.lower_scores = self.reg_lower_scores
-                self.lower_cum_score = self.reg_lower_cum_score
+                self.currentLowerBoxPos == 'left'
+                self.lower_timestamp = reg_lower_timestamp
+                self.lower_time = reg_lower_time
+                self.lower_ts = reg_lower_ts
+                self.lower_scores = reg_lower_scores
+                self.lower_cum_score = reg_lower_cum_score
                 self.lowerOcrBoxes = self.kiwiLowerOcrBoxes
             else:
                 if self.currentLowerBoxPos == 'left':
                     need_to_redisplay_ocr_boxes = True
-                    self.currentLowerBoxPos = 'alt'
-                self.lower_timestamp = self.alt_lower_timestamp
-                self.lower_time = self.alt_lower_time
-                self.lower_ts = self.alt_lower_ts
-                self.lower_scores = self.alt_lower_scores
-                self.lower_cum_score = self.alt_lower_cum_score
+                self.currentLowerBoxPos = 'alt'
+                self.lower_timestamp = alt_lower_timestamp
+                self.lower_time = alt_lower_time
+                self.lower_ts = alt_lower_ts
+                self.lower_scores = alt_lower_scores
+                self.lower_cum_score = alt_lower_cum_score
                 self.lowerOcrBoxes = self.kiwiAltLowerOcrBoxes
+
+            if self.pauseRadioButton.isChecked():
+                # When we're manually stepping through an avi, we need to see
+                # the actual box placements.
+                need_to_redisplay_ocr_boxes = True
 
             if need_to_redisplay_ocr_boxes and self.viewFieldsCheckBox.isChecked():
                 self.clearOcrBoxes()
