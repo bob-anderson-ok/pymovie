@@ -12,13 +12,13 @@ class OcrAperture(pg.GraphicsObject):
     def __init__(self, fieldbox, boxnum, position, msgRoutine, templater,
                  jogcontroller, showcharacter, showtemplates, neededdigits, samplemenu=True):
         self.samplemenu = samplemenu
-        self.templateWriter = templater
-        self.displayDigitTemplates = showtemplates
-        self.controlAllJogs = jogcontroller
-        self.showCharacter = showcharacter
-        self.neededDigits = neededdigits
+        self.templateWriter = templater             # self.processOcrTemplate()  in main
+        self.displayDigitTemplates = showtemplates  # self.showDigitTemplates()  in main
+        self.controlAllJogs = jogcontroller         # self.setAllOcrBoxJogging() in main
+        self.showCharacter = showcharacter          # self.showOcrCharacter()    in main
+        self.neededDigits = neededdigits            # self.needDigits()          in main
         self.boxnum = boxnum
-        self.msgRoutine = msgRoutine
+        self.msgRoutine = msgRoutine                # self.showMsg() in main
         self.joggable = False
         self.position = position  # 'upper'  or 'lower'
         self.pen = pg.mkPen('r')

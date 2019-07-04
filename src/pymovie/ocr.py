@@ -326,7 +326,7 @@ def cv2_score(image, field_digits):
     img = cv2.copyMakeBorder(image, 2,2,2,2, cv2.BORDER_REPLICATE, value=0)
     max_found = 0.0
     # min_found = 1.0
-    ans = None
+    ans = 0
     max_vals = [None] * 10
     # min_vals = [None] * 10
     for i in range(10):
@@ -345,28 +345,76 @@ def cv2_score(image, field_digits):
     # return (ans, min_found, min_vals)
 
 
-def extract_timestamp(field, field_boxes, field_digits, formatter, thresh):
+def extract_timestamp(field, field_boxes, field_digits, formatter, thresh, kiwi=False):
     ts = ''  # ts 'means' timestamp
-    cum_score = 0
+
+    blankscore = .5
+    corr_scores = []
+    digit = []
+    boxsums = []
     scores = ''
+
     for k in range(len(field_boxes)):
         t_img = timestamp_box_image(field, field_boxes[k])
-        if not thresh == 0:
-            _, t_img = cv2.threshold(t_img, thresh - 1, 1, cv2.THRESH_BINARY)
-        ans, score, _ = cv2_score(t_img, field_digits)
-        # KIWI timestamp character can be blank.  We detect that as a low score
+        if kiwi:  # We use boxsums to better detect empty boxes
+            boxsums.append(np.sum(t_img))
+            b_img = cv2.GaussianBlur(t_img, ksize=(5, 5), sigmaX=0)
+            ans, score, _ = cv2_score(b_img, field_digits)
+            if ans == 6 or ans == 8:
+                # Pick a group of test pixels at the right-hand edge (no minimize box position criticality)
+                a1 = int(t_img[4, 17])  # test pixel1
+                a2 = int(t_img[4, 18])  # test pixel2
+                a3 = int(t_img[4, 19])  # test pixel3
+                a4 = int(t_img[4, 20])  # test pixel4
+                a5 = int(t_img[4, 21])  # test pixel5
+                a = max(a1, a2, a3, a4, a5)
+                b = int(t_img[6, 13])  # reference 'bright'
+                c = int(t_img[4, 14])  # reference 'dark'
+                ab = abs(a - b)
+                ac = abs(a - c)
+                if ab < ac:
+                    ans = 8
+                else:
+                    ans = 6
+        else:
+            ans, score, _ = cv2_score(t_img, field_digits)
+
+        digit.append(ans)
+        corr_scores.append(score)
+
+    # KIWI timestamp character can be blank.  We detect that as a pixel count
+    if kiwi:
+        max_sum = np.max(boxsums)
+        # text = ''
+        for i, sum in enumerate(boxsums):
+            pix_ratio = sum / max_sum
+            # text += f'{pix_ratio:0.2f} '
+            if pix_ratio < 0.5:
+                digit[i] = 0
+                ts += ' '
+            else:
+                ts += f'{digit[i]}'
+        # print(text)
+    else:
         # IOTA can also have empty selection boxes
-        if score < 0.5:
-            ans = ' '
-        cum_score += score
-        ts += f'{ans}'
-        intscore = int(score * 100)
+        for i, score in enumerate(corr_scores):
+            if score < blankscore:
+                ts += ' '
+            else:
+                ts += f'{digit[i]}'
+
+    cum_score = np.sum(corr_scores)
+    for i in range(len(digit)):
+        intscore = int(corr_scores[i] * 100)
         if intscore > 99:
             intscore = 99
         scores += f'{intscore:02d} '
+
     intcumscore = int(cum_score * 100)
     scores += f'sum: {intcumscore}'
+
     timestamp, time = formatter(ts)
+
     return timestamp, time, ts, scores, intcumscore
 
 
@@ -390,11 +438,24 @@ def format_iota_timestamp(ts):
 
 
 def format_kiwi_timestamp(ts_str):
+
+    def increment_time(hh, mm, ss):
+        ss += 1
+        if ss == 60:
+            ss = 0
+            mm += 1
+            if mm == 60:
+                mm = 0
+                hh += 1
+                if hh == 24:
+                    hh = mm = ss = 0
+        return hh, mm, ss
+
     assert (len(ts_str) == 12), "len(ts_str) not equal to 12 in kiwi timestamp formatter"
     ts = [0] * 12
     try:
         for i, value in enumerate(ts_str):
-            # Convert spaces to zero; proper interger for rest
+            # Convert spaces to zero; proper integer for rest
             if value == ' ':
                 ts[i] = 0
             else:
@@ -414,16 +475,29 @@ def format_kiwi_timestamp(ts_str):
             use_ff_left  = ff_left  > ff_right
             use_ff_right = ff_right > ff_left
 
-        assert (not use_ff_left == use_ff_right, 'Error: use_ff_right == use_ff_left')
+        if ff_left == 0 and not ts_str[6] == ' ':
+            use_ff_left = False
+            use_ff_right = True
+
+        if ff_right == 0 and not ts_str[9] == ' ' and seconds_rolled_over:
+            use_ff_left = False
+            use_ff_right = True
+            hh, mm, ss = increment_time(hh, mm, ss)
+        elif ff_right == 0 and not ts_str[9] == ' ' and not seconds_rolled_over:
+            use_ff_left = True
+            use_ff_right = False
+
+        # assert (not use_ff_left == use_ff_right, 'Error: use_ff_right == use_ff_left')
 
         if use_ff_left:
             ff = ff_left
             time = 3600 * hh + 60 * mm + ss + ff / 1000
-            return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[6]}{ts[7]}{ts[8]}]', time
+            return f'[{hh:02d}:{mm:02d}:{ss:02d}.{ts[6]}{ts[7]}{ts[8]}]', time
         else:
             ff = ff_right
             time = 3600 * hh + 60 * mm + ss + ff / 1000
-            return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[9]}{ts[10]}{ts[11]}]', time
+            return f'[{hh:02d}:{mm:02d}:{ss:02d}.{ts[9]}{ts[10]}{ts[11]}]', time
+
 
     except ValueError:
         return f'[00:00:00.000]', -1.0  # Indicate invalid timestamp by returning negative time

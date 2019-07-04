@@ -348,7 +348,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.profilesDir = os.path.expanduser('~')
 
         # We will need the user name when we write a pickled list of profile dictionaries.
-        # We name them: pymovie-ocr-profiles-username.p to facilitate sharing among users
+        # We name them: pymovie-ocr-profiles-username.p to facilitate sharing among users.
+        # Actually, we have changed our mind and will only use a single dictionary, but we might
+        # need the user's name for some other reason.
         self.userName = os.path.basename(self.profilesDir)
 
         # Initialize all instance variables as a block (to satisfy PEP 8 standard)
@@ -734,10 +736,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         else:
             self.showMsg(f'Operation was cancelled.')
 
-    def readSavedOcrProfiles(self, pattern):
-        # pattern will be either '/pymovie-ocr-profiles*.p' or '/pymovie-ocr-profiles-username.p'
-        # get list of your pymovie custom profiles (from users root directory)
-        available_profiles = glob.glob(self.profilesDir + pattern)
+    def readSavedOcrProfiles(self):
+
+        available_profiles = glob.glob(self.profilesDir + '/pymovie-ocr-profiles.p')
 
         dictionary_list = []
         if len(available_profiles) == 0:
@@ -764,8 +765,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             profile_title = title_getter.profileNameEdit.text()
         else:
             return
-        my_profile_fn = '/pymovie-ocr-profiles-' + self.userName + '.p'
-        mine = self.readSavedOcrProfiles(my_profile_fn)
+        my_profile_fn = '/pymovie-ocr-profiles.p'
+        mine = self.readSavedOcrProfiles()
         self.formatterCode = self.readFormatTypeFile()
         mine.append({'id': profile_title, 'upper-boxes': self.upperOcrBoxes,
                      'lower-boxes': self.lowerOcrBoxes, 'digits': self.modelDigits,
@@ -844,6 +845,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.pickleOcrBoxes()
 
     def placeOcrBoxesOnImage(self):
+
+        if self.upperOcrBoxes is None:
+            return
+
         y_adjust = int(self.image.shape[0] / 2)
 
         self.newLowerOcrBoxes = []
@@ -944,20 +949,24 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             reg_upper_timestamp, reg_upper_time, \
                 reg_upper_ts, reg_upper_scores, reg_upper_cum_score = \
                 extract_timestamp(
-                    self.upper_field, self.kiwiUpperOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
+                    self.upper_field, self.kiwiUpperOcrBoxes, self.modelDigits, self.timestampFormatter,
+                    thresh, kiwi=True)
             alt_upper_timestamp, alt_upper_time, \
                 alt_upper_ts, alt_upper_scores, alt_upper_cum_score = \
                 extract_timestamp(
-                    self.upper_field, self.kiwiAltUpperOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
+                    self.upper_field, self.kiwiAltUpperOcrBoxes, self.modelDigits, self.timestampFormatter,
+                    thresh, kiwi=True)
 
             reg_lower_timestamp, reg_lower_time, \
                 reg_lower_ts, reg_lower_scores, reg_lower_cum_score = \
                 extract_timestamp(
-                    self.lower_field, self.kiwiLowerOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
+                    self.lower_field, self.kiwiLowerOcrBoxes, self.modelDigits, self.timestampFormatter,
+                    thresh, kiwi=True)
             alt_lower_timestamp, alt_lower_time, \
                 alt_lower_ts, alt_lower_scores, alt_lower_cum_score = \
                 extract_timestamp(
-                    self.lower_field, self.kiwiAltLowerOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
+                    self.lower_field, self.kiwiAltLowerOcrBoxes, self.modelDigits, self.timestampFormatter,
+                    thresh, kiwi=True)
 
             need_to_redisplay_ocr_boxes = False
             if reg_upper_cum_score > alt_upper_cum_score:
@@ -1209,6 +1218,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.placeOcrBoxesOnImage()
             self.timestampFormatter = format_kiwi_timestamp
             self.writeFormatTypeFile('kiwi-left')
+            self.formatterCode = 'kiwi-left'
             self.extractTimestamps()
             return
 
@@ -1229,6 +1239,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.placeOcrBoxesOnImage()
             self.timestampFormatter = format_kiwi_timestamp
             self.writeFormatTypeFile('kiwi-right')
+            self.formatterCode = 'kiwi-right'
             self.extractTimestamps()
             return
 
@@ -1241,17 +1252,32 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'This function only available when an AVI-WCS folder is in use.')
             return
         selector = SelectProfileDialog()
-        all = self.readSavedOcrProfiles(pattern='/pymovie-ocr-profiles*.p')
+        # all = self.readSavedOcrProfiles(pattern='/pymovie-ocr-profiles*.p')
+        all = self.readSavedOcrProfiles()
+
+        # Insert a blank for the first row.  It gets auto-selected and I want to
+        # protect the user from clicking OK when he meant cancel.
+        title = ' '
+        numRows = selector.selectionTable.rowCount()
+        selector.selectionTable.insertRow(numRows)
+        item = QTableWidgetItem(str(title))
+        selector.selectionTable.setItem(numRows, 0, item)
+
         for item in all:
             title = item['id']
             numRows = selector.selectionTable.rowCount()
             selector.selectionTable.insertRow(numRows)
             item = QTableWidgetItem(str(title))
             selector.selectionTable.setItem(numRows, 0, item)
+        selector.selectionTable.clearSelection()
         result = selector.exec_()
         if result == QDialog.Accepted:
             profile_selected = selector.selectionTable.currentIndex()
             row = profile_selected.row()
+            if row == 0:
+                return
+            else:
+                row -= 1
             # self.showMsg(f'row {row} was selected')
             ocr_dict = all[row]
             id_found = ocr_dict['id']
@@ -1269,7 +1295,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.startTimestampReading()
 
         else:
-            self.showMsg(f'User opted out --- no selection')
+            # self.showMsg(f'User opted out --- no selection')
             return
 
     def generateKiwiOcrBoxes(self):
@@ -2396,7 +2422,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.modelDigits[i] = None
             self.saveModelDigits()
             self.acceptAviFolderDirectoryWithoutUserIntervention = True
-            self.selectAviFolder()
 
         for img in self.modelDigits:
             if not img is None:
@@ -2419,12 +2444,17 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         ok_to_print_confusion_matrix = True
 
+        max_px_value = 0
         digits = self.modelDigits.copy()
         spaced_digits = []
         for i, digit in enumerate(digits):
             if digit is None:
                 digits[i] = blank
                 ok_to_print_confusion_matrix = False
+            else:
+                max_px = np.max(digit)
+                if max_px > max_px_value:
+                    max_px_value = max_px
 
             blk_border = cv2.copyMakeBorder(digits[i], 1, 1, 1, 1, cv2.BORDER_CONSTANT, value=0)
             wht_border = cv2.copyMakeBorder(blk_border, 1, 1, 1, 1, cv2.BORDER_CONSTANT, value=border_value)
@@ -2435,6 +2465,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         p.ui.menuBtn.hide()
         p.ui.roiBtn.hide()
         p.ui.histogram.hide()
+        self.showMsg(f'max pixel value: {max_px_value}')
+        p.ui.histogram.setLevels(0, max_px_value)
 
         if ok_to_print_confusion_matrix:
             print_confusion_matrix(self.modelDigits, self.showMsg)
@@ -2469,7 +2501,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.saveModelDigits()
         if not self.showMissingModelDigits():
             self.acceptAviFolderDirectoryWithoutUserIntervention = True
-            self.selectAviFolder()
+            self.showMsg(f'Training completed.  Click Select AVI-WCS folder button to start timestamp reading.')
 
 
     def addApertureAtPosition(self, x, y):
@@ -3601,13 +3633,15 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.modelDigitsFilename = 'custom-digits.p'
                 self.ocrboxBasePath = 'custom-boxes'
 
+                self.processTargetAperturePlacementFiles()
+
                 self.startTimestampReading()
                 self.showFrame()  # So that we get the first frame timestamp (if possible)
 
                 self.thumbOneView.clear()
                 self.thumbTwoView.clear()
 
-            self.processTargetAperturePlacementFiles()
+            # self.processTargetAperturePlacementFiles()
 
     def startTimestampReading(self):
         # This is how we starup timestamp extraction.
