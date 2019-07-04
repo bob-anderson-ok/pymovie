@@ -358,41 +358,41 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.currentUpperBoxPos = ''  # Used by Kiwi timestamp extraction
         self.currentLowerBoxPos = ''  # Used by Kiwi timestamp extraction
 
-        self.upper_timestamp = ''
-        self.upper_time = 0.0
-        self.upper_ts = ''
-        self.upper_scores = ''
-        self.upper_cum_score = 0
-
-        self.lower_timestamp = ''
-        self.lower_time = 0.0
-        self.lower_ts = ''
-        self.lower_scores = ''
-        self.lower_cum_score = 0
-
-        self.reg_upper_timestamp = ''
-        self.reg_upper_time = 0.0
-        self.reg_upper_ts = ''
-        self.reg_upper_scores = ''
-        self.reg_upper_cum_score = 0
-
-        self.reg_lower_timestamp = ''
-        self.reg_lower_time = 0.0
-        self.reg_lower_ts = ''
-        self.reg_lower_scores = ''
-        self.reg_lower_cum_score = 0
-
-        self.alt_upper_timestamp = ''
-        self.alt_upper_time = 0.0
-        self.alt_upper_ts = ''
-        self.alt_upper_scores = ''
-        self.alt_upper_cum_score = 0
-
-        self.alt_lower_timestamp = ''
-        self.alt_lower_time = 0.0
-        self.alt_lower_ts = ''
-        self.alt_lower_scores = ''
-        self.alt_lower_cum_score = 0
+        # self.upper_timestamp = ''
+        # self.upper_time = 0.0
+        # self.upper_ts = ''
+        # self.upper_scores = ''
+        # self.upper_cum_score = 0
+        #
+        # self.lower_timestamp = ''
+        # self.lower_time = 0.0
+        # self.lower_ts = ''
+        # self.lower_scores = ''
+        # self.lower_cum_score = 0
+        #
+        # self.reg_upper_timestamp = ''
+        # self.reg_upper_time = 0.0
+        # self.reg_upper_ts = ''
+        # self.reg_upper_scores = ''
+        # self.reg_upper_cum_score = 0
+        #
+        # self.reg_lower_timestamp = ''
+        # self.reg_lower_time = 0.0
+        # self.reg_lower_ts = ''
+        # self.reg_lower_scores = ''
+        # self.reg_lower_cum_score = 0
+        #
+        # self.alt_upper_timestamp = ''
+        # self.alt_upper_time = 0.0
+        # self.alt_upper_ts = ''
+        # self.alt_upper_scores = ''
+        # self.alt_upper_cum_score = 0
+        #
+        # self.alt_lower_timestamp = ''
+        # self.alt_lower_time = 0.0
+        # self.alt_lower_ts = ''
+        # self.alt_lower_scores = ''
+        # self.alt_lower_cum_score = 0
 
         # Workspace for self.placeOcrBoxesOnImage()
         self.newLowerOcrBoxes = []
@@ -426,6 +426,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.big_thresh = 9999
         self.one_time_suppress_stats = False
+
+        self.analysisInProgress = False
 
         self.record_target_aperture = False
 
@@ -1939,10 +1941,20 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def autoRun(self):
         if self.runRadioButton.isChecked():
-            self.viewFieldsCheckBox.setChecked(False)
-            self.viewFieldsCheckBox.setEnabled(False)
-            # We make this call so that we record the frame data for the current frame.
-            self.showFrame()
+
+            # We need to not record the current frame if we got here following
+            # a pause.
+            if self.analysisInProgress:
+                pass
+            else:
+                self.analysisInProgress = True
+                if self.viewFieldsCheckBox.isChecked():
+                    # This toggles the checkbox and so causes a call to self.showFrame()
+                    self.viewFieldsCheckBox.setChecked(False)
+                    self.viewFieldsCheckBox.setEnabled(False)
+                else:
+                    # We make this call so that we record the frame data for the current frame.
+                    self.showFrame()
 
             # Go count yellow apertures to determine type of tracking that we'll be doing.
             # This will initialize the aperture geometries (distances to yellow #1)
@@ -1963,18 +1975,19 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     self.pauseRadioButton.click()
                     return
                 else:
-                    # The value change that we do here will automatically trigger
-                    # a call to self.showFrame()
                     if currentFrame > lastFrame:
                         currentFrame -= 1
                     else:
                         currentFrame += 1
+                    # The value change that we do here will automatically trigger
+                    # a call to self.showFrame() which causes data to be recorded
                     self.currentFrameSpinBox.setValue(currentFrame)
                     QtGui.QGuiApplication.processEvents()
         else:
             self.viewFieldsCheckBox.setEnabled(True)
 
     def clearApertureData(self):
+        self.analysisInProgress = False
         for app in self.getApertureList():
             app.data = []
             app.last_theta = None
@@ -2936,7 +2949,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         bbox = aperture.getBbox()
         x0, y0, nx, ny = bbox
         name = aperture.name
-        # timestamp = ''
 
         # thumbnail is the portion of the main image that is covered by the aperture bounding box
         thumbnail = self.image[y0:y0+ny, x0:x0+nx]
@@ -3012,7 +3024,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     self.thumbOneImage = thumbnail
                     self.thumbOneView.setImage(thumbnail)
                     self.thumbTwoView.setImage(mask)
-
 
             self.hair1.setPos((0,self.roi_size))
             self.hair2.setPos((0,0))
@@ -3136,9 +3147,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     timestamp = self.lowerTimestamp
                 else:
                     timestamp = ''
-
-
-
 
         return (xc_roi, yc_roi, xc_world, yc_world, signal,
                 appsum, mean, max_area, frame_num, cvxhull, maxpx, std, timestamp)
