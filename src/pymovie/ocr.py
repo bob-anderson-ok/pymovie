@@ -323,7 +323,7 @@ method = eval('cv2.TM_CCOEFF_NORMED')
 
 def cv2_score(image, field_digits):
     # img = cv2.copyMakeBorder(image, 2,2,2,2, cv2.BORDER_CONSTANT, value=0)
-    img = cv2.copyMakeBorder(image, 2,2,2,2, cv2.BORDER_REPLICATE, value=0)
+    img = cv2.copyMakeBorder(image, 1,1,3,3, cv2.BORDER_REPLICATE, value=0)
     max_found = 0.0
     # min_found = 1.0
     ans = 0
@@ -355,21 +355,24 @@ def extract_timestamp(field, field_boxes, field_digits, formatter, thresh, kiwi=
     scores = ''
 
     for k in range(len(field_boxes)):
-        t_img = timestamp_box_image(field, field_boxes[k])
+        t_img = timestamp_box_image(field, field_boxes[k], kiwi)
         if kiwi:  # We use boxsums to better detect empty boxes
             boxsums.append(np.sum(t_img))
-            b_img = cv2.GaussianBlur(t_img, ksize=(5, 5), sigmaX=0)
-            ans, score, _ = cv2_score(b_img, field_digits)
+            # b_img = cv2.GaussianBlur(t_img, ksize=(5, 5), sigmaX=0)
+            # ans, score, _ = cv2_score(b_img, field_digits)
+            ans, score, _ = cv2_score(t_img, field_digits)
             if ans == 6 or ans == 8:
                 # Pick a group of test pixels at the right-hand edge (no minimize box position criticality)
-                a1 = int(t_img[4, 17])  # test pixel1
-                a2 = int(t_img[4, 18])  # test pixel2
-                a3 = int(t_img[4, 19])  # test pixel3
-                a4 = int(t_img[4, 20])  # test pixel4
-                a5 = int(t_img[4, 21])  # test pixel5
-                a = max(a1, a2, a3, a4, a5)
-                b = int(t_img[6, 13])  # reference 'bright'
-                c = int(t_img[4, 14])  # reference 'dark'
+                a1 = int(t_img[2, 15])  # test pixel1
+                a2 = int(t_img[2, 16])  # test pixel2
+                a3 = int(t_img[2, 17])  # test pixel3
+                a4 = int(t_img[2, 18])  # test pixel4
+                a5 = int(t_img[2, 19])  # test pixel5
+                a6 = int(t_img[2, 20])  # test pixel6
+                a7 = int(t_img[2, 21])  # test pixel7
+                a = max(a1, a2, a3, a4, a5, a6, a7)
+                b = int(t_img[3, 12])  # reference 'bright'
+                c = int(t_img[2, 12])  # reference 'dark'
                 ab = abs(a - b)
                 ac = abs(a - c)
                 if ab < ac:
@@ -516,10 +519,54 @@ def format_boxsprite3_timestamp(ts):
         return f'[00:00:00.0000]', -1.0  # Indicate invalid timestamp by returning negative time
 
 
-def timestamp_box_image(img, box):
+def timestamp_box_image(img, box, kiwi):
     # Note: img must be in field mode
     (xL, xR, yL, yU) = box
-    return img[yL:yU+1, xL:xR+1].copy()
+    if not kiwi:
+        return img[yL:yU+1, xL:xR+1].copy()
+    else:
+        w = xR - xL + 1
+        h = yU - yL + 1
+        rh = int(h/2) + 1
+        patch = np.ndarray((rh, w), dtype='uint8')
+        xleft = xL + 6
+        xright = xR + 6
+        row = 0
+        # for img_row in range(yL, yU+1, 2):
+        #     patch[row, :] = img[img_row, xleft:xright+1]
+        #     xleft -= 2
+        #     xright -= 2
+        #     row += 1
+        offset = 6
+        img_row = yL
+        patch[0, :] = img[img_row, (xL + offset):(xR + offset + 1)]
+
+        offset = 4
+        img_row += 2
+        patch[1, :] = img[img_row, (xL + offset):(xR + offset + 1)]
+
+        offset = 2
+        img_row += 2
+        patch[2, :] = img[img_row, (xL + offset):(xR + offset + 1)]
+
+        offset = 0
+        img_row += 2
+        patch[3, :] = img[img_row, (xL + offset):(xR + offset + 1)]
+
+        offset = -1
+        img_row += 2
+        patch[4, :] = img[img_row, (xL + offset):(xR + offset + 1)]
+
+        offset = -3
+        img_row += 2
+        patch[5, :] = img[img_row, (xL + offset):(xR + offset + 1)]
+
+        offset = -5
+        img_row += 2
+        patch[6, :] = img[img_row, (xL + offset):(xR + offset + 1)]
+
+
+        return patch
 
 
 def print_confusion_matrix(field_digits, printer):

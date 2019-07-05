@@ -10,8 +10,9 @@ class OcrAperture(pg.GraphicsObject):
 
     # Intialize aperture specified by a field box
     def __init__(self, fieldbox, boxnum, position, msgRoutine, templater,
-                 jogcontroller, showcharacter, showtemplates, neededdigits, samplemenu=True):
+                 jogcontroller, showcharacter, showtemplates, neededdigits, kiwi=False, samplemenu=True):
         self.samplemenu = samplemenu
+        self.kiwiStyle = kiwi
         self.templateWriter = templater             # self.processOcrTemplate()  in main
         self.displayDigitTemplates = showtemplates  # self.showDigitTemplates()  in main
         self.controlAllJogs = jogcontroller         # self.setAllOcrBoxJogging() in main
@@ -53,7 +54,23 @@ class OcrAperture(pg.GraphicsObject):
     # All graphics items must have paint() defined.
     def paint(self, p, *args):
         p.setPen(self.pen)
-        p.drawRect(self.boundingRect())
+        if not self.kiwiStyle:
+            p.drawRect(self.boundingRect())
+        else:
+            p.setPen(pg.mkPen('y'))
+            dx = 5
+            x0 = self.x0 + dx
+            y0 = self.y0
+            x1 = x0 + self.xsize
+            y1 = y0
+            x2 = self.x0 - dx
+            y2 = self.y0 + self.ysize
+            x3 = x2 + self.xsize
+            y3 = y2
+            p.drawLine(x0, y0, x1, y1) # Top line
+            p.drawLine(x0, y0, x2, y2) # Left line
+            p.drawLine(x1, y1, x3, y3) # Right line
+            p.drawLine(x2, y2, x3, y3) # Bottom line
 
     # On right-click, raise the context menu
     def mouseClickEvent(self, ev):

@@ -358,6 +358,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.currentUpperBoxPos = ''  # Used by Kiwi timestamp extraction
         self.currentLowerBoxPos = ''  # Used by Kiwi timestamp extraction
 
+        self.kiwiInUse = False
+
         # self.upper_timestamp = ''
         # self.upper_time = 0.0
         # self.upper_ts = ''
@@ -1080,6 +1082,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.clearOcrBoxes()
 
+        self.kiwiInUse = False
+
         self.viewFieldsCheckBox.setChecked(True)
 
         # There is often something messed up with frame 0, so we protect the user
@@ -1221,6 +1225,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.timestampFormatter = format_kiwi_timestamp
             self.writeFormatTypeFile('kiwi-left')
             self.formatterCode = 'kiwi-left'
+            self.kiwiInUse = True
             self.extractTimestamps()
             return
 
@@ -1242,6 +1247,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.timestampFormatter = format_kiwi_timestamp
             self.writeFormatTypeFile('kiwi-right')
             self.formatterCode = 'kiwi-right'
+            self.kiwiInUse = True
             self.extractTimestamps()
             return
 
@@ -2404,6 +2410,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.nameAperture(aperture)
 
     def addOcrAperture(self, fieldbox, boxnum, position):
+
         aperture = OcrAperture(
             fieldbox,
             boxnum,
@@ -2414,6 +2421,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             showcharacter=self.showOcrCharacter,
             showtemplates=self.showDigitTemplates,
             neededdigits=self.needDigits,
+            kiwi=self.kiwiInUse,
             samplemenu=self.enableOcrTemplateSampling
         )
         view = self.frameView.getView()
@@ -2489,14 +2497,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.showOcrboxInThumbnails(ocrbox)
 
     def showOcrboxInThumbnails(self, ocrbox):
-        img = timestamp_box_image(self.image_fields, ocrbox)
+        img = timestamp_box_image(self.image_fields, ocrbox, kiwi=self.kiwiInUse)
         self.thumbOneImage = img
         self.thumbOneView.setImage(img)
-        # TODO verify that this code change is good
-        # cut = self.vtiThresholdSpinner.value() - 1
-        # _, t_img = cv2.threshold(img, cut, 1, cv2.THRESH_BINARY)
-        # self.thumbTwoImage = t_img
-        # self.thumbTwoView.setImage(t_img)
         self.thumbTwoImage = img
         self.thumbTwoView.setImage(img)
         return img
@@ -2506,8 +2509,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         t_img = self.showOcrboxInThumbnails(ocrbox)
 
         if self.formatterCode == 'kiwi-left' or self.formatterCode == 'kiwi-right':
-            blurred_t_img = cv2.GaussianBlur(t_img, ksize=(5, 5), sigmaX=0)
-            self.modelDigits[digit] = blurred_t_img
+            # blurred_t_img = cv2.GaussianBlur(t_img, ksize=(5, 5), sigmaX=0)
+            # self.modelDigits[digit] = blurred_t_img
+            self.modelDigits[digit] = t_img
         else:
             self.modelDigits[digit] = t_img
 
@@ -3465,6 +3469,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.thumbTwoView.clear()
 
     def setTimestampFormatter(self):
+        self.kiwiInUse = False
         if self.formatterCode is None:
             self.showMsg(f'Timestamp formatter code was missing.')
             self.timestampFormatter = None
@@ -3474,6 +3479,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.timestampFormatter = format_boxsprite3_timestamp
         elif self.formatterCode == 'kiwi-left' or self.formatterCode == 'kiwi-right':
             self.timestampFormatter = format_kiwi_timestamp
+            self.kiwiInUse = True
         else:
             self.showMsg(f'Unknown timestamp formatter code: {self.formatterCode}.  Defaulting to Iota')
             self.timestampFormatter = format_iota_timestamp
