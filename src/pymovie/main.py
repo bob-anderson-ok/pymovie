@@ -763,18 +763,33 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if not self.avi_wcs_folder_in_use:
             self.showMsg(f'This operation only available when an AVI-WCS folder is in use.')
             return
+
         title_getter = OcrProfileNameDialog()
         return_value = title_getter.exec_()
         if return_value == QDialog.Accepted:
             profile_title = title_getter.profileNameEdit.text()
         else:
             return
+
         my_profile_fn = '/pymovie-ocr-profiles.p'
         mine = self.readSavedOcrProfiles()
-        self.formatterCode = self.readFormatTypeFile()
+        code_to_save = self.readFormatTypeFile()
+        if self.kiwiInUse:
+            self.currentFrameSpinBox.setValue(1)
+            # if not self.currentUpperBoxPos == self.currentLowerBoxPos:
+            #     self.showMsg(f'Cannot save Kiwi profile when upper and lower boxes are in different positions.')
+            #     return
+            #
+            # if self.currentUpperBoxPos == 'left':
+            #     code_to_save = 'kiwi-left'
+            # else:
+            #     code_to_save = 'kiwi-right'
+            # if self.formatterCode == 'kiwi-left' and self.currentUpperBoxPos == 'alt':
+            #     self.showMsg(f'Please return to the character position trained at.')
+
         mine.append({'id': profile_title, 'upper-boxes': self.upperOcrBoxes,
                      'lower-boxes': self.lowerOcrBoxes, 'digits': self.modelDigits,
-                     'formatter-code': self.formatterCode})
+                     'formatter-code': code_to_save})
         pickle.dump(mine, open(self.profilesDir + my_profile_fn, "wb"))
 
     def handleChangeOfDisplayMode(self):
@@ -1074,13 +1089,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.vtiSelectComboBox.setCurrentIndex(0)
 
         if self.currentVTIindex == 0:  # None
-            # self.clearOcrBoxes()
-            # self.timestampFormatter = None
-            # self.upperTimestamp = ''
-            # self.lowerTimestamp = ''
             return
-
-        self.clearOcrBoxes()
 
         self.kiwiInUse = False
 
@@ -1097,6 +1106,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.detectFieldTimeOrder = True
 
         self.showFrame()
+
+        self.clearOcrBoxes()
 
         width = self.image.shape[1]
 
@@ -1221,11 +1232,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.loadModelDigits()
             self.saveModelDigits()
 
+            self.kiwiInUse = True
             self.placeOcrBoxesOnImage()
             self.timestampFormatter = format_kiwi_timestamp
             self.writeFormatTypeFile('kiwi-left')
             self.formatterCode = 'kiwi-left'
-            self.kiwiInUse = True
             self.extractTimestamps()
             return
 
@@ -1243,11 +1254,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.loadModelDigits()
             self.saveModelDigits()
 
+            self.kiwiInUse = True
             self.placeOcrBoxesOnImage()
             self.timestampFormatter = format_kiwi_timestamp
             self.writeFormatTypeFile('kiwi-right')
             self.formatterCode = 'kiwi-right'
-            self.kiwiInUse = True
             self.extractTimestamps()
             return
 
@@ -1301,6 +1312,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.writeFormatTypeFile(self.formatterCode)
 
             self.startTimestampReading()
+            self.showFrame()
 
         else:
             # self.showMsg(f'User opted out --- no selection')
@@ -2518,7 +2530,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.saveModelDigits()
         if not self.showMissingModelDigits():
             self.acceptAviFolderDirectoryWithoutUserIntervention = True
-            self.showMsg(f'Training completed.  Click Select AVI-WCS folder button to start timestamp reading.')
+            self.startTimestampReading()
+            self.showMsg(f'Training completed.')
+            self.showFrame()
 
 
     def addApertureAtPosition(self, x, y):

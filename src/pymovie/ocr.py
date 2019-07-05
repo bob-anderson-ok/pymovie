@@ -361,6 +361,7 @@ def extract_timestamp(field, field_boxes, field_digits, formatter, thresh, kiwi=
             # b_img = cv2.GaussianBlur(t_img, ksize=(5, 5), sigmaX=0)
             # ans, score, _ = cv2_score(b_img, field_digits)
             ans, score, _ = cv2_score(t_img, field_digits)
+
             if ans == 6 or ans == 8:
                 # Pick a group of test pixels at the right-hand edge (no minimize box position criticality)
                 a1 = int(t_img[2, 15])  # test pixel1
@@ -379,6 +380,26 @@ def extract_timestamp(field, field_boxes, field_digits, formatter, thresh, kiwi=
                     ans = 8
                 else:
                     ans = 6
+
+                if ans == 8 or ans == 9:
+                    # Pick a group of test pixels at the left-hand edge (no minimize box position criticality)
+                    a1 = int(t_img[5, 2])  # test pixel1
+                    a2 = int(t_img[5, 3])  # test pixel2
+                    a3 = int(t_img[5, 4])  # test pixel3
+                    a4 = int(t_img[5, 5])  # test pixel4
+                    a5 = int(t_img[5, 6])  # test pixel5
+                    a6 = int(t_img[5, 7])  # test pixel6
+                    a7 = int(t_img[5, 1])  # test pixel7
+                    a = max(a1, a2, a3, a4, a5, a6, a7)
+                    b = int(t_img[6, 10])  # reference 'bright'
+                    c = int(t_img[5, 10])  # reference 'dark'
+                    ab = abs(a - b)
+                    ac = abs(a - c)
+                    if ab < ac:
+                        ans = 8
+                    else:
+                        ans = 9
+
         else:
             ans, score, _ = cv2_score(t_img, field_digits)
 
@@ -387,17 +408,23 @@ def extract_timestamp(field, field_boxes, field_digits, formatter, thresh, kiwi=
 
     # KIWI timestamp character can be blank.  We detect that as a pixel count
     if kiwi:
-        max_sum = np.max(boxsums)
-        # text = ''
-        for i, sum in enumerate(boxsums):
-            pix_ratio = sum / max_sum
-            # text += f'{pix_ratio:0.2f} '
-            if pix_ratio < 0.5:
+        # max_sum = np.max(boxsums)
+        # # text = ''
+        # for i, sum in enumerate(boxsums):
+        #     pix_ratio = sum / max_sum
+        #     # text += f'{pix_ratio:0.2f} '
+        #     if pix_ratio < 0.5:
+        #         digit[i] = 0
+        #         ts += ' '
+        #     else:
+        #         ts += f'{digit[i]}'
+        # # print(text)
+        for i, score in enumerate(corr_scores):
+            if score < blankscore + 0.1:
                 digit[i] = 0
                 ts += ' '
             else:
                 ts += f'{digit[i]}'
-        # print(text)
     else:
         # IOTA can also have empty selection boxes
         for i, score in enumerate(corr_scores):
