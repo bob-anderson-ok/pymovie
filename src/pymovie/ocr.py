@@ -317,9 +317,6 @@ def setup_for_boxsprite3_720():
 
 method = eval('cv2.TM_CCOEFF_NORMED')
 
-# TODO Remove this change --- test to see if Kiwi improves
-# method = eval('cv2.TM_SQDIFF_NORMED')
-
 
 def cv2_score(image, field_digits):
     # img = cv2.copyMakeBorder(image, 2,2,2,2, cv2.BORDER_CONSTANT, value=0)
@@ -345,7 +342,7 @@ def cv2_score(image, field_digits):
     # return (ans, min_found, min_vals)
 
 
-def extract_timestamp(field, field_boxes, field_digits, formatter, thresh, kiwi=False):
+def extract_timestamp(field, field_boxes, field_digits, formatter, thresh, kiwi=False, t2fromleft=None):
     ts = ''  # ts 'means' timestamp
 
     blankscore = .5
@@ -381,24 +378,24 @@ def extract_timestamp(field, field_boxes, field_digits, formatter, thresh, kiwi=
                 else:
                     ans = 6
 
-                if ans == 8 or ans == 9:
-                    # Pick a group of test pixels at the left-hand edge (no minimize box position criticality)
-                    a1 = int(t_img[5, 2])  # test pixel1
-                    a2 = int(t_img[5, 3])  # test pixel2
-                    a3 = int(t_img[5, 4])  # test pixel3
-                    a4 = int(t_img[5, 5])  # test pixel4
-                    a5 = int(t_img[5, 6])  # test pixel5
-                    a6 = int(t_img[5, 7])  # test pixel6
-                    a7 = int(t_img[5, 1])  # test pixel7
-                    a = max(a1, a2, a3, a4, a5, a6, a7)
-                    b = int(t_img[6, 10])  # reference 'bright'
-                    c = int(t_img[5, 10])  # reference 'dark'
-                    ab = abs(a - b)
-                    ac = abs(a - c)
-                    if ab < ac:
-                        ans = 8
-                    else:
-                        ans = 9
+            if ans == 8 or ans == 9:
+                # Pick a group of test pixels at the left-hand edge (no minimize box position criticality)
+                a1 = int(t_img[5, 2])  # test pixel1
+                a2 = int(t_img[5, 3])  # test pixel2
+                a3 = int(t_img[5, 4])  # test pixel3
+                a4 = int(t_img[5, 5])  # test pixel4
+                a5 = int(t_img[5, 6])  # test pixel5
+                a6 = int(t_img[5, 7])  # test pixel6
+                a7 = int(t_img[5, 1])  # test pixel7
+                a = max(a1, a2, a3, a4, a5, a6, a7)
+                b = int(t_img[6, 10])  # reference 'bright'
+                c = int(t_img[5, 10])  # reference 'dark'
+                ab = abs(a - b)
+                ac = abs(a - c)
+                if ab < ac:
+                    ans = 8
+                else:
+                    ans = 9
 
         else:
             ans, score, _ = cv2_score(t_img, field_digits)
@@ -406,7 +403,7 @@ def extract_timestamp(field, field_boxes, field_digits, formatter, thresh, kiwi=
         digit.append(ans)
         corr_scores.append(score)
 
-    # KIWI timestamp character can be blank.  We detect that as a pixel count
+    # KIWI timestamp character can be blank.  We detect that as a low correlation score
     if kiwi:
         # max_sum = np.max(boxsums)
         # # text = ''
@@ -443,12 +440,12 @@ def extract_timestamp(field, field_boxes, field_digits, formatter, thresh, kiwi=
     intcumscore = int(cum_score * 100)
     scores += f'sum: {intcumscore}'
 
-    timestamp, time = formatter(ts)
+    timestamp, time, ff_from_left = formatter(ts, t2fromleft)
 
-    return timestamp, time, ts, scores, intcumscore
+    return timestamp, time, ts, scores, intcumscore, ff_from_left
 
 
-def format_iota_timestamp(ts):
+def format_iota_timestamp(ts, t2fromleft):
     assert (len(ts) == 14), "len(ts) not equal to 14 in iota timestamp formatter"
 
     try:
@@ -462,12 +459,12 @@ def format_iota_timestamp(ts):
 
         time = 3600 * hh + 60 * mm + ss + ff / 10000
         # return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[6]}{ts[7]}{ts[8]}{ts[9]}]', time
-        return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ff:04d}]', time
+        return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ff:04d}]', time, None
     except ValueError:
-        return f'[00:00:00.0000]', -1.0  # Indicate invalid timestamp by returning negative time
+        return f'[00:00:00.0000]', -1.0, None  # Indicate invalid timestamp by returning negative time
 
 
-def format_kiwi_timestamp(ts_str):
+def format_kiwi_timestamp(ts_str, t2fromleft):
 
     def increment_time(hh, mm, ss):
         ss += 1
@@ -494,6 +491,7 @@ def format_kiwi_timestamp(ts_str):
         hh = 10 * ts[0] + ts[1]
         mm = 10 * ts[2] + ts[3]
         ss = 10 * ts[4] + ts[5]
+
         ff_left = 100 * ts[6] + 10 * ts[7] + ts[8]
         ff_right = 100 * ts[9] + 10 * ts[10] + ts[11]
 
@@ -517,23 +515,25 @@ def format_kiwi_timestamp(ts_str):
             use_ff_left = True
             use_ff_right = False
 
-        # assert (not use_ff_left == use_ff_right, 'Error: use_ff_right == use_ff_left')
+        if t2fromleft is not None:
+            use_ff_left = t2fromleft
+            use_ff_right = not t2fromleft
 
         if use_ff_left:
             ff = ff_left
             time = 3600 * hh + 60 * mm + ss + ff / 1000
-            return f'[{hh:02d}:{mm:02d}:{ss:02d}.{ts[6]}{ts[7]}{ts[8]}]', time
+            return f'[{hh:02d}:{mm:02d}:{ss:02d}.{ts[6]}{ts[7]}{ts[8]}]', time, use_ff_left
         else:
             ff = ff_right
             time = 3600 * hh + 60 * mm + ss + ff / 1000
-            return f'[{hh:02d}:{mm:02d}:{ss:02d}.{ts[9]}{ts[10]}{ts[11]}]', time
+            return f'[{hh:02d}:{mm:02d}:{ss:02d}.{ts[9]}{ts[10]}{ts[11]}]', time, use_ff_left
 
 
     except ValueError:
-        return f'[00:00:00.000]', -1.0  # Indicate invalid timestamp by returning negative time
+        return f'[00:00:00.000]', -1.0, None  # Indicate invalid timestamp by returning negative time
 
 
-def format_boxsprite3_timestamp(ts):
+def format_boxsprite3_timestamp(ts, t2fromleft):
     assert (len(ts) == 11), "len(ts) not equal to 11 in boxsprite timestamp formatter"
     try:
         hh = 10 * int(ts[0]) + int(ts[1])
@@ -541,9 +541,9 @@ def format_boxsprite3_timestamp(ts):
         ss = 10 * int(ts[4]) + int(ts[5])
         ff = 1000 * int(ts[7]) + 100 * int(ts[8]) + 10 * int(ts[9]) + int(ts[10])
         time = 3600 * hh + 60 * mm + ss + ff / 10000
-        return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[7]}{ts[8]}{ts[9]}{ts[10]}]', time
+        return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[7]}{ts[8]}{ts[9]}{ts[10]}]', time, None
     except ValueError:
-        return f'[00:00:00.0000]', -1.0  # Indicate invalid timestamp by returning negative time
+        return f'[00:00:00.0000]', -1.0, None  # Indicate invalid timestamp by returning negative time
 
 
 def timestamp_box_image(img, box, kiwi):
@@ -556,14 +556,7 @@ def timestamp_box_image(img, box, kiwi):
         h = yU - yL + 1
         rh = int(h/2) + 1
         patch = np.ndarray((rh, w), dtype='uint8')
-        xleft = xL + 6
-        xright = xR + 6
-        row = 0
-        # for img_row in range(yL, yU+1, 2):
-        #     patch[row, :] = img[img_row, xleft:xright+1]
-        #     xleft -= 2
-        #     xright -= 2
-        #     row += 1
+
         offset = 6
         img_row = yL
         patch[0, :] = img[img_row, (xL + offset):(xR + offset + 1)]

@@ -33,7 +33,7 @@
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <layout class="QVBoxLayout" name="verticalLayout_12">
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_10" stretch="1,2,2">
@@ -948,34 +948,24 @@
            <item>
             <widget class="QLabel" name="vtiSpacerLabel">
              <property name="text">
-              <string>     </string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="saveProfileButton">
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button is only active when an AVI-WCS folder is open. It is used in that case to save the files:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;custom-boxes-upper.p&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;custom-boxes-lower.p&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;custom-digits.p&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;formatter.txt&lt;/span&gt;&lt;/p&gt;&lt;p&gt;to a list maintained in your user directory named pymovie-ocr-profiles-&lt;span style=&quot; color:#fc0107;&quot;&gt;username&lt;/span&gt;.p where &lt;span style=&quot; color:#fc0107;&quot;&gt;username &lt;/span&gt;would be replaced by your actual user name.&lt;/p&gt;&lt;p&gt;You will be prompted to give a detailed 'title' for the profile before it is saved. This title will be displayed when you click the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Select custom ocr profile&lt;/span&gt; button.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="text">
-              <string>Save OCR profile</string>
+              <string/>
              </property>
             </widget>
            </item>
            <item>
             <widget class="QLabel" name="lprofileButtonSpacingLabel">
              <property name="text">
-              <string>    </string>
+              <string/>
              </property>
             </widget>
            </item>
            <item>
             <widget class="QPushButton" name="loadCustomProfilesButton">
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button is only active whan an AVI-WCS folder is open.&lt;/p&gt;&lt;p&gt;In that case, it displays the list of available custom ocr profiles (character selection box placements and model digits) retrieved by the lists found in your user home directory with the form pymovie-ocr-profiles*.p&lt;/p&gt;&lt;p&gt;That file pattern will retrieve your personal list of custom profiles and any others that you may have received from other users.&lt;/p&gt;&lt;p&gt;For most situations, it is probably better to share just the ocr profile files:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;custom-boxes-upper.p&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;custom-boxes-lower.p&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;custom-digits.p&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;formatter.txt&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Sharing just those files is all that is required. Put them in your AVI-WCS folder and then click on the&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt; Save OCR profile&lt;/span&gt; button to save that profile with a name of your choosing in your personal list of custom ocr profiles.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button is only active whan an AVI-WCS folder is open.&lt;/p&gt;&lt;p&gt;In that case, it displays the list of available custom ocr profiles (character selection box placements and model digits) retrieved from the file found in your user home directory with the name pymovie-ocr-profiles.p&lt;/p&gt;&lt;p&gt;In the dialog box that appears, you can:&lt;/p&gt;&lt;p&gt;1) edit the names of previously saved profiles or &lt;/p&gt;&lt;p&gt;2) give a name to and save the current profile or&lt;/p&gt;&lt;p&gt;3) delete a saved profile or&lt;/p&gt;&lt;p&gt;4) select a profile and 'load it'. This will overwrite the currently active ocr profile.&lt;/p&gt;&lt;p&gt;To share (or get a profile from another user), these are the files in the AVI-WCS folder that comprise the ocr profile:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;custom-boxes-upper.p&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;custom-boxes-lower.p&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;custom-digits.p&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;formatter.txt&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Sharing just those files is all that is required. Put them in your AVI-WCS folder and then use this dialog to save that profile with a name of your choosing into your personal list of custom ocr profiles.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
-              <string>Select custom ocr profile</string>
+              <string>Select/save custom ocr profile</string>
              </property>
             </widget>
            </item>
@@ -1433,7 +1423,7 @@ If you think that you know the plate scale more precisely than what can be calcu
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <layout class="QVBoxLayout" name="verticalLayout_13">
          <item>
           <widget class="ImageView" name="frameView">
@@ -1465,7 +1455,7 @@ If you think that you know the plate scale more precisely than what can be calcu
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <layout class="QVBoxLayout" name="verticalLayout_14">
          <item>
           <widget class="QTextEdit" name="textOut">

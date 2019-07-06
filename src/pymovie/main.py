@@ -147,9 +147,65 @@ class OcrProfileNameDialog(QDialog, ocrProfileNameDialog.Ui_ocrNameDialog):
 
 
 class SelectProfileDialog(QDialog, selectProfile.Ui_Dialog):
-    def __init__(self):
+    def __init__(self, msger, profile_dict_list, current_profile_dict):
         super(SelectProfileDialog, self).__init__()
         self.setupUi(self)
+        self.msger = msger
+        self.profiles = profile_dict_list
+        self.currentProfile = current_profile_dict
+        self.resultCode = -1  # Load profile was not performed
+
+        self.exitButton.clicked.connect(self.exitProcedure)
+
+        self.fillTableFromProfileList()
+
+        # We do this so as to erase the default selection of row 0.  Don't know why
+        # this works, but it seems reliable.
+        profile_selected = self.selectionTable.currentIndex()
+        self.selectionTable.setCurrentIndex(profile_selected)
+
+        self.deleteButton.clicked.connect(self.deleteSelection)
+
+        self.addProfileButton.clicked.connect(self.addCurrentProfile)
+
+        self.loadButton.clicked.connect(self.loadSelectedProfile)
+
+    def loadSelectedProfile(self):
+        profile_selected = self.selectionTable.currentIndex()
+        row = profile_selected.row()
+        self.resultCode = row
+        self.close()
+
+    def getResult(self):
+        return self.resultCode
+
+    def addCurrentProfile(self):
+        self.currentProfile['id'] = self.profileNameEdit.text()
+        self.profiles.append(self.currentProfile)
+        self.selectionTable.setRowCount(0)
+        self.fillTableFromProfileList()
+
+    def fillTableFromProfileList(self):
+        for profile in self.profiles:
+            title = profile['id']
+            numRows = self.selectionTable.rowCount()
+            self.selectionTable.insertRow(numRows)
+            item = QTableWidgetItem(str(title))
+            self.selectionTable.setItem(numRows, 0, item)
+
+    def deleteSelection(self):
+        profile_selected = self.selectionTable.currentIndex()
+        row = profile_selected.row()
+        # self.msger(f'deleting row: {row}')
+        self.profiles.pop(row)  # Remove from dictionary
+        self.selectionTable.setRowCount(0)
+        self.fillTableFromProfileList()  # Update table display
+
+    def exitProcedure(self):
+        for i in range(self.selectionTable.rowCount()):
+            new_id = self.selectionTable.item(i, 0).text()
+            self.profiles[i]['id'] = new_id
+        self.close()
 
 
 class StarPositionDialog(QDialog, starPositionDialog.Ui_Dialog):
@@ -339,10 +395,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.loadCustomProfilesButton.installEventFilter(self)
         self.loadCustomProfilesButton.setEnabled(False)
 
-        self.saveProfileButton.installEventFilter(self)
-        self.saveProfileButton.clicked.connect(self.saveCurrentOcrProfile)
-        self.saveProfileButton.setEnabled(False)
-
         # For now, we will save OCR profiles in the users home directory. If
         # later we find a better place, this is the only line we need to change
         self.profilesDir = os.path.expanduser('~')
@@ -355,46 +407,16 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         # Initialize all instance variables as a block (to satisfy PEP 8 standard)
 
+        self.upper_left_count = 0    # When Kiwi used: accumulate count ot times t2 was at left in upper field
+        self.upper_right_count = 0   # When Kiwi used: accumulate count ot times t2 was at the right in upper field
+
+        self.lower_left_count = 0    # When Kiwi used: accumulate count ot times t2 was at left in lower field
+        self.lower_right_count = 0   # When Kiwi used: accumulate count ot times t2 was at the right in lower field
+
         self.currentUpperBoxPos = ''  # Used by Kiwi timestamp extraction
         self.currentLowerBoxPos = ''  # Used by Kiwi timestamp extraction
 
         self.kiwiInUse = False
-
-        # self.upper_timestamp = ''
-        # self.upper_time = 0.0
-        # self.upper_ts = ''
-        # self.upper_scores = ''
-        # self.upper_cum_score = 0
-        #
-        # self.lower_timestamp = ''
-        # self.lower_time = 0.0
-        # self.lower_ts = ''
-        # self.lower_scores = ''
-        # self.lower_cum_score = 0
-        #
-        # self.reg_upper_timestamp = ''
-        # self.reg_upper_time = 0.0
-        # self.reg_upper_ts = ''
-        # self.reg_upper_scores = ''
-        # self.reg_upper_cum_score = 0
-        #
-        # self.reg_lower_timestamp = ''
-        # self.reg_lower_time = 0.0
-        # self.reg_lower_ts = ''
-        # self.reg_lower_scores = ''
-        # self.reg_lower_cum_score = 0
-        #
-        # self.alt_upper_timestamp = ''
-        # self.alt_upper_time = 0.0
-        # self.alt_upper_ts = ''
-        # self.alt_upper_scores = ''
-        # self.alt_upper_cum_score = 0
-        #
-        # self.alt_lower_timestamp = ''
-        # self.alt_lower_time = 0.0
-        # self.alt_lower_ts = ''
-        # self.alt_lower_scores = ''
-        # self.alt_lower_cum_score = 0
 
         # Workspace for self.placeOcrBoxesOnImage()
         self.newLowerOcrBoxes = []
@@ -768,7 +790,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         return_value = title_getter.exec_()
         if return_value == QDialog.Accepted:
             profile_title = title_getter.profileNameEdit.text()
+            self.showMsg(f'Came out through OK hole')
+            return
         else:
+            self.showMsg(f'Came out the other hole')
             return
 
         my_profile_fn = '/pymovie-ocr-profiles.p'
@@ -927,7 +952,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.enableOcrTemplateSampling = True
             return True
         else:
-            self.showMsg(f'All model digits (0...9) are present.')
+            # self.showMsg(f'All model digits (0...9) are present.')
             # self.timestampReadingEnabled = True
             self.enableOcrTemplateSampling = self.settings.value('ocrsamplemenu', 'false') == 'true'
             return False
@@ -956,7 +981,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def extractTimestamps(self, printresults = True):
         if not self.timestampReadingEnabled:
-            return None, None, None, None, None, None, None, None
+            return None, None, None, None, None, None, None, None, None, None
 
         # kb = getrusage(RUSAGE_SELF).ru_maxrss
         # self.showMsg(f'Mem usage: {kb / 1024 / 1024:.2f} (mb)')
@@ -965,27 +990,38 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         if self.formatterCode == 'kiwi-left' or self.formatterCode == 'kiwi-right':
 
+            if self.upper_left_count + self.upper_right_count > 3:
+                use_left = self.upper_left_count > self.upper_right_count
+            else:
+                use_left = None
+
+            # Note: left_used is only useful when kiwi is True
             reg_upper_timestamp, reg_upper_time, \
-                reg_upper_ts, reg_upper_scores, reg_upper_cum_score = \
+                reg_upper_ts, reg_upper_scores, reg_upper_cum_score, reg_upper_left_used = \
                 extract_timestamp(
                     self.upper_field, self.kiwiUpperOcrBoxes, self.modelDigits, self.timestampFormatter,
-                    thresh, kiwi=True)
+                    thresh, kiwi=True, t2fromleft=use_left)
             alt_upper_timestamp, alt_upper_time, \
-                alt_upper_ts, alt_upper_scores, alt_upper_cum_score = \
+                alt_upper_ts, alt_upper_scores, alt_upper_cum_score, alt_upper_left_used = \
                 extract_timestamp(
                     self.upper_field, self.kiwiAltUpperOcrBoxes, self.modelDigits, self.timestampFormatter,
-                    thresh, kiwi=True)
+                    thresh, kiwi=True, t2fromleft=use_left)
+
+            if self.lower_left_count + self.lower_right_count > 3:
+                use_left = self.lower_left_count > self.lower_right_count
+            else:
+                use_left = None
 
             reg_lower_timestamp, reg_lower_time, \
-                reg_lower_ts, reg_lower_scores, reg_lower_cum_score = \
+                reg_lower_ts, reg_lower_scores, reg_lower_cum_score, reg_lower_left_used = \
                 extract_timestamp(
                     self.lower_field, self.kiwiLowerOcrBoxes, self.modelDigits, self.timestampFormatter,
-                    thresh, kiwi=True)
+                    thresh, kiwi=True, t2fromleft=use_left)
             alt_lower_timestamp, alt_lower_time, \
-                alt_lower_ts, alt_lower_scores, alt_lower_cum_score = \
+                alt_lower_ts, alt_lower_scores, alt_lower_cum_score, alt_lower_left_used = \
                 extract_timestamp(
                     self.lower_field, self.kiwiAltLowerOcrBoxes, self.modelDigits, self.timestampFormatter,
-                    thresh, kiwi=True)
+                    thresh, kiwi=True, t2fromleft=use_left)
 
             need_to_redisplay_ocr_boxes = False
             if reg_upper_cum_score > alt_upper_cum_score:
@@ -998,6 +1034,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.upper_scores = reg_upper_scores
                 self.upper_cum_score = reg_upper_cum_score
                 self.upperOcrBoxes = self.kiwiUpperOcrBoxes
+                upper_left_used = reg_upper_left_used
             else:
                 if self.currentUpperBoxPos == 'left':
                     need_to_redisplay_ocr_boxes = True
@@ -1008,6 +1045,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.upper_scores = alt_upper_scores
                 self.upper_cum_score = alt_upper_cum_score
                 self.upperOcrBoxes = self.kiwiAltUpperOcrBoxes
+                upper_left_used = alt_upper_left_used
 
             if reg_lower_cum_score > alt_lower_cum_score:
                 if self.currentLowerBoxPos == 'alt':
@@ -1019,6 +1057,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.lower_scores = reg_lower_scores
                 self.lower_cum_score = reg_lower_cum_score
                 self.lowerOcrBoxes = self.kiwiLowerOcrBoxes
+                lower_left_used = reg_lower_left_used
+
             else:
                 if self.currentLowerBoxPos == 'left':
                     need_to_redisplay_ocr_boxes = True
@@ -1029,6 +1069,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.lower_scores = alt_lower_scores
                 self.lower_cum_score = alt_lower_cum_score
                 self.lowerOcrBoxes = self.kiwiAltLowerOcrBoxes
+                lower_left_used = alt_lower_left_used
 
             if self.pauseRadioButton.isChecked():
                 # When we're manually stepping through an avi, we need to see
@@ -1040,16 +1081,32 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.placeOcrBoxesOnImage()
 
         else:
+            # Note: left_used is only useful when kiwi=TRUE
             self.upper_timestamp, self.upper_time, \
-                self.upper_ts, self.upper_scores, self.upper_cum_score = extract_timestamp(
+                self.upper_ts, self.upper_scores, self.upper_cum_score, upper_left_used = extract_timestamp(
                     self.upper_field, self.upperOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
             self.lower_timestamp, self.lower_time,\
-                self.lower_ts, self.lower_scores, self.lower_cum_score = extract_timestamp(
+                self.lower_ts, self.lower_scores, self.lower_cum_score, lower_left_used = extract_timestamp(
                     self.lower_field, self.lowerOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
 
+        if upper_left_used is not None and upper_left_used:
+            self.upper_left_count += 1
+        else:
+            self.upper_right_count += 1
+
+        if lower_left_used is not None and lower_left_used:
+            self.lower_left_count += 1
+        else:
+            self.lower_right_count += 1
+
         if printresults:
-            self.showMsg(f'upper field timestamp:{self.upper_timestamp}  time:{self.upper_time:0.4f}  scores:{self.upper_scores}', blankLine=False)
-            self.showMsg(f'lower field timestamp:{self.lower_timestamp}  time:{self.lower_time:0.4f}  scores:{self.lower_scores}')
+            self.showMsg(f'upper field timestamp:{self.upper_timestamp}  '
+                         f'time:{self.upper_time:0.4f}  scores:{self.upper_scores} '
+                         f'{self.upper_left_count}/{self.upper_right_count}',
+                         blankLine=False)
+            self.showMsg(f'lower field timestamp:{self.lower_timestamp}  '
+                         f'time:{self.lower_time:0.4f}  scores:{self.lower_scores} ' 
+                         f'{self.lower_left_count}/{self.lower_right_count}')
 
         if self.detectFieldTimeOrder:
             if self.lower_time >= 0 and self.upper_time >= 0:
@@ -1270,36 +1327,51 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if not self.avi_wcs_folder_in_use:
             self.showMsg(f'This function only available when an AVI-WCS folder is in use.')
             return
-        selector = SelectProfileDialog()
         # all = self.readSavedOcrProfiles(pattern='/pymovie-ocr-profiles*.p')
-        all = self.readSavedOcrProfiles()
+        profile_dict = self.readSavedOcrProfiles()
 
-        # Insert a blank for the first row.  It gets auto-selected and I want to
-        # protect the user from clicking OK when he meant cancel.
-        title = ' '
-        numRows = selector.selectionTable.rowCount()
-        selector.selectionTable.insertRow(numRows)
-        item = QTableWidgetItem(str(title))
-        selector.selectionTable.setItem(numRows, 0, item)
-
-        for item in all:
-            title = item['id']
-            numRows = selector.selectionTable.rowCount()
-            selector.selectionTable.insertRow(numRows)
-            item = QTableWidgetItem(str(title))
-            selector.selectionTable.setItem(numRows, 0, item)
-        selector.selectionTable.clearSelection()
-        result = selector.exec_()
-        if result == QDialog.Accepted:
-            profile_selected = selector.selectionTable.currentIndex()
-            row = profile_selected.row()
-            if row == 0:
+        code_to_save = self.formatterCode
+        if self.kiwiInUse:
+            if not self.currentUpperBoxPos == self.currentLowerBoxPos:
+                self.showMsg(f'Cannot save Kiwi profile when upper and lower boxes not in same position!')
                 return
+            if self.currentUpperBoxPos == 'alt':
+                if self.formatterCode == 'kiwi-left':
+                    code_to_save = 'kiwi-right'
+                else:
+                    code_to_save = 'kiwi-left'
+                current_profile = {'id': 'default', 'upper-boxes': self.kiwiAltUpperOcrBoxes,
+                                   'lower-boxes': self.kiwiAltLowerOcrBoxes, 'digits': self.modelDigits,
+                                   'formatter-code': code_to_save}
             else:
-                row -= 1
-            # self.showMsg(f'row {row} was selected')
-            ocr_dict = all[row]
+                current_profile = {'id': 'default', 'upper-boxes': self.kiwiUpperOcrBoxes,
+                                   'lower-boxes': self.kiwiLowerOcrBoxes, 'digits': self.modelDigits,
+                                   'formatter-code': code_to_save}
+
+
+        else:
+            current_profile = {'id': 'default', 'upper-boxes': self.upperOcrBoxes,
+                         'lower-boxes': self.lowerOcrBoxes, 'digits': self.modelDigits,
+                         'formatter-code': code_to_save}
+
+        selector = SelectProfileDialog(self.showMsg, profile_dict, current_profile)
+        result = selector.exec_()
+
+        result_code = selector.getResult()
+
+        # self.showMsg(f'Selector dialog returned: {result_code}')
+
+        # We assume that some change to the profile dictionary may have been made and
+        # so simply always re-pickle that dictionary
+        my_profile_fn = '/pymovie-ocr-profiles.p'
+        pickle.dump(profile_dict, open(self.profilesDir + my_profile_fn, "wb"))
+
+        if result_code >= 0:
+            # self.showMsg(f'Load profile was asked for...')
+            profile_selected = result_code
+            ocr_dict = profile_dict[profile_selected]
             id_found = ocr_dict['id']
+            self.showMsg(f'Loading profile: {id_found}')
             self.clearOcrBoxes()
             self.upperOcrBoxes = ocr_dict['upper-boxes']
             self.lowerOcrBoxes = ocr_dict['lower-boxes']
@@ -1312,11 +1384,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.writeFormatTypeFile(self.formatterCode)
 
             self.startTimestampReading()
-            self.showFrame()
-
-        else:
-            # self.showMsg(f'User opted out --- no selection')
-            return
+            # self.showFrame()
 
     def generateKiwiOcrBoxes(self):
         self.showMsg(f'We are now generating the kiwi specific OcrBoxes')
@@ -3221,7 +3289,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.fits_folder_in_use = True
             self.clearTextBox()
             self.saveTargetLocButton.setEnabled(True)
-            self.saveProfileButton.setEnabled(False)
             self.loadCustomProfilesButton.setEnabled(False)
 
             self.createAVIWCSfolderButton.setEnabled(False)
@@ -3406,7 +3473,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.avi_wcs_folder_in_use = False
             self.fits_folder_in_use = False
             self.saveTargetLocButton.setEnabled(False)
-            self.saveProfileButton.setEnabled(False)
             self.loadCustomProfilesButton.setEnabled(False)
 
             self.createAVIWCSfolderButton.setEnabled(True)
@@ -3543,12 +3609,18 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.acceptAviFolderDirectoryWithoutUserIntervention = False
 
         if dir_path:
+
+            self.upper_left_count  = 0  # When Kiwi used: accumulate count ot times t2 was at left in upper field
+            self.upper_right_count = 0  # When Kiwi used: accumulate count ot times t2 was at the right in upper field
+
+            self.lower_left_count  = 0  # When Kiwi used: accumulate count ot times t2 was at left in lower field
+            self.lower_right_count = 0  # When Kiwi used: accumulate count ot times t2 was at the right in lower field
+
             self.wcs_solution_available = False
             self.wcs_frame_num = None
             self.avi_wcs_folder_in_use = True
             self.fits_folder_in_use = False
             self.saveTargetLocButton.setEnabled(True)
-            self.saveProfileButton.setEnabled(True)
             self.loadCustomProfilesButton.setEnabled(True)
 
             self.createAVIWCSfolderButton.setEnabled(False)
@@ -3684,12 +3756,17 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.loadPickledOcrBoxes()  # if any
             self.loadModelDigits()  # if any
             self.detectFieldTimeOrder = True
-            self.currentFrameSpinBox.setValue(1)  # This triggers a self.showFrame() call
+            # Reset the Kiwi special counters that record where t2 has been found
+            self.upper_left_count = 0
+            self.upper_right_count = 0
+            self.lower_left_count = 0
+            self.lower_right_count = 0
             self.setTimestampFormatter()
             self.viewFieldsCheckBox.setChecked(True)
             if self.formatterCode == 'kiwi-left' or self.formatterCode == 'kiwi-right':
                 self.generateKiwiOcrBoxes()
             self.placeOcrBoxesOnImage()
+            self.currentFrameSpinBox.setValue(1)  # This triggers a self.showFrame() call
             self.timestampReadingEnabled = not self.showMissingModelDigits()
 
     def getFrameNumberFromFile(self, filename):
