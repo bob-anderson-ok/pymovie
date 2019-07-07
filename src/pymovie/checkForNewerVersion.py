@@ -39,7 +39,7 @@ def upgradePyMovie(pymovieversion):
     # resp = subprocess.run(['python', '-m', 'pip', 'install', '--user', '--upgrade', pymovieversion],
     #                       stderr=subprocess.PIPE, stdout=subprocess.PIPE)
 
-    resp = subprocess.run(['python', '-m', 'pip', 'install', '--user', '--upgrade', 'pymovie==1.5.6'],
+    resp = subprocess.run(['python', '-m', 'pip', 'install', '--user', '--upgrade', pymovieversion],
                           stderr=subprocess.PIPE, stdout=subprocess.PIPE)
 
     ans = resp.stdout.decode("utf-8").split('\n')
