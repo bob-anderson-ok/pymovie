@@ -56,6 +56,8 @@ import platform
 import pickle
 from urllib.request import urlopen
 import numpy as np
+from pymovie.checkForNewerVersion import getMostRecentVersionOfPyMovie
+from pymovie.checkForNewerVersion import upgradePyMovie
 from pymovie import starPositionDialog
 from pymovie import ocrProfileNameDialog
 from pymovie import selectProfile
@@ -715,7 +717,48 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.disableControlsWhenNoData()
 
+        QtGui.QGuiApplication.processEvents
+        self.checkForNewerVersion()
+
         self.copy_desktop_icon_file_to_home_directory()
+
+
+
+    @staticmethod
+    def queryWhetherNewVersionShouldBeInstalled():
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Question)
+        msg.setText('A newer version of PyMovie is available. Do you wish to install it?')
+        msg.setWindowTitle('Get latest version of PyMovie query')
+        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        retval = msg.exec_()
+        return retval
+
+    def checkForNewerVersion(self):
+        gotVersion, latestVersion = getMostRecentVersionOfPyMovie()
+        if gotVersion:
+            if latestVersion <= version.version():
+                self.showMsg(f'Found the latest version is: {latestVersion}')
+                self.showMsg('You are running the most recent version of PyMovie')
+            else:
+                self.showMsg('Version ' + latestVersion + ' is available')
+                if self.queryWhetherNewVersionShouldBeInstalled() == QMessageBox.Yes:
+                    self.showMsg('You have opted to install latest version of PyMovie')
+                    self.installLatestVersion(f'pymovie=={latestVersion}')
+                else:
+                    self.showMsg('You have declined the opportunity to install latest PyMovie')
+        else:
+            self.showMsg(f'latestVersion found: {latestVersion}')
+
+    def installLatestVersion(self, pymovieversion):
+        self.showMsg(f'Asking to upgrade to: {pymovieversion}')
+        pipResult = upgradePyMovie(pymovieversion)
+        for line in pipResult:
+            self.showMsg(line, blankLine=False)
+
+        self.showMsg('', blankLine=False)
+        self.showMsg('The new version is installed but not yet running.')
+        self.showMsg('Close and reopen PyMovie to start the new version running.')
 
     def createAviWcsFolder(self):
         options = QFileDialog.Options()
