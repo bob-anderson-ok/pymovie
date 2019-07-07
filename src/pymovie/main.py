@@ -1100,13 +1100,21 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.lower_right_count += 1
 
         if printresults:
-            self.showMsg(f'upper field timestamp:{self.upper_timestamp}  '
-                         f'time:{self.upper_time:0.4f}  scores:{self.upper_scores} '
-                         f'{self.upper_left_count}/{self.upper_right_count}',
-                         blankLine=False)
-            self.showMsg(f'lower field timestamp:{self.lower_timestamp}  '
-                         f'time:{self.lower_time:0.4f}  scores:{self.lower_scores} ' 
-                         f'{self.lower_left_count}/{self.lower_right_count}')
+            if self.kiwiInUse:
+                self.showMsg(f'upper field timestamp:{self.upper_timestamp}  '
+                             f'time:{self.upper_time:0.4f}  scores:{self.upper_scores} '
+                             f'{self.upper_left_count}/{self.upper_right_count}',
+                             blankLine=False)
+                self.showMsg(f'lower field timestamp:{self.lower_timestamp}  '
+                             f'time:{self.lower_time:0.4f}  scores:{self.lower_scores} ' 
+                             f'{self.lower_left_count}/{self.lower_right_count}')
+            else:
+                self.showMsg(f'upper field timestamp:{self.upper_timestamp}  '
+                             f'time:{self.upper_time:0.4f}  scores:{self.upper_scores} ',
+                             blankLine=False)
+                self.showMsg(f'lower field timestamp:{self.lower_timestamp}  '
+                             f'time:{self.lower_time:0.4f}  scores:{self.lower_scores} ')
+
 
         if self.detectFieldTimeOrder:
             if self.lower_time >= 0 and self.upper_time >= 0:
@@ -2359,7 +2367,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 f.write(ss + '\n')
                 f.write(str(x) + '\n')
                 f.write(str(y) + '\n')
-            self.showMsg(f'Reference star 1 data recorded: waiting for aperture 2 to be placed.')
+            self.showMsg(f'Reference star 1 data recorded: waiting for aperture 2 to be placed and RA DEC assigned.')
             self.manual_wcs_state +=1
             return
 
@@ -3574,17 +3582,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def selectAviFolder(self):
 
-        # If a bitmap has just been loaded, it is assumed that the user is employing
-        # a 'stacked' star locator to place his apertures.  It is crucial to maintaing the correct
-        # offsets between the apertures that at least one of them is yellow, otherwise
-        # the positioning will be lost when the avi loads and the apertures try to
-        # 'snap' to better positions.  Here we remind the user to do so.
-        # TODO experimental code  commented out the following block
-        # if self.preserve_apertures:
-        #     ok = self.yellowAperturePresent()
-        #     if not ok:
-        #         return
-
         if not self.acceptAviFolderDirectoryWithoutUserIntervention:
             options = QFileDialog.Options()
             options |= QFileDialog.ShowDirsOnly
@@ -3624,7 +3621,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.loadCustomProfilesButton.setEnabled(True)
 
             self.createAVIWCSfolderButton.setEnabled(False)
-            self.vtiSelectComboBox.setEnabled(True)
+            self.vtiSelectComboBox.setEnabled(False)
 
             self.settings.setValue('avidir', dir_path)  # Make dir 'sticky'"
             self.folder_dir = dir_path
@@ -3768,6 +3765,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.placeOcrBoxesOnImage()
             self.currentFrameSpinBox.setValue(1)  # This triggers a self.showFrame() call
             self.timestampReadingEnabled = not self.showMissingModelDigits()
+            self.vtiSelectComboBox.setEnabled(not self.timestampReadingEnabled)
+        else:
+            self.vtiSelectComboBox.setEnabled(True)
+
+
 
     def getFrameNumberFromFile(self, filename):
         fullpath = self.folder_dir + r'/' + filename
@@ -3824,6 +3826,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         got_star_position = False
         if not matching_name:
             self.showMsg(f'No target star location found in the folder.')
+            # TODO Experimental code (early return with no dialog presented for target star location
+            return
             ss = self.getStarPositionString()
             if ss:
                 self.showMsg(f'star position string provided: "{ss}"')
@@ -4413,7 +4417,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         with open(self.folder_dir + r'/manual-wcs-frame-num.txt', 'w') as f:
             f.writelines(f'{frame_num}')
 
-        self.showMsg(f'Manual WCS calibration process activated. Waiting for aperture 1 to be placed.')
+        self.showMsg(f'Manual WCS calibration process activated. Waiting for aperture 1 to be placed and RA DEC assigned.')
         self.manual_wcs_state = 1
 
     def setApertureFromWcsData(self, star_location, wcs_fits):
