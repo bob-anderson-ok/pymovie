@@ -1,5 +1,7 @@
 # These routines ares used during the manual WCS calculation
 
+# For theory: http://spiff.rit.edu/classes/phys373/lectures/astrom/astrom.html
+
 from numpy import cos, sin, pi, sqrt, arcsin
 
 # The parameters to these helper funstions are always dictionaries
@@ -30,7 +32,7 @@ def arcsec_distance(star1, star2):
 
 
 def delta_ra_arcsec(star1, star2):
-    # Thanks to Michael Richmond's little simple astronomy paper
+    # Thanks to Michael Richmond's little simple astrometry paper
     # for pointing out the need to scale ra based on dec
     avg_dec = (star2['dec'] + star1['dec']) / 2.0  # avg_dec in degrees
 
@@ -55,9 +57,15 @@ def angle_ra_dec(star1, star2):
     return calc_theta(ra_delta_arcsec, dec_delta_arcsec)
 
 
-def angle_xy(star1, star2):
+def angle_xy(star1, star2, xflipped, yflipped):
     delta_x = star2['x'] - star1['x']
     delta_y = star2['y'] - star1['y']
+
+    if xflipped:
+        delta_x = -delta_x
+    if yflipped:
+        delta_y = -delta_y
+
     return calc_theta(delta_x, delta_y)  # result is in degrees
 
 
@@ -87,21 +95,32 @@ def calc_theta(dx, dy):
     return theta * 180.0 / pi  # give answer in degrees
 
 
-def convert_ra_dec_angle_to_xy(angle, ref1, ref2):
-    offset = angle_ra_dec(ref1, ref2) - angle_xy(ref1, ref2)
+def convert_ra_dec_angle_to_xy(angle, ref1, ref2, xflipped, yflipped):
+    offset = angle_ra_dec(ref1, ref2) - angle_xy(ref1, ref2, xflipped, yflipped)
     return angle - offset
 
 
-def solve_triangle(ref1, ref2, targ, plate_scale=None):
+def solve_triangle(ref1, ref2, targ, plate_scale=None, xflipped=False, yflipped=False):
 
     if plate_scale is None:
         plate_scale = arcsec_distance(ref2, ref1) / pixel_distance(ref2, ref1)
 
-    targ_theta = convert_ra_dec_angle_to_xy(angle_ra_dec(ref1, targ), ref1, ref2)
+    targ_theta = convert_ra_dec_angle_to_xy(
+        angle_ra_dec(ref1, targ), ref1, ref2, xflipped, yflipped)
 
     d = arcsec_distance(ref1, targ) / plate_scale
-    x_targ = d * cos_deg(targ_theta) + ref1['x']
-    y_targ = d * sin_deg(targ_theta) + ref1['y']
+
+    if xflipped:
+        x_targ = -(d * cos_deg(targ_theta) - ref1['x'])
+    else:
+        x_targ = d * cos_deg(targ_theta) + ref1['x']
+    if yflipped:
+        y_targ = -(d * sin_deg(targ_theta) - ref1['y'])
+    else:
+        y_targ = d * sin_deg(targ_theta) + ref1['y']
+
+    # x_targ = d * cos_deg(targ_theta) + ref1['x']
+    # y_targ = d * sin_deg(targ_theta) + ref1['y']
 
     solution = {'ra': targ['ra'], 'dec': targ['dec'], 'x': x_targ, 'y': y_targ}
 

@@ -2498,8 +2498,20 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.showMsg(f'{plate_scale_str} is an invalid entry.')
                 return
 
+        if ref1['x'] > ref2['x']:
+            flip_x = ref1['ra'] < ref2['ra']
+        else:
+            flip_x = ref1['ra'] > ref2['ra']
+
+        if ref1['y'] > ref2['y']:
+            flip_y = ref1['dec'] < ref2['dec']
+        else:
+            flip_y = ref1['dec'] > ref2['dec']
+
+        self.showMsg(f'flip_x: {flip_x}  flip_y: {flip_y}')
+
         solution, plate_scale = wcs_helper_functions.solve_triangle(
-            ref1, ref2, targ, plate_scale=plate_scale
+            ref1, ref2, targ, plate_scale=plate_scale, xflipped=flip_x, yflipped=flip_y
         )
 
         self.showMsg(f'solution: {repr(solution)}', blankLine=False)
