@@ -2510,12 +2510,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.showMsg(f'flip_x: {flip_x}  flip_y: {flip_y}')
 
-        solution, plate_scale = wcs_helper_functions.solve_triangle(
+        solution, plate_scale, targ_theta = wcs_helper_functions.solve_triangle(
             ref1, ref2, targ, plate_scale=plate_scale, xflipped=flip_x, yflipped=flip_y
         )
 
         self.showMsg(f'solution: {repr(solution)}', blankLine=False)
-        self.showMsg(f'plate_scale: {plate_scale:0.5f}')
+        self.showMsg(f'plate_scale: {plate_scale:0.5f} arc-seconds/pixel  field-rotation: {targ_theta:0.1f} degrees')
         self.showMsg("", blankLine=False)
 
         x_calc = int(round(solution['x'] + 0.5))

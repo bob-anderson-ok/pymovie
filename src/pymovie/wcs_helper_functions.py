@@ -4,7 +4,7 @@
 
 from numpy import cos, sin, pi, sqrt, arcsin
 
-# The parameters to these helper funstions are always dictionaries
+# The parameters to these helper functions are always dictionaries
 # with the structure as shown below.
 
 # ra and dec MUST be in degrees
@@ -124,4 +124,4 @@ def solve_triangle(ref1, ref2, targ, plate_scale=None, xflipped=False, yflipped=
 
     solution = {'ra': targ['ra'], 'dec': targ['dec'], 'x': x_targ, 'y': y_targ}
 
-    return solution, plate_scale
+    return solution, plate_scale, targ_theta
