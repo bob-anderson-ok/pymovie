@@ -2515,7 +2515,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         )
 
         self.showMsg(f'solution: {repr(solution)}', blankLine=False)
-        self.showMsg(f'plate_scale: {plate_scale:0.5f} arc-seconds/pixel  field-rotation: {targ_theta:0.1f} degrees')
+        self.showMsg(f'plate_scale: {plate_scale:0.5f} arc-seconds/pixel  ref1-to-target angle: {targ_theta:0.1f} degrees')
         self.showMsg("", blankLine=False)
 
         x_calc = int(round(solution['x'] + 0.5))

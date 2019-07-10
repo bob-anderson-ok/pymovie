@@ -73,7 +73,7 @@ def calc_theta(dx, dy):
     # This is the crucial routine for working trig problems.  It
     # returns the angle of the line from 0,0 to dx,dy no matter what
     # quadrant dx,dy may be in. The angle returned is in the range [0...360)
-    # It is always positive and represents the ccw rotation from the axis
+    # It is always positive and represents the ccw rotation from the x axis
     # toward the positive y axis.
     d = sqrt(dx * dx + dy * dy)
     if d == 0:
