@@ -187,41 +187,28 @@
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout">
            <item>
-            <spacer name="horizontalSpacer_7">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
+            <widget class="QLabel" name="plotSymbolSizeLabel">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This spinner sets the size of the symbols used in the plots to show a data value position. &lt;/p&gt;&lt;p&gt;If you open a set of plots and would like to see smaller or larger dots, simply close the plots, change the symbol size using this spinner and reopen the plots.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
+             <property name="text">
+              <string>Plot symbol size:</string>
              </property>
-            </spacer>
-           </item>
-           <item>
-            <widget class="QDoubleSpinBox" name="defRadiusSpinner">
-             <property name="minimum">
-              <double>2.000000000000000</double>
-             </property>
-             <property name="maximum">
-              <double>24.000000000000000</double>
-             </property>
-             <property name="singleStep">
-              <double>0.500000000000000</double>
-             </property>
-             <property name="value">
-              <double>5.300000000000000</double>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QLabel" name="maskRadiusLabel">
+            <widget class="QSpinBox" name="plotSymbolSizeSpinBox">
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If there is a 'green' aperture showing, changing this spinner, either through the up/down tabs or by direct edit, will update the default mask radius for that aperture. &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Thumbnail Two&lt;/span&gt; in the lower right corner will update dynamically to show the effect of the change on the binary sample mask generation.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string/>
              </property>
-             <property name="text">
-              <string>Set radius (pixels) of default mask</string>
+             <property name="minimum">
+              <number>1</number>
+             </property>
+             <property name="maximum">
+              <number>20</number>
              </property>
             </widget>
            </item>
@@ -706,32 +693,6 @@
               </size>
              </property>
             </spacer>
-           </item>
-           <item>
-            <widget class="QLabel" name="plotSymbolSizeLabel">
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This spinner sets the size of the symbols used in the plots to show a data value position. &lt;/p&gt;&lt;p&gt;If you open a set of plots and would like to see smaller or larger dots, simply close the plots, change the symbol size using this spinner and reopen the plots.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="text">
-              <string>Plot symbol size:</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QSpinBox" name="plotSymbolSizeSpinBox">
-             <property name="toolTip">
-              <string/>
-             </property>
-             <property name="minimum">
-              <number>1</number>
-             </property>
-             <property name="maximum">
-              <number>20</number>
-             </property>
-            </widget>
            </item>
           </layout>
          </item>

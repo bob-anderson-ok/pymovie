@@ -645,8 +645,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.saveTargetLocButton.clicked.connect(self.saveTargetInFolder)
         self.saveTargetLocButton.installEventFilter(self)
 
-        self.defRadiusSpinner.valueChanged.connect(self.changeDefaultMaskRadius)
-        self.maskRadiusLabel.installEventFilter(self)
+        # self.defRadiusSpinner.valueChanged.connect(self.changeDefaultMaskRadius)
+        # self.maskRadiusLabel.installEventFilter(self)
 
         self.threshValueEdit.valueChanged.connect(self.changeThreshold)
         self.setMskthLabel.installEventFilter(self)
@@ -776,8 +776,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'AVI-WCS folder will be created in: {dirname}', blankLine=False)
             base_with_ext  = os.path.basename(self.filename)
             base, _ = os.path.splitext(base_with_ext)
-            self.showMsg(f'and the directory will be named {base}')
+            self.showMsg(f'and the folder will be named {base}')
             full_dir_path = os.path.join(dirname, base)
+
+            msg = f'AVI-WCS folder will be created in: {dirname}\n\n'
+            msg += f'Folder name: {base}'
+            self.showMsgPopup(msg)
 
             self.settings.setValue('avidir', full_dir_path)  # Make dir 'sticky'"
 
@@ -2510,12 +2514,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.showMsg(f'flip_x: {flip_x}  flip_y: {flip_y}')
 
-        solution, plate_scale, targ_theta = wcs_helper_functions.solve_triangle(
+        solution, plate_scale, targ_theta, ra_dec_x_y_rotation = wcs_helper_functions.solve_triangle(
             ref1, ref2, targ, plate_scale=plate_scale, xflipped=flip_x, yflipped=flip_y
         )
 
         self.showMsg(f'solution: {repr(solution)}', blankLine=False)
-        self.showMsg(f'plate_scale: {plate_scale:0.5f} arc-seconds/pixel  ref1-to-target angle: {targ_theta:0.1f} degrees')
+        self.showMsg(f'plate_scale: {plate_scale:0.5f} arc-seconds/pixel'
+                     f'  ref1-to-target angle: {targ_theta:0.1f} degrees', blankLine=False)
+        self.showMsg(f'ra_dec_x_y angle: {ra_dec_x_y_rotation:0.1f} degrees')
         self.showMsg("", blankLine=False)
 
         x_calc = int(round(solution['x'] + 0.5))
@@ -3398,6 +3404,16 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.thumbTwoView.clear()
 
             self.processTargetAperturePlacementFiles()
+
+    def showMsgPopup(self, msg):
+        self.helperThing.textEdit.clear()
+        self.helperThing.textEdit.setText(msg)
+        self.helperThing.raise_()
+        self.helperThing.show()
+        # msg_box = QMessageBox()
+        # msg_box.setText(msg)
+        # msg_box.exec()
+
 
     def openFitsImageFile(self, fpath):
         self.image = pyfits.getdata(fpath).astype('int16', casting='unsafe')

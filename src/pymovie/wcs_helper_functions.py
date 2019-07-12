@@ -97,7 +97,7 @@ def calc_theta(dx, dy):
 
 def convert_ra_dec_angle_to_xy(angle, ref1, ref2, xflipped, yflipped):
     offset = angle_ra_dec(ref1, ref2) - angle_xy(ref1, ref2, xflipped, yflipped)
-    return angle - offset
+    return angle - offset, offset
 
 
 def solve_triangle(ref1, ref2, targ, plate_scale=None, xflipped=False, yflipped=False):
@@ -105,7 +105,7 @@ def solve_triangle(ref1, ref2, targ, plate_scale=None, xflipped=False, yflipped=
     if plate_scale is None:
         plate_scale = arcsec_distance(ref2, ref1) / pixel_distance(ref2, ref1)
 
-    targ_theta = convert_ra_dec_angle_to_xy(
+    targ_theta, ra_dec_x_y_rotation = convert_ra_dec_angle_to_xy(
         angle_ra_dec(ref1, targ), ref1, ref2, xflipped, yflipped)
 
     d = arcsec_distance(ref1, targ) / plate_scale
@@ -114,6 +114,7 @@ def solve_triangle(ref1, ref2, targ, plate_scale=None, xflipped=False, yflipped=
         x_targ = -(d * cos_deg(targ_theta) - ref1['x'])
     else:
         x_targ = d * cos_deg(targ_theta) + ref1['x']
+
     if yflipped:
         y_targ = -(d * sin_deg(targ_theta) - ref1['y'])
     else:
@@ -124,4 +125,4 @@ def solve_triangle(ref1, ref2, targ, plate_scale=None, xflipped=False, yflipped=
 
     solution = {'ra': targ['ra'], 'dec': targ['dec'], 'x': x_targ, 'y': y_targ}
 
-    return solution, plate_scale, targ_theta
+    return solution, plate_scale, targ_theta, ra_dec_x_y_rotation
