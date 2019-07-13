@@ -7,7 +7,7 @@ import numpy as np
 
 
 class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
-    def __init__(self, messager, saver, dictList, appSize, radiusSpinner, threshSpinner, imageUpdate):
+    def __init__(self, messager, saver, dictList, appSize, threshSpinner, imageUpdate):
         super(EditApertureDialog, self).__init__()
         self.setupUi(self)
         self.msgRoutine = messager
@@ -15,7 +15,7 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
         self.dictList = dictList
         self.fillApertureTable()
         self.appSize = appSize
-        self.radiusSpinner = radiusSpinner
+        # self.radiusSpinner = radiusSpinner
         self.threshSpinner = threshSpinner
         self.writeTableButton.clicked.connect(self.writeTable)
         self.imageUpdate = imageUpdate
@@ -267,7 +267,7 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
         if radius < 2.0:
             radius = 2.0
 
-        self.radiusSpinner.setValue(radius)
+        # self.radiusSpinner.setValue(radius)
 
         try:
             thresh = int(self.tableWidget.item(row, 2).text())
@@ -276,7 +276,7 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
         if thresh < 0:
             thresh = 0
 
-        self.threshSpinner.setValue(thresh)
+        # self.threshSpinner.setValue(thresh)
 
     def setYellow(self):
         numYellow = 0

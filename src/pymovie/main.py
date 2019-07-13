@@ -1495,16 +1495,16 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.backBigButton.setText(f'< 10 sec')
             self.forwardBigButton.setText(f'10 sec >')
 
-    def changeDefaultMaskRadius(self):
-        for app in self.getApertureList():
-            if app.color == 'green':
-                radius = self.defRadiusSpinner.value()
-                radius = min(radius, self.roi_center - 1)
-                app.default_mask_radius = radius
-                self.buildDefaultMask(radius)
-                app.defaultMask = self.defaultMask
-                app.defaultMaskPixelCount = self.defaultMaskPixelCount
-                self.getApertureStats(app)
+    # def changeDefaultMaskRadius(self):
+    #     for app in self.getApertureList():
+    #         if app.color == 'green':
+    #             radius = self.defRadiusSpinner.value()
+    #             radius = min(radius, self.roi_center - 1)
+    #             app.default_mask_radius = radius
+    #             self.buildDefaultMask(radius)
+    #             app.defaultMask = self.defaultMask
+    #             app.defaultMaskPixelCount = self.defaultMaskPixelCount
+    #             self.getApertureStats(app)
 
     def fillApertureDictionaries(self):
         # This will become a list of dictionaries, one for each aperture.  The customer
@@ -1536,7 +1536,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             saver=self.settings,
             dictList=self.appDictList,
             appSize=self.roi_size,
-            radiusSpinner=self.defRadiusSpinner,
+            # radiusSpinner=self.defRadiusSpinner,
             threshSpinner=self.threshValueEdit,
             imageUpdate=self.frameView.getView().update
         )
@@ -2304,7 +2304,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             if app.color == 'green':
                 app.setRed()
         aperture.setGreen()
-        self.defRadiusSpinner.setValue(aperture.default_mask_radius)
+        # self.defRadiusSpinner.setValue(aperture.default_mask_radius)
         if aperture.thresh is not None:
             self.one_time_suppress_stats = True
             self.threshValueEdit.setValue(aperture.thresh)
@@ -2696,7 +2696,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         aperture.defaultMask = self.defaultMask[:, :]
         aperture.defaultMaskPixelCount = self.defaultMaskPixelCount
 
-        self.defRadiusSpinner.setValue(aperture.default_mask_radius)
+        # self.defRadiusSpinner.setValue(aperture.default_mask_radius)
 
         aperture.auto_display = True
         aperture.thresh = self.big_thresh
