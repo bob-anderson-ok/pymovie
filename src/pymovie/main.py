@@ -437,8 +437,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.savedApertures = None
 
-        self.upperOcrBoxes = None
-        self.lowerOcrBoxes = None
+        self.upperOcrBoxesLeft = None
+        self.lowerOcrBoxesLeft = None
 
         self.kiwiUpperOcrBoxes = None
         self.kiwiLowerOcrBoxes = None
@@ -899,14 +899,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         assert(position == 'upper' or position == 'lower')
         if position == 'upper':
-            selected_box = self.upperOcrBoxes[boxnum]
+            selected_box = self.upperOcrBoxesLeft[boxnum]
             xL, xR, yU, yL = selected_box
-            self.upperOcrBoxes[boxnum] = (xL + dx, xR + dx, yU + dy, yL + dy)
-            ocr.setBox(self.upperOcrBoxes[boxnum])
+            self.upperOcrBoxesLeft[boxnum] = (xL + dx, xR + dx, yU + dy, yL + dy)
+            ocr.setBox(self.upperOcrBoxesLeft[boxnum])
         else:
-            selected_box = self.lowerOcrBoxes[boxnum]
+            selected_box = self.lowerOcrBoxesLeft[boxnum]
             xL, xR, yU, yL = selected_box
-            self.lowerOcrBoxes[boxnum] = (xL + dx, xR + dx, yU + dy, yL + dy)
+            self.lowerOcrBoxesLeft[boxnum] = (xL + dx, xR + dx, yU + dy, yL + dy)
             yadj = int(self.image.shape[0] / 2)
             ocr.setBox((xL + dx, xR + dx, yU + dy + yadj, yL + dy + yadj))
 
@@ -921,15 +921,15 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             return
 
         newUpperBoxes = []
-        for ocrbox in self.upperOcrBoxes:
+        for ocrbox in self.upperOcrBoxesLeft:
             xL, xR, yU, yL = ocrbox
             newUpperBoxes.append((xL + dx, xR + dx, yU + dy, yL + dy))
         newLowerBoxes = []
-        for ocrbox in self.lowerOcrBoxes:
+        for ocrbox in self.lowerOcrBoxesLeft:
             xL, xR, yU, yL = ocrbox
             newLowerBoxes.append((xL + dx, xR + dx, yU + dy, yL + dy))
-        self.upperOcrBoxes = newUpperBoxes[:]
-        self.lowerOcrBoxes = newLowerBoxes[:]
+        self.upperOcrBoxesLeft = newUpperBoxes[:]
+        self.lowerOcrBoxesLeft = newLowerBoxes[:]
 
         self.clearOcrBoxes()
         self.placeOcrBoxesOnImage()
@@ -937,18 +937,18 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def placeOcrBoxesOnImage(self):
 
-        if self.upperOcrBoxes is None:
+        if self.upperOcrBoxesLeft is None:
             return
 
         y_adjust = int(self.image.shape[0] / 2)
 
         self.newLowerOcrBoxes = []
-        for ocrbox in self.lowerOcrBoxes:
+        for ocrbox in self.lowerOcrBoxesLeft:
             xL, xR, yU, yL = ocrbox
             self.newLowerOcrBoxes.append((xL, xR, yU + y_adjust, yL + y_adjust))
 
         boxnum = 0
-        for ocrbox in self.upperOcrBoxes:
+        for ocrbox in self.upperOcrBoxesLeft:
             self.addOcrAperture(ocrbox, boxnum, 'upper')
             boxnum += 1
         boxnum = 0
@@ -964,29 +964,49 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         upper_boxes = os.path.join(self.ocrBoxesDir, upper_boxes_fn)
         lower_boxes = os.path.join(self.ocrBoxesDir, lower_boxes_fn)
 
-        pickle.dump(self.upperOcrBoxes, open(upper_boxes, "wb"))
-        pickle.dump(self.lowerOcrBoxes, open(lower_boxes, "wb"))
+        pickle.dump(self.upperOcrBoxesLeft, open(upper_boxes, "wb"))
+        pickle.dump(self.lowerOcrBoxesLeft, open(lower_boxes, "wb"))
 
         return
 
     def loadPickledOcrBoxes(self):
         base_path = self.ocrboxBasePath
+
         upper_boxes_fn = f'{base_path}-upper.p'
         lower_boxes_fn = f'{base_path}-lower.p'
+
+        # These files are only present for Kiwi
+        upper_boxes_right_fn = f'{base_path}-upper-right.p'
+        lower_boxes_right_fn = f'{base_path}-lower-right.p'
 
         upper_boxes = os.path.join(self.ocrBoxesDir, upper_boxes_fn)
         lower_boxes = os.path.join(self.ocrBoxesDir, lower_boxes_fn)
 
+        # These files are only present for Kiwiw
+        upper_boxes_right = os.path.join(self.ocrBoxesDir, upper_boxes_right_fn)
+        lower_boxes_right = os.path.join(self.ocrBoxesDir, lower_boxes_right_fn)
+
         if os.path.exists(upper_boxes) and os.path.exists(lower_boxes):
-            self.upperOcrBoxes = pickle.load(open(upper_boxes, "rb"))
+            self.upperOcrBoxesLeft = pickle.load(open(upper_boxes, "rb"))
             # self.showMsg(f'upper OCR boxes loaded from {upper_boxes}')
-            self.lowerOcrBoxes = pickle.load(open(lower_boxes, "rb"))
+            self.lowerOcrBoxesLeft = pickle.load(open(lower_boxes, "rb"))
             # self.showMsg(f'lower OCR boxes loaded from {lower_boxes}')
-            return True
+            # return True
         else:
-            self.upperOcrBoxes = []
-            self.lowerOcrBoxes = []
-            return False
+            self.upperOcrBoxesLeft = []
+            self.lowerOcrBoxesLeft = []
+            # return False
+
+        if os.path.exists(upper_boxes_right) and os.path.exists(lower_boxes_right):
+            self.upperOcrBoxesRight = pickle.load(open(upper_boxes_right, "rb"))
+            # self.showMsg(f'upper OCR boxes loaded from {upper_boxes}')
+            self.lowerOcrBoxesRight = pickle.load(open(lower_boxes_right, "rb"))
+            # self.showMsg(f'lower OCR boxes loaded from {lower_boxes}')
+            # return True
+        else:
+            self.upperOcrBoxesRight = []
+            self.lowerOcrBoxesRight = []
+            # return False
 
     def showMissingModelDigits(self):
         missing_model_digits = ''
@@ -1080,7 +1100,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.upper_ts = reg_upper_ts
                 self.upper_scores = reg_upper_scores
                 self.upper_cum_score = reg_upper_cum_score
-                self.upperOcrBoxes = self.kiwiUpperOcrBoxes
+                self.upperOcrBoxesLeft = self.kiwiUpperOcrBoxes
                 upper_left_used = reg_upper_left_used
             else:
                 if self.currentUpperBoxPos == 'left':
@@ -1091,7 +1111,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.upper_ts = alt_upper_ts
                 self.upper_scores = alt_upper_scores
                 self.upper_cum_score = alt_upper_cum_score
-                self.upperOcrBoxes = self.kiwiAltUpperOcrBoxes
+                self.upperOcrBoxesLeft = self.kiwiAltUpperOcrBoxes
                 upper_left_used = alt_upper_left_used
 
             if reg_lower_cum_score > alt_lower_cum_score:
@@ -1103,7 +1123,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.lower_ts = reg_lower_ts
                 self.lower_scores = reg_lower_scores
                 self.lower_cum_score = reg_lower_cum_score
-                self.lowerOcrBoxes = self.kiwiLowerOcrBoxes
+                self.lowerOcrBoxesLeft = self.kiwiLowerOcrBoxes
                 lower_left_used = reg_lower_left_used
 
             else:
@@ -1115,7 +1135,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.lower_ts = alt_lower_ts
                 self.lower_scores = alt_lower_scores
                 self.lower_cum_score = alt_lower_cum_score
-                self.lowerOcrBoxes = self.kiwiAltLowerOcrBoxes
+                self.lowerOcrBoxesLeft = self.kiwiAltLowerOcrBoxes
                 lower_left_used = alt_lower_left_used
 
             if self.pauseRadioButton.isChecked():
@@ -1131,10 +1151,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             # Note: left_used is only useful when kiwi=TRUE
             self.upper_timestamp, self.upper_time, \
                 self.upper_ts, self.upper_scores, self.upper_cum_score, upper_left_used = extract_timestamp(
-                    self.upper_field, self.upperOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
+                    self.upper_field, self.upperOcrBoxesLeft, self.modelDigits, self.timestampFormatter, thresh)
             self.lower_timestamp, self.lower_time,\
                 self.lower_ts, self.lower_scores, self.lower_cum_score, lower_left_used = extract_timestamp(
-                    self.lower_field, self.lowerOcrBoxes, self.modelDigits, self.timestampFormatter, thresh)
+                    self.lower_field, self.lowerOcrBoxesLeft, self.modelDigits, self.timestampFormatter, thresh)
 
         if upper_left_used is not None and upper_left_used:
             self.upper_left_count += 1
@@ -1233,9 +1253,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if self.currentVTIindex == 1:  # IOTA-3 w=640 or 720 full screen mode
 
             if width == 640:
-                self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_iota_640_full_screen_mode3()
+                self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft = setup_for_iota_640_full_screen_mode3()
             else:
-                self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_iota_720_full_screen_mode3()
+                self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft = setup_for_iota_720_full_screen_mode3()
 
             self.ocrboxBasePath = 'custom-boxes'
             self.pickleOcrBoxes()
@@ -1253,9 +1273,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if self.currentVTIindex == 2:  # IOTA-3 w=640 or 720 safe mode
 
             if width == 640:
-                self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_iota_640_safe_mode3()
+                self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft = setup_for_iota_640_safe_mode3()
             else:
-                self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_iota_720_safe_mode3()
+                self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft = setup_for_iota_720_safe_mode3()
 
             self.ocrboxBasePath = 'custom-boxes'
             self.pickleOcrBoxes()
@@ -1273,9 +1293,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if self.currentVTIindex == 3:  # IOTA-2 w=640 and 720  full screen mode
 
             if width == 640:
-                self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_iota_640_full_screen_mode2()
+                self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft = setup_for_iota_640_full_screen_mode2()
             else:
-                self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_iota_720_full_screen_mode2()
+                self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft = setup_for_iota_720_full_screen_mode2()
 
             self.ocrboxBasePath = 'custom-boxes'
             self.pickleOcrBoxes()
@@ -1293,9 +1313,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if self.currentVTIindex == 4:  # IOTA-2 w=640 and 720 safe mode
 
             if width == 640:
-                self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_iota_640_safe_mode2()
+                self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft= setup_for_iota_640_safe_mode2()
             else:
-                self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_iota_720_safe_mode2()
+                self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft = setup_for_iota_720_safe_mode2()
 
             self.ocrboxBasePath = 'custom-boxes'
             self.pickleOcrBoxes()
@@ -1313,9 +1333,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if self.currentVTIindex == 5:  # BoxSprite 3 w=640 and 720
 
             if width == 640:
-                self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_boxsprite3_640()
+                self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft= setup_for_boxsprite3_640()
             else:
-                self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_boxsprite3_720()
+                self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft = setup_for_boxsprite3_720()
 
             self.ocrboxBasePath = 'custom-boxes'
             self.pickleOcrBoxes()
@@ -1333,9 +1353,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if self.currentVTIindex == 6:  # Kiwi w=720 and 640 (left position)
 
             if width == 640:
-                self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_kiwi_vti_640_left()
+                self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft= setup_for_kiwi_vti_640_left()
             else:
-                self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_kiwi_vti_720_left()
+                self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft = setup_for_kiwi_vti_720_left()
 
             self.ocrboxBasePath = 'custom-boxes'
             self.pickleOcrBoxes()
@@ -1355,9 +1375,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if self.currentVTIindex == 7:  # Kiwi w=720 and 640 (right position)
 
             if width == 640:
-                self.upperOcrBoxes, self.lowerOcrBoxes= setup_for_kiwi_vti_640_right()
+                self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft= setup_for_kiwi_vti_640_right()
             else:
-                self.upperOcrBoxes, self.lowerOcrBoxes = setup_for_kiwi_vti_720_right()
+                self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft = setup_for_kiwi_vti_720_right()
 
             self.ocrboxBasePath = 'custom-boxes'
             self.pickleOcrBoxes()
@@ -1405,8 +1425,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
 
         else:
-            current_profile = {'id': 'default', 'upper-boxes': self.upperOcrBoxes,
-                         'lower-boxes': self.lowerOcrBoxes, 'digits': self.modelDigits,
+            current_profile = {'id': 'default', 'upper-boxes': self.upperOcrBoxesLeft,
+                         'lower-boxes': self.lowerOcrBoxesLeft, 'digits': self.modelDigits,
                          'formatter-code': code_to_save}
 
         selector = SelectProfileDialog(self.showMsg, profile_dict, current_profile)
@@ -1428,8 +1448,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             id_found = ocr_dict['id']
             self.showMsg(f'Loading profile: {id_found}')
             self.clearOcrBoxes()
-            self.upperOcrBoxes = ocr_dict['upper-boxes']
-            self.lowerOcrBoxes = ocr_dict['lower-boxes']
+            self.upperOcrBoxesLeft = ocr_dict['upper-boxes']
+            self.lowerOcrBoxesLeft = ocr_dict['lower-boxes']
             self.modelDigits = ocr_dict['digits']
             self.formatterCode = ocr_dict['formatter-code']
 
@@ -1447,16 +1467,16 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if self.formatterCode == 'kiwi-left':
             self.currentUpperBoxPos = 'left'
             self.currentLowerBoxPos = 'left'
-            self.kiwiUpperOcrBoxes = self.upperOcrBoxes
-            self.kiwiLowerOcrBoxes = self.lowerOcrBoxes
+            self.kiwiUpperOcrBoxes = self.upperOcrBoxesLeft
+            self.kiwiLowerOcrBoxes = self.lowerOcrBoxesLeft
             # Compute alternate (right position)
             newUpperBoxes = []
             dx = 11
-            for ocrbox in self.upperOcrBoxes:
+            for ocrbox in self.upperOcrBoxesLeft:
                 xL, xR, yU, yL = ocrbox
                 newUpperBoxes.append((xL + dx, xR + dx, yU, yL))
             newLowerBoxes = []
-            for ocrbox in self.lowerOcrBoxes:
+            for ocrbox in self.lowerOcrBoxesLeft:
                 xL, xR, yU, yL = ocrbox
                 newLowerBoxes.append((xL + dx, xR + dx, yU, yL))
             self.kiwiAltUpperOcrBoxes = newUpperBoxes[:]
@@ -1464,16 +1484,16 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         elif self.formatterCode == 'kiwi-right':
             self.currentUpperBoxPos = 'alt'
             self.currentLowerBoxPos = 'alt'
-            self.kiwiAltUpperOcrBoxes = self.upperOcrBoxes
-            self.kiwiAltLowerOcrBoxes = self.lowerOcrBoxes
+            self.kiwiAltUpperOcrBoxes = self.upperOcrBoxesLeft
+            self.kiwiAltLowerOcrBoxes = self.lowerOcrBoxesLeft
             # Compute standard (left position)
             newUpperBoxes = []
             dx = -11
-            for ocrbox in self.upperOcrBoxes:
+            for ocrbox in self.upperOcrBoxesLeft:
                 xL, xR, yU, yL = ocrbox
                 newUpperBoxes.append((xL + dx, xR + dx, yU, yL))
             newLowerBoxes = []
-            for ocrbox in self.lowerOcrBoxes:
+            for ocrbox in self.lowerOcrBoxesLeft:
                 xL, xR, yU, yL = ocrbox
                 newLowerBoxes.append((xL + dx, xR + dx, yU, yL))
             self.kiwiUpperOcrBoxes = newUpperBoxes[:]
@@ -2304,7 +2324,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             if app.color == 'green':
                 app.setRed()
         aperture.setGreen()
-        self.defRadiusSpinner.setValue(aperture.default_mask_radius)
+        # self.defRadiusSpinner.setValue(aperture.default_mask_radius)
         if aperture.thresh is not None:
             self.one_time_suppress_stats = True
             self.threshValueEdit.setValue(aperture.thresh)
@@ -2696,7 +2716,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         aperture.defaultMask = self.defaultMask[:, :]
         aperture.defaultMaskPixelCount = self.defaultMaskPixelCount
 
-        self.defRadiusSpinner.setValue(aperture.default_mask_radius)
+        # self.defRadiusSpinner.setValue(aperture.default_mask_radius)
 
         aperture.auto_display = True
         aperture.thresh = self.big_thresh
@@ -3831,8 +3851,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.lower_right_count = 0
             self.setTimestampFormatter()
             self.viewFieldsCheckBox.setChecked(True)
-            if self.formatterCode == 'kiwi-left' or self.formatterCode == 'kiwi-right':
-                self.generateKiwiOcrBoxes()
+            # if self.formatterCode == 'kiwi-left' or self.formatterCode == 'kiwi-right':
+            #     self.generateKiwiOcrBoxes()
             self.placeOcrBoxesOnImage()
             self.currentFrameSpinBox.setValue(1)  # This triggers a self.showFrame() call
             self.timestampReadingEnabled = not self.showMissingModelDigits()
