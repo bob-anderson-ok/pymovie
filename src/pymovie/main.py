@@ -584,15 +584,29 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # end instance variable declarations
 
         self.transportMaxLeft.installEventFilter(self)
+        self.transportMaxLeft.clicked.connect(self.seekMaxLeft)
+
         self.transportBigLeft.installEventFilter(self)
         self.transportSmallLeft.installEventFilter(self)
+
         self.transportPlayLeft.installEventFilter(self)
+        self.transportPlayLeft.clicked.connect(self.playLeft)
+
         self.transportPause.installEventFilter(self)
+        self.transportPause.clicked.connect(self.pauseAnalysis)
+
         self.transportAnalyze.installEventFilter(self)
+        self.transportAnalyze.clicked.connect(self.startAnalysis)
+
         self.transportPlayRight.installEventFilter(self)
+        self.transportPlayRight.clicked.connect(self.playRight)
+
         self.transportSmallRight.installEventFilter(self)
         self.transportBigRight.installEventFilter(self)
+
         self.transportMaxRight.installEventFilter(self)
+        self.transportMaxRight.clicked.connect(self.seekMaxRight)
+
         self.transportCurrentFrameLabel.installEventFilter(self)
         self.transportStopAtFrameLabel.installEventFilter(self)
 
@@ -631,9 +645,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.selectAviWcsFolderButton.installEventFilter(self)
 
         self.currentFrameSpinBox.valueChanged.connect(self.updateFrameWithTracking)
-
-        self.setMaxStopButton.clicked.connect(self.resetMaxStopAtFrameValue)
-        self.setMaxStopButton.installEventFilter(self)
 
         self.bg1 = QButtonGroup()
         self.bg1.addButton(self.runRadioButton)
@@ -713,17 +724,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.thumbnailOneLabel.installEventFilter(self)
         self.thumbnailTwoLabel.installEventFilter(self)
 
-        self.backSmallButton.clicked.connect(self.jumpSmallFramesBack)
-        self.backSmallButton.installEventFilter(self)
+        self.transportSmallLeft.clicked.connect(self.jumpSmallFramesBack)
 
-        self.backBigButton.clicked.connect(self.jumpBigFramesBack)
-        self.backBigButton.installEventFilter(self)
+        self.transportBigLeft.clicked.connect(self.jumpBigFramesBack)
 
-        self.forwardSmallButton.clicked.connect(self.jumpSmallFramesForward)
-        self.forwardSmallButton.installEventFilter(self)
+        self.transportSmallRight.clicked.connect(self.jumpSmallFramesForward)
 
-        self.forwardBigButton.clicked.connect(self.jumpBigFramesForward)
-        self.forwardBigButton.installEventFilter(self)
+        self.transportBigRight.clicked.connect(self.jumpBigFramesForward)
 
         self.view3DButton.clicked.connect(self.show3DThumbnail)
         self.view3DButton.installEventFilter(self)
@@ -737,7 +744,26 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.copy_desktop_icon_file_to_home_directory()
 
+    def seekMaxLeft(self):
+        self.currentFrameSpinBox.setValue(0)
 
+    def seekMaxRight(self):
+        maxFrame = self.stopAtFrameSpinBox.maximum()
+        self.stopAtFrameSpinBox.setValue(maxFrame)
+        self.currentFrameSpinBox.setValue(maxFrame)
+
+
+    def playRight(self):
+        self.showMsg(f'Not yet implemented')
+
+    def playLeft(self):
+        self.showMsg(f'Not yet implemented')
+
+    def pauseAnalysis(self):
+        self.showMsg(f'Not yet implemented')
+
+    def startAnalysis(self):
+        self.showMsg(f'Not yet implemented')
 
     @staticmethod
     def queryWhetherNewVersionShouldBeInstalled():
@@ -1554,15 +1580,15 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def changeNavButtonTitles(self):
         if self.frameJumpBig == 200:  # FITS titling needed
-            self.backSmallButton.setText(f'< {self.frameJumpSmall} frames')
-            self.forwardSmallButton.setText(f'{self.frameJumpSmall} frames >')
-            self.backBigButton.setText(f'< {self.frameJumpBig} frames')
-            self.forwardBigButton.setText(f'{self.frameJumpBig} frames >')
+            self.transportSmallLeft.setText(f'< {self.frameJumpSmall} frames')
+            self.transportSmallRight.setText(f'{self.frameJumpSmall} frames >')
+            self.transportBigLeft.setText(f'< {self.frameJumpBig} frames')
+            self.transportBigRight.setText(f'{self.frameJumpBig} frames >')
         else:
-            self.backSmallButton.setText(f'< 1 sec')
-            self.forwardSmallButton.setText(f'1 sec >')
-            self.backBigButton.setText(f'< 10 sec')
-            self.forwardBigButton.setText(f'10 sec >')
+            self.transportSmallLeft.setText(f'- 1 sec')
+            self.transportSmallRight.setText(f'+ 1 sec')
+            self.transportBigLeft.setText(f'- 10 sec')
+            self.transportBigRight.setText(f'+ 10 sec')
 
     def fillApertureDictionaries(self):
         # This will become a list of dictionaries, one for each aperture.  The customer
@@ -1938,37 +1964,44 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
     def disableControlsWhenNoData(self):
         self.viewFieldsCheckBox.setEnabled(False)
         self.currentFrameSpinBox.setEnabled(False)
-        self.runRadioButton.setEnabled(False)
+
+        self.setTransportButtonEnableState(False)
+
         self.pauseRadioButton.setEnabled(False)
+
         self.processAsFieldsCheckBox.setEnabled(False)
         self.topFieldFirstRadioButton.setEnabled(False)
         self.bottomFieldFirstRadioButton.setEnabled(False)
-        self.forwardSmallButton.setEnabled(False)
-        self.forwardBigButton.setEnabled(False)
-        self.backSmallButton.setEnabled(False)
-        self.backBigButton.setEnabled(False)
+
+    def setTransportButtonEnableState(self, state):
+        self.transportMaxLeft.setEnabled(state)
+        self.transportBigLeft.setEnabled(state)
+        self.transportSmallLeft.setEnabled(state)
+        self.transportPlayLeft.setEnabled(state)
+        self.transportPause.setEnabled(state)
+        self.transportAnalyze.setEnabled(state)
+        self.transportPlayRight.setEnabled(state)
+        self.transportSmallRight.setEnabled(state)
+        self.transportBigRight.setEnabled(state)
+        self.transportMaxRight.setEnabled(state)
 
     def enableControlsForAviData(self):
+
+        self.setTransportButtonEnableState(True)
+
         self.viewFieldsCheckBox.setEnabled(True)
         self.currentFrameSpinBox.setEnabled(True)
-        self.runRadioButton.setEnabled(True)
         self.pauseRadioButton.setEnabled(True)
         self.processAsFieldsCheckBox.setEnabled(True)
         self.topFieldFirstRadioButton.setEnabled(True)
         self.bottomFieldFirstRadioButton.setEnabled(True)
-        self.forwardSmallButton.setEnabled(True)
-        self.forwardBigButton.setEnabled(True)
-        self.backSmallButton.setEnabled(True)
-        self.backBigButton.setEnabled(True)
 
     def enableControlsForFitsData(self):
+
+        self.setTransportButtonEnableState(True)
+
         self.currentFrameSpinBox.setEnabled(True)
-        self.runRadioButton.setEnabled(True)
         self.pauseRadioButton.setEnabled(True)
-        self.forwardSmallButton.setEnabled(True)
-        self.forwardBigButton.setEnabled(True)
-        self.backSmallButton.setEnabled(True)
-        self.backBigButton.setEnabled(True)
         self.viewFieldsCheckBox.setChecked(False)
         self.viewFieldsCheckBox.setEnabled(False)
 

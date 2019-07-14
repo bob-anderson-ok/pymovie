@@ -260,38 +260,6 @@
              <property name="spacing">
               <number>0</number>
              </property>
-             <item>
-              <widget class="QPushButton" name="backSmallButton">
-               <property name="maximumSize">
-                <size>
-                 <width>120</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump back 25 frames.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="text">
-                <string>&lt; 25 frames</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="backBigButton">
-               <property name="maximumSize">
-                <size>
-                 <width>120</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump back 200 frames.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="text">
-                <string>&lt; 200 frames</string>
-               </property>
-              </widget>
-             </item>
             </layout>
            </item>
            <item>
@@ -299,38 +267,6 @@
              <property name="spacing">
               <number>0</number>
              </property>
-             <item>
-              <widget class="QPushButton" name="forwardSmallButton">
-               <property name="maximumSize">
-                <size>
-                 <width>120</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump forward 25 frames.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="text">
-                <string>25 frames &gt;</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="forwardBigButton">
-               <property name="maximumSize">
-                <size>
-                 <width>120</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump forward 200 frames.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="text">
-                <string>200 frames &gt;</string>
-               </property>
-              </widget>
-             </item>
             </layout>
            </item>
            <item>
@@ -427,16 +363,6 @@
          </item>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_7">
-           <item>
-            <widget class="QPushButton" name="setMaxStopButton">
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Click this button to restore the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Stop at frame&lt;/span&gt; number to the maximum available frame number.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="text">
-              <string>Set max stop frame</string>
-             </property>
-            </widget>
-           </item>
            <item>
             <widget class="QPushButton" name="displayPlotsButton">
              <property name="toolTip">
