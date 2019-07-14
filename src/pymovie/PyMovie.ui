@@ -284,19 +284,6 @@
             </layout>
            </item>
            <item>
-            <spacer name="horizontalSpacer_6">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item>
             <layout class="QVBoxLayout" name="verticalLayout_6">
              <property name="leftMargin">
               <number>16</number>
@@ -304,59 +291,6 @@
              <property name="rightMargin">
               <number>0</number>
              </property>
-             <item>
-              <widget class="QRadioButton" name="runRadioButton">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>16777215</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking this radio button will start an automatic lightcurve extraction, starting at the current frame number and ending at the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Stop at frame&lt;/span&gt; number.&lt;/p&gt;&lt;p&gt;The current frame number is dynamically updated to show the progress of the extraction.&lt;/p&gt;&lt;p&gt;The &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Pause&lt;/span&gt; radio can be used to suspent the lightcurve extraction without loss of data.&lt;/p&gt;&lt;p&gt;Note that an analysis can be run 'backwards' by setting the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Stop at frame&lt;/span&gt; value less than the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Current frame&lt;/span&gt; entry.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="layoutDirection">
-                <enum>Qt::LeftToRight</enum>
-               </property>
-               <property name="text">
-                <string>Start analysis </string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QRadioButton" name="pauseRadioButton">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>16777215</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking this radio button while a lightcurve extraction is in progress will stop the extraction, without loss of data.&lt;/p&gt;&lt;p&gt;You can subsequently click on the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Run&lt;/span&gt; radio button to resume the lightcurve extraction.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="layoutDirection">
-                <enum>Qt::LeftToRight</enum>
-               </property>
-               <property name="text">
-                <string>Pause analysis</string>
-               </property>
-               <property name="checked">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
             </layout>
            </item>
           </layout>
@@ -483,6 +417,26 @@
               </size>
              </property>
             </spacer>
+           </item>
+           <item>
+            <widget class="QPushButton" name="saveStateButton">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use this button to save a 'state' that you want to be able to return to.&lt;/p&gt;&lt;p&gt;The current frame number is 'remembered' and ...&lt;/p&gt;&lt;p&gt;... the set of apertures currently displayed will be 'remembered' together wih all their propterties like position, color, etc and,&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt; take particular note&lt;/span&gt;, the current aperture data (light curve intensities) that may be present.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>Save current frame position and aperture set/data</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="restoreSavedStateButton">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Return to the 'state' present when the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Save current state&lt;/span&gt; button to the left was clicked.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>Return to saved state</string>
+             </property>
+            </widget>
            </item>
           </layout>
          </item>

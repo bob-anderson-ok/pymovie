@@ -462,6 +462,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.one_time_suppress_stats = False
 
         self.analysisInProgress = False
+        self.analysisRequested = False
+        self.analysisPaused = True
+        self.playPaused = True
 
         self.record_target_aperture = False
 
@@ -646,16 +649,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.currentFrameSpinBox.valueChanged.connect(self.updateFrameWithTracking)
 
-        self.bg1 = QButtonGroup()
-        self.bg1.addButton(self.runRadioButton)
-        self.bg1.addButton(self.pauseRadioButton)
-        self.pauseRadioButton.setChecked(True)
-
-        self.runRadioButton.toggled.connect(self.autoRun)
-        self.runRadioButton.installEventFilter(self)
-
-        self.pauseRadioButton.installEventFilter(self)
-
         self.bg2 = QButtonGroup()
         self.bg2.addButton(self.topFieldFirstRadioButton)
         self.bg2.addButton(self.bottomFieldFirstRadioButton)
@@ -735,6 +728,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.view3DButton.clicked.connect(self.show3DThumbnail)
         self.view3DButton.installEventFilter(self)
 
+        self.saveStateButton.clicked.connect(self.saveCurrentState)
+        self.saveStateButton.installEventFilter(self)
+
+        self.restoreSavedStateButton.clicked.connect(self.restoreSavedState)
+        self.restoreSavedStateButton.installEventFilter(self)
+
         self.changePlotSymbolSize()
 
         self.disableControlsWhenNoData()
@@ -744,6 +743,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.copy_desktop_icon_file_to_home_directory()
 
+    def saveCurrentState(self):
+        self.showMsg(f'Save state: not yet implemented')
+
+    def restoreSavedState(self):
+        self.showMsg(f'Restore state: not yet implemented')
+
     def seekMaxLeft(self):
         self.currentFrameSpinBox.setValue(0)
 
@@ -752,18 +757,26 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.stopAtFrameSpinBox.setValue(maxFrame)
         self.currentFrameSpinBox.setValue(maxFrame)
 
-
     def playRight(self):
-        self.showMsg(f'Not yet implemented')
+        self.playPaused = False
+        self.autoPlayRight()
 
     def playLeft(self):
-        self.showMsg(f'Not yet implemented')
+        self.playPaused = False
+        self.autoPlayLeft()
 
     def pauseAnalysis(self):
-        self.showMsg(f'Not yet implemented')
+        self.analysisPaused = True
+        self.playPaused = True
+        self.analysisRequested = False
+        self.setTransportButtonEnableState(True)
 
     def startAnalysis(self):
-        self.showMsg(f'Not yet implemented')
+        self.analysisRequested = True
+        self.analysisPaused = False
+        self.setTransportButtonEnableState(False)
+        self.transportPause.setEnabled(True)
+        self.autoRun()
 
     @staticmethod
     def queryWhetherNewVersionShouldBeInstalled():
@@ -964,41 +977,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 ocr.setBox((xL + dx, xR + dx, yU + dy + yadj, yL + dy + yadj))
 
         self.pickleOcrBoxes()
-
-    # def jogOcrBoxes(self, dx, dy):
-    #
-    #     # Frame 0 is often messed up (somehow).  So we protect the user by not
-    #     # letting him change ocr box positions while on frame 0
-    #     if self.currentFrameSpinBox.value() == 0:
-    #         self.showMsg(f'!!!! Move past frame 0 first.  It is not representative. !!!!')
-    #         return
-    #
-    #     newUpperBoxes = []
-    #     if self.currentUpperBoxPos == 'left':
-    #         for ocrbox in self.upperOcrBoxesLeft:
-    #             xL, xR, yU, yL = ocrbox
-    #             newUpperBoxes.append((xL + dx, xR + dx, yU + dy, yL + dy))
-    #     else:
-    #         for ocrbox in self.upperOcrBoxesRight:
-    #             xL, xR, yU, yL = ocrbox
-    #             newUpperBoxes.append((xL + dx, xR + dx, yU + dy, yL + dy))
-    #
-    #     newLowerBoxes = []
-    #     if self.currentLowerBoxPos == 'left':
-    #         for ocrbox in self.lowerOcrBoxesLeft:
-    #             xL, xR, yU, yL = ocrbox
-    #             newLowerBoxes.append((xL + dx, xR + dx, yU + dy, yL + dy))
-    #     else:
-    #         for ocrbox in self.lowerOcrBoxesRight:
-    #             xL, xR, yU, yL = ocrbox
-    #             newLowerBoxes.append((xL + dx, xR + dx, yU + dy, yL + dy))
-    #
-    #     self.upperOcrBoxesLeft = newUpperBoxes[:]
-    #     self.lowerOcrBoxesLeft = newLowerBoxes[:]
-    #
-    #     self.clearOcrBoxes()
-    #     self.placeOcrBoxesOnImage()
-    #     self.pickleOcrBoxes()
 
     def placeOcrBoxesOnImage(self):
 
@@ -1218,7 +1196,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.lower_cum_score = alt_lower_cum_score
                 lower_left_used = alt_lower_left_used
 
-            if self.pauseRadioButton.isChecked():
+            if self.analysisPaused:
                 # When we're manually stepping through an avi, we need to see
                 # the actual box placements.
                 need_to_redisplay_ocr_boxes = True
@@ -1957,7 +1935,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.plot_symbol_size = self.plotSymbolSizeSpinBox.value()
 
     def updateFrameWithTracking(self):
-        if not self.runRadioButton.isChecked():
+        if not self.analysisRequested:
             self.initializeTracking()
         self.showFrame()
 
@@ -1966,8 +1944,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.currentFrameSpinBox.setEnabled(False)
 
         self.setTransportButtonEnableState(False)
-
-        self.pauseRadioButton.setEnabled(False)
 
         self.processAsFieldsCheckBox.setEnabled(False)
         self.topFieldFirstRadioButton.setEnabled(False)
@@ -1991,7 +1967,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.viewFieldsCheckBox.setEnabled(True)
         self.currentFrameSpinBox.setEnabled(True)
-        self.pauseRadioButton.setEnabled(True)
         self.processAsFieldsCheckBox.setEnabled(True)
         self.topFieldFirstRadioButton.setEnabled(True)
         self.bottomFieldFirstRadioButton.setEnabled(True)
@@ -2001,7 +1976,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.setTransportButtonEnableState(True)
 
         self.currentFrameSpinBox.setEnabled(True)
-        self.pauseRadioButton.setEnabled(True)
         self.viewFieldsCheckBox.setChecked(False)
         self.viewFieldsCheckBox.setEnabled(False)
 
@@ -2170,8 +2144,42 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     app.dy = dy
                     app.theta = None  # We don't use this value during tracking
 
+    def autoPlayLeft(self):
+        self.setTransportButtonEnableState(False)
+        self.transportPause.setEnabled(True)
+        currentFrame = self.currentFrameSpinBox.value()
+        lastFrame = self.stopAtFrameSpinBox.value()
+        while not self.playPaused:
+            if currentFrame == 0:
+                self.playPaused = True
+                self.setTransportButtonEnableState(True)
+                return
+            else:
+                currentFrame -= 1
+                self.currentFrameSpinBox.setValue(currentFrame)
+                QtGui.QGuiApplication.processEvents()
+
+        self.setTransportButtonEnableState(True)
+
+    def autoPlayRight(self):
+        self.setTransportButtonEnableState(False)
+        self.transportPause.setEnabled(True)
+        currentFrame = self.currentFrameSpinBox.value()
+        lastFrame = self.stopAtFrameSpinBox.value()
+        while not self.playPaused:
+            if currentFrame == lastFrame:
+                self.playPaused = True
+                self.setTransportButtonEnableState(True)
+                return
+            else:
+                currentFrame += 1
+                self.currentFrameSpinBox.setValue(currentFrame)
+                QtGui.QGuiApplication.processEvents()
+
+        self.setTransportButtonEnableState(True)
+
     def autoRun(self):
-        if self.runRadioButton.isChecked():
+        if self.analysisRequested:
 
             # We need to not record the current frame if we got here following
             # a pause.
@@ -2198,12 +2206,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             if currentFrame > lastFrame:
                 stop_offset = 1
 
-            while self.runRadioButton.isChecked():
+            while self.analysisRequested:
                 currentFrame = self.currentFrameSpinBox.value()
                 lastFrame = self.stopAtFrameSpinBox.value()
 
                 if currentFrame == lastFrame + stop_offset:
-                    self.pauseRadioButton.click()
+                    self.analysisPaused = True
+                    self.analysisRequested = False
+                    self.setTransportButtonEnableState(True)
                     return
                 else:
                     if currentFrame > lastFrame:
@@ -2914,7 +2924,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     app.dy = dy
                     app.theta = None  # We don't use this value during tracking
 
-
     def centerAllApertures(self):
 
         if self.preserve_apertures:
@@ -3007,7 +3016,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                         appnew.yc = dx * sindt + dy * cosdt + self.yellow_y
                         self.positionApertureAtCentroid(appnew, appnew.xc, appnew.yc)
 
-                if self.runRadioButton.isChecked():
+                if self.analysisRequested:
                     for aperture in self.getApertureList():
                         data = self.getApertureStats(aperture, show_stats=False)
                         if self.processAsFieldsCheckBox.isChecked():
@@ -3036,7 +3045,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 if not app.color == 'white':
                     self.centerAperture(app)
 
-        if self.runRadioButton.isChecked():
+        if self.analysisRequested:
             for aperture in self.getApertureList():
                 try:
                     data = self.getApertureStats(aperture, show_stats=False)
@@ -3138,7 +3147,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     # for the first time and should show stats
                     if self.pointed_at_aperture is None:
                         self.pointed_at_aperture = aperture_to_point_at
-                        if self.pauseRadioButton.isChecked():
+                        if self.analysisPaused:
                             self.getApertureStats(self.pointed_at_aperture)
                 else:
                     # Cursor is not in any aperture so reset pointed_at_aperture
