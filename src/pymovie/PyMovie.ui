@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1072</width>
-    <height>996</height>
+    <width>1923</width>
+    <height>1026</height>
    </rect>
   </property>
   <property name="font">
@@ -338,77 +338,6 @@
              <property name="spacing">
               <number>0</number>
              </property>
-             <item>
-              <widget class="QLabel" name="currentFrameLabel">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>16777215</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This box controls which frame is currently being analyzed. It can be changed by direct entry or by use of the spinner control buttons.&lt;/p&gt;&lt;p&gt;This will be the starting frame for an extraction triggered by clicking on the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Start analysis&lt;/span&gt; radio button to the right.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="layoutDirection">
-                <enum>Qt::LeftToRight</enum>
-               </property>
-               <property name="text">
-                <string> Current frame:</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-               </property>
-               <property name="margin">
-                <number>0</number>
-               </property>
-               <property name="indent">
-                <number>-1</number>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="stopAtFrameLabel">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>16777215</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This box controls which frame will be the final frame in a lightcurve extraction.&lt;/p&gt;&lt;p&gt;At initial file read, this box will be populated with the highest available frame number.&lt;/p&gt;&lt;p&gt;Should you change the value in this box and wish to reset it back to the correct maximum frame number, click on the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Set max stop frame&lt;/span&gt; button located below and to the left.&lt;/p&gt;&lt;p&gt;Note: the value here can be less than than that in the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Current frame&lt;/span&gt; entry. In that case, when an analysis is started, it will proceed 'backwards' from higher numbered frames to lower numbered frames. When running 'backwards', the analysis stops 1 frame before the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Stop at frame&lt;/span&gt; value to make it convenient to run from both ends without duplicating the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Stop at frame&lt;/span&gt;. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="text">
-                <string>Stop at frame:</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-               </property>
-              </widget>
-             </item>
             </layout>
            </item>
            <item>
@@ -416,71 +345,6 @@
              <property name="spacing">
               <number>0</number>
              </property>
-             <item>
-              <widget class="QSpinBox" name="currentFrameSpinBox">
-               <property name="enabled">
-                <bool>true</bool>
-               </property>
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="minimumSize">
-                <size>
-                 <width>100</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>73</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="toolTip">
-                <string/>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-               </property>
-               <property name="maximum">
-                <number>99999</number>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QSpinBox" name="stopAtFrameSpinBox">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="minimumSize">
-                <size>
-                 <width>100</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>73</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="toolTip">
-                <string/>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-               </property>
-               <property name="maximum">
-                <number>99999</number>
-               </property>
-              </widget>
-             </item>
             </layout>
            </item>
            <item>
@@ -1384,7 +1248,7 @@ If you think that you know the plate scale more precisely than what can be calcu
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="layoutWidget">
+       <widget class="QWidget" name="">
         <layout class="QVBoxLayout" name="verticalLayout_13">
          <item>
           <widget class="ImageView" name="frameView">
@@ -1398,6 +1262,256 @@ If you think that you know the plate scale more precisely than what can be calcu
             <string/>
            </property>
           </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_18">
+           <item>
+            <spacer name="horizontalSpacer_7">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_19">
+             <property name="spacing">
+              <number>0</number>
+             </property>
+             <item>
+              <widget class="QToolButton" name="transportMaxLeft">
+               <property name="font">
+                <font>
+                 <pointsize>13</pointsize>
+                </font>
+               </property>
+               <property name="toolTip">
+                <string>Jump to frame 0</string>
+               </property>
+               <property name="text">
+                <string>&lt;&lt;</string>
+               </property>
+               <property name="toolButtonStyle">
+                <enum>Qt::ToolButtonTextOnly</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="transportBigLeft">
+               <property name="font">
+                <font>
+                 <pointsize>13</pointsize>
+                </font>
+               </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump left 10 seconds (if avi in use) or 200 frames (if FITS file in use).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>- 10 sec</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="transportSmallLeft">
+               <property name="font">
+                <font>
+                 <pointsize>13</pointsize>
+                </font>
+               </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump left 1 second (if avi in use) or 25 frames (if FITS file in use).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>- 1 sec</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="transportPlayLeft">
+               <property name="font">
+                <font>
+                 <pointsize>13</pointsize>
+                </font>
+               </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Play the file continuously to the left (earlier in time).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>&lt;</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="transportPause">
+               <property name="font">
+                <font>
+                 <pointsize>13</pointsize>
+                </font>
+               </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pause an analysis (light curve extraction) that is in progress.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>pause</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="transportAnalyze">
+               <property name="font">
+                <font>
+                 <pointsize>13</pointsize>
+                </font>
+               </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Advance frame by frame from &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;cur frame&lt;/span&gt; up to (or down to) &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;stop frame&lt;/span&gt;, tracking and recording aperture data for plots and csv export. I.e., generate the light curve data.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>analyze</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="transportPlayRight">
+               <property name="font">
+                <font>
+                 <pointsize>13</pointsize>
+                </font>
+               </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Play the file to the right (forward in time).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>&gt;</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="transportSmallRight">
+               <property name="font">
+                <font>
+                 <pointsize>13</pointsize>
+                </font>
+               </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump right 1 second (if avi in use) or 25 frames (if FITS file in use).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>+ 1 sec</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="transportBigRight">
+               <property name="font">
+                <font>
+                 <pointsize>13</pointsize>
+                </font>
+               </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump right 10 seconds (if avi in use) or 200 frames (if FITS file in use).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>+ 10 sec</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="transportMaxRight">
+               <property name="font">
+                <font>
+                 <pointsize>13</pointsize>
+                </font>
+               </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump to last frame.&lt;/p&gt;&lt;p&gt;In addition, set &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;stop frame&lt;/span&gt; to the frame number of the last frame.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>&gt;&gt;</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_20">
+             <property name="spacing">
+              <number>0</number>
+             </property>
+             <item>
+              <widget class="QLabel" name="transportCurrentFrameLabel">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This spinner shows the frame number of the currently displayed frame.&lt;/p&gt;&lt;p&gt;This will be the first frame whose data will be recorded when an analysis is started.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>cur frame</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="currentFrameSpinBox">
+               <property name="layoutDirection">
+                <enum>Qt::RightToLeft</enum>
+               </property>
+               <property name="frame">
+                <bool>true</bool>
+               </property>
+               <property name="maximum">
+                <number>99999</number>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_22">
+             <property name="spacing">
+              <number>0</number>
+             </property>
+             <item>
+              <widget class="QSpinBox" name="stopAtFrameSpinBox">
+               <property name="layoutDirection">
+                <enum>Qt::RightToLeft</enum>
+               </property>
+               <property name="frame">
+                <bool>true</bool>
+               </property>
+               <property name="maximum">
+                <number>99999</number>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="transportStopAtFrameLabel">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This spinner sets the final frame processed during an analysis run (light curve extraction).&lt;/p&gt;&lt;p&gt;If the&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt; stop frame&lt;/span&gt; number is greater than the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;cur frame&lt;/span&gt; number, analysis proceeds in that direction and the data will include that of the stop frame.&lt;/p&gt;&lt;p&gt;If the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;stop frame&lt;/span&gt; number is less than the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;cur frame&lt;/span&gt; number, analysis proceeds backwards (toward earlier time) and stops one frame before the given stop at frame. This is to facilate building a light curve by analyzing both forward and backward in time.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>stop frame</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_11">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+          </layout>
          </item>
          <item>
           <widget class="QLabel" name="mainImageLabel">
@@ -1416,27 +1530,31 @@ If you think that you know the plate scale more precisely than what can be calcu
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <widget class="QWidget" name="layoutWidget">
-        <layout class="QVBoxLayout" name="verticalLayout_14">
+       <widget class="QWidget" name="">
+        <layout class="QVBoxLayout" name="verticalLayout_15">
          <item>
-          <widget class="QTextEdit" name="textOut">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-             <horstretch>1</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="font">
-            <font>
-             <family>Courier New</family>
-             <weight>75</weight>
-             <bold>true</bold>
-            </font>
-           </property>
-           <property name="toolTip">
-            <string/>
-           </property>
-          </widget>
+          <layout class="QVBoxLayout" name="verticalLayout_14">
+           <item>
+            <widget class="QTextEdit" name="textOut">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+               <horstretch>1</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="font">
+              <font>
+               <family>Courier New</family>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="toolTip">
+              <string/>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
          <item>
           <widget class="QLabel" name="textOutLabel">

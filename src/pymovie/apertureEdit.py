@@ -15,7 +15,6 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
         self.dictList = dictList
         self.fillApertureTable()
         self.appSize = appSize
-        # self.radiusSpinner = radiusSpinner
         self.threshSpinner = threshSpinner
         self.writeTableButton.clicked.connect(self.writeTable)
         self.imageUpdate = imageUpdate
@@ -266,8 +265,6 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
             radius = 5.3
         if radius < 2.0:
             radius = 2.0
-
-        # self.radiusSpinner.setValue(radius)
 
         try:
             thresh = int(self.tableWidget.item(row, 2).text())
