@@ -421,20 +421,10 @@
            <item>
             <widget class="QPushButton" name="saveStateButton">
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use this button to save a 'state' that you want to be able to return to.&lt;/p&gt;&lt;p&gt;The current frame number is 'remembered' and ...&lt;/p&gt;&lt;p&gt;... the set of apertures currently displayed will be 'remembered' together wih all their propterties like position, color, etc and,&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt; take particular note&lt;/span&gt;, the current aperture data (light curve intensities) that may be present.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;After a new video is loaded, when the first 'analysis' run is started, the number and positions of the apertures present at that time are automatically 'remembered' ('marked'). &lt;/p&gt;&lt;p&gt;This is very helpful if the starfield moves in a substantial way and yet you have a need to start over. A direct jump to the beginning would usually lose tracking and the apertures would need to be repositioned. But PyMovie 'remembers' the aperture and frame number setup so that with a click on the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Return to 'mark'&lt;/span&gt; button in the transport button array under the image, you can jump back and start over without the need to reset the aperture positions.&lt;/p&gt;&lt;p&gt;Because that 'remembering' is automatic, this will likely be a seldom used button.&lt;/p&gt;&lt;p&gt;But if there is a need to override the automatic 'mark', this button is the one to push.&lt;/p&gt;&lt;p&gt;Note that &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;ONLY&lt;/span&gt; the aperture count and positions are 'remembered', not the accumulated data or any other property change that you may have instituted during the run (like a threshold change or change in default mask, etc). Therefore, be sure to click on the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Clear aperture data&lt;/span&gt; button before resuming.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
-              <string>Save current frame position and aperture set/data</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="restoreSavedStateButton">
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Return to the 'state' present when the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Save current state&lt;/span&gt; button to the left was clicked.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="text">
-              <string>Return to saved state</string>
+              <string>Save frame and aperture positions</string>
              </property>
             </widget>
            </item>
@@ -1373,6 +1363,28 @@ If you think that you know the plate scale more precisely than what can be calcu
                </property>
                <property name="text">
                 <string>stop frame</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label">
+               <property name="text">
+                <string>    </string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="transportReturnToMark">
+               <property name="font">
+                <font>
+                 <pointsize>13</pointsize>
+                </font>
+               </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Return to the aperture constellation position present when either the first 'analysis' was started, or when the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Save frame and aperture positions&lt;/span&gt; button was clicked (to override the normal automatic position recording).&lt;/p&gt;&lt;p&gt;The frame number is set as well.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>Return to 'mark'</string>
                </property>
               </widget>
              </item>

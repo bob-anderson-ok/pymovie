@@ -101,7 +101,6 @@ class MeasurementAperture(pg.GraphicsObject):
 
     def setPos(self, bbox):
         self.enforcePositioningConstraints(bbox)
-        # self.update()
 
     # All graphics items must have boundingRect() defined.
     def boundingRect(self):

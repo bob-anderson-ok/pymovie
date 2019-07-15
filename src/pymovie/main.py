@@ -413,6 +413,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         # Initialize all instance variables as a block (to satisfy PEP 8 standard)
 
+        self.savedStateApertures = []
+        self.savedStateFrameNumber = None
+        self.savedPositions = []
+        self.saveStateNeeded = True
+
         self.upper_left_count = 0    # When Kiwi used: accumulate count ot times t2 was at left in upper field
         self.upper_right_count = 0   # When Kiwi used: accumulate count ot times t2 was at the right in upper field
 
@@ -731,8 +736,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.saveStateButton.clicked.connect(self.saveCurrentState)
         self.saveStateButton.installEventFilter(self)
 
-        self.restoreSavedStateButton.clicked.connect(self.restoreSavedState)
-        self.restoreSavedStateButton.installEventFilter(self)
+        self.transportReturnToMark.clicked.connect(self.restoreSavedState)
+        self.transportReturnToMark.installEventFilter(self)
 
         self.changePlotSymbolSize()
 
@@ -744,10 +749,32 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.copy_desktop_icon_file_to_home_directory()
 
     def saveCurrentState(self):
-        self.showMsg(f'Save state: not yet implemented')
+        # We need to have the apertures visible before we can save them
+        if self.viewFieldsCheckBox.isChecked():
+            self.viewFieldsCheckBox.setChecked(False)
+        self.savedStateApertures = self.getApertureList()
+        self.savedPositions = []
+        for aperture in self.savedStateApertures:
+            self.savedPositions.append(aperture.getBbox())
+        self.savedStateFrameNumber = self.currentFrameSpinBox.value()
+        self.transportReturnToMark.setEnabled(True)
+
+        self.showMsg(f'Current aperture constellation and frame number saved.')
 
     def restoreSavedState(self):
-        self.showMsg(f'Restore state: not yet implemented')
+        # We should be showing full frame before adding back in the save apertures
+        if self.viewFieldsCheckBox.isChecked():
+            self.viewFieldsCheckBox.setChecked(False)
+        self.clearOcrBoxes()
+        # restore any saved apertures
+        if self.savedStateApertures:
+            view = self.frameView.getView()
+            for i, aperture in enumerate(self.savedStateApertures):
+                view.addItem(aperture)
+                aperture.setPos(self.savedPositions[i])
+                self.connectAllSlots(aperture)
+        if not self.savedStateFrameNumber is None:
+            self.currentFrameSpinBox.setValue(self.savedStateFrameNumber)
 
     def seekMaxLeft(self):
         self.currentFrameSpinBox.setValue(0)
@@ -772,6 +799,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.setTransportButtonEnableState(True)
 
     def startAnalysis(self):
+        if self.saveStateNeeded:
+            self.saveStateNeeded = False
+            self.saveCurrentState()
         self.analysisRequested = True
         self.analysisPaused = False
         self.setTransportButtonEnableState(False)
@@ -1960,10 +1990,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.transportSmallRight.setEnabled(state)
         self.transportBigRight.setEnabled(state)
         self.transportMaxRight.setEnabled(state)
+        self.transportReturnToMark.setEnabled(state)
 
     def enableControlsForAviData(self):
 
         self.setTransportButtonEnableState(True)
+        self.transportReturnToMark.setEnabled(False)
+
 
         self.viewFieldsCheckBox.setEnabled(True)
         self.currentFrameSpinBox.setEnabled(True)
@@ -1974,6 +2007,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
     def enableControlsForFitsData(self):
 
         self.setTransportButtonEnableState(True)
+        self.transportReturnToMark.setEnabled(False)
+
 
         self.currentFrameSpinBox.setEnabled(True)
         self.viewFieldsCheckBox.setChecked(False)
@@ -3450,6 +3485,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         QtGui.QGuiApplication.processEvents()
 
         if dir_path:
+            self.saveStateNeeded = True
             self.avi_wcs_folder_in_use = False
             self.fits_folder_in_use = True
             self.clearTextBox()
@@ -3643,6 +3679,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         QtGui.QGuiApplication.processEvents()
 
         if self.filename:
+            self.saveStateNeeded = True
             self.wcs_solution_available = False
             self.wcs_frame_num = None
             self.avi_wcs_folder_in_use = False
@@ -3774,6 +3811,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         if dir_path:
 
+            self.saveStateNeeded = True
             self.upper_left_count  = 0  # When Kiwi used: accumulate count ot times t2 was at left in upper field
             self.upper_right_count = 0  # When Kiwi used: accumulate count ot times t2 was at the right in upper field
 
