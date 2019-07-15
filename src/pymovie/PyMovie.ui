@@ -33,7 +33,7 @@
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <widget class="QWidget" name="layoutWidget">
+       <widget class="QWidget" name="">
         <layout class="QVBoxLayout" name="verticalLayout_12">
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_10" stretch="1,2,2">
@@ -687,7 +687,7 @@
            <property name="sizeHint" stdset="0">
             <size>
              <width>20</width>
-             <height>40</height>
+             <height>60</height>
             </size>
            </property>
           </spacer>
@@ -870,6 +870,96 @@
           </layout>
          </item>
          <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_21">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="pixelHeightLabel">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>85</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If the camera used for the video does not have square pixels, the image sent to nova.astrometry.net for WCS calibration will need to have the image resized to compensate for the rectangular shape of the camera pixels. This is required so that the plate scale (arcseconds/pixel) will be the same in the x direction as the y direction.&lt;/p&gt;&lt;p&gt;This correction is needed for manual WCS calibration as well, but is accomplished in a different manner: a rescaling of x and y dimensions during the calculations rather than an image resize.&lt;/p&gt;&lt;p&gt;If you know that the camera pixels are square, enter the same number for pixel height and pixel width. The units don't matter. The number used doesn't matter. All that matters is that pixelWidth / pixelHeight = 1.000 (i.e., pixel aspect ratio = 1.000).&lt;/p&gt;&lt;p&gt;If the camera pixels are not square, but instead are rectangular, enter the correct width and height of the pixels in these edit boxes. The units used do not matter. All that matters is the ratio of these two numbers.&lt;/p&gt;&lt;p&gt;Example: for a Watec 910 camera, enter 9.8 as pixelHeight and 8.4 as pixelWidth. (The units are actually microns, but that does not matter.)&lt;/p&gt;&lt;p&gt;The RunCam Night Eagle Pro II camera has square pixels (6x6 microns). You can enter a 6 in both edit boxes for this camera.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>pixel height:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="pixelHeightEdit">
+             <property name="minimumSize">
+              <size>
+               <width>40</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>40</width>
+               <height>16777215</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="pixelWidthEdit">
+             <property name="minimumSize">
+              <size>
+               <width>40</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>40</width>
+               <height>16777215</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="pixelWidthLabel">
+             <property name="maximumSize">
+              <size>
+               <width>90</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If the camera used for the video does not have square pixels, the image sent to nova.astrometry.net for WCS calibration will need to have the image resized to compensate for the rectangular shape of the camera pixels. This is required so that the plate scale (arcseconds/pixel) will be the same in the x direction as the y direction.&lt;/p&gt;&lt;p&gt;This correction is needed for manual WCS calibration as well, but is accomplished in a different manner: a rescaling of x and y dimensions during the calculations rather than an image resize.&lt;/p&gt;&lt;p&gt;If you know that the camera pixels are square, enter the same number for pixel height and pixel width. The units don't matter. The number used doesn't matter. All that matters is that pixelWidth / pixelHeight = 1.000 (i.e., pixel aspect ratio = 1.000).&lt;/p&gt;&lt;p&gt;If the camera pixels are not square, but instead are rectangular, enter the correct width and height of the pixels in these edit boxes. The units used do not matter. All that matters is the ratio of these two numbers.&lt;/p&gt;&lt;p&gt;Example: for a Watec 910 camera, enter 9.8 as pixelHeight and 8.4 as pixelWidth. (The units are actually microns, but that does not matter.)&lt;/p&gt;&lt;p&gt;The RunCam Night Eagle Pro II camera has square pixels (6x6 microns). You can enter a 6 in both edit boxes for this camera.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>: pixel width</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer_6">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </item>
+         <item>
           <layout class="QHBoxLayout" name="horizontalLayout_16">
            <property name="spacing">
             <number>0</number>
@@ -948,7 +1038,7 @@
                   </size>
                  </property>
                  <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button is used to get a WCS calibration for the current image by utilizing the on-line service nova.astrometry.net&lt;/p&gt;&lt;p&gt;If this service fails (see discussion below) then you could try the&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt; Manual WCS calibration&lt;/span&gt; button. It prompts you to put an aperture around two known stars in your image by using a star chart (preferably with UCAC4 star designations). If those stars are sufficiently far apart, we can use the icrs coordinates in conjuction with the xy position of the aperture to 'calibrate' that image.&lt;/p&gt;&lt;p&gt;nova.astrometry.net is designed to do 'blind' identification and WCS calibration on star field images. But it will not be able to identify images that have a too narrow field of view. If your field of view is under 15 arcmin, it is not likely to be able to calibrate that image and it will spend a long time (many minutes) trying. If an image is going to be successfully identified, it will take only a few seconds of cpu time after getting a job assigned (which takes one to two minutes).&lt;/p&gt;&lt;p&gt;Clicking this button reads the currrent frame and redacts the timestamp area by replacing all bytes in the timestamp zone with the Robust background (constant value).&lt;/p&gt;&lt;p&gt;The number of lines to be redacted are controlled by the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;redact lines&lt;/span&gt; edit box.&lt;/p&gt;&lt;p&gt;This redacted image is written as a file suitable for submission to nova.astrometry.net together with a user entered target star position (RA and Dec at J2000).&lt;/p&gt;&lt;p&gt;The entries for the star position values are entered into a star position dialog that will appear if no star position has yet been defined.&lt;/p&gt;&lt;p&gt;That same dialog form provides for the entry of the user's nova.astrometry.net api key. This value will be 'sticky' (preserved across runs of PyMovie) and is required for submitting images for WCS calibration. It's easy (and free) to obtain. Simply go to nova.astrometry.net and sign in by clicking on your choice of credential supplier, no need to create a username/password combination. Afer signing in, click on My Profile and your api key will be displayed there.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button is used to get a WCS calibration for the current image by utilizing the on-line service nova.astrometry.net&lt;/p&gt;&lt;p&gt;If this service fails (see discussion below) then you could try the&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt; Manual WCS calibration&lt;/span&gt; button. It prompts you to put an aperture around two known stars in your image by using a star chart (preferably with UCAC4 star designations). If those stars are sufficiently far apart, we can use the icrs coordinates in conjuction with the xy position of the aperture to 'calibrate' that image.&lt;/p&gt;&lt;p&gt;nova.astrometry.net is designed to do 'blind' identification and WCS calibration on star field images. But it will not be able to identify images that have a too narrow field of view. If your field of view is under 15 arcmin, it is not likely to be able to calibrate that image and it will spend a long time (many minutes) trying. If an image is going to be successfully identified, it will take only a few seconds of cpu time after getting a job assigned (which takes one to two minutes).&lt;/p&gt;&lt;p&gt;Note: another possible reason for a 'failure' is that the camera pixels used for the video were not square and the proper pixel width and height values were not specified properly.&lt;/p&gt;&lt;p&gt;Clicking this button reads the current frame and redacts the timestamp area by replacing all bytes in the timestamp zone with the Robust background (constant value).&lt;/p&gt;&lt;p&gt;The number of lines to be redacted are controlled by the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;redact lines&lt;/span&gt; edit box.&lt;/p&gt;&lt;p&gt;This redacted image is written as a file suitable for submission to nova.astrometry.net together with a user entered target star position (RA and Dec at J2000). The image will have been resized based on the pixel width and height information for non-square pixels in the source camera.&lt;/p&gt;&lt;p&gt;The entries for the star position values are entered into a star position dialog that will appear if no star position has yet been defined.&lt;/p&gt;&lt;p&gt;That same dialog form provides for the entry of the user's nova.astrometry.net api key. This value will be 'sticky' (preserved across runs of PyMovie) and is required for submitting images for WCS calibration. It's easy (and free) to obtain. Simply go to nova.astrometry.net and sign in by clicking on your choice of credential supplier, no need to create a username/password combination. After signing in, click on My Profile and your api key will be displayed there.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                  </property>
                  <property name="text">
                   <string>astrometry WCS calib</string>
@@ -1119,7 +1209,7 @@ If you think that you know the plate scale more precisely than what can be calcu
         </layout>
        </widget>
        <widget class="QWidget" name="">
-        <layout class="QVBoxLayout" name="verticalLayout_13">
+        <layout class="QVBoxLayout" name="verticalLayout_16">
          <item>
           <widget class="ImageView" name="frameView">
            <property name="sizePolicy">
@@ -1134,9 +1224,9 @@ If you think that you know the plate scale more precisely than what can be calcu
           </widget>
          </item>
          <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_18">
+          <layout class="QHBoxLayout" name="horizontalLayout_24">
            <item>
-            <spacer name="horizontalSpacer_7">
+            <spacer name="horizontalSpacer_13">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
@@ -1149,271 +1239,317 @@ If you think that you know the plate scale more precisely than what can be calcu
             </spacer>
            </item>
            <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_19">
-             <property name="spacing">
-              <number>0</number>
-             </property>
+            <layout class="QVBoxLayout" name="verticalLayout_13">
              <item>
-              <widget class="QToolButton" name="transportMaxLeft">
-               <property name="font">
-                <font>
-                 <pointsize>13</pointsize>
-                </font>
-               </property>
-               <property name="toolTip">
-                <string>Jump to frame 0</string>
-               </property>
-               <property name="text">
-                <string>&lt;&lt;</string>
-               </property>
-               <property name="toolButtonStyle">
-                <enum>Qt::ToolButtonTextOnly</enum>
-               </property>
-              </widget>
+              <layout class="QHBoxLayout" name="horizontalLayout_18">
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_19">
+                 <property name="spacing">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <widget class="QToolButton" name="transportMaxLeft">
+                   <property name="font">
+                    <font>
+                     <pointsize>13</pointsize>
+                    </font>
+                   </property>
+                   <property name="toolTip">
+                    <string>Jump to frame 0</string>
+                   </property>
+                   <property name="text">
+                    <string>&lt;&lt;</string>
+                   </property>
+                   <property name="toolButtonStyle">
+                    <enum>Qt::ToolButtonTextOnly</enum>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QToolButton" name="transportBigLeft">
+                   <property name="font">
+                    <font>
+                     <pointsize>13</pointsize>
+                    </font>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump left 10 seconds (if avi in use) or 200 frames (if FITS file in use).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="text">
+                    <string>- 10 sec</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QToolButton" name="transportSmallLeft">
+                   <property name="font">
+                    <font>
+                     <pointsize>13</pointsize>
+                    </font>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump left 1 second (if avi in use) or 25 frames (if FITS file in use).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="text">
+                    <string>- 1 sec</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QToolButton" name="transportPlayLeft">
+                   <property name="font">
+                    <font>
+                     <pointsize>13</pointsize>
+                    </font>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Play the file continuously to the left (earlier in time).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="text">
+                    <string>&lt;</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QToolButton" name="transportPause">
+                   <property name="font">
+                    <font>
+                     <pointsize>13</pointsize>
+                    </font>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pause an analysis (light curve extraction) that is in progress.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="text">
+                    <string>pause</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QToolButton" name="transportAnalyze">
+                   <property name="font">
+                    <font>
+                     <pointsize>13</pointsize>
+                    </font>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Advance frame by frame from &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;cur frame&lt;/span&gt; up to (or down to) &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;stop frame&lt;/span&gt;, tracking and recording aperture data for plots and csv export. I.e., generate the light curve data.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="text">
+                    <string>analyze</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QToolButton" name="transportPlayRight">
+                   <property name="font">
+                    <font>
+                     <pointsize>13</pointsize>
+                    </font>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Play the file to the right (forward in time).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="text">
+                    <string>&gt;</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QToolButton" name="transportSmallRight">
+                   <property name="font">
+                    <font>
+                     <pointsize>13</pointsize>
+                    </font>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump right 1 second (if avi in use) or 25 frames (if FITS file in use).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="text">
+                    <string>+ 1 sec</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QToolButton" name="transportBigRight">
+                   <property name="font">
+                    <font>
+                     <pointsize>13</pointsize>
+                    </font>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump right 10 seconds (if avi in use) or 200 frames (if FITS file in use).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="text">
+                    <string>+ 10 sec</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QToolButton" name="transportMaxRight">
+                   <property name="font">
+                    <font>
+                     <pointsize>13</pointsize>
+                    </font>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump to last frame.&lt;/p&gt;&lt;p&gt;In addition, set &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;stop frame&lt;/span&gt; to the frame number of the last frame.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="text">
+                    <string>&gt;&gt;</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+              </layout>
              </item>
              <item>
-              <widget class="QToolButton" name="transportBigLeft">
-               <property name="font">
-                <font>
-                 <pointsize>13</pointsize>
-                </font>
-               </property>
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump left 10 seconds (if avi in use) or 200 frames (if FITS file in use).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="text">
-                <string>- 10 sec</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QToolButton" name="transportSmallLeft">
-               <property name="font">
-                <font>
-                 <pointsize>13</pointsize>
-                </font>
-               </property>
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump left 1 second (if avi in use) or 25 frames (if FITS file in use).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="text">
-                <string>- 1 sec</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QToolButton" name="transportPlayLeft">
-               <property name="font">
-                <font>
-                 <pointsize>13</pointsize>
-                </font>
-               </property>
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Play the file continuously to the left (earlier in time).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="text">
-                <string>&lt;</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QToolButton" name="transportPause">
-               <property name="font">
-                <font>
-                 <pointsize>13</pointsize>
-                </font>
-               </property>
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pause an analysis (light curve extraction) that is in progress.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="text">
-                <string>pause</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QToolButton" name="transportAnalyze">
-               <property name="font">
-                <font>
-                 <pointsize>13</pointsize>
-                </font>
-               </property>
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Advance frame by frame from &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;cur frame&lt;/span&gt; up to (or down to) &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;stop frame&lt;/span&gt;, tracking and recording aperture data for plots and csv export. I.e., generate the light curve data.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="text">
-                <string>analyze</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QToolButton" name="transportPlayRight">
-               <property name="font">
-                <font>
-                 <pointsize>13</pointsize>
-                </font>
-               </property>
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Play the file to the right (forward in time).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="text">
-                <string>&gt;</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QToolButton" name="transportSmallRight">
-               <property name="font">
-                <font>
-                 <pointsize>13</pointsize>
-                </font>
-               </property>
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump right 1 second (if avi in use) or 25 frames (if FITS file in use).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="text">
-                <string>+ 1 sec</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QToolButton" name="transportBigRight">
-               <property name="font">
-                <font>
-                 <pointsize>13</pointsize>
-                </font>
-               </property>
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump right 10 seconds (if avi in use) or 200 frames (if FITS file in use).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="text">
-                <string>+ 10 sec</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QToolButton" name="transportMaxRight">
-               <property name="font">
-                <font>
-                 <pointsize>13</pointsize>
-                </font>
-               </property>
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump to last frame.&lt;/p&gt;&lt;p&gt;In addition, set &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;stop frame&lt;/span&gt; to the frame number of the last frame.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="text">
-                <string>&gt;&gt;</string>
-               </property>
-              </widget>
+              <layout class="QHBoxLayout" name="horizontalLayout_23">
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_20">
+                 <property name="spacing">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <spacer name="horizontalSpacer_7">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="transportCurrentFrameLabel">
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This spinner shows the frame number of the currently displayed frame.&lt;/p&gt;&lt;p&gt;This will be the first frame whose data will be recorded when an analysis is started.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="layoutDirection">
+                    <enum>Qt::RightToLeft</enum>
+                   </property>
+                   <property name="text">
+                    <string>cur frame</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QSpinBox" name="currentFrameSpinBox">
+                   <property name="layoutDirection">
+                    <enum>Qt::RightToLeft</enum>
+                   </property>
+                   <property name="frame">
+                    <bool>true</bool>
+                   </property>
+                   <property name="maximum">
+                    <number>99999</number>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_22">
+                 <property name="spacing">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <widget class="QSpinBox" name="stopAtFrameSpinBox">
+                   <property name="layoutDirection">
+                    <enum>Qt::RightToLeft</enum>
+                   </property>
+                   <property name="frame">
+                    <bool>true</bool>
+                   </property>
+                   <property name="maximum">
+                    <number>99999</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="transportStopAtFrameLabel">
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This spinner sets the final frame processed during an analysis run (light curve extraction).&lt;/p&gt;&lt;p&gt;If the&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt; stop frame&lt;/span&gt; number is greater than the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;cur frame&lt;/span&gt; number, analysis proceeds in that direction and the data will include that of the stop frame.&lt;/p&gt;&lt;p&gt;If the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;stop frame&lt;/span&gt; number is less than the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;cur frame&lt;/span&gt; number, analysis proceeds backwards (toward earlier time) and stops one frame before the given stop at frame. This is to facilate building a light curve by analyzing both forward and backward in time.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="text">
+                    <string>stop frame</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="label">
+                   <property name="text">
+                    <string>    </string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QToolButton" name="transportReturnToMark">
+                   <property name="font">
+                    <font>
+                     <pointsize>13</pointsize>
+                    </font>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Return to the aperture constellation position present when either the first 'analysis' was started, or when the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Save frame and aperture positions&lt;/span&gt; button was clicked (to override the normal automatic position recording).&lt;/p&gt;&lt;p&gt;The frame number is set as well.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="text">
+                    <string>Return to 'mark'</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <widget class="QToolButton" name="transportHelp">
+                 <property name="font">
+                  <font>
+                   <pointsize>13</pointsize>
+                  </font>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Context menus invoked by the usual mouse right-click are used to place measurement apertures, change their properties, name them, remove them, and control the image view itself.&lt;/p&gt;&lt;p&gt;For controlling the image view itself, a left-click and hold will allow the image to be panned in all directions with subsequent mouse movement.&lt;/p&gt;&lt;p&gt;A right-click and hold allows zooming in the direction of subsequent mouse movement.&lt;/p&gt;&lt;p&gt;A right-click in a region that does not contain a measuring aperture will cause a context menu to appear that has &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Add snap-to-blob aperture&lt;/span&gt; and &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Add static aperture (no snap)&lt;/span&gt; menu entries. You will almost always be using the 'snap-to-blob' aperture; &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Add static aperture (no snap&lt;/span&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;)&lt;/span&gt; is used for placing an aperture exactly where you want it (i.e., no snap). This will most commonly be used for placing a &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;white&lt;/span&gt; aperture (see below) and for placing an aperture on a &amp;quot;finder&amp;quot; image.&lt;/p&gt;&lt;p&gt;On this same context menu, there are menu items for controlling aspects of the image view itself; the most used menu item will be &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;View all&lt;/span&gt;, used after a &lt;span style=&quot; font-weight:600; text-decoration: underline; color:#fc0107;&quot;&gt;scroll wheel zoom&lt;/span&gt; or &lt;span style=&quot; text-decoration: underline; color:#fc0107;&quot;&gt;left-click-drag-for-pan&lt;/span&gt; have been used to adjust the view to return the size and position to the original condition.&lt;/p&gt;&lt;p&gt;A right-click &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;inside&lt;/span&gt; a measurement aperture brings up a context menu that allows you to change propertires of the aperture. You will be most concerned with the color of the aperture:&lt;/p&gt;&lt;p&gt;A &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;yellow&lt;/span&gt; aperture around a bright star causes that star to be used as a tracking reference. If you select a single star as a tracking reference, translation movements (the image as a whole moves some number of pixels up, down, and sideways) of the star field will be tracked. The aperture constellation as a whole will be translated.&lt;/p&gt;&lt;p&gt;You can add a second yellow aperture (no more than two are allowed) if there a possibility of field rotation as well as field translation. In this case, tracking equations are used that allow for the aperture constellation as a whole to be both rotated and translated in order to follow the star field.&lt;/p&gt;&lt;p&gt;A &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;green&lt;/span&gt; aperture is connected to the threshold setting spinner to make it easier to modify threshold settings. That spinner has the longish title: &lt;span style=&quot; color:#fc0107;&quot;&gt;set mskth counts above bkavg&lt;/span&gt;&lt;/p&gt;&lt;p&gt;A &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;white&lt;/span&gt; aperture is useful when flash-tags have been recorded in the video. The special thing about a white aperture is that all pixels in the aperture are summed and output as the 'signal' with no background subtraction. Such a signal can be employed by PyOTE to provide an alternative to the timestamp overlay from Video Time Inserters. In addition, a 'white' aperture always stays where placed --- it does not track and is never part of an aperture constellation group.&lt;/p&gt;&lt;p&gt;A &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;red&lt;/span&gt; aperture has the special property that it will only form a mask from a blob that is within 8 pixels of the center. This helps keep a nearby bright star from interfering with mask formation..&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>Help</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_11">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
              </item>
             </layout>
            </item>
            <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_20">
-             <property name="spacing">
-              <number>0</number>
+            <spacer name="horizontalSpacer_12">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
              </property>
-             <item>
-              <widget class="QLabel" name="transportCurrentFrameLabel">
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This spinner shows the frame number of the currently displayed frame.&lt;/p&gt;&lt;p&gt;This will be the first frame whose data will be recorded when an analysis is started.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="text">
-                <string>cur frame</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QSpinBox" name="currentFrameSpinBox">
-               <property name="layoutDirection">
-                <enum>Qt::RightToLeft</enum>
-               </property>
-               <property name="frame">
-                <bool>true</bool>
-               </property>
-               <property name="maximum">
-                <number>99999</number>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_22">
-             <property name="spacing">
-              <number>0</number>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
              </property>
-             <item>
-              <widget class="QSpinBox" name="stopAtFrameSpinBox">
-               <property name="layoutDirection">
-                <enum>Qt::RightToLeft</enum>
-               </property>
-               <property name="frame">
-                <bool>true</bool>
-               </property>
-               <property name="maximum">
-                <number>99999</number>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="transportStopAtFrameLabel">
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This spinner sets the final frame processed during an analysis run (light curve extraction).&lt;/p&gt;&lt;p&gt;If the&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt; stop frame&lt;/span&gt; number is greater than the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;cur frame&lt;/span&gt; number, analysis proceeds in that direction and the data will include that of the stop frame.&lt;/p&gt;&lt;p&gt;If the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;stop frame&lt;/span&gt; number is less than the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;cur frame&lt;/span&gt; number, analysis proceeds backwards (toward earlier time) and stops one frame before the given stop at frame. This is to facilate building a light curve by analyzing both forward and backward in time.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="text">
-                <string>stop frame</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="label">
-               <property name="text">
-                <string>    </string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QToolButton" name="transportReturnToMark">
-               <property name="font">
-                <font>
-                 <pointsize>13</pointsize>
-                </font>
-               </property>
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Return to the aperture constellation position present when either the first 'analysis' was started, or when the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Save frame and aperture positions&lt;/span&gt; button was clicked (to override the normal automatic position recording).&lt;/p&gt;&lt;p&gt;The frame number is set as well.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="text">
-                <string>Return to 'mark'</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <spacer name="horizontalSpacer_11">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
+            </spacer>
            </item>
           </layout>
-         </item>
-         <item>
-          <widget class="QLabel" name="mainImageLabel">
-           <property name="toolTip">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Context menus invoked by the usual mouse right-click are used to place measurement apertures, change their properties, name them, remove them, and control the image view itself.&lt;/p&gt;&lt;p&gt;For controlling the image view itself, a left-click and hold will allow the image to be panned in all directions with subsequent mouse movement.&lt;/p&gt;&lt;p&gt;A right-click and hold allows zooming in the direction of subsequent mouse movement.&lt;/p&gt;&lt;p&gt;A right-click in a region that does not contain a measuring aperture will cause a context menu to appear that has &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Add snap-to-blob aperture&lt;/span&gt; and &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Add static aperture (no snap)&lt;/span&gt; menu entries. You will almost always be using the 'snap-to-blob' aperture; &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Add static aperture (no snap&lt;/span&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;)&lt;/span&gt; is used for placing an aperture exactly where you want it (i.e., no snap). This will most commonly be used for placing a &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;white&lt;/span&gt; aperture (see below) and for placing an aperture on a &amp;quot;finder&amp;quot; image.&lt;/p&gt;&lt;p&gt;On this same context menu, there are menu items for controlling aspects of the image view itself; the most used menu item will be &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;View all&lt;/span&gt;, used after a &lt;span style=&quot; font-weight:600; text-decoration: underline; color:#fc0107;&quot;&gt;scroll wheel zoom&lt;/span&gt; or &lt;span style=&quot; text-decoration: underline; color:#fc0107;&quot;&gt;left-click-drag-for-pan&lt;/span&gt; have been used to adjust the view to return the size and position to the original condition.&lt;/p&gt;&lt;p&gt;A right-click &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;inside&lt;/span&gt; a measurement aperture brings up a context menu that allows you to change propertires of the aperture. You will be most concerned with the color of the aperture:&lt;/p&gt;&lt;p&gt;A &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;yellow&lt;/span&gt; aperture around a bright star causes that star to be used as a tracking reference. If you select a single star as a tracking reference, translation movements (the image as a whole moves some number of pixels up, down, and sideways) of the star field will be tracked. The aperture constellation as a whole will be translated.&lt;/p&gt;&lt;p&gt;You can add a second yellow aperture (no more than two are allowed) if there a possibility of field rotation as well as field translation. In this case, tracking equations are used that allow for the aperture constellation as a whole to be both rotated and translated in order to follow the star field.&lt;/p&gt;&lt;p&gt;A &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;green&lt;/span&gt; aperture is connected to the threshold setting spinner to make it easier to modify threshold settings. That spinner has the longish title: &lt;span style=&quot; color:#fc0107;&quot;&gt;set mskth counts above bkavg&lt;/span&gt;&lt;/p&gt;&lt;p&gt;A &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;white&lt;/span&gt; aperture is useful when flash-tags have been recorded in the video. The special thing about a white aperture is that all pixels in the aperture are summed and output as the 'signal' with no background subtraction. Such a signal can be employed by PyOTE to provide an alternative to the timestamp overlay from Video Time Inserters. In addition, a 'white' aperture always stays where placed --- it does not track and is never part of an aperture constellation group.&lt;/p&gt;&lt;p&gt;A &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;red&lt;/span&gt; aperture has the special property that it will only form a mask from a blob that is within 8 pixels of the center. This helps keep a nearby bright star from interfering with mask formation..&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-           <property name="text">
-            <string>Right-click here for image/aperture help</string>
-           </property>
-          </widget>
          </item>
         </layout>
        </widget>

@@ -631,7 +631,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.textOutLabel.installEventFilter(self)
 
         self.frameView.installEventFilter(self)
-        self.mainImageLabel.installEventFilter(self)
+        # self.mainImageLabel.installEventFilter(self)
+
+        self.transportHelp.installEventFilter(self)
+        self.transportHelp.clicked.connect(self.mainImageHelp)
 
         # self.viewFieldsCheckBox.clicked.connect(self.showFrame)
         self.viewFieldsCheckBox.toggled.connect(self.handleChangeOfDisplayMode)
@@ -665,7 +668,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.queryVizierButton.clicked.connect(self.queryVizier)
         self.queryVizierButton.installEventFilter(self)
 
-        # self.starIdEdit.installEventFilter(self)
         self.ucac4Label.installEventFilter(self)
         self.starIdEdit.textChanged.connect(self.clearCoordinatesEdit)
 
@@ -674,9 +676,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.threshValueEdit.valueChanged.connect(self.changeThreshold)
         self.setMskthLabel.installEventFilter(self)
-
-        # self.defaultMaskRadiusDoubleSpinBox.valueChanged.connect(self.changeDefaultMask)
-        # self.setRadiusLabel.installEventFilter(self)
 
         self.metadataButton.clicked.connect(self.showFitsMetadata)
         self.metadataButton.installEventFilter(self)
@@ -739,6 +738,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.transportReturnToMark.clicked.connect(self.restoreSavedState)
         self.transportReturnToMark.installEventFilter(self)
 
+        self.pixelHeightLabel.installEventFilter(self)
+        self.pixelWidthLabel.installEventFilter(self)
+
         self.changePlotSymbolSize()
 
         self.disableControlsWhenNoData()
@@ -747,6 +749,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.checkForNewerVersion()
 
         self.copy_desktop_icon_file_to_home_directory()
+
+    def mainImageHelp(self):
+        msg = self.transportHelp.toolTip()
+        self.helperThing.textEdit.clear()
+        self.helperThing.textEdit.insertHtml(msg)
+        self.helperThing.raise_()
+        self.helperThing.show()
 
     def saveCurrentState(self):
         # We need to have the apertures visible before we can save them
