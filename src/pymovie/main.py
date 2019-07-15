@@ -680,11 +680,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.metadataButton.clicked.connect(self.showFitsMetadata)
         self.metadataButton.installEventFilter(self)
 
-        self.clearAppDataButton.clicked.connect(self.clearApertureData)
-        self.clearAppDataButton.installEventFilter(self)
+        # self.clearAppDataButton.clicked.connect(self.clearApertureData)
+        # self.clearAppDataButton.installEventFilter(self)
 
-        self.writeCsvButton.clicked.connect(self.writeCsvFile)
-        self.writeCsvButton.installEventFilter(self)
+        # self.writeCsvButton.clicked.connect(self.writeCsvFile)
+        # self.writeCsvButton.installEventFilter(self)
 
         self.infoButton.clicked.connect(self.showInfo)
         self.infoButton.installEventFilter(self)
@@ -698,8 +698,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.plotSymbolSizeSpinBox.valueChanged.connect(self.changePlotSymbolSize)
         self.plotSymbolSizeLabel.installEventFilter(self)
 
-        self.displayPlotsButton.clicked.connect(self.showLightcurves)
-        self.displayPlotsButton.installEventFilter(self)
+        # self.displayPlotsButton.clicked.connect(self.showLightcurves)
+        # self.displayPlotsButton.installEventFilter(self)
 
         self.cascadeCheckBox.installEventFilter(self)
 
@@ -732,11 +732,23 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.view3DButton.clicked.connect(self.show3DThumbnail)
         self.view3DButton.installEventFilter(self)
 
-        self.saveStateButton.clicked.connect(self.saveCurrentState)
-        self.saveStateButton.installEventFilter(self)
+        # self.saveStateButton.clicked.connect(self.saveCurrentState)
+        # self.saveStateButton.installEventFilter(self)
 
         self.transportReturnToMark.clicked.connect(self.restoreSavedState)
         self.transportReturnToMark.installEventFilter(self)
+
+        self.transportClearData.clicked.connect(self.clearApertureData)
+        self.transportClearData.installEventFilter(self)
+
+        self.transportMark.clicked.connect(self.saveCurrentState)
+        self.transportMark.installEventFilter(self)
+
+        self.transportPlot.clicked.connect(self.showLightcurves)
+        self.transportPlot.installEventFilter(self)
+
+        self.transportCsv.clicked.connect(self.writeCsvFile)
+        self.transportCsv.installEventFilter(self)
 
         self.pixelHeightLabel.installEventFilter(self)
         self.pixelWidthLabel.installEventFilter(self)
@@ -2000,6 +2012,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.transportBigRight.setEnabled(state)
         self.transportMaxRight.setEnabled(state)
         self.transportReturnToMark.setEnabled(state)
+        self.transportMark.setEnabled(state)
 
     def enableControlsForAviData(self):
 
@@ -2276,6 +2289,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         for app in self.getApertureList():
             app.data = []
             app.last_theta = None
+        self.showMsg(f'All aperture data has been removed.')
 
     def writeCsvFile(self):
 

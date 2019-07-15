@@ -296,62 +296,7 @@
           </layout>
          </item>
          <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_7">
-           <item>
-            <widget class="QPushButton" name="displayPlotsButton">
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking this button triggers the production of a set of plots that provides a visual summary of the aperture data collected.&lt;/p&gt;&lt;p&gt;These plots make use of the name that you have assigned to each aperture (you did do that didn't you?). While there is an automatic unique name given to each aperture at creation time, providing user-friendly aperture names will help greatly in identifying the plots and is particularly useful in identifying csv file columns.&lt;/p&gt;&lt;p&gt;Apertures can be renamed at any time without losing any data, so please make use of this feature: it will make consumers of your lightcurves happy.&lt;/p&gt;&lt;p&gt;A composite plot is produced that contains the lightcurves for all of the apertures on a single plot.&lt;/p&gt;&lt;p&gt;Then a plot for each individual aperture is produced. This plot has two parts: a large 'signal intensity' suplot at the top and a smaller 'number of mask pixels' subplot at the bottom.&lt;/p&gt;&lt;p&gt;In the individual plots a symbol code is used to indicate when a default mask was used. Instead of a colored circle for signal intensity, a black triangle is used instead to indicate that the mask used in measuring this point's intensity was not computed from the image but was instead a 'default' of some kind.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="text">
-              <string>Display plots</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="cascadeCheckBox">
-             <property name="minimumSize">
-              <size>
-               <width>120</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>120</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="sizeIncrement">
-              <size>
-               <width>0</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If checked, lightcurve plots will cascade from the upper left of the monitor diagonally toward the lower right.&lt;/p&gt;&lt;p&gt;If unchecked, lightcurve plots will stack on top of each other in the center of the monitor.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="layoutDirection">
-              <enum>Qt::LeftToRight</enum>
-             </property>
-             <property name="text">
-              <string>cascade</string>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="writeCsvButton">
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking this button opens a Save File dialog. Use this dialog to name and, optionally select the directory where you wish the csv file to be written. The default directory is the directory from which the video data was read.&lt;/p&gt;&lt;p&gt;A set of columns is created for each aperture with the column naming incorporating the aperture name for identification.&lt;/p&gt;&lt;p&gt;Hopefully you named each aperture in a logical manner. While there is an automatic unique name given to each aperture at creation time, providing user-friendly aperture names will help greatly in identifying the csv file columns.&lt;/p&gt;&lt;p&gt;Apertures can be renamed at any time without losing any data, so please make use of this feature: it will make consumers of your csv file happy.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="text">
-              <string>Write csv</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
+          <layout class="QHBoxLayout" name="horizontalLayout_7"/>
          </item>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_8">
@@ -406,6 +351,40 @@
             </widget>
            </item>
            <item>
+            <widget class="QCheckBox" name="cascadeCheckBox">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="sizeIncrement">
+              <size>
+               <width>0</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If checked, lightcurve plots will cascade from the upper left of the monitor diagonally toward the lower right.&lt;/p&gt;&lt;p&gt;If unchecked, lightcurve plots will stack on top of each other in the center of the monitor.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="layoutDirection">
+              <enum>Qt::LeftToRight</enum>
+             </property>
+             <property name="text">
+              <string>cascade </string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
             <spacer name="horizontalSpacer_5">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
@@ -419,12 +398,17 @@
             </spacer>
            </item>
            <item>
-            <widget class="QPushButton" name="saveStateButton">
+            <widget class="QToolButton" name="transportHelp">
+             <property name="font">
+              <font>
+               <pointsize>13</pointsize>
+              </font>
+             </property>
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;After a new video is loaded, when the first 'analysis' run is started, the number and positions of the apertures present at that time are automatically 'remembered' ('marked'). &lt;/p&gt;&lt;p&gt;This is very helpful if the starfield moves in a substantial way and yet you have a need to start over. A direct jump to the beginning would usually lose tracking and the apertures would need to be repositioned. But PyMovie 'remembers' the aperture and frame number setup so that with a click on the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Return to 'mark'&lt;/span&gt; button in the transport button array under the image, you can jump back and start over without the need to reset the aperture positions.&lt;/p&gt;&lt;p&gt;Because that 'remembering' is automatic, this will likely be a seldom used button.&lt;/p&gt;&lt;p&gt;But if there is a need to override the automatic 'mark', this button is the one to push.&lt;/p&gt;&lt;p&gt;Note that &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;ONLY&lt;/span&gt; the aperture count and positions are 'remembered', not the accumulated data or any other property change that you may have instituted during the run (like a threshold change or change in default mask, etc). Therefore, be sure to click on the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Clear aperture data&lt;/span&gt; button before resuming.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Context menus invoked by the usual mouse right-click are used to place measurement apertures, change their properties, name them, remove them, and control the image view itself.&lt;/p&gt;&lt;p&gt;For controlling the image view itself, a left-click and hold will allow the image to be panned in all directions with subsequent mouse movement.&lt;/p&gt;&lt;p&gt;A right-click and hold allows zooming in the direction of subsequent mouse movement.&lt;/p&gt;&lt;p&gt;A right-click in a region that does not contain a measuring aperture will cause a context menu to appear that has &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Add snap-to-blob aperture&lt;/span&gt; and &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Add static aperture (no snap)&lt;/span&gt; menu entries. You will almost always be using the 'snap-to-blob' aperture; &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Add static aperture (no snap&lt;/span&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;)&lt;/span&gt; is used for placing an aperture exactly where you want it (i.e., no snap). This will most commonly be used for placing a &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;white&lt;/span&gt; aperture (see below) and for placing an aperture on a &amp;quot;finder&amp;quot; image.&lt;/p&gt;&lt;p&gt;On this same context menu, there are menu items for controlling aspects of the image view itself; the most used menu item will be &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;View all&lt;/span&gt;, used after a &lt;span style=&quot; font-weight:600; text-decoration: underline; color:#fc0107;&quot;&gt;scroll wheel zoom&lt;/span&gt; or &lt;span style=&quot; text-decoration: underline; color:#fc0107;&quot;&gt;left-click-drag-for-pan&lt;/span&gt; have been used to adjust the view to return the size and position to the original condition.&lt;/p&gt;&lt;p&gt;A right-click &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;inside&lt;/span&gt; a measurement aperture brings up a context menu that allows you to change propertires of the aperture. You will be most concerned with the color of the aperture:&lt;/p&gt;&lt;p&gt;A &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;yellow&lt;/span&gt; aperture around a bright star causes that star to be used as a tracking reference. If you select a single star as a tracking reference, translation movements (the image as a whole moves some number of pixels up, down, and sideways) of the star field will be tracked. The aperture constellation as a whole will be translated.&lt;/p&gt;&lt;p&gt;You can add a second yellow aperture (no more than two are allowed) if there a possibility of field rotation as well as field translation. In this case, tracking equations are used that allow for the aperture constellation as a whole to be both rotated and translated in order to follow the star field.&lt;/p&gt;&lt;p&gt;A &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;green&lt;/span&gt; aperture is connected to the threshold setting spinner to make it easier to modify threshold settings. That spinner has the longish title: &lt;span style=&quot; color:#fc0107;&quot;&gt;set mskth counts above bkavg&lt;/span&gt;&lt;/p&gt;&lt;p&gt;A &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;white&lt;/span&gt; aperture is useful when flash-tags have been recorded in the video. The special thing about a white aperture is that all pixels in the aperture are summed and output as the 'signal' with no background subtraction. Such a signal can be employed by PyOTE to provide an alternative to the timestamp overlay from Video Time Inserters. In addition, a 'white' aperture always stays where placed --- it does not track and is never part of an aperture constellation group.&lt;/p&gt;&lt;p&gt;A &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;red&lt;/span&gt; aperture has the special property that it will only form a mask from a blob that is within 8 pixels of the center. This helps keep a nearby bright star from interfering with mask formation..&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
-              <string>Save frame and aperture positions</string>
+              <string>Help for image area --&gt;</string>
              </property>
             </widget>
            </item>
@@ -882,17 +866,29 @@
                <verstretch>0</verstretch>
               </sizepolicy>
              </property>
+             <property name="minimumSize">
+              <size>
+               <width>90</width>
+               <height>0</height>
+              </size>
+             </property>
              <property name="maximumSize">
               <size>
-               <width>85</width>
+               <width>100</width>
                <height>16777215</height>
               </size>
              </property>
              <property name="toolTip">
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If the camera used for the video does not have square pixels, the image sent to nova.astrometry.net for WCS calibration will need to have the image resized to compensate for the rectangular shape of the camera pixels. This is required so that the plate scale (arcseconds/pixel) will be the same in the x direction as the y direction.&lt;/p&gt;&lt;p&gt;This correction is needed for manual WCS calibration as well, but is accomplished in a different manner: a rescaling of x and y dimensions during the calculations rather than an image resize.&lt;/p&gt;&lt;p&gt;If you know that the camera pixels are square, enter the same number for pixel height and pixel width. The units don't matter. The number used doesn't matter. All that matters is that pixelWidth / pixelHeight = 1.000 (i.e., pixel aspect ratio = 1.000).&lt;/p&gt;&lt;p&gt;If the camera pixels are not square, but instead are rectangular, enter the correct width and height of the pixels in these edit boxes. The units used do not matter. All that matters is the ratio of these two numbers.&lt;/p&gt;&lt;p&gt;Example: for a Watec 910 camera, enter 9.8 as pixelHeight and 8.4 as pixelWidth. (The units are actually microns, but that does not matter.)&lt;/p&gt;&lt;p&gt;The RunCam Night Eagle Pro II camera has square pixels (6x6 microns). You can enter a 6 in both edit boxes for this camera.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
+             <property name="layoutDirection">
+              <enum>Qt::RightToLeft</enum>
+             </property>
              <property name="text">
-              <string>pixel height:</string>
+              <string> pixel height: </string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
              </property>
             </widget>
            </item>
@@ -930,9 +926,15 @@
            </item>
            <item>
             <widget class="QLabel" name="pixelWidthLabel">
-             <property name="maximumSize">
+             <property name="minimumSize">
               <size>
                <width>90</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>100</width>
                <height>16777215</height>
               </size>
              </property>
@@ -985,7 +987,7 @@
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The 'robust' calculation of the background average and the 'robust' estimation of the dispersion (noise) in the background is an important factor in the calculation of signal intensities.&lt;/p&gt;&lt;p&gt;This button demonstrates with a detailed plot the calculation as it was performed for the current 'thumbnail'.&lt;/p&gt;&lt;p&gt;This is meant primarily for education purposes but may be useful in special cases to confirm (or not) that the 'robust' calculations are reasonable.&lt;/p&gt;&lt;p&gt;Note: the scale of dispersion (noise) is calulated using the MAD (Median Absolute Deviation) technique. Making the assumption that the background pixel counts (exclusive of outliers) are drawn from a Gaussian distribution, the bkstd is calculated as 1.4826 * MAD(aperture).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="text">
-                <string>Demo Robust Mean</string>
+                <string>Plot Robust Mean</string>
                </property>
               </widget>
              </item>
@@ -1184,25 +1186,6 @@ If you think that you know the plate scale more precisely than what can be calcu
               </size>
              </property>
             </spacer>
-           </item>
-           <item>
-            <widget class="QPushButton" name="clearAppDataButton">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking this button deletes all data that has been accumulated in the apertures. (The apertures are 'objects' with properties like color, location, threshold, and also hold the recorded data itself).&lt;/p&gt;&lt;p&gt;It is often the case that one will 'experiment' with the video by running short stretches of it.&lt;/p&gt;&lt;p&gt;All of the data produced while in the 'run' state is accumulated, even when you do it piecemeal. This can cause data points to be recorded multiple times.&lt;/p&gt;&lt;p&gt;Best practice is, before starting a production by setting the starting and stopping frame numbers, that one clears any previous data.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="text">
-              <string>Clear aperture data</string>
-             </property>
-             <property name="flat">
-              <bool>false</bool>
-             </property>
-            </widget>
            </item>
           </layout>
          </item>
@@ -1425,6 +1408,36 @@ If you think that you know the plate scale more precisely than what can be calcu
                   </spacer>
                  </item>
                  <item>
+                  <widget class="QToolButton" name="transportCsv">
+                   <property name="font">
+                    <font>
+                     <pointsize>13</pointsize>
+                    </font>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking this button opens a Save File dialog. Use this dialog to name and, optionally select the directory where you wish the csv file to be written. The default directory is the directory from which the video data was read.&lt;/p&gt;&lt;p&gt;A set of columns is created for each aperture with the column naming incorporating the aperture name for identification.&lt;/p&gt;&lt;p&gt;Hopefully you named each aperture in a logical manner. While there is an automatic unique name given to each aperture at creation time, providing user-friendly aperture names will help greatly in identifying the csv file columns.&lt;/p&gt;&lt;p&gt;Apertures can be renamed at any time without losing any data, so please make use of this feature: it will make consumers of your csv file happy.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="text">
+                    <string>csv</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QToolButton" name="transportPlot">
+                   <property name="font">
+                    <font>
+                     <pointsize>13</pointsize>
+                    </font>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking this button triggers the production of a set of plots that provides a visual summary of the aperture data collected.  Note the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;cascade&lt;/span&gt; checkbox that controls whether these plots are done on top of each other (exactly aligned with each other) or spread like a deck of cards (cascased).&lt;/p&gt;&lt;p&gt;These plots make use of the name that you have assigned to each aperture (you did do that didn't you?). While there is an automatic unique name given to each aperture at creation time, providing user-friendly aperture names will help greatly in identifying the plots and is particularly useful in identifying csv file columns.&lt;/p&gt;&lt;p&gt;Apertures can be renamed at any time without losing any data, so please make use of this feature: it will make consumers of your lightcurves happy.&lt;/p&gt;&lt;p&gt;A composite plot is produced that contains the lightcurves for all of the apertures on a single plot.&lt;/p&gt;&lt;p&gt;Then a plot for each individual aperture is produced. This plot has two parts: a large 'signal intensity' suplot at the top and a smaller 'number of mask pixels' subplot at the bottom.&lt;/p&gt;&lt;p&gt;In the individual plots a symbol code is used to indicate when a default mask was used. Instead of a colored circle for signal intensity, a black triangle is used instead to indicate that the mask used in measuring this point's intensity was not computed from the image but was instead a 'default' of some kind.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="text">
+                    <string>plot</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
                   <widget class="QLabel" name="transportCurrentFrameLabel">
                    <property name="toolTip">
                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This spinner shows the frame number of the currently displayed frame.&lt;/p&gt;&lt;p&gt;This will be the first frame whose data will be recorded when an analysis is started.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -1488,6 +1501,21 @@ If you think that you know the plate scale more precisely than what can be calcu
                   </widget>
                  </item>
                  <item>
+                  <widget class="QToolButton" name="transportMark">
+                   <property name="font">
+                    <font>
+                     <pointsize>13</pointsize>
+                    </font>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;After a new video is loaded, when the first 'analysis' run is started, the number and positions of the apertures present at that time are automatically 'remembered' ('marked'). &lt;/p&gt;&lt;p&gt;This is very helpful if the starfield moves in a substantial way and yet you have a need to start over. A direct jump to the beginning would usually lose tracking and the apertures would need to be repositioned. But PyMovie 'remembers' the aperture and frame number setup so that with a click on the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Return to 'mark'&lt;/span&gt; button in the transport button array under the image, you can jump back and start over without the need to reset the aperture positions.&lt;/p&gt;&lt;p&gt;Because that 'remembering' is automatic, this will likely be a seldom used button.&lt;/p&gt;&lt;p&gt;But if there is a need to override the automatic 'mark', this button is the one to push.&lt;/p&gt;&lt;p&gt;Note that &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;ONLY&lt;/span&gt; the aperture count and positions are 'remembered', not the accumulated data or any other property change that you may have instituted during the run (like a threshold change or change in default mask, etc). Therefore, be sure to click on the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Clear aperture data&lt;/span&gt; button before resuming.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="text">
+                    <string>mark</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
                   <widget class="QToolButton" name="transportReturnToMark">
                    <property name="font">
                     <font>
@@ -1505,17 +1533,17 @@ If you think that you know the plate scale more precisely than what can be calcu
                 </layout>
                </item>
                <item>
-                <widget class="QToolButton" name="transportHelp">
+                <widget class="QToolButton" name="transportClearData">
                  <property name="font">
                   <font>
                    <pointsize>13</pointsize>
                   </font>
                  </property>
                  <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Context menus invoked by the usual mouse right-click are used to place measurement apertures, change their properties, name them, remove them, and control the image view itself.&lt;/p&gt;&lt;p&gt;For controlling the image view itself, a left-click and hold will allow the image to be panned in all directions with subsequent mouse movement.&lt;/p&gt;&lt;p&gt;A right-click and hold allows zooming in the direction of subsequent mouse movement.&lt;/p&gt;&lt;p&gt;A right-click in a region that does not contain a measuring aperture will cause a context menu to appear that has &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Add snap-to-blob aperture&lt;/span&gt; and &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Add static aperture (no snap)&lt;/span&gt; menu entries. You will almost always be using the 'snap-to-blob' aperture; &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Add static aperture (no snap&lt;/span&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;)&lt;/span&gt; is used for placing an aperture exactly where you want it (i.e., no snap). This will most commonly be used for placing a &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;white&lt;/span&gt; aperture (see below) and for placing an aperture on a &amp;quot;finder&amp;quot; image.&lt;/p&gt;&lt;p&gt;On this same context menu, there are menu items for controlling aspects of the image view itself; the most used menu item will be &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;View all&lt;/span&gt;, used after a &lt;span style=&quot; font-weight:600; text-decoration: underline; color:#fc0107;&quot;&gt;scroll wheel zoom&lt;/span&gt; or &lt;span style=&quot; text-decoration: underline; color:#fc0107;&quot;&gt;left-click-drag-for-pan&lt;/span&gt; have been used to adjust the view to return the size and position to the original condition.&lt;/p&gt;&lt;p&gt;A right-click &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;inside&lt;/span&gt; a measurement aperture brings up a context menu that allows you to change propertires of the aperture. You will be most concerned with the color of the aperture:&lt;/p&gt;&lt;p&gt;A &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;yellow&lt;/span&gt; aperture around a bright star causes that star to be used as a tracking reference. If you select a single star as a tracking reference, translation movements (the image as a whole moves some number of pixels up, down, and sideways) of the star field will be tracked. The aperture constellation as a whole will be translated.&lt;/p&gt;&lt;p&gt;You can add a second yellow aperture (no more than two are allowed) if there a possibility of field rotation as well as field translation. In this case, tracking equations are used that allow for the aperture constellation as a whole to be both rotated and translated in order to follow the star field.&lt;/p&gt;&lt;p&gt;A &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;green&lt;/span&gt; aperture is connected to the threshold setting spinner to make it easier to modify threshold settings. That spinner has the longish title: &lt;span style=&quot; color:#fc0107;&quot;&gt;set mskth counts above bkavg&lt;/span&gt;&lt;/p&gt;&lt;p&gt;A &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;white&lt;/span&gt; aperture is useful when flash-tags have been recorded in the video. The special thing about a white aperture is that all pixels in the aperture are summed and output as the 'signal' with no background subtraction. Such a signal can be employed by PyOTE to provide an alternative to the timestamp overlay from Video Time Inserters. In addition, a 'white' aperture always stays where placed --- it does not track and is never part of an aperture constellation group.&lt;/p&gt;&lt;p&gt;A &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;red&lt;/span&gt; aperture has the special property that it will only form a mask from a blob that is within 8 pixels of the center. This helps keep a nearby bright star from interfering with mask formation..&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking this button deletes all data that has been accumulated in the apertures. (The apertures are 'objects' with properties like color, location, threshold, and also hold the recorded data itself).&lt;/p&gt;&lt;p&gt;It is often the case that one will 'experiment' with the video by running short stretches of it.&lt;/p&gt;&lt;p&gt;All of the data produced while in the 'run' state is accumulated, even when you do it piecemeal. This can cause data points to be recorded multiple times.&lt;/p&gt;&lt;p&gt;Best practice is, before starting a production by setting the starting and stopping frame numbers, that one clears any previous data.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                  </property>
                  <property name="text">
-                  <string>Help</string>
+                  <string>clear</string>
                  </property>
                 </widget>
                </item>
