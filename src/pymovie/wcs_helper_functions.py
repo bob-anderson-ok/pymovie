@@ -48,6 +48,7 @@ def delta_dec_arcsec(star1, star2):
 def pixel_distance(star1, star2):
     dx = star2['x'] - star1['x']
     dy = star2['y'] - star1['y']
+
     return sqrt(dx * dx + dy * dy)
 
 
@@ -75,6 +76,7 @@ def calc_theta(dx, dy):
     # quadrant dx,dy may be in. The angle returned is in the range [0...360)
     # It is always positive and represents the ccw rotation from the x axis
     # toward the positive y axis.
+
     d = sqrt(dx * dx + dy * dy)
     if d == 0:
         return 0.0
@@ -100,7 +102,14 @@ def convert_ra_dec_angle_to_xy(angle, ref1, ref2, xflipped, yflipped):
     return angle - offset, offset
 
 
-def solve_triangle(ref1, ref2, targ, plate_scale=None, xflipped=False, yflipped=False):
+def solve_triangle(ref1, ref2, targ, pixel_aspect_ratio, plate_scale=None, xflipped=False, yflipped=False):
+    # rescale references to account for non-square pixels
+    if pixel_aspect_ratio < 1.0:
+        ref1['x'] = pixel_aspect_ratio * ref1['x']
+        ref2['x'] = pixel_aspect_ratio * ref2['x']
+    elif pixel_aspect_ratio > 1.0:
+        ref1['y'] = ref1['y'] / pixel_aspect_ratio
+        ref2['y'] = ref2['y'] / pixel_aspect_ratio
 
     if plate_scale is None:
         plate_scale = arcsec_distance(ref2, ref1) / pixel_distance(ref2, ref1)
@@ -110,18 +119,27 @@ def solve_triangle(ref1, ref2, targ, plate_scale=None, xflipped=False, yflipped=
 
     d = arcsec_distance(ref1, targ) / plate_scale
 
+    ref1x = ref1['x']
+    ref1y = ref1['y']
+
     if xflipped:
-        x_targ = -(d * cos_deg(targ_theta) - ref1['x'])
+        x_targ = -(d * cos_deg(targ_theta) - ref1x)
     else:
-        x_targ = d * cos_deg(targ_theta) + ref1['x']
+        x_targ = d * cos_deg(targ_theta) + ref1x
 
     if yflipped:
-        y_targ = -(d * sin_deg(targ_theta) - ref1['y'])
+        y_targ = -(d * sin_deg(targ_theta) - ref1y)
     else:
-        y_targ = d * sin_deg(targ_theta) + ref1['y']
+        y_targ = d * sin_deg(targ_theta) + ref1y
 
     # x_targ = d * cos_deg(targ_theta) + ref1['x']
     # y_targ = d * sin_deg(targ_theta) + ref1['y']
+
+    # Compensate for pixel aspect ratio.
+    if pixel_aspect_ratio < 1.0:
+        x_targ= round(x_targ / pixel_aspect_ratio)
+    elif pixel_aspect_ratio > 1.0:
+        y_targ = round(y_targ * pixel_aspect_ratio)
 
     solution = {'ra': targ['ra'], 'dec': targ['dec'], 'x': x_targ, 'y': y_targ}
 

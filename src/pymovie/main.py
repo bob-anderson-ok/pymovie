@@ -2626,6 +2626,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         return True, ra, dec, x, y
 
     def doManualWcsCalibration(self):
+
+        self.getPixelAspectRatio()
+        if self.pixelAspectRatio is None:
+            self.showMsg(f'Failed to compute a valid pixel aspect ratio.  Cannot continue')
+            self.showMsgDialog(f'You must fill in pixel height and width in order to continue.')
+            return
+
         file_missing = False
         fpath = self.folder_dir + r'/ref1-data.txt'
         ok, ra1, dec1, x1, y1 = self.readManualCalibrationDataFile(fpath)
@@ -2692,7 +2699,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.showMsg(f'flip_x: {flip_x}  flip_y: {flip_y}')
 
         solution, plate_scale, targ_theta, ra_dec_x_y_rotation = wcs_helper_functions.solve_triangle(
-            ref1, ref2, targ, plate_scale=plate_scale, xflipped=flip_x, yflipped=flip_y
+            ref1, ref2, targ, self.pixelAspectRatio, plate_scale=plate_scale, xflipped=flip_x, yflipped=flip_y
         )
 
         self.showMsg(f'solution: {repr(solution)}', blankLine=False)
@@ -4702,6 +4709,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
     def manualWcsCalibration(self):
         if not (self.avi_wcs_folder_in_use or self.fits_folder_in_use):
             self.showMsg(f'There is no WCS folder open.')
+            return
+
+        # Don't start manual WCS until self.pixelAspectRatio is known
+        self.getPixelAspectRatio()
+        if self.pixelAspectRatio is None:
+            self.showMsg(f'Failed to compute a valid pixel aspect ratio.  Cannot continue')
+            self.showMsgDialog(f'You must fill in pixel height and width in order to continue.')
             return
 
         # if self.manual_wcs_state is None or self.manual_wcs_state > 0:  # Initial state
