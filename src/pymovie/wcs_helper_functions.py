@@ -137,9 +137,9 @@ def solve_triangle(ref1, ref2, targ, pixel_aspect_ratio, plate_scale=None, xflip
 
     # Compensate for pixel aspect ratio.
     if pixel_aspect_ratio < 1.0:
-        x_targ= round(x_targ / pixel_aspect_ratio)
+        x_targ= x_targ / pixel_aspect_ratio
     elif pixel_aspect_ratio > 1.0:
-        y_targ = round(y_targ * pixel_aspect_ratio)
+        y_targ = y_targ * pixel_aspect_ratio
 
     solution = {'ra': targ['ra'], 'dec': targ['dec'], 'x': x_targ, 'y': y_targ}
 

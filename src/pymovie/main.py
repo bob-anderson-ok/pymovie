@@ -3206,8 +3206,16 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         add_on = ''
         if self.wcs_solution_available:
             add_on = 'WCS coords:'
+
+            if self.pixelAspectRatio <= 1.0:
+                newx = x * self.pixelAspectRatio
+                newy = y
+            else:
+                newx = x
+                newy = y / self.pixelAspectRatio
+
             if self.wcs_frame_num == self.currentFrameSpinBox.value():
-                pixcrd = np.array([[x, y]], dtype='float')
+                pixcrd = np.array([[newx, newy]], dtype='float')
                 world = self.wcs.wcs_pix2world(pixcrd, 0)
                 thing = SkyCoord(world[0][0] * u.deg, world[0][1] * u.deg, frame='icrs')
                 add_on += f' {thing.to_string(style="hmsdms")} {world[0]}'
@@ -4774,18 +4782,19 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # self.showMsg(f'{pixcrd2}')
         xcoord = pixcrd2[0].tolist()
         ycoord = pixcrd2[1].tolist()
-        x = int(round(xcoord))
-        y = int(round(ycoord))
+        x = xcoord
+        y = ycoord
 
         # Correct for pixel aspect ratio
         if not self.pixelAspectRatio == 1.0:
             if self.pixelAspectRatio < 1.0:
-                x = round(x / self.pixelAspectRatio)
+                x = x / self.pixelAspectRatio
             else:
                 # This has never been tested, but should be correct
-                y = round(y * self.pixelAspectRatio)
+                y = y * self.pixelAspectRatio
 
-        target_app = self.addApertureAtPosition(x, y)
+        self.showMsg(f'astrometry.net: x={x:0.2f}  y={y:0.2f}')
+        target_app = self.addApertureAtPosition(round(x), round(y))
         target_app.thresh = self.big_thresh
         target_app.name = 'target'
         target_app.setRed()
