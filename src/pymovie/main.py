@@ -82,6 +82,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astroquery.vizier import Vizier
 from skimage import measure, exposure
+import skimage
 
 
 from pymovie.aperture import *
@@ -417,6 +418,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.savedStateFrameNumber = None
         self.savedPositions = []
         self.saveStateNeeded = True
+
+        self.pixelAspectRatio = None
 
         self.upper_left_count = 0    # When Kiwi used: accumulate count ot times t2 was at left in upper field
         self.upper_right_count = 0   # When Kiwi used: accumulate count ot times t2 was at the right in upper field
@@ -1991,10 +1994,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.showFrame()
 
     def disableControlsWhenNoData(self):
+        self.savedStateFrameNumber = None
+
         self.viewFieldsCheckBox.setEnabled(False)
         self.currentFrameSpinBox.setEnabled(False)
 
         self.setTransportButtonEnableState(False)
+        self.transportReturnToMark.setEnabled(False)
 
         self.processAsFieldsCheckBox.setEnabled(False)
         self.topFieldFirstRadioButton.setEnabled(False)
@@ -2011,7 +2017,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.transportSmallRight.setEnabled(state)
         self.transportBigRight.setEnabled(state)
         self.transportMaxRight.setEnabled(state)
-        self.transportReturnToMark.setEnabled(state)
+        # self.transportReturnToMark.setEnabled(state)
         self.transportMark.setEnabled(state)
 
     def enableControlsForAviData(self):
@@ -2204,12 +2210,16 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
     def autoPlayLeft(self):
         self.setTransportButtonEnableState(False)
         self.transportPause.setEnabled(True)
+        self.transportReturnToMark.setEnabled(False)
+
         currentFrame = self.currentFrameSpinBox.value()
         lastFrame = self.stopAtFrameSpinBox.value()
         while not self.playPaused:
             if currentFrame == 0:
                 self.playPaused = True
                 self.setTransportButtonEnableState(True)
+                mark_available = not self.savedStateFrameNumber is None
+                self.transportReturnToMark.setEnabled(mark_available)
                 return
             else:
                 currentFrame -= 1
@@ -2217,16 +2227,22 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 QtGui.QGuiApplication.processEvents()
 
         self.setTransportButtonEnableState(True)
+        mark_available = not self.savedStateFrameNumber is None
+        self.transportReturnToMark.setEnabled(mark_available)
 
     def autoPlayRight(self):
         self.setTransportButtonEnableState(False)
         self.transportPause.setEnabled(True)
+        self.transportReturnToMark.setEnabled(False)
+
         currentFrame = self.currentFrameSpinBox.value()
         lastFrame = self.stopAtFrameSpinBox.value()
         while not self.playPaused:
             if currentFrame == lastFrame:
                 self.playPaused = True
                 self.setTransportButtonEnableState(True)
+                mark_available = not self.savedStateFrameNumber is None
+                self.transportReturnToMark.setEnabled(mark_available)
                 return
             else:
                 currentFrame += 1
@@ -2234,6 +2250,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 QtGui.QGuiApplication.processEvents()
 
         self.setTransportButtonEnableState(True)
+        mark_available = not self.savedStateFrameNumber is None
+        self.transportReturnToMark.setEnabled(mark_available)
 
     def autoRun(self):
         if self.analysisRequested:
@@ -2271,6 +2289,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     self.analysisPaused = True
                     self.analysisRequested = False
                     self.setTransportButtonEnableState(True)
+                    mark_available = not self.savedStateFrameNumber is None
+                    self.transportReturnToMark.setEnabled(mark_available)
                     return
                 else:
                     if currentFrame > lastFrame:
@@ -3560,6 +3580,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             self.processTargetAperturePlacementFiles()
 
+    def showMsgDialog(self, msg):
+        msg_box = QMessageBox()
+        msg_box.setText(msg)
+        msg_box.exec()
+
     def showMsgPopup(self, msg):
         self.helperThing.textEdit.clear()
         self.helperThing.textEdit.setText(msg)
@@ -4050,6 +4075,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     except ValueError:
                         self.showMsg(f'Invalid target-aperture-xy.txt contents: {xy_str}')
 
+        # Check for presence of pixel aspect ratio file
+        matching_name = glob.glob(self.folder_dir + '/pixel-aspect-ratio.txt')
+        if matching_name:
+            with open(self.folder_dir + r'/pixel-aspect-ratio.txt', 'r') as f:
+                pixel_aspect_ratio_text = f.read()
+                self.pixelAspectRatio = float(pixel_aspect_ratio_text)
+
         # Check for presence of target-location.txt This file is needed for both
         # the manual WCS placement and the nova.astrometry.net placement
         matching_name = sorted(glob.glob(self.folder_dir + '/target-location.txt'))
@@ -4370,11 +4402,52 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             os.remove(file)
         self.showMsg(f'\nWCS related files have been cleared out.')
 
+    def getPixelAspectRatio(self):
+        if self.pixelAspectRatio is None:
+            try:
+                pixHeight = float(self.pixelHeightEdit.text())
+                pixWidth = float(self.pixelWidthEdit.text())
+                if not (pixWidth < 0.0 or pixHeight <= 0.0):
+                    self.pixelAspectRatio = pixWidth / pixHeight
+                    self.showMsg(f'pixel aspect ratio: {self.pixelAspectRatio:0.4f} (W/H)')
+                    # Write the pixel-aspect-ratio.txt file
+                    with open(self.folder_dir + r'/pixel-aspect-ratio.txt', 'w') as f:
+                        f.writelines(f'{self.pixelAspectRatio:0.5f}')
+            except ValueError as e:
+                self.showMsg(f'in calculation of pixel aspect ratio: {e}')
+
+    def resizeImage(self, image, aspect_ratio):
+        self.showMsg(f'image shape: {image.shape}')
+        height, width = image.shape
+        if aspect_ratio <= 1.0:
+            width = round(width * aspect_ratio)
+        else:
+            height = round(height / aspect_ratio)
+
+        try:
+            image_resized = skimage.transform.resize(image, (height, width), mode='edge',
+                                  anti_aliasing=False, anti_aliasing_sigma=None,
+                                  preserve_range=True, order=0)
+            status = True
+            self.showMsg(f'image_resized shape: {image_resized.shape}')
+        except Exception as e:
+            status = False
+            image_resized = None
+            self.showMsg(f'Resizing failed: {e}')
+
+        return status, image_resized
+
     def getWCSsolution(self):
 
         if not (self.avi_wcs_folder_in_use or self.fits_folder_in_use):
             self.showMsg(f'No AVI-WCS or FITS folder is currently in use.', blankLine=False)
             self.showMsg(f'That is a requirement for this operation.')
+            return
+
+        self.getPixelAspectRatio()
+        if self.pixelAspectRatio is None:
+            self.showMsg(f'Failed to compute a valid pixel aspect ratio.  Cannot continue')
+            self.showMsgDialog(f'You must fill in pixel height and width in order to continue.')
             return
 
         # This is set in the selectAviFolder() or readFitsFile()method.
@@ -4479,6 +4552,16 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # If this point is reached, we have a satisfactory image and a star position file,
         # so we are ready to try to make a submission to Astrometry.net
 
+        if not self.pixelAspectRatio == 1.0:
+            self.showMsg(f'We need to resize the image.  Not yet implemented')
+            status, resized_image = self.resizeImage(processed_image, self.pixelAspectRatio)
+            # Here we will send processed_image out for resizing
+            if not status:
+                self.showMsg(f'Resizing failed.')
+                return
+        else:
+            resized_image = processed_image
+
         self.removePreviousWcsFiles()
 
         frame_num = self.currentFrameSpinBox.value()
@@ -4491,7 +4574,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         cal_image_path = dir_path + f'/frame-{frame_num}-img.fit'
 
-        pyfits.writeto(cal_image_path, processed_image.astype('int16'), hdr, overwrite=True)
+        pyfits.writeto(cal_image_path, resized_image.astype('int16'), hdr, overwrite=True)
 
         # Login in to nova.astrometry.net usingthe supplied api key.  We will need
         # each user to apply for his own.
@@ -4679,6 +4762,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         ycoord = pixcrd2[1].tolist()
         x = int(round(xcoord))
         y = int(round(ycoord))
+
+        # Correct for pixel aspect ratio
+        if not self.pixelAspectRatio == 1.0:
+            if self.pixelAspectRatio < 1.0:
+                x = round(x / self.pixelAspectRatio)
+            else:
+                # This has never been tested, but should be correct
+                y = round(y * self.pixelAspectRatio)
 
         target_app = self.addApertureAtPosition(x, y)
         target_app.thresh = self.big_thresh
