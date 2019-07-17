@@ -4866,13 +4866,22 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 pos = evt
                 if p1.sceneBoundingRect().contains(pos):
                     mousePoint = vb.mapSceneToView(pos)
-                    index = int(mousePoint.x() + 0.5)
-                    if xvalues[0] <= index <= xvalues[-1]:
+                    dx = xvalues[1] - xvalues[0]
+                    if dx == 1.0:
+                        index = int(mousePoint.x() + 0.5)
+                    else:
+                        index = int(2 * mousePoint.x() + 0.5)
+                    # if xvalues[0] <= index <= xvalues[-1]:
+                    if xvalues[0] <= mousePoint.x() <= xvalues[-1]:
                         try:
-                            k = index - int(xvalues[0])
-                            p1.setTitle(f'{label} at frame {index}:  intensity={yvalues[k]}  '
-                                        f'pixels_in_mask={pvalues[k]}  timestamp={tvalues[k]}')
-                            # label.setText(f'at frame {index}:  intensity={yvalues[k]}  pixels_in_mask={pvalues[k]}')
+                            # k = index - int(xvalues[0])
+                            if dx == 1.0:
+                                k = int(mousePoint.x() - xvalues[0] + 0.5)
+                            else:
+                                k = int((mousePoint.x() - xvalues[0]) * 2 + 0.5)
+
+                            p1.setTitle(f'{label} at frame {xvalues[k]}:  intensity={yvalues[k]}  '
+                                        f'mask_pixels={pvalues[k]}  timestamp={tvalues[k]}')
                         except Exception as e:
                             pass
                     vLine_p1.setPos(mousePoint.x())
