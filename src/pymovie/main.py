@@ -2708,8 +2708,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.showMsg(f'ra_dec_x_y angle: {ra_dec_x_y_rotation:0.1f} degrees')
         self.showMsg("", blankLine=False)
 
-        x_calc = int(round(solution['x'] + 0.5))
-        y_calc = int(round(solution['y'] + 0.5))
+        # The -0.5 is meant to correct for the fact that RA DEC coords are associated with
+        # the upper left corner of a pixel.  But it seems to make sense to associate RA DEC
+        # coords with the center of a pixel.  The 0.5 'moves' the pixel a half step to the left
+        # and a half step up to simulate the association of RA DEC with center pixel
+        x_calc = int(round(solution['x'] - 0.5))
+        y_calc = int(round(solution['y'] - 0.5))
 
         target_app = self.addApertureAtPosition(x_calc, y_calc)
         target_app.thresh = self.big_thresh
@@ -4857,7 +4861,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def showLightcurves(self):
 
-        def mouseMovedFactory(p1, vb, label, vLine_p1, vLine_p2, xvalues, yvalues, pvalues):
+        def mouseMovedFactory(p1, vb, label, vLine_p1, vLine_p2, xvalues, yvalues, pvalues, tvalues):
             def mouseMoved(evt):
                 pos = evt
                 if p1.sceneBoundingRect().contains(pos):
@@ -4866,7 +4870,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     if xvalues[0] <= index <= xvalues[-1]:
                         try:
                             k = index - int(xvalues[0])
-                            p1.setTitle(f'{label} at frame {index}:  intensity={yvalues[k]}  pixels_in_mask={pvalues[k]}')
+                            p1.setTitle(f'{label} at frame {index}:  intensity={yvalues[k]}  '
+                                        f'pixels_in_mask={pvalues[k]}  timestamp={tvalues[k]}')
                             # label.setText(f'at frame {index}:  intensity={yvalues[k]}  pixels_in_mask={pvalues[k]}')
                         except Exception as e:
                             pass
@@ -4924,15 +4929,17 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             xvalues = []
             for entry in app.data:
                 yvalues.append(entry[4])   # signal==4  appsum==5  frame_num == 8
-                xvalues.append(entry[8])   # signal==4  appsum==5  frame_num == 8
+                xvalues.append(entry[8])   # signal==4  appsum==5  frame_num == 8  timestamp == 12
 
             # Here's how to add filtering if that ever becomes a desired feature
             # self.p3 = self.win.addPlot(values, pen=(200, 200, 200), symbolBrush=(255, 0, 0), symbolPen='w')
             # smooth_values = savgol_filter(values, 9 , 2)
 
+            tvalues = []  # timestamps
             pvalues = []
             for entry in app.data:
                 pvalues.append(entry[7])  # max_area  (num pixels in aperture)
+                tvalues.append(entry[12])
 
             pens = [pg.mkPen('r') if x > 0 else pg.mkPen('k') for x in pvalues]
             brushes = [pg.mkBrush('r') if x > 0 else pg.mkBrush('k') for x in pvalues]
@@ -4972,7 +4979,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             p2.addItem(vLine_p2, ignoreBounds=True)
             vb = p1.vb
             mouseMoved = mouseMovedFactory(p1, vb, f'{app.name} signal (background subtracted)', vLine_p1, vLine_p2,
-                                           xvalues[:], yvalues[:], pvalues[:])
+                                           xvalues[:], yvalues[:], pvalues[:], tvalues[:])
             p1.scene().sigMouseMoved.connect(mouseMoved)
 
             qGraphicsGridLayout = self.plots[-1].ci.layout
