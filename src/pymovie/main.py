@@ -2212,6 +2212,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.transportPause.setEnabled(True)
         self.transportReturnToMark.setEnabled(False)
 
+        self.initializeTracking()
+
         currentFrame = self.currentFrameSpinBox.value()
         lastFrame = self.stopAtFrameSpinBox.value()
         while not self.playPaused:
@@ -2234,6 +2236,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.setTransportButtonEnableState(False)
         self.transportPause.setEnabled(True)
         self.transportReturnToMark.setEnabled(False)
+
+        self.initializeTracking()
 
         currentFrame = self.currentFrameSpinBox.value()
         lastFrame = self.stopAtFrameSpinBox.value()
