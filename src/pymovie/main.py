@@ -600,6 +600,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.transportBigLeft.installEventFilter(self)
         self.transportSmallLeft.installEventFilter(self)
 
+        self.transportMinusOneFrame.clicked.connect(self.moveOneFrameLeft)
+        self.transportMinusOneFrame.installEventFilter(self)
+
+        self.transportPlusOneFrame.clicked.connect(self.moveOneFrameRight)
+        self.transportPlusOneFrame.installEventFilter(self)
+
         self.transportPlayLeft.installEventFilter(self)
         self.transportPlayLeft.clicked.connect(self.playLeft)
 
@@ -799,6 +805,16 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.connectAllSlots(aperture)
         if not self.savedStateFrameNumber is None:
             self.currentFrameSpinBox.setValue(self.savedStateFrameNumber)
+
+    def moveOneFrameLeft(self):
+        curFrame = self.currentFrameSpinBox.value()
+        curFrame -= 1
+        self.currentFrameSpinBox.setValue(curFrame)
+
+    def moveOneFrameRight(self):
+        curFrame = self.currentFrameSpinBox.value()
+        curFrame += 1
+        self.currentFrameSpinBox.setValue(curFrame)
 
     def seekMaxLeft(self):
         self.currentFrameSpinBox.setValue(0)
@@ -2010,10 +2026,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.transportMaxLeft.setEnabled(state)
         self.transportBigLeft.setEnabled(state)
         self.transportSmallLeft.setEnabled(state)
+        self.transportMinusOneFrame.setEnabled(state)
         self.transportPlayLeft.setEnabled(state)
         self.transportPause.setEnabled(state)
         self.transportAnalyze.setEnabled(state)
         self.transportPlayRight.setEnabled(state)
+        self.transportPlusOneFrame.setEnabled(state)
         self.transportSmallRight.setEnabled(state)
         self.transportBigRight.setEnabled(state)
         self.transportMaxRight.setEnabled(state)
@@ -3558,6 +3576,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.saveTargetLocButton.setEnabled(True)
             self.loadCustomProfilesButton.setEnabled(False)
 
+
             self.createAVIWCSfolderButton.setEnabled(False)
             self.vtiSelectComboBox.setEnabled(False)
 
@@ -3572,6 +3591,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.settings.setValue('fitsdir', dir_path)  # Make dir 'sticky'"
             self.folder_dir = dir_path
             self.fits_filenames = sorted(glob.glob(dir_path + '/*.fits'))
+
+            self.readPixelDimensions()
 
             self.fourcc = ''
 
@@ -3758,6 +3779,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.saveTargetLocButton.setEnabled(False)
             self.loadCustomProfilesButton.setEnabled(False)
 
+            self.pixelAspectRatio = None
+
             self.createAVIWCSfolderButton.setEnabled(True)
             self.vtiSelectComboBox.setEnabled(False)
 
@@ -3903,6 +3926,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.folder_dir = dir_path
 
             self.clearTextBox()
+            self.readPixelDimensions()
+
             self.disableControlsWhenNoData()
             try:
                 self.frameView.clear()
@@ -4062,6 +4087,21 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         except ValueError:
             return True, None
 
+    def readPixelDimensions(self):
+        # Check for presence of pixel dimensions file
+        matching_name = glob.glob(self.folder_dir + '/pixel-dimensions.p')
+        if matching_name:
+            pixHstr, pixWstr = pickle.load(open(matching_name[0], "rb"))
+            self.pixelHeightEdit.setText(pixHstr)
+            self.pixelWidthEdit.setText(pixWstr)
+            self.pixelAspectRatio = float(pixWstr) / float(pixHstr)
+            self.showMsg(f'Found pixel dimensions of {pixHstr}(H) and {pixWstr}(W)')
+        else:
+            self.pixelAspectRatio = None
+            self.pixelHeightEdit.setText('')
+            self.pixelWidthEdit.setText('')
+            self.showMsg(f'No pixel dimensions were found.')
+
     def processTargetAperturePlacementFiles(self):
         # If enhanced image target positioning files are found, it is the priority
         # method for automatically placing the target aperture.  It came from stacking
@@ -4098,12 +4138,15 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     except ValueError:
                         self.showMsg(f'Invalid target-aperture-xy.txt contents: {xy_str}')
 
-        # Check for presence of pixel aspect ratio file
-        matching_name = glob.glob(self.folder_dir + '/pixel-aspect-ratio.txt')
+        # Check for presence of pixel dimensions file
+        matching_name = glob.glob(self.folder_dir + '/pixel-dimensions.p')
         if matching_name:
-            with open(self.folder_dir + r'/pixel-aspect-ratio.txt', 'r') as f:
-                pixel_aspect_ratio_text = f.read()
-                self.pixelAspectRatio = float(pixel_aspect_ratio_text)
+            pixHstr, pixWstr = pickle.load(open(matching_name[0], "rb"))
+            self.pixelHeightEdit.setText(pixHstr)
+            self.pixelWidthEdit.setText(pixWstr)
+            # with open(self.folder_dir + r'/pixel-aspect-ratio.txt', 'r') as f:
+            #     pixel_aspect_ratio_text = f.read()
+            #     self.pixelAspectRatio = float(pixel_aspect_ratio_text)
 
         # Check for presence of target-location.txt This file is needed for both
         # the manual WCS placement and the nova.astrometry.net placement
@@ -4426,18 +4469,19 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.showMsg(f'\nWCS related files have been cleared out.')
 
     def getPixelAspectRatio(self):
-        if self.pixelAspectRatio is None:
-            try:
-                pixHeight = float(self.pixelHeightEdit.text())
-                pixWidth = float(self.pixelWidthEdit.text())
-                if not (pixWidth < 0.0 or pixHeight <= 0.0):
-                    self.pixelAspectRatio = pixWidth / pixHeight
-                    self.showMsg(f'pixel aspect ratio: {self.pixelAspectRatio:0.4f} (W/H)')
-                    # Write the pixel-aspect-ratio.txt file
-                    with open(self.folder_dir + r'/pixel-aspect-ratio.txt', 'w') as f:
-                        f.writelines(f'{self.pixelAspectRatio:0.5f}')
-            except ValueError as e:
-                self.showMsg(f'in calculation of pixel aspect ratio: {e}')
+        try:
+            pixHeight = float(self.pixelHeightEdit.text())
+            pixWidth = float(self.pixelWidthEdit.text())
+            if not (pixWidth < 0.0 or pixHeight <= 0.0):
+                self.pixelAspectRatio = pixWidth / pixHeight
+                self.showMsg(f'pixel aspect ratio: {self.pixelAspectRatio:0.4f} (W/H)')
+                # Write the pixel-dimensions.p file
+                dims = (self.pixelHeightEdit.text(), self.pixelWidthEdit.text())
+                pickle.dump(dims, open(self.folder_dir + '/pixel-dimensions.p', "wb"))
+        except ValueError as e:
+            self.pixelAspectRatio = None
+            self.showMsg(f'in calculation of pixel aspect ratio: {e}', blankLine=False)
+            self.showMsg(f'Possibly an empty field?')
 
     def resizeImage(self, image, aspect_ratio):
         self.showMsg(f'image shape: {image.shape}')
@@ -4468,6 +4512,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             return
 
         self.getPixelAspectRatio()
+
         if self.pixelAspectRatio is None:
             self.showMsg(f'Failed to compute a valid pixel aspect ratio.  Cannot continue')
             self.showMsgDialog(f'You must fill in pixel height and width in order to continue.')
@@ -4576,9 +4621,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # so we are ready to try to make a submission to Astrometry.net
 
         if not self.pixelAspectRatio == 1.0:
-            self.showMsg(f'We need to resize the image.  Not yet implemented')
-            status, resized_image = self.resizeImage(processed_image, self.pixelAspectRatio)
+            self.showMsg(f'The image will be resized from ...')
             # Here we will send processed_image out for resizing
+            status, resized_image = self.resizeImage(processed_image, self.pixelAspectRatio)
             if not status:
                 self.showMsg(f'Resizing failed.')
                 return

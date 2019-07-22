@@ -1191,7 +1191,7 @@ If you think that you know the plate scale more precisely than what can be calcu
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="layoutWidget">
+       <widget class="QWidget" name="">
         <layout class="QVBoxLayout" name="verticalLayout_16">
          <item>
           <widget class="ImageView" name="frameView">
@@ -1279,6 +1279,24 @@ If you think that you know the plate scale more precisely than what can be calcu
                   </widget>
                  </item>
                  <item>
+                  <widget class="QToolButton" name="transportMinusOneFrame">
+                   <property name="font">
+                    <font>
+                     <pointsize>13</pointsize>
+                    </font>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Move left 1 frame&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="text">
+                    <string>-1 fr</string>
+                   </property>
+                   <property name="autoRepeat">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
                   <widget class="QToolButton" name="transportPlayLeft">
                    <property name="font">
                     <font>
@@ -1295,6 +1313,12 @@ If you think that you know the plate scale more precisely than what can be calcu
                  </item>
                  <item>
                   <widget class="QToolButton" name="transportPause">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>26</height>
+                    </size>
+                   </property>
                    <property name="font">
                     <font>
                      <pointsize>13</pointsize>
@@ -1339,6 +1363,24 @@ If you think that you know the plate scale more precisely than what can be calcu
                    </property>
                    <property name="text">
                     <string>&gt;</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QToolButton" name="transportPlusOneFrame">
+                   <property name="font">
+                    <font>
+                     <pointsize>13</pointsize>
+                    </font>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Move right 1 frame&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="text">
+                    <string>+1 fr</string>
+                   </property>
+                   <property name="autoRepeat">
+                    <bool>true</bool>
                    </property>
                   </widget>
                  </item>
@@ -1460,14 +1502,29 @@ If you think that you know the plate scale more precisely than what can be calcu
                  </item>
                  <item>
                   <widget class="QSpinBox" name="currentFrameSpinBox">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="minimumSize">
+                    <size>
+                     <width>73</width>
+                     <height>0</height>
+                    </size>
+                   </property>
                    <property name="layoutDirection">
                     <enum>Qt::RightToLeft</enum>
                    </property>
                    <property name="frame">
                     <bool>true</bool>
                    </property>
+                   <property name="buttonSymbols">
+                    <enum>QAbstractSpinBox::NoButtons</enum>
+                   </property>
                    <property name="maximum">
-                    <number>99999</number>
+                    <number>999999</number>
                    </property>
                   </widget>
                  </item>
@@ -1480,14 +1537,23 @@ If you think that you know the plate scale more precisely than what can be calcu
                  </property>
                  <item>
                   <widget class="QSpinBox" name="stopAtFrameSpinBox">
+                   <property name="minimumSize">
+                    <size>
+                     <width>73</width>
+                     <height>0</height>
+                    </size>
+                   </property>
                    <property name="layoutDirection">
                     <enum>Qt::RightToLeft</enum>
                    </property>
                    <property name="frame">
                     <bool>true</bool>
                    </property>
+                   <property name="buttonSymbols">
+                    <enum>QAbstractSpinBox::NoButtons</enum>
+                   </property>
                    <property name="maximum">
-                    <number>99999</number>
+                    <number>999999</number>
                    </property>
                   </widget>
                  </item>
