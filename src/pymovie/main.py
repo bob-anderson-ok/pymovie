@@ -727,9 +727,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.finderRedactLinesLabel.installEventFilter(self)
         self.finderNumFramesLabel.installEventFilter(self)
 
-        self.astrometryRedactLabel.installEventFilter(self)
-        self.manualPlateScaleLabel.installEventFilter(self)
-
         self.frameToFitsButton.clicked.connect(self.getWCSsolution)
         self.frameToFitsButton.installEventFilter(self)
 
@@ -1866,7 +1863,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             msg.setText(f'It is necessary to remove any timestamp overlay that may be '
                         f'present as such an overlay will keep the image registration '
                         f'from working properly.'
-                        f'\n\nPlease enter a number in the readact lines edit box. '
+                        f'\n\nPlease enter a number in the redact lines edit box. '
                         f'Enter 0 if there is no timestamp.')
             msg.setWindowTitle('Please fill in redact lines')
             msg.setStandardButtons(QMessageBox.Ok)
@@ -2831,13 +2828,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # self.showMsg(repr(targ))
 
         plate_scale = None
-        plate_scale_str = self.plateScaleEdit.text()
-        if plate_scale_str:
-            try:
-                plate_scale = float(plate_scale_str)
-            except ValueError:
-                self.showMsg(f'{plate_scale_str} is an invalid entry.')
-                return
+        # plate_scale_str = self.plateScaleEdit.text()
+        # if plate_scale_str:
+        #     try:
+        #         plate_scale = float(plate_scale_str)
+        #     except ValueError:
+        #         self.showMsg(f'{plate_scale_str} is an invalid entry.')
+        #         return
 
         if ref1['x'] > ref2['x']:
             flip_x = ref1['ra'] < ref2['ra']
@@ -4721,14 +4718,25 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         num_lines_to_redact = 0
 
-        if self.timestampHeightEdit.text():
+        if self.redactLinesEdit.text():
             try:
-                num_lines_to_redact = int(self.timestampHeightEdit.text())
+                num_lines_to_redact = int(self.redactLinesEdit.text())
             except ValueError:
-                self.showMsg(f'invalid numeric entry: {self.timestampHeightEdit.text()}')
+                self.showMsg(f'invalid numeric entry: {self.redactLinesEdit.text()}')
                 return
+        else:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Question)
+            msg.setText(f'It is good practice to remove any timestamp overlay that may be '
+                        f'present as such an overlay may impair star field identification. '
+                        f'\n\nPlease enter the number of lines from the bottom to remove '
+                        f'in the redact lines edit box. '
+                        f'Enter 0 if there is no timestamp.')
+            msg.setWindowTitle('Please fill in redact lines')
+            msg.setStandardButtons(QMessageBox.Ok)
+            msg.exec()
+            return
 
-        # TODO let negative lines indicate redact from top
         if num_lines_to_redact < 0 or num_lines_to_redact > image_height / 2:
             self.showMsg(f'{num_lines_to_redact} is an unreasonable number of lines to redact.')
             self.showMsg(f'Operation aborted.')

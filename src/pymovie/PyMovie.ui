@@ -36,29 +36,7 @@
        <widget class="QWidget" name="">
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_10" stretch="1,2,2">
-           <item>
-            <widget class="QPushButton" name="infoButton">
-             <property name="minimumSize">
-              <size>
-               <width>40</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking on this button will open a pdf file that provides version history. The most recent version change description will be at the top and so relevant for the version that is currently running.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="text">
-              <string>Info</string>
-             </property>
-            </widget>
-           </item>
+          <layout class="QHBoxLayout" name="horizontalLayout_10" stretch="2,2,0">
            <item>
             <widget class="QPushButton" name="selectAviWcsFolderButton">
              <property name="toolTip">
@@ -72,7 +50,7 @@
            <item>
             <widget class="QPushButton" name="readFitsFolderButton">
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;A &lt;span style=&quot; color:#fc0107;&quot;&gt;FITS&lt;/span&gt; folder should contain a set of *.fits files, all from a single recording.&lt;/p&gt;&lt;p&gt;There should be no other .fits files in that folder.&lt;/p&gt;&lt;p&gt;It is assumed that the alphabetic ordering of the file names corresponds to sequential frames.&lt;/p&gt;&lt;p&gt;There is a button titled &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Show FITS metadata&lt;/span&gt; at the bottom left of this panel that will read and display in the text box (lower left corner) all the metadata entries from the currently displayed .fits file image.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;A &lt;span style=&quot; color:#fc0107;&quot;&gt;FITS&lt;/span&gt; folder should contain a set of *.fits files, all from a single recording.&lt;/p&gt;&lt;p&gt;There should be no other .fits files in that folder.&lt;/p&gt;&lt;p&gt;It is assumed that the alphabetic ordering of the file names corresponds to sequential frames.&lt;/p&gt;&lt;p&gt;There is a button titled &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Show FITS metadata&lt;/span&gt; to the right of this button that will read and display in the text box (lower left corner) all the metadata entries from the currently displayed .fits file image.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="toolTipDuration">
               <number>0</number>
@@ -82,6 +60,16 @@
              </property>
              <property name="text">
               <string>Select FITS folder</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="metadataButton">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking this button will show (in the text box in the lower left corner of the GUI) all metadata from the currently displayed .fits file.&lt;/p&gt;&lt;p&gt;'metadata' is the text information that is present in the header of the .fits file.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>Show FITS metadata</string>
              </property>
             </widget>
            </item>
@@ -115,7 +103,7 @@
            <item>
             <widget class="QPushButton" name="createAVIWCSfolderButton">
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button will only be active when a 'bare' avi is opened (rather than from an AVI-WCS folder).&lt;/p&gt;&lt;p&gt;This button has been added because of the decision to perform timestamp OCR only on avi files that live in an AVI-WCS folder. While that is a good way to collect the (many) files that result from OCR, WCS, PyMovie, and PyOTE operations, there are likely to be users that have opted for a flat (or flatter) directory structure. This button will ease (hopefully) the transition to an alternate file organization.&lt;/p&gt;&lt;p&gt;When clicked, a Directory dialog will appear to allow the user to select (or even create) the directory that is to hold the newly created (and filled) AVI-WCS folder. It defaults to the directory that holds the opened avi.&lt;/p&gt;&lt;p&gt;The name of the newly created AVI-WCS folder will always be the name of the avi file with its outermost extension removed.&lt;/p&gt;&lt;p&gt;The folder will then be populated with an alias (Mac) to the avi or a Shortcut (Windows) to the avi, so this file structure will be frugal with file space.&lt;/p&gt;&lt;p&gt;Finally, behind-the-scenes, the program simulates the user clicking on &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Select AVI-WCS folder&lt;/span&gt; and then clicking on &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Accept&lt;/span&gt; (possible because after a 'creation of AVI-WCS folder', the default directory/folder is set to that of the newly created folder). We could not imagine a workflow that would not want to immediately start processing the avi from within an AVI-WCS folder, so the automation seems reasonable and unlikely to get in anyone's way.&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button will only be active when a 'bare' avi is opened (rather than from an AVI-WCS folder).&lt;/p&gt;&lt;p&gt;This button has been added because of the decision to perform timestamp OCR only on avi files that live in an AVI-WCS folder. While that is a good way to collect the (many) files that result from OCR, WCS, PyMovie, and PyOTE operations, there are likely to be users that have opted for a flat (or flatter) directory structure. This button will ease (hopefully) the transition to an alternate file organization.&lt;/p&gt;&lt;p&gt;When clicked, a Directory dialog will appear to allow the user to select (or even create) the directory that is to hold the newly created (and filled) AVI-WCS folder. It defaults to the directory that holds the opened avi.&lt;/p&gt;&lt;p&gt;The name of the newly created AVI-WCS folder will always be the name of the avi file with its outermost extension removed.&lt;/p&gt;&lt;p&gt;The folder will then be populated with an alias (Mac) to the avi or a Shortcut (Windows) to the avi, so this file structure will be frugal with file space.&lt;/p&gt;&lt;p&gt;Finally, behind-the-scenes, the program simulates the user clicking on &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Select AVI-WCS folder&lt;/span&gt; and then clicking on &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Accept&lt;/span&gt; (possible because after a 'creation of AVI-WCS folder', the default directory/folder is set to that of the newly created folder). We could not imagine a workflow where a user would &lt;span style=&quot; font-weight:600;&quot;&gt;not&lt;/span&gt; want to immediately start processing the avi from within an AVI-WCS folder, so the automation seems reasonable and unlikely to get in anyone's way.&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
               <string>Create AVI-WCS folder from AVI file</string>
@@ -166,7 +154,7 @@
            <item>
             <widget class="QCheckBox" name="invertImagesCheckBox">
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Click this button to invert the Y axes on the main image as well as the two thumbnails.&lt;/p&gt;&lt;p&gt;This control is necessary because: the origin of composite vide images is the upper left corner of the image; for .fits files, the origin is at the lower left corner of the image.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Click this button to invert the Y axes on the main image as well as the two thumbnails.&lt;/p&gt;&lt;p&gt;This control is necessary because: the origin of composite video images is the upper left corner of the image; for .fits files, the origin is at the lower left corner of the image.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
               <string>Invert images</string>
@@ -212,7 +200,7 @@
            <item>
             <widget class="QPushButton" name="editAperturesButton">
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking this button brings up a table that contains a row for each aperture that has been placed on the image. The columns list the available properties of an aperture. All property values except x,y can be changed from this dialog box.&lt;/p&gt;&lt;p&gt;Any changes made through this dialog take effect when the dialog is closed. Any data entry errors will be reported at close as well.&lt;/p&gt;&lt;p&gt;Columns for color, joggable, auto textOut, and thumbnail source have right-click context menus for making changes in those cells.&lt;/p&gt;&lt;p&gt;The columns for name, thresh, def mask radius, and csv output order are edited by highlighting the cell (single or double click) and then typing the new value. &lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;!!! When editing the value in a cell, the edit is NOT complete until you leave that cell. Make it a practice to 'tab out' of a cell that you have modified. (but not needed for a cell that has been modified by a right-click context menu) !!!&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Constraints on property values:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;---- name: none&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;---- thresh: positive integer&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;---- def mask radius: minimum value of 2.00  (initial value is 5.3)&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;---- color: only one green allowed and no more than two yellows&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;---- thumbnail source: only a single aperture can be set as the thumbnail source&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;---- csv output order: positive integer (it's up to you to avoid duplicates!)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking this button brings up a table that contains a row for each aperture that has been placed on the image. The columns list the available properties of an aperture. All property values, including (x,y), can be changed from this dialog box.&lt;/p&gt;&lt;p&gt;Any changes made through this dialog take effect when the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Write&lt;/span&gt; button is clicked. &lt;/p&gt;&lt;p&gt;Columns for color, joggable, auto textOut, and thumbnail source have right-click context menus for making changes in those cells.&lt;/p&gt;&lt;p&gt;The columns for name, thresh, def mask radius, and csv output order are edited by highlighting the cell (single or double click) and then typing the new value. &lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;!!! When editing the value in a cell, the edit is NOT complete until you leave that cell. Make it a practice to 'tab out' of a cell that you have modified. (but not needed for a cell that has been modified by a right-click context menu) !!!&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Constraints on property values:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;---- name: none&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;---- thresh: positive integer&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;---- def mask radius: minimum value of 2.00 (initial value is 5.3)&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;---- color: only one green allowed and no more than two yellows&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;---- thumbnail source: only a single aperture can be set as the thumbnail source&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;---- csv output order: positive integer (it's up to you to avoid duplicates!)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
               <string>Examine/change aperture settings</string>
@@ -265,10 +253,10 @@
            <item>
             <widget class="QLabel" name="setMskthLabel">
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If there is a currently 'green' aperture showing, its threshold value will be set to any new value from this spinner and &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Thumbnail Two&lt;/span&gt; in the lower right corner will update dynamically to show the effect of the change on the binary sample mask generation.&lt;/p&gt;&lt;p&gt;The mask threshold is always set as counts above average background.  A good starting point for setting this value is to set it equal to the background noise (found in the column labelled &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;bkstd&lt;/span&gt; in the text box) rounded up. The program tries to do this automatically so, in most cases, this value will already be preset. This is sometimes referred to as &lt;span style=&quot; color:#0000ff;&quot;&gt;'setting the threshold to 1 sigma'&lt;/span&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If there is a currently 'green' aperture showing, its threshold value will be set to any new value from this spinner and &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Thumbnail Two&lt;/span&gt; in the lower right corner will update dynamically to show the effect of the change on the binary sample mask generation.&lt;/p&gt;&lt;p&gt;The mask threshold is always set as counts above average background. A good starting point for setting this value is to set it equal to the background noise (found in the column labelled &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;bkstd&lt;/span&gt; in the text box) rounded up. The program tries to do this automatically so, in most cases, this value will already be preset. This is sometimes referred to as &lt;span style=&quot; color:#0000ff;&quot;&gt;'setting the threshold to 1 sigma'&lt;/span&gt;.&lt;/p&gt;&lt;p&gt;Note: &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;mskth&lt;/span&gt; (mask threshold) and &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;bkavg&lt;/span&gt; (background average) are column headings in the text box.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
-              <string>set mskth counts above bkavg</string>
+              <string>set mask threshold (mskth) counts above background (bkavg)</string>
              </property>
              <property name="alignment">
               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -340,6 +328,19 @@
             </widget>
            </item>
            <item>
+            <widget class="QLabel" name="label_4">
+             <property name="minimumSize">
+              <size>
+               <width>29</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QCheckBox" name="cascadeCheckBox">
              <property name="minimumSize">
               <size>
@@ -366,7 +367,7 @@
               <enum>Qt::LeftToRight</enum>
              </property>
              <property name="text">
-              <string>cascade </string>
+              <string>cascade the lightcurve plots</string>
              </property>
              <property name="checked">
               <bool>true</bool>
@@ -566,7 +567,7 @@
                   <bool>false</bool>
                  </property>
                  <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If you are working in a FITS folder or an AVI-WCS folder, clicking this button causes the location to be written to the file &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;target-location.txt &lt;/span&gt;in that folder.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If you are working in a FITS folder or an AVI-WCS folder, clicking this button causes the location in the edit box to the left to be written to the file &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;target-location.txt &lt;/span&gt;in that folder.  This is how one sets the coordinates of star-to-be-occulted --- the 'target'.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                  </property>
                  <property name="text">
                   <string>Set as target</string>
@@ -587,7 +588,7 @@
            <item>
             <widget class="QLabel" name="vtiSelectLabel">
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This control provides a drop-down list of VTI (video time inserter) models for which OCR (optical character recognition) timestamp processing is available. Selecting an entry will cause a constellation of character extraction boxes to be displayed on the image and there will be an automatic switch to field view and to a frame other than frame 0 --- which is often an improperly formatted frame with duplicates fields.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Note that this control will only be active when an AVI-WCS folder is in use AND model digit training has not been completed. Its purpose is to provide a default set of ocr character selection boxes that are approximately in good positions.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;If the character selection boxes enclose the correct characters and are reasonably well-aligned, then you're ready to do fine adjustments to the box positions and, after all the boxes have had their positions optimized, select the digits 0 to 9 that will be used as model digits for the optical character recognition algorithms.&lt;/p&gt;&lt;p&gt;If you're facing a Kiwi timestamp, which has two positions for the timestamp and switches from one to the other when the minutes field changes, you should first select either '&lt;span style=&quot; color:#fc0107;&quot;&gt;Kiwi (left)&lt;/span&gt;' or '&lt;span style=&quot; color:#fc0107;&quot;&gt;Kiwi (right)&lt;/span&gt;' and use whichever best encloses the timestamp characters as the starting point.&lt;/p&gt;&lt;p&gt;If the character boxes are not well aligned, right-click on the/an offending ocr selection box and use the resulting pop-up menu to decide whether one or all ocr boxes need to be moved. The arrow keys control the jogs and their direction.&lt;/p&gt;&lt;p&gt;Finally, record the digits 0 through 9 as model digits to complete the 'training' for the avi in this folder.&lt;/p&gt;&lt;p&gt;We call the set of character selection boxes and the model digits an OCR profile.  OCR profiles can be saved to (and loaded from) a list. This facility is provided because, for a given recording chain --- camera, VTI, frame-grabber ---, it is very likely that the OSD characters will be in the same place for all recordings employing that chain. So once an OCR profile has been established for that chain, it should be saved for reuse.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This control provides a drop-down list of VTI (video time inserter) models for which OCR (optical character recognition) timestamp processing is available. Selecting an entry will cause a constellation of character extraction boxes to be displayed on the image and there will be an automatic switch to field view and to a frame other than frame 0 --- which is often an improperly formatted frame with duplicates fields.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Note that this control will only be active when an AVI-WCS folder is in use AND model digit training has not been completed. Its purpose is to provide a default set of ocr character selection boxes that are approximately in good positions.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;If the character selection boxes enclose the correct characters and are reasonably well-aligned, then you're ready to do fine adjustments to the box positions and, after all the boxes have had their positions optimized, select the digits 0 to 9 that will be used as model digits for the optical character recognition algorithms.&lt;/p&gt;&lt;p&gt;If you're facing a Kiwi timestamp, which has two positions for the timestamp and switches from one to the other when the minutes field changes, you should first select either '&lt;span style=&quot; color:#fc0107;&quot;&gt;Kiwi (left)&lt;/span&gt;' or '&lt;span style=&quot; color:#fc0107;&quot;&gt;Kiwi (right)&lt;/span&gt;' and use whichever best encloses the timestamp characters as the starting point.&lt;/p&gt;&lt;p&gt;If the character boxes are not well aligned, right-click on the/an offending ocr selection box and use the resulting pop-up menu to decide whether one or all ocr boxes need to be moved. The arrow keys control the jogs and their direction.&lt;/p&gt;&lt;p&gt;Finally, record the digits 0 through 9 as model digits to complete the 'training' for the avi in this folder.&lt;/p&gt;&lt;p&gt;If you're using a Kiwi timestamp inserter, you now need to go forward in time until the characters shift to their alternate position. If all model digits are present, PyMovie will detect the position change and use the alternate set of ocr boxes.  You now should adjust the alignment of this alternate set of character boxes.&lt;/p&gt;&lt;p&gt;We call the set of character selection boxes and the model digits an OCR profile. OCR profiles can be saved to (and loaded from) a list. This facility is provided because, for a given recording chain --- camera, VTI, frame-grabber ---, it is very likely that the OSD characters will be in the same place for all recordings employing that chain. So once an OCR profile has been established for that chain, it should be saved for reuse.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
               <string>select VTI: </string>
@@ -735,6 +736,19 @@
             </widget>
            </item>
            <item>
+            <widget class="QLabel" name="label_2">
+             <property name="minimumSize">
+              <size>
+               <width>5</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QLabel" name="finderRedactLinesLabel">
              <property name="minimumSize">
               <size>
@@ -743,10 +757,10 @@
               </size>
              </property>
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This entry is used to specify how many lines from the image bottom to remove to get rid of the timestamp.&lt;/p&gt;&lt;p&gt;Getting rid of the timestamp is &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;essential&lt;/span&gt; for getting a good image to image registration based on the star field movement. If the timestamp is not removed, then the stacking process will likely register on the timestamp instead.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This entry is used to specify how many lines from the image bottom to remove to get rid of the timestamp.&lt;/p&gt;&lt;p&gt;For generating a &amp;quot;finder&amp;quot; image, getting rid of the timestamp is &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;essential&lt;/span&gt; for getting a good image to image registration based on the star field movement. If the timestamp is not removed, then the stacking process will likely register on the timestamp instead.&lt;/p&gt;&lt;p&gt;This entry is as used when preparing a frame for submission to nova.astrometry.net for WCS calibration.&lt;/p&gt;&lt;p&gt;If there is a timestamp overlay, its presence may make the WCS location and calibration harder (takes longer) for nova.astrometry.net. So, before submitting an image to nova.astrometry.net, we like to 'redact' the timestamp area by replacing the bottom lines with the average background (sampled from the center of the image). The value in this box controls how many lines from the bottom get this treatment.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
-              <string>redact lines</string>
+              <string> redact lines</string>
              </property>
             </widget>
            </item>
@@ -778,6 +792,19 @@
               </size>
              </property>
              <property name="toolTip">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_3">
+             <property name="minimumSize">
+              <size>
+               <width>5</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="text">
               <string/>
              </property>
             </widget>
@@ -948,217 +975,143 @@
           </layout>
          </item>
          <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_16">
+          <layout class="QHBoxLayout" name="horizontalLayout_7">
            <property name="spacing">
             <number>0</number>
            </property>
            <item>
-            <layout class="QVBoxLayout" name="verticalLayout_9">
-             <property name="spacing">
-              <number>-1</number>
+            <widget class="QPushButton" name="manualWcsButton">
+             <property name="enabled">
+              <bool>true</bool>
              </property>
-             <item>
-              <widget class="QPushButton" name="metadataButton">
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking this button will show (in the text box below) all metadata from the currently displayed .fits file.&lt;/p&gt;&lt;p&gt;'metadata' is the text information that is present in the header of the .fits file.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="text">
-                <string>Show FITS metadata</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="demoMeanPushButton">
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The 'robust' calculation of the background average and the 'robust' estimation of the dispersion (noise) in the background is an important factor in the calculation of signal intensities.&lt;/p&gt;&lt;p&gt;This button demonstrates with a detailed plot the calculation as it was performed for the current 'thumbnail'.&lt;/p&gt;&lt;p&gt;This is meant primarily for education purposes but may be useful in special cases to confirm (or not) that the 'robust' calculations are reasonable.&lt;/p&gt;&lt;p&gt;Note: the scale of dispersion (noise) is calulated using the MAD (Median Absolute Deviation) technique. Making the assumption that the background pixel counts (exclusive of outliers) are drawn from a Gaussian distribution, the bkstd is calculated as 1.4826 * MAD(aperture).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="text">
-                <string>Plot Robust Mean</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="view3DButton">
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button opens a new window that shows a 3D rendering of the Thumbnail One image.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="text">
-                <string>Show 3D thumbnail</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>220</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button starts a 'manual' WCS calibration (user guided reference star designation).&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Manual WCS calibration&lt;/span&gt; utilizes two stars with known icrs coordinates together with their xy position in the image to compute a mapping from icrs coordinates to pixel coordinates.&lt;/p&gt;&lt;p&gt;When this button is pressed, all previous manual WCS calibration data is erased (you have to confirm this action). Then the work flow expected is:&lt;/p&gt;&lt;p&gt;1) Use the VizieR query to get the icrs coordinates of the first reference star. (So do your star chart with UCAC4 annotations).&lt;/p&gt;&lt;p&gt;2) Put an aperture on that star.&lt;/p&gt;&lt;p&gt;3) Adjust (if necessary) the aperture so that the centering is satisfactory.&lt;/p&gt;&lt;p&gt;4) Right click on the aperture and click on &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Set RA Dec (from VizieR query results)&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;5) Repeat steps 1...4 for the second reference star.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;6) If you have already defined the target coordinates, an aperture will immediately appear at the proper image location, otherwise ...&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;7) ... use the VizieR query to get the target coordintes and then click the &lt;/span&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Set as target&lt;/span&gt;&lt;span style=&quot; color:#000000;&quot;&gt; button. The target aperture will then appear.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>Manual WCS calib</string>
+             </property>
+            </widget>
            </item>
            <item>
-            <layout class="QVBoxLayout" name="verticalLayout_10">
-             <property name="spacing">
-              <number>0</number>
+            <widget class="QPushButton" name="frameToFitsButton">
+             <property name="enabled">
+              <bool>true</bool>
              </property>
-             <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_4">
-               <property name="spacing">
-                <number>0</number>
-               </property>
-               <property name="bottomMargin">
-                <number>0</number>
-               </property>
-               <item>
-                <widget class="QPushButton" name="frameToFitsButton">
-                 <property name="enabled">
-                  <bool>true</bool>
-                 </property>
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>220</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>220</width>
-                   <height>16777215</height>
-                  </size>
-                 </property>
-                 <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button is used to get a WCS calibration for the current image by utilizing the on-line service nova.astrometry.net&lt;/p&gt;&lt;p&gt;If this service fails (see discussion below) then you could try the&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt; Manual WCS calibration&lt;/span&gt; button. It prompts you to put an aperture around two known stars in your image by using a star chart (preferably with UCAC4 star designations). If those stars are sufficiently far apart, we can use the icrs coordinates in conjuction with the xy position of the aperture to 'calibrate' that image.&lt;/p&gt;&lt;p&gt;nova.astrometry.net is designed to do 'blind' identification and WCS calibration on star field images. But it will not be able to identify images that have a too narrow field of view. If your field of view is under 15 arcmin, it is not likely to be able to calibrate that image and it will spend a long time (many minutes) trying. If an image is going to be successfully identified, it will take only a few seconds of cpu time after getting a job assigned (which takes one to two minutes).&lt;/p&gt;&lt;p&gt;Note: another possible reason for a 'failure' is that the camera pixels used for the video were not square and the proper pixel width and height values were not specified properly.&lt;/p&gt;&lt;p&gt;Clicking this button reads the current frame and redacts the timestamp area by replacing all bytes in the timestamp zone with the Robust background (constant value).&lt;/p&gt;&lt;p&gt;The number of lines to be redacted are controlled by the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;redact lines&lt;/span&gt; edit box.&lt;/p&gt;&lt;p&gt;This redacted image is written as a file suitable for submission to nova.astrometry.net together with a user entered target star position (RA and Dec at J2000). The image will have been resized based on the pixel width and height information for non-square pixels in the source camera.&lt;/p&gt;&lt;p&gt;The entries for the star position values are entered into a star position dialog that will appear if no star position has yet been defined.&lt;/p&gt;&lt;p&gt;That same dialog form provides for the entry of the user's nova.astrometry.net api key. This value will be 'sticky' (preserved across runs of PyMovie) and is required for submitting images for WCS calibration. It's easy (and free) to obtain. Simply go to nova.astrometry.net and sign in by clicking on your choice of credential supplier, no need to create a username/password combination. After signing in, click on My Profile and your api key will be displayed there.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                 </property>
-                 <property name="text">
-                  <string>astrometry WCS calib</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLineEdit" name="timestampHeightEdit">
-                 <property name="minimumSize">
-                  <size>
-                   <width>60</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>60</width>
-                   <height>16777215</height>
-                  </size>
-                 </property>
-                 <property name="toolTip">
-                  <string/>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLabel" name="astrometryRedactLabel">
-                 <property name="minimumSize">
-                  <size>
-                   <width>70</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This entry is only used when preparing a frame for submission to nova.astrometry.net for WCS calibration.&lt;/p&gt;&lt;p&gt;If there is a timestamp overlay, its presence may make the WCS location and calibration harder (takes longer) for nova.astrometry.net. So, before submitting an image to nova.astrometry.net, we like to 'redact' the timestamp area by replacing the bottom lines with the average background (sampled from the center of the image). The value in this box controls how many lines from the bottom get this treatment.&lt;/p&gt;&lt;p&gt;Entering a negative number will redact lines from the top.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                 </property>
-                 <property name="text">
-                  <string>redact lines</string>
-                 </property>
-                 <property name="alignment">
-                  <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </item>
-             <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_15">
-               <property name="spacing">
-                <number>0</number>
-               </property>
-               <item>
-                <widget class="QPushButton" name="manualWcsButton">
-                 <property name="enabled">
-                  <bool>true</bool>
-                 </property>
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>220</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>220</width>
-                   <height>16777215</height>
-                  </size>
-                 </property>
-                 <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button starts a 'manual' WCS calibration (user guided reference star designation).&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Manual WCS calibration&lt;/span&gt; utilizes two stars with known icrs coordinates together with their xy position in the image to compute a mapping from icrs coordinates to pixel coordinates.&lt;/p&gt;&lt;p&gt;When this button is pressed, all previous manual WCS calibration data is erased (you have to confirm this action). Then the work flow expected is:&lt;/p&gt;&lt;p&gt;1) Use the VizieR query to get the icrs coordinates of the first reference star. (So do your star chart with UCAC4 annotations).&lt;/p&gt;&lt;p&gt;2) Put an aperture on that star.&lt;/p&gt;&lt;p&gt;3) Adjust (if necessary) the aperture so that the centering is satisfactory.&lt;/p&gt;&lt;p&gt;4) Right click on the aperture and click on &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Set RA Dec (from VizieR query results)&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;5) Repeat steps 1...4 for the second reference star.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;6) If you have already defined the target coordinates, an aperture will immediately appear at the proper image location, otherwise ...&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;7) ... use the VizieR query to get the target coordintes and then click the &lt;/span&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Set as target&lt;/span&gt;&lt;span style=&quot; color:#000000;&quot;&gt; button. The target aperture will then appear.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                 </property>
-                 <property name="text">
-                  <string>Manual WCS calib</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLineEdit" name="plateScaleEdit">
-                 <property name="minimumSize">
-                  <size>
-                   <width>60</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>60</width>
-                   <height>16777215</height>
-                  </size>
-                 </property>
-                 <property name="toolTip">
-                  <string/>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLabel" name="manualPlateScaleLabel">
-                 <property name="minimumSize">
-                  <size>
-                   <width>70</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="toolTip">
-                  <string>This edit box allows a plate scale to be specified for a manual WCS calibration.
-Normally, this box should be left empty. The plate scale will then be calculated (and reported for your records) from the two calibration apertures specified.
-If you think that you know the plate scale more precisely than what can be calculated from two points (which might necessarily be close together due to a puacity of good stars to use for calibration), then definitely enter that value in this box.</string>
-                 </property>
-                 <property name="text">
-                  <string>plate scale</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </item>
-             <item>
-              <widget class="QPushButton" name="documentationPushButton">
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking on this button will open a pdf file that provides additional documentation beyond that incorporated in the Hover Help system (which will/should be your first stop for assistance).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="text">
-                <string>Documentation</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>150</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>220</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button is used to get a WCS calibration for the current image by utilizing the on-line service nova.astrometry.net&lt;/p&gt;&lt;p&gt;If this service fails (see discussion below) then you could try the&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt; Manual WCS calibration&lt;/span&gt; button. It prompts you to put an aperture around two known stars in your image by using a star chart (preferably with UCAC4 star designations). If those stars are sufficiently far apart, we can use the icrs coordinates in conjuction with the xy position of the aperture to 'calibrate' that image.&lt;/p&gt;&lt;p&gt;nova.astrometry.net is designed to do 'blind' identification and WCS calibration on star field images. But it will not be able to identify images that have a too narrow field of view. If your field of view is under 15 arcmin, it is not likely to be able to calibrate that image and it will spend a long time (many minutes) trying. If an image is going to be successfully identified, it will take only a few seconds of cpu time after getting a job assigned (which takes one to two minutes).&lt;/p&gt;&lt;p&gt;Note: another possible reason for a 'failure' is that the camera pixels used for the video were not square and the proper pixel width and height values were not specified properly.&lt;/p&gt;&lt;p&gt;Clicking this button reads the current frame and redacts the timestamp area by replacing all bytes in the timestamp zone with the Robust background (constant value).&lt;/p&gt;&lt;p&gt;The number of lines to be redacted are controlled by the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;redact lines&lt;/span&gt; edit box.&lt;/p&gt;&lt;p&gt;This redacted image is written as a file suitable for submission to nova.astrometry.net together with a user entered target star position (RA and Dec at J2000). The image will have been resized based on the pixel width and height information for non-square pixels in the source camera.&lt;/p&gt;&lt;p&gt;The entries for the star position values are entered into a star position dialog that will appear if no star position has yet been defined.&lt;/p&gt;&lt;p&gt;That same dialog form provides for the entry of the user's nova.astrometry.net api key. This value will be 'sticky' (preserved across runs of PyMovie) and is required for submitting images for WCS calibration. It's easy (and free) to obtain. Simply go to nova.astrometry.net and sign in by clicking on your choice of credential supplier, no need to create a username/password combination. After signing in, click on My Profile and your api key will be displayed there.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>astrometry WCS calib</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer_15">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_4">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QPushButton" name="infoButton">
+             <property name="minimumSize">
+              <size>
+               <width>40</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking on this button will open a pdf file that provides version history. The most recent version change description will be at the top and so relevant for the version that is currently running.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>Version Info</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="documentationPushButton">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking on this button will open a pdf file that provides additional documentation beyond that incorporated in the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;right-click-for-help&lt;/span&gt; system (which will/should be your first stop for assistance).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>Documentation</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="demoMeanPushButton">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The 'robust' calculation of the background average and the 'robust' estimation of the dispersion (noise) in the background is an important factor in the calculation of signal intensities.&lt;/p&gt;&lt;p&gt;This button demonstrates with a detailed plot the calculation as it was performed for the current 'thumbnail'.&lt;/p&gt;&lt;p&gt;This is meant primarily for education purposes but may be useful in special cases to confirm (or not) that the 'robust' calculations are reasonable.&lt;/p&gt;&lt;p&gt;Note: the scale of dispersion (noise) is calulated using the MAD (Median Absolute Deviation) technique. Making the assumption that the background pixel counts (exclusive of outliers) are drawn from a Gaussian distribution, the bkstd is calculated as 1.4826 * MAD(aperture).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>Plot Robust Mean</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="view3DButton">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button opens a new window that shows a 3D rendering of the Thumbnail One image.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>Show 3D thumbnail</string>
+             </property>
+            </widget>
            </item>
            <item>
             <spacer name="horizontalSpacer_2">
@@ -1290,7 +1243,7 @@ If you think that you know the plate scale more precisely than what can be calcu
                     </font>
                    </property>
                    <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Play the file continuously to the left (earlier in time).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Play the file continuously to the left (earlier in time). No data is recorded during 'play'. You must click &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;analyze&lt;/span&gt; in order to have data recorded.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
                    <property name="text">
                     <string>&lt;</string>
@@ -1302,7 +1255,7 @@ If you think that you know the plate scale more precisely than what can be calcu
                    <property name="minimumSize">
                     <size>
                      <width>0</width>
-                     <height>26</height>
+                     <height>0</height>
                     </size>
                    </property>
                    <property name="font">
@@ -1345,7 +1298,7 @@ If you think that you know the plate scale more precisely than what can be calcu
                     </font>
                    </property>
                    <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Play the file to the right (forward in time).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Play the file to the right (forward in time). No data is recorded during 'play'. You must click &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;analyze&lt;/span&gt; in order to have data recorded.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
                    <property name="text">
                     <string>&gt;</string>
@@ -1570,7 +1523,7 @@ If you think that you know the plate scale more precisely than what can be calcu
                     </font>
                    </property>
                    <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;After a new video is loaded, when the first 'analysis' run is started, the number and positions of the apertures present at that time are automatically 'remembered' ('marked'). &lt;/p&gt;&lt;p&gt;This is very helpful if the starfield moves in a substantial way and yet you have a need to start over. A direct jump to the beginning would usually lose tracking and the apertures would need to be repositioned. But PyMovie 'remembers' the aperture and frame number setup so that with a click on the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Return to 'mark'&lt;/span&gt; button in the transport button array under the image, you can jump back and start over without the need to reset the aperture positions.&lt;/p&gt;&lt;p&gt;Because that 'remembering' is automatic, this will likely be a seldom used button.&lt;/p&gt;&lt;p&gt;But if there is a need to override the automatic 'mark', this button is the one to push.&lt;/p&gt;&lt;p&gt;Note that &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;ONLY&lt;/span&gt; the aperture count and positions are 'remembered', not the accumulated data or any other property change that you may have instituted during the run (like a threshold change or change in default mask, etc). Therefore, be sure to click on the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Clear aperture data&lt;/span&gt; button before resuming.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;After a new video is loaded, when the first 'analysis' run is started, the number and positions of the apertures present at that time are automatically 'remembered' ('marked'). &lt;/p&gt;&lt;p&gt;This is very helpful if the starfield moves in a substantial way and yet you have a need to start over. A direct jump to the beginning would usually lose tracking and the apertures would need to be repositioned. But PyMovie 'remembers' the aperture and frame number setup so that with a click on the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Return to 'mark'&lt;/span&gt; button in the transport button array under the image, you can jump back and start over without the need to reset the aperture positions.&lt;/p&gt;&lt;p&gt;Because that 'remembering' is automatic, this will likely be a seldom used button.&lt;/p&gt;&lt;p&gt;But if there is a need to override the automatic 'mark', this button is the one to push.&lt;/p&gt;&lt;p&gt;Note that &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;ONLY&lt;/span&gt; the aperture count and positions are 'remembered', not the accumulated data or any other property change that you may have instituted during the run (like a threshold change or change in default mask, etc). Therefore, be sure to click on the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Clear aperture data&lt;/span&gt; button before resuming.&lt;/p&gt;&lt;p&gt;Note: a 'marked' position is &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;NOT&lt;/span&gt; remembered between runs. Use the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Save aperture group&lt;/span&gt; button if it is desired to have an aperture group/constellation be 'sticky'.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
                    <property name="text">
                     <string>mark</string>
@@ -1590,7 +1543,7 @@ If you think that you know the plate scale more precisely than what can be calcu
                     </font>
                    </property>
                    <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Return to the aperture constellation position present when either the first 'analysis' was started, or when the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Save frame and aperture positions&lt;/span&gt; button was clicked (to override the normal automatic position recording).&lt;/p&gt;&lt;p&gt;The frame number is set as well.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Return to the aperture constellation position present when either the first 'analysis' was started, or when the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;mark&lt;/span&gt; button was clicked (to override the normal automatic position recording).&lt;/p&gt;&lt;p&gt;The frame number is set as well.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
                    <property name="text">
                     <string>Return to 'mark'</string>
@@ -1609,7 +1562,7 @@ If you think that you know the plate scale more precisely than what can be calcu
                   </font>
                  </property>
                  <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking this button deletes all data that has been accumulated in the apertures. (The apertures are 'objects' with properties like color, location, threshold, and also hold the recorded data itself).&lt;/p&gt;&lt;p&gt;It is often the case that one will 'experiment' with the video by running short stretches of it.&lt;/p&gt;&lt;p&gt;All of the data produced while in the 'run' state is accumulated, even when you do it piecemeal. This can cause data points to be recorded multiple times.&lt;/p&gt;&lt;p&gt;Best practice is, before starting a production by setting the starting and stopping frame numbers, that one clears any previous data.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking this button deletes all data that has been accumulated in the apertures. (The apertures are 'objects' with properties like color, location, threshold, and also hold the recorded data itself).&lt;/p&gt;&lt;p&gt;It is often the case that one will 'experiment' with the video by analyzing short stretches of it.&lt;/p&gt;&lt;p&gt;All of the data produced while in the 'analyze' state is accumulated, even when you do it piecemeal. This can cause data points to be recorded multiple times.&lt;/p&gt;&lt;p&gt;Best practice is, before starting a production by setting the starting and stopping frame numbers, that one clears any previous data.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                  </property>
                  <property name="text">
                   <string>clear</string>
@@ -1723,7 +1676,7 @@ If you think that you know the plate scale more precisely than what can be calcu
            <item>
             <widget class="QLabel" name="thumbnailTwoLabel">
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This image shows the mask that will be applied to the image shown in Thumbnail One.&lt;/p&gt;&lt;p&gt;Currently, the 'mask' is dynamically calculated by the following steps: &lt;/p&gt;&lt;p&gt;1) Thumbnail One is blurred using a 5x5 pixel Gaussian.&lt;/p&gt;&lt;p&gt;2) &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;set mskth counts above bkavg&lt;/span&gt; is used to turn the blurred Thumbnail One image into a binary image (only the values 0 and 1 are present) by setting to 0 all pixels that are &amp;lt;= &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;set mskth counts above bkavg &lt;/span&gt;&lt;span style=&quot; color:#fc0107;&quot;&gt;+ bkavg&lt;/span&gt; and setting to 1 all pixels that are greater than &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;set mskth counts above bkavg &lt;/span&gt;&lt;span style=&quot; color:#fc0107;&quot;&gt;+ bkavg&lt;/span&gt;. &lt;/p&gt;&lt;p&gt;3) The resulting binary image is processed to find all 'blobs' (connected groups of pixels with value 1).&lt;/p&gt;&lt;p&gt;4) The signal contained in each blob is computed (with background subtraction).&lt;/p&gt;&lt;p&gt;5) If a tracking star is present and this is a target star (non-yellow aperture), an additional constraint is enforced: the centroid of the 'blob' must lie within a 8 pixel radius of the aperture center. This helps suppress any bright stars that may be in the aperture, but not in the center.&lt;/p&gt;&lt;p&gt;6) The 'blob' found in step 5 is turned into the mask that is displayed in this thumbnail.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This image shows the mask that will be applied to the image shown in Thumbnail One.&lt;/p&gt;&lt;p&gt;Currently, the 'mask' is dynamically calculated by the following steps: &lt;/p&gt;&lt;p&gt;1) Thumbnail One is blurred using a 5x5 pixel Gaussian.&lt;/p&gt;&lt;p&gt;2)&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt; 'mask threshold above background&lt;/span&gt;&lt;span style=&quot; color:#fc0107;&quot;&gt;'&lt;/span&gt; is used to turn the blurred Thumbnail One image into a binary image (only the values 0 and 1 are present) by setting to 0 all pixels that are &amp;lt;= &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;'mask threshold above background&lt;/span&gt;&lt;span style=&quot; color:#fc0107;&quot;&gt;'&lt;/span&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;/&gt;&lt;span style=&quot; color:#fc0107;&quot;&gt;+ bkavg&lt;/span&gt; and setting to 1 all pixels that are greater than &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;'mask threshold above background&lt;/span&gt;&lt;span style=&quot; color:#fc0107;&quot;&gt;'&lt;/span&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;/&gt;&lt;span style=&quot; color:#fc0107;&quot;&gt;+ bkavg&lt;/span&gt;. &lt;/p&gt;&lt;p&gt;3) The resulting binary image is processed to find all 'blobs' (connected groups of pixels with value 1).&lt;/p&gt;&lt;p&gt;4) The signal contained in each blob is computed (with background subtraction).&lt;/p&gt;&lt;p&gt;5) If a tracking star is present and this is a target star (non-yellow aperture), an additional constraint is enforced: the centroid of the 'blob' must lie within a 8 pixel radius of the aperture center. This helps suppress any bright stars that may be in the aperture, but not in the center.&lt;/p&gt;&lt;p&gt;6) The 'blob' found in step 5 is turned into the mask that is displayed in this thumbnail.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Thumbnail Two (right-click here for info)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
