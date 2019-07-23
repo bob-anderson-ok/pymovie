@@ -1883,8 +1883,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if early_exit:
             return
 
-
-        # TODO let negative lines indicate redact from top
         if num_lines_to_redact < 0 or num_lines_to_redact > image_height / 2:
             self.showMsg(f'{num_lines_to_redact} is an unreasonable number of lines to redact.')
             self.showMsg(f'Operation aborted.')
@@ -4300,8 +4298,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         got_star_position = False
         if not matching_name:
             self.showMsg(f'No target star location found in the folder.')
-            # TODO Experimental code (early return with no dialog presented for target star location
             return
+
             ss = self.getStarPositionString()
             if ss:
                 self.showMsg(f'star position string provided: "{ss}"')
@@ -5171,6 +5169,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             p1.showGrid(y=True, alpha=1.0)
             p1.setXRange(xvalues[0] - 1, xvalues[-1] + 1)
 
+            # TODO remove this experiment
+            p1.setMouseEnabled(x=True, y=False)
+
             self.plots[-1].nextRow()  # Tell GraphicsWindow that we want another row of plots
 
             pvalues = []
@@ -5187,6 +5188,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             p2.setXRange(xvalues[0] - 1, xvalues[-1] + 1)
             p2.setXLink('plot1')
             p2.showGrid(y=True, alpha=1.0)
+            p2.setMouseEnabled(x=True, y=False)
+
 
             vLine_p1 = pg.InfiniteLine(angle=90, movable=False)
             vLine_p2 = pg.InfiniteLine(angle=90, movable=False)
@@ -5218,6 +5221,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.plots[-1].move(QPoint(cascadePosition, cascadePosition))
         p1 = self.plots[-1].addPlot(title=f'Composite lightcurve plot')
         p1.addLegend()
+        p1.setMouseEnabled(x=True, y=False)
 
         max_max = 0
         color_index = 0
@@ -5365,8 +5369,6 @@ def get_mask(
         img, ksize=(5, 5), cut=None, min_pixels=9,
         outlier_fraction=0.5,
         apply_centroid_distance_constraint=False, max_centroid_distance=None):
-
-    # TODO Consider changing min_pixels to a smaller number
 
     blurred_img = cv2.GaussianBlur(img, ksize=ksize, sigmaX=0)
 

@@ -102,7 +102,6 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
 
             aperture = self.dictList[row]['appRef']
 
-            # TODO Remove this experimental code
             xyText = self.tableWidget.item(row, 1).text()
             xc, yc = self.parseXY(xyText=xyText)
             if xc is not None:

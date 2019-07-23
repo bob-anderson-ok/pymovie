@@ -1094,6 +1094,19 @@
             </widget>
            </item>
            <item>
+            <widget class="QLabel" name="label_5">
+             <property name="minimumSize">
+              <size>
+               <width>40</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QPushButton" name="demoMeanPushButton">
              <property name="toolTip">
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The 'robust' calculation of the background average and the 'robust' estimation of the dispersion (noise) in the background is an important factor in the calculation of signal intensities.&lt;/p&gt;&lt;p&gt;This button demonstrates with a detailed plot the calculation as it was performed for the current 'thumbnail'.&lt;/p&gt;&lt;p&gt;This is meant primarily for education purposes but may be useful in special cases to confirm (or not) that the 'robust' calculations are reasonable.&lt;/p&gt;&lt;p&gt;Note: the scale of dispersion (noise) is calulated using the MAD (Median Absolute Deviation) technique. Making the assumption that the background pixel counts (exclusive of outliers) are drawn from a Gaussian distribution, the bkstd is calculated as 1.4826 * MAD(aperture).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -1405,7 +1418,7 @@
                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking this button opens a Save File dialog. Use this dialog to name and, optionally select the directory where you wish the csv file to be written. The default directory is the directory from which the video data was read.&lt;/p&gt;&lt;p&gt;A set of columns is created for each aperture with the column naming incorporating the aperture name for identification.&lt;/p&gt;&lt;p&gt;Hopefully you named each aperture in a logical manner. While there is an automatic unique name given to each aperture at creation time, providing user-friendly aperture names will help greatly in identifying the csv file columns.&lt;/p&gt;&lt;p&gt;Apertures can be renamed at any time without losing any data, so please make use of this feature: it will make consumers of your csv file happy.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
                    <property name="text">
-                    <string>csv</string>
+                    <string>write csv</string>
                    </property>
                   </widget>
                  </item>
@@ -1435,7 +1448,7 @@
                     <enum>Qt::RightToLeft</enum>
                    </property>
                    <property name="text">
-                    <string>   cur frame</string>
+                    <string>   current frame</string>
                    </property>
                   </widget>
                  </item>
@@ -1565,7 +1578,7 @@
                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking this button deletes all data that has been accumulated in the apertures. (The apertures are 'objects' with properties like color, location, threshold, and also hold the recorded data itself).&lt;/p&gt;&lt;p&gt;It is often the case that one will 'experiment' with the video by analyzing short stretches of it.&lt;/p&gt;&lt;p&gt;All of the data produced while in the 'analyze' state is accumulated, even when you do it piecemeal. This can cause data points to be recorded multiple times.&lt;/p&gt;&lt;p&gt;Best practice is, before starting a production by setting the starting and stopping frame numbers, that one clears any previous data.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                  </property>
                  <property name="text">
-                  <string>clear</string>
+                  <string>clear data</string>
                  </property>
                 </widget>
                </item>
