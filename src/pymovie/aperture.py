@@ -279,19 +279,8 @@ class MeasurementAperture(pg.GraphicsObject):
     def setYellow(self):
         self.sendSetYellow.emit(self)
 
-    # def recenter(self):
-    #     self.sendRecenter.emit(self)
-
     def setThresh(self):
         self.sendSetThresh.emit(self)
-
-    # def incThresh(self):
-    #     self.thresh += 1
-    #     self.sendAperture.emit(self)
-
-    # def decThresh(self):
-    #     self.thresh -= 1
-    #     self.sendAperture.emit(self)
 
     def rename(self):
         appNamerThing = AppNameDialog()

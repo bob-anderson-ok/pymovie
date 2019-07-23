@@ -394,6 +394,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.vtiSelectComboBox.installEventFilter(self)
         self.vtiSelectComboBox.currentIndexChanged.connect(self.vtiSelected)
 
+        self.saveApertureState.clicked.connect(self.saveApertureGroup)
+        self.saveApertureState.installEventFilter(self)
+
+        self.restoreApertureState.clicked.connect(self.restoreApertureGroup)
+        self.restoreApertureState.installEventFilter(self)
+
         self.createAVIWCSfolderButton.clicked.connect(self.createAviWcsFolder)
         self.createAVIWCSfolderButton.installEventFilter(self)
         self.createAVIWCSfolderButton.setEnabled(False)
@@ -778,24 +784,146 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.helperThing.raise_()
         self.helperThing.show()
 
+    def composeApertureStateDictionary(self, aperture):
+        dict = {}
+        dict.update({'name': aperture.name})
+        dict.update({'thresh': aperture.thresh})
+        dict.update({'color': aperture.color})
+        dict.update({'x0': aperture.x0})
+        dict.update({'y0': aperture.y0})
+        dict.update({'xsize': aperture.xsize})
+        dict.update({'ysize': aperture.ysize})
+        dict.update({'jogging_enabled': aperture.jogging_enabled})
+        dict.update({'auto_display': aperture.auto_display})
+        dict.update({'thumbnail_source': aperture.thumbnail_source})
+        dict.update({'default_mask_radius': aperture.default_mask_radius})
+        dict.update({'order_number': aperture.order_number})
+        dict.update({'defaultMask': aperture.defaultMask})
+        dict.update({'defaultMaskPixelCount': aperture.defaultMaskPixelCount})
+        dict.update({'theta': aperture.theta})
+        dict.update({'dx': aperture.dx})
+        dict.update({'dy': aperture.dy})
+        dict.update({'xc': aperture.xc})
+        dict.update({'yc': aperture.yc})
+        dict.update({'max_xpos': aperture.max_xpos})
+        dict.update({'max_ypos': aperture.max_ypos})
+        return dict
+
+
+    def restoreApertureGroup(self):
+        # Set to the correct frame first (if present).
+        frameFn = self.folder_dir + '/markedFrameNumber.p'
+        if os.path.exists(frameFn):
+            markedFrameNumber = pickle.load(open(frameFn, 'rb'))
+            self.showMsg(f'marked frame number is: {markedFrameNumber}')
+            self.currentFrameSpinBox.setValue(markedFrameNumber)
+        else:
+            return
+
+        # Force frame view
+        self.viewFieldsCheckBox.setChecked(False)
+
+        # Remove all apertures that have been already placed (particularly the target
+        # aperture that is automatically placed when a WCS solution was present)
+        self.clearApertures()
+
+
+        # Then place all the apertures with complete state
+        aperturesFn = self.folder_dir + '/markedApertures.p'
+        if os.path.exists(aperturesFn):
+            savedApertureDicts = pickle.load(open(aperturesFn, "rb"))
+            self.showMsg(f'Num saved apertures: {len(savedApertureDicts)}')
+
+        for dict in savedApertureDicts:
+            try:
+                x0 = dict['x0']
+                y0 = dict['y0']
+                xsize = dict['xsize']
+                ysize = dict['ysize']
+                bbox = (x0, y0, xsize, ysize)
+                name = dict['name']
+                max_xpos = dict['max_xpos']
+                max_ypos = dict['max_ypos']
+
+                # Create an aperture object (box1) and connect it to us (self)
+                aperture = MeasurementAperture(name, bbox, max_xpos, max_ypos)
+
+                aperture.thresh = dict['thresh']
+
+                color = dict['color']
+                if color == 'red':
+                    aperture.setRed()
+                elif color == 'green':
+                    aperture.setGreen()
+                elif color == 'white':
+                    aperture.setWhite()
+                elif color == 'yellow':
+                    aperture.setYellowNoCheck()
+                else:
+                    self.showMsg(f'Unexpected color (color) found while restoring marked apertures')
+
+                aperture.jogging_enabled = dict['jogging_enabled']
+                aperture.auto_display = dict['auto_display']
+                aperture.thumbnail_source = dict['thumbnail_source']
+                aperture.default_mask_radius = dict['default_mask_radius']
+                aperture.order_number = dict['order_number']
+                aperture.defaultMask = dict['defaultMask']
+                aperture.defaultMaskPixelCount = dict['defaultMaskPixelCount']
+                aperture.theta = dict['theta']
+                aperture.dx = dict['dx']
+                aperture.dy = dict['dy']
+                aperture.xc = dict['xc']
+                aperture.yc = dict['yc']
+
+                self.connectAllSlots(aperture)
+
+                view = self.frameView.getView()
+                view.addItem(aperture)
+
+            except Exception as e:
+                self.showMsg(f'While restoring aperture constellation exception: {e}')
+
+    def saveApertureGroup(self):
+        # We need to have the apertures visible before we can save them
+        if self.viewFieldsCheckBox.isChecked():
+            self.viewFieldsCheckBox.setChecked(False)
+        self.savedStateApertures = self.getApertureList()
+        savedApertureDicts = []
+        for aperture in self.savedStateApertures:
+            dict = self.composeApertureStateDictionary(aperture)
+            savedApertureDicts.append(dict)
+
+        # Pickle the saved aperture dictionaries for use during opening of file/folder
+        pickle.dump(savedApertureDicts, open(self.folder_dir + '/markedApertures.p', "wb"))
+
+        self.savedStateFrameNumber = self.currentFrameSpinBox.value()
+        pickle.dump(self.savedStateFrameNumber, open(self.folder_dir + '/markedFrameNumber.p', "wb"))
+
+        self.showMsg(f'Current aperture group and frame number saved.')
+
     def saveCurrentState(self):
         # We need to have the apertures visible before we can save them
         if self.viewFieldsCheckBox.isChecked():
             self.viewFieldsCheckBox.setChecked(False)
         self.savedStateApertures = self.getApertureList()
         self.savedPositions = []
+        self.savedStateFrameNumber = self.currentFrameSpinBox.value()
         for aperture in self.savedStateApertures:
             self.savedPositions.append(aperture.getBbox())
-        self.savedStateFrameNumber = self.currentFrameSpinBox.value()
+
         self.transportReturnToMark.setEnabled(True)
 
-        self.showMsg(f'Current aperture constellation and frame number saved.')
+        self.showMsg(f'Configuration marked.')
 
     def restoreSavedState(self):
         # We should be showing full frame before adding back in the save apertures
         if self.viewFieldsCheckBox.isChecked():
             self.viewFieldsCheckBox.setChecked(False)
         self.clearOcrBoxes()
+
+        if not self.savedStateFrameNumber is None:
+            self.currentFrameSpinBox.setValue(self.savedStateFrameNumber)
+
         # restore any saved apertures
         if self.savedStateApertures:
             view = self.frameView.getView()
@@ -803,8 +931,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 view.addItem(aperture)
                 aperture.setPos(self.savedPositions[i])
                 self.connectAllSlots(aperture)
-        if not self.savedStateFrameNumber is None:
-            self.currentFrameSpinBox.setValue(self.savedStateFrameNumber)
 
     def moveOneFrameLeft(self):
         curFrame = self.currentFrameSpinBox.value()
@@ -2012,6 +2138,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
     def disableControlsWhenNoData(self):
         self.savedStateFrameNumber = None
 
+        self.saveApertureState.setEnabled(False)
+        self.restoreApertureState.setEnabled((False))
+
         self.viewFieldsCheckBox.setEnabled(False)
         self.currentFrameSpinBox.setEnabled(False)
 
@@ -2043,6 +2172,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.setTransportButtonEnableState(True)
         self.transportReturnToMark.setEnabled(False)
 
+        self.saveApertureState.setEnabled(True)
 
         self.viewFieldsCheckBox.setEnabled(True)
         self.currentFrameSpinBox.setEnabled(True)
@@ -2055,6 +2185,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.setTransportButtonEnableState(True)
         self.transportReturnToMark.setEnabled(False)
 
+        self.saveApertureState.setEnabled(True)
 
         self.currentFrameSpinBox.setEnabled(True)
         self.viewFieldsCheckBox.setChecked(False)
@@ -3592,7 +3723,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.folder_dir = dir_path
             self.fits_filenames = sorted(glob.glob(dir_path + '/*.fits'))
 
-            self.readPixelDimensions()
+            if os.path.exists(self.folder_dir + '/pixel-dimensions.p'):
+                self.readPixelDimensions()
+            else:
+                self.pixelAspectRatio = 1.0
+                self.pixelWidthEdit.setText('1.00')
+                self.pixelHeightEdit.setText(('1.00'))
 
             self.fourcc = ''
 
@@ -3623,6 +3759,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.thumbTwoView.clear()
 
             self.processTargetAperturePlacementFiles()
+
+            # Check for the presence of a 'saved aperture group' and enable the Restore group
+            # button accordingly
+            file1 = self.folder_dir + '/markedApertures.p'
+            file2 = self.folder_dir + '/markedFrameNumber.p'
+
+            if os.path.exists(file1) and os.path.exists(file2):
+                self.restoreApertureState.setEnabled(True)
 
     def showMsgDialog(self, msg):
         msg_box = QMessageBox()
@@ -3808,6 +3952,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.avi_in_use = True
                 self.savedApertures = None
                 self.enableControlsForAviData()
+                self.saveApertureState.setEnabled(False)
                 # Let's get the FOURCC code
                 fourcc = int(self.cap.get(cv2.CAP_PROP_FOURCC))
                 fourcc_str = f'{fourcc & 0xff:c}{fourcc >> 8 & 0xff:c}{fourcc >> 16 & 0xff:c}{fourcc >> 24 & 0xff:c}'
@@ -4033,13 +4178,19 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
                 self.processTargetAperturePlacementFiles()
 
+                # Check for the presence of a 'saved aperture group' and enable the Restore group
+                # button accordingly
+                file1 = self.folder_dir + '/markedApertures.p'
+                file2 = self.folder_dir + '/markedFrameNumber.p'
+
+                if os.path.exists(file1) and os.path.exists(file2):
+                    self.restoreApertureState.setEnabled(True)
+
                 self.startTimestampReading()
                 self.showFrame()  # So that we get the first frame timestamp (if possible)
 
                 self.thumbOneView.clear()
                 self.thumbTwoView.clear()
-
-            # self.processTargetAperturePlacementFiles()
 
     def startTimestampReading(self):
         # This is how we starup timestamp extraction.
@@ -4144,9 +4295,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             pixHstr, pixWstr = pickle.load(open(matching_name[0], "rb"))
             self.pixelHeightEdit.setText(pixHstr)
             self.pixelWidthEdit.setText(pixWstr)
-            # with open(self.folder_dir + r'/pixel-aspect-ratio.txt', 'r') as f:
-            #     pixel_aspect_ratio_text = f.read()
-            #     self.pixelAspectRatio = float(pixel_aspect_ratio_text)
 
         # Check for presence of target-location.txt This file is needed for both
         # the manual WCS placement and the nova.astrometry.net placement
@@ -4837,6 +4985,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         ycoord = pixcrd2[1].tolist()
         x = xcoord
         y = ycoord
+
 
         # Correct for pixel aspect ratio
         if not self.pixelAspectRatio == 1.0:
