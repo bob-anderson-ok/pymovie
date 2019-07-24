@@ -1139,6 +1139,19 @@
              </property>
             </spacer>
            </item>
+           <item>
+            <widget class="QCheckBox" name="runPyote">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If PyOTE is installed on your machine, this checkbox will be enabled, otherwise it will remain disabled.&lt;/p&gt;&lt;p&gt;If this box is checked, when a new csv file has been written, PyOTE will be automatically started and will read the newly created csv file.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>auto-run PyOTE</string>
+             </property>
+            </widget>
+           </item>
           </layout>
          </item>
         </layout>

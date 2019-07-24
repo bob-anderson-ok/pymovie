@@ -48,12 +48,23 @@ from more_itertools import sort_together
 
 # from resource import getrusage, RUSAGE_SELF
 # import gc
+
+try:
+    from pyoteapp import pyote
+    # print('PyOTE installation found')
+    pyote_available = True
+except ImportError:
+    # print('No PyOTE installation found')
+    pyote_available = False
+
+import site
 import warnings
 from astropy.utils.exceptions import AstropyWarning
 import sys
 import os
 import platform
 import pickle
+from pathlib import Path
 from urllib.request import urlopen
 import numpy as np
 from pymovie.checkForNewerVersion import getMostRecentVersionOfPyMovie
@@ -83,6 +94,7 @@ from astropy.coordinates import SkyCoord
 from astroquery.vizier import Vizier
 from skimage import measure, exposure
 import skimage
+import subprocess
 
 
 from pymovie.aperture import *
@@ -95,7 +107,6 @@ import pathlib
 
 if not os.name == 'posix':
     import winshell
-    # from win32com.client import Dispatch
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=RuntimeWarning)
@@ -276,6 +287,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.clearTextBox()
         title = f'PyMovie  Version: {version.version()}'
         self.setWindowTitle(title)
+
+        self.showMsg(f'pyote available: {pyote_available}')
+
+        if pyote_available:
+            self.runPyote.setEnabled(True)
+
+        self.runPyote.installEventFilter(self)
 
         # Open (or create) file for holding 'sticky' stuff
         self.settings = QSettings('PyMovie.ini', QSettings.IniFormat)
@@ -2459,6 +2477,15 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             app.last_theta = None
         self.showMsg(f'All aperture data has been removed.')
 
+    def prepareAutorunPyoteFile(self, csv_file):
+        with open(self.folder_dir + '/auto_run_pyote.py', "w") as f:
+            f.writelines('import sys\n')
+            f.writelines(f'sys.path.append(r"{Path(site.getusersitepackages())}")\n')
+            f.writelines(f'sys.path.append(r"{Path(site.getsitepackages()[0])}")\n')
+            f.writelines('\n')
+            f.writelines('from pyoteapp import pyote\n')
+            f.writelines(f'pyote.main(r"{Path(csv_file)}")\n')
+
     def writeCsvFile(self):
 
         def sortOnFrame(val):
@@ -2546,6 +2573,19 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                             f.write(f',,')
                     f.write('\n')
                     f.flush()
+
+            if self.runPyote.isChecked():
+                print(site.getsitepackages())
+                print(site.getusersitepackages())
+                self.prepareAutorunPyoteFile(filename)
+                # subprocess.run(["python3", "--version"])
+                # subprocess.call(["python3", "--version"])
+                # subprocess.run("python3 --version", shell=True) # This one does not work without shell=True
+                # self.showMsg(f' "{self.folder_dir + "/auto_run_pyote.py"}" ')
+                # subprocess.call(["python3", f' "{self.folder_dir + "/auto_run_pyote.py"}" '])
+
+                # subprocess.call(f'python3 "{self.folder_dir + "/auto_run_pyote.py"}" ', shell=True)
+                subprocess.Popen(f'python "{self.folder_dir + "/auto_run_pyote.py"}" ', shell=True)
 
     def trackerPresent(self):
         for app in self.getApertureList():
