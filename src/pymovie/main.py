@@ -787,7 +787,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.disableControlsWhenNoData()
 
-        QtGui.QGuiApplication.processEvents
+        QtGui.QGuiApplication.processEvents()
         self.checkForNewerVersion()
 
         self.copy_desktop_icon_file_to_home_directory()
@@ -800,29 +800,29 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.helperThing.show()
 
     def composeApertureStateDictionary(self, aperture):
-        dict = {}
-        dict.update({'name': aperture.name})
-        dict.update({'thresh': aperture.thresh})
-        dict.update({'color': aperture.color})
-        dict.update({'x0': aperture.x0})
-        dict.update({'y0': aperture.y0})
-        dict.update({'xsize': aperture.xsize})
-        dict.update({'ysize': aperture.ysize})
-        dict.update({'jogging_enabled': aperture.jogging_enabled})
-        dict.update({'auto_display': aperture.auto_display})
-        dict.update({'thumbnail_source': aperture.thumbnail_source})
-        dict.update({'default_mask_radius': aperture.default_mask_radius})
-        dict.update({'order_number': aperture.order_number})
-        dict.update({'defaultMask': aperture.defaultMask})
-        dict.update({'defaultMaskPixelCount': aperture.defaultMaskPixelCount})
-        dict.update({'theta': aperture.theta})
-        dict.update({'dx': aperture.dx})
-        dict.update({'dy': aperture.dy})
-        dict.update({'xc': aperture.xc})
-        dict.update({'yc': aperture.yc})
-        dict.update({'max_xpos': aperture.max_xpos})
-        dict.update({'max_ypos': aperture.max_ypos})
-        return dict
+        my_dict = {}
+        my_dict.update({'name': aperture.name})
+        my_dict.update({'thresh': aperture.thresh})
+        my_dict.update({'color': aperture.color})
+        my_dict.update({'x0': aperture.x0})
+        my_dict.update({'y0': aperture.y0})
+        my_dict.update({'xsize': aperture.xsize})
+        my_dict.update({'ysize': aperture.ysize})
+        my_dict.update({'jogging_enabled': aperture.jogging_enabled})
+        my_dict.update({'auto_display': aperture.auto_display})
+        my_dict.update({'thumbnail_source': aperture.thumbnail_source})
+        my_dict.update({'default_mask_radius': aperture.default_mask_radius})
+        my_dict.update({'order_number': aperture.order_number})
+        my_dict.update({'defaultMask': aperture.defaultMask})
+        my_dict.update({'defaultMaskPixelCount': aperture.defaultMaskPixelCount})
+        my_dict.update({'theta': aperture.theta})
+        my_dict.update({'dx': aperture.dx})
+        my_dict.update({'dy': aperture.dy})
+        my_dict.update({'xc': aperture.xc})
+        my_dict.update({'yc': aperture.yc})
+        my_dict.update({'max_xpos': aperture.max_xpos})
+        my_dict.update({'max_ypos': aperture.max_ypos})
+        return my_dict
 
 
     def restoreApertureGroup(self):
@@ -1093,41 +1093,31 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     dictionary_list.append(entry)
             return dictionary_list
 
-    def saveCurrentOcrProfile(self):
-        if not self.avi_wcs_folder_in_use:
-            self.showMsg(f'This operation only available when an AVI-WCS folder is in use.')
-            return
-
-        title_getter = OcrProfileNameDialog()
-        return_value = title_getter.exec_()
-        if return_value == QDialog.Accepted:
-            profile_title = title_getter.profileNameEdit.text()
-            self.showMsg(f'Came out through OK hole')
-            return
-        else:
-            self.showMsg(f'Came out the other hole')
-            return
-
-        my_profile_fn = '/pymovie-ocr-profiles.p'
-        mine = self.readSavedOcrProfiles()
-        code_to_save = self.readFormatTypeFile()
-        if self.kiwiInUse:
-            self.currentFrameSpinBox.setValue(1)
-            # if not self.currentUpperBoxPos == self.currentLowerBoxPos:
-            #     self.showMsg(f'Cannot save Kiwi profile when upper and lower boxes are in different positions.')
-            #     return
-            #
-            # if self.currentUpperBoxPos == 'left':
-            #     code_to_save = 'kiwi-left'
-            # else:
-            #     code_to_save = 'kiwi-right'
-            # if self.formatterCode == 'kiwi-left' and self.currentUpperBoxPos == 'alt':
-            #     self.showMsg(f'Please return to the character position trained at.')
-
-        mine.append({'id': profile_title, 'upper-boxes': self.upperOcrBoxesLeft,
-                     'lower-boxes': self.lowerOcrBoxesLeft, 'digits': self.modelDigits,
-                     'formatter-code': code_to_save})
-        pickle.dump(mine, open(self.profilesDir + my_profile_fn, "wb"))
+    # def saveCurrentOcrProfile(self):
+    #     if not self.avi_wcs_folder_in_use:
+    #         self.showMsg(f'This operation only available when an AVI-WCS folder is in use.')
+    #         return
+    #
+    #     title_getter = OcrProfileNameDialog()
+    #     return_value = title_getter.exec_()
+    #     if return_value == QDialog.Accepted:
+    #         profile_title = title_getter.profileNameEdit.text()
+    #         self.showMsg(f'Came out through OK hole')
+    #         return
+    #     else:
+    #         self.showMsg(f'Came out the other hole')
+    #         return
+    #
+    #     my_profile_fn = '/pymovie-ocr-profiles.p'
+    #     mine = self.readSavedOcrProfiles()
+    #     code_to_save = self.readFormatTypeFile()
+    #     if self.kiwiInUse:
+    #         self.currentFrameSpinBox.setValue(1)
+    #
+    #     mine.append({'id': profile_title, 'upper-boxes': self.upperOcrBoxesLeft,
+    #                  'lower-boxes': self.lowerOcrBoxesLeft, 'digits': self.modelDigits,
+    #                  'formatter-code': code_to_save})
+    #     pickle.dump(mine, open(self.profilesDir + my_profile_fn, "wb"))
 
     def handleChangeOfDisplayMode(self):
         # self.showMsg(f'View avi fields: {self.viewFieldsCheckBox.isChecked()}')
@@ -2152,7 +2142,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.savedStateFrameNumber = None
 
         self.saveApertureState.setEnabled(False)
-        self.restoreApertureState.setEnabled((False))
+        self.restoreApertureState.setEnabled(False)
 
         self.viewFieldsCheckBox.setEnabled(False)
         self.currentFrameSpinBox.setEnabled(False)
@@ -2266,12 +2256,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             height, width = self.image.shape
             self.roi_max_x = width - self.roi_size
             self.roi_max_y = height - self.roi_size
-
-    # def changeDefaultMask(self):
-    #     new_radius = self.defaultMaskRadiusDoubleSpinBox.value()
-    #     self.buildDefaultMask(new_radius)
-    #     self.thumbTwoImage = self.defaultMask
-    #     self.thumbTwoView.setImage(self.thumbTwoImage)
 
     def buildDefaultMask(self, radius=4.5):
         # Create the default mask
@@ -2479,9 +2463,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def prepareAutorunPyoteFile(self, csv_file):
         with open(self.folder_dir + '/auto_run_pyote.py', "w") as f:
-            f.writelines('import sys\n')
-            f.writelines(f'sys.path.append(r"{Path(site.getusersitepackages())}")\n')
-            f.writelines(f'sys.path.append(r"{Path(site.getsitepackages()[0])}")\n')
+            f.writelines('import sys\n\n')
+            f.writelines('# The following path is needed to locate pyoteapp\n')
+            f.writelines(f'sys.path.append(r"{Path(site.getusersitepackages())}")\n\n')
+            f.writelines('# The following path(s) is/are needed to locate standard packages\n')
+            for path in site.getsitepackages():
+                f.writelines(f'sys.path.append(r"{Path(path)}")\n')
             f.writelines('\n')
             f.writelines('from pyoteapp import pyote\n')
             f.writelines(f'pyote.main(r"{Path(csv_file)}")\n')
@@ -2575,16 +2562,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     f.flush()
 
             if self.runPyote.isChecked():
-                print(site.getsitepackages())
-                print(site.getusersitepackages())
+                # We need to prepare a script that is unique to the user's platform
+                # and to include a path to the csv file to be given to PyOTE
                 self.prepareAutorunPyoteFile(filename)
-                # subprocess.run(["python3", "--version"])
-                # subprocess.call(["python3", "--version"])
-                # subprocess.run("python3 --version", shell=True) # This one does not work without shell=True
-                # self.showMsg(f' "{self.folder_dir + "/auto_run_pyote.py"}" ')
-                # subprocess.call(["python3", f' "{self.folder_dir + "/auto_run_pyote.py"}" '])
 
-                # subprocess.call(f'python3 "{self.folder_dir + "/auto_run_pyote.py"}" ', shell=True)
+                # Next, we run that script.
+                # We use Popen so that we don't have to wait for the process to complete (i.e.,
+                # for the user to quit using PyOTE) and so that multiple PyOTE processes
+                # can be running at the same time.
                 subprocess.Popen(f'python "{self.folder_dir + "/auto_run_pyote.py"}" ', shell=True)
 
     def trackerPresent(self):
@@ -3763,7 +3748,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             else:
                 self.pixelAspectRatio = 1.0
                 self.pixelWidthEdit.setText('1.00')
-                self.pixelHeightEdit.setText(('1.00'))
+                self.pixelHeightEdit.setText('1.00')
 
             self.fourcc = ''
 
@@ -3904,7 +3889,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             if not success:
                 if trace:
                     self.showMsg('read() failed')
-            return (success, frame)
+            return success, frame
 
         if fr_num > next_frame:
             frames_to_read = fr_num - next_frame + 1
@@ -4340,24 +4325,24 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'No target star location found in the folder.')
             return
 
-            ss = self.getStarPositionString()
-            if ss:
-                self.showMsg(f'star position string provided: "{ss}"')
-
-                try:
-                    _ = SkyCoord(ss, frame='icrs')
-                except Exception as e:
-                    self.showMsg(f'star location string is invalid: {e}')
-                    return
-
-                with open(self.folder_dir + r'/target-location.txt', 'w') as f:
-                    f.writelines(ss)
-                got_star_position = True
-            else:
-                self.showMsg(f'No star position was provided.')
-                # Both the manual WCS and the nova.astrometry.net WCS aperture placements
-                # depend on this file, so we can exit immediately
-                return
+            # ss = self.getStarPositionString()
+            # if ss:
+            #     self.showMsg(f'star position string provided: "{ss}"')
+            #
+            #     try:
+            #         _ = SkyCoord(ss, frame='icrs')
+            #     except Exception as e:
+            #         self.showMsg(f'star location string is invalid: {e}')
+            #         return
+            #
+            #     with open(self.folder_dir + r'/target-location.txt', 'w') as f:
+            #         f.writelines(ss)
+            #     got_star_position = True
+            # else:
+            #     self.showMsg(f'No star position was provided.')
+            #     # Both the manual WCS and the nova.astrometry.net WCS aperture placements
+            #     # depend on this file, so we can exit immediately
+            #     return
         else:
             with open(self.folder_dir + r'/target-location.txt', 'r') as f:
                 ss = f.read()
@@ -4636,7 +4621,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.openDocFile()
 
     def setDoTestFlag(self):
-        self.do_test = True;
+        self.do_test = True
 
     def removePreviousWcsFiles(self):
         self.showMsg(f'A new WCS solution has been requested so we will', blankLine=False)
@@ -5389,6 +5374,7 @@ def jogAperture(aperture, delta_xc, delta_yc):
     aperture.setPos(bbox)
 
 
+# noinspection PyChainedComparisons,PyChainedComparisons
 def calcTheta(dx, dy):
     d = sqrt(dx * dx + dy * dy)
     a = arcsin(dy / d)
