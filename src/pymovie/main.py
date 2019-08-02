@@ -1839,8 +1839,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     dest.writelines(src.readlines())
 
     def performFrameStacking(self):
-        if not self.avi_wcs_folder_in_use:
-            self.showMsg(f'This function can only be performed in the context of an AVI-WCS folder.')
+        if not (self.avi_wcs_folder_in_use or self.fits_folder_in_use):
+            self.showMsg(f'This function can only be performed in the context of an AVI-WCS or FITS folder.')
             return
 
         # Deal with timestamp redaction first.
@@ -1891,15 +1891,26 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if early_exit:
             return
 
-        if num_lines_to_redact < 0 or num_lines_to_redact > image_height / 2:
+        # if num_lines_to_redact < 0 or num_lines_to_redact > image_height / 2:
+        #     self.showMsg(f'{num_lines_to_redact} is an unreasonable number of lines to redact.')
+        #     self.showMsg(f'Operation aborted.')
+        #     return
+
+        if abs(num_lines_to_redact) > image_height / 2:
             self.showMsg(f'{num_lines_to_redact} is an unreasonable number of lines to redact.')
             self.showMsg(f'Operation aborted.')
             return
 
         redacted_image = self.image[:,:].astype('int16')
-        for i in range(image_height - num_lines_to_redact, image_height):
-            for j in range(0, image_width):
-                redacted_image[i, j] = mean
+        if num_lines_to_redact > 0:
+            for i in range(image_height - num_lines_to_redact, image_height):
+                for j in range(0, image_width):
+                    redacted_image[i, j] = mean
+        else:
+            for i in range(0, abs(num_lines_to_redact)):
+                for j in range(0, image_width):
+                    redacted_image[i, j] = mean
+
 
         self.image = redacted_image
         self.frameView.setImage(self.image)
@@ -1952,10 +1963,16 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         except FileNotFoundError:
             pass
 
+        if self.fits_folder_in_use:
+            fitsReader = self.getFitsFrame
+        else:
+            fitsReader = None
+
         stacker.frameStacker(
             self.showMsg, self.stackerProgressBar, QtGui.QGuiApplication.processEvents,
             first_frame=first_frame, last_frame=last_frame,
             timestamp_trim=num_lines_to_redact,
+            fitsReader = fitsReader,
             avi_location=self.avi_location, out_dir_path=self.folder_dir)
 
         # Now that we're back, if we got a new enhanced-image.fit, display it.
@@ -2571,6 +2588,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 # for the user to quit using PyOTE) and so that multiple PyOTE processes
                 # can be running at the same time.
                 subprocess.Popen(f'python "{self.folder_dir + "/auto_run_pyote.py"}" ', shell=True)
+                self.showMsg(f'##### PyOTE is starting up --- this takes a few seconds #####')
 
     def trackerPresent(self):
         for app in self.getApertureList():
@@ -3457,7 +3475,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             else:
                 self.statusbar.showMessage(f'x={x} y={y}')
 
-    def getApertureStats(self, aperture, show_stats=True, save_yellow_mask=False):
+    def  getApertureStats(self, aperture, show_stats=True, save_yellow_mask=False):
         # This routine is dual purpose.  When self.show_stats is True, there is output to
         # the information text box, and to the the two thumbnail ImageViews.
         # But sometime we use this routine just to get the measurements that it returns.
@@ -3820,7 +3838,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def readFinderImage(self):
 
-        if self.avi_wcs_folder_in_use:
+        if self.avi_wcs_folder_in_use or self.fits_folder_in_use:
             # Look for enhanced-image.fit and if present, open it and return
             # otherwise let the user find a .bmp file whereever.
             fullpath = self.folder_dir + r'/enhanced-image.fit'
@@ -4417,6 +4435,16 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'shape of lower_field: {self.lower_field.shape}')
             self.showMsg(f'shape of upper_field: {self.upper_field.shape}')
             self.showMsg(f'in createImageFields: {e}')
+
+    # This routine is only used by the frame stacker program --- it is passed as a parameter
+    def getFitsFrame(self, frame_to_read):
+        try:
+            image = pyfits.getdata(
+                self.fits_filenames[frame_to_read], 0).astype('float32', casting='unsafe')
+            # self.showMsg(f'image shape: {self.image.shape}')
+        except:
+            image = None
+        return image
 
     def showFrame(self):
 
@@ -5049,9 +5077,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # self.showMsg(f'{good_mean} {sigma} {window} {data_size} {left}  {right}')
 
         # Start a new plot
-        self.plots.append(pg.GraphicsWindow(title="Robust Mean Calculation demonstration"))
+        self.plots.append(pg.GraphicsWindow(title="Robust Mean Calculation"))
         self.plots[-1].resize(1000, 600)
-        self.plots[-1].setWindowTitle(f'PyMovie {version.version()} Robust Mean Calculation demonstration')
+        self.plots[-1].setWindowTitle(f'PyMovie {version.version()} Robust Mean Calculation')
 
         p1 = self.plots[-1].addPlot(
             row=0, col=0,

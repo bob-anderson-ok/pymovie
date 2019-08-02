@@ -28,12 +28,35 @@ def asinhScale(img, limcut = 0):  # img needs to be float32 type
 
 def frameStacker(pr, progress_bar, event_process,
                  first_frame, last_frame, timestamp_trim,
+                 fitsReader,
                  avi_location, out_dir_path):
-    # pr is self.showMsg() provided by the caller
+    # fitReader is self.getFitsFrame()
+    # pr sis self.showMsg() provided by the caller
     # progress_bar is a reference to the caller's progress bar item so
     # that can update it to show progess
 
     cap = None
+
+    def read_fits_frame(frame_to_read, trim=None):
+        try:
+            frame = fitsReader(frame_to_read)
+            if frame is None:
+                pr(f'Problem reading FITS file: frame == None returned')
+                return None
+
+            if trim is None or trim == 0:
+                image = frame[:, :, 0].astype('float32')
+            else:
+                if trim > 0:
+                    image = frame[0:-trim, :].astype('float32')
+                else:
+                    image = frame[-trim:, :].astype('float32')
+
+        except Exception as e:
+            pr(f'Problem reading FITS file: {e}')
+            return None
+
+        return image
 
     def read_avi_frame(frame_to_read, trim=None):
         try:
@@ -61,35 +84,44 @@ def frameStacker(pr, progress_bar, event_process,
             pr(f'...file opened just fine.')
             return cap
 
-    cap = openAviReader(avi_location=avi_location)
-    if cap is None:
-        return
-    # else:
-    #     cap.release()
-    #     return
+    if fitsReader is None:
+        cap = openAviReader(avi_location=avi_location)
+        if cap is None:
+            return
 
     next_frame = first_frame + 1
-    # tracking_list = []
 
     # Read reference frame image without trimming the timestamp portion off
     # so that we can save the timestamp for later replacement.
-    inimage = read_avi_frame(first_frame)
+    if fitsReader is None:
+        inimage = read_avi_frame(first_frame)
+    else:
+        inimage = fitsReader(first_frame)
 
     if timestamp_trim <= 0:
+        # If redact is from the top, this is assumed to be a FITS file for
+        # which there is no timestamp to be preserved, just a few 'corrupted' lines at the top.
         timestamp_image = None
     else:
         timestamp_image = inimage[-timestamp_trim:,:]
 
     # Re-read the reference frame with the timestamp trimmed off and use it
     # to initialize the stack sum
-    inimage = read_avi_frame(first_frame, trim=timestamp_trim)
+    if fitsReader is None:
+        inimage = read_avi_frame(first_frame, trim=timestamp_trim)
+    else:
+        inimage = read_fits_frame(first_frame, trim=timestamp_trim)
+
     image_sum = inimage[:,:]
 
     # g1 is our reference image transform
     g1 = np.fft.fftshift(np.fft.fft2(inimage))
 
     while next_frame <= last_frame:
-        inimage = read_avi_frame(next_frame, trim=timestamp_trim)
+        if fitsReader is None:
+            inimage = read_avi_frame(next_frame, trim=timestamp_trim)
+        else:
+            inimage = read_fits_frame(next_frame, trim=timestamp_trim)
         next_frame += 1
 
         # Calculate progress [1..100]
@@ -171,11 +203,3 @@ def frameStacker(pr, progress_bar, event_process,
     # Write the fits file
     outlist.writeto(outfile, overwrite = True)
 
-    # # Write the tracking list.
-    #
-    # with open(out_dir_path + r'/tracking_list.txt', 'w') as f:
-    #     frame = first_frame + 1
-    #     for entry in tracking_list:
-    #         out_str = f'{frame} {entry[0]} {entry[1]}\n'
-    #         frame += 1
-    #         f.writelines(out_str)

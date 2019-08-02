@@ -29,11 +29,17 @@
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
+      <property name="handleWidth">
+       <number>14</number>
+      </property>
       <widget class="QSplitter" name="splitterTwo">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <widget class="QWidget" name="">
+       <property name="handleWidth">
+        <number>14</number>
+       </property>
+       <widget class="QWidget" name="layoutWidget">
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_10" stretch="2,2,0">
@@ -757,7 +763,7 @@
               </size>
              </property>
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This entry is used to specify how many lines from the image bottom to remove to get rid of the timestamp.&lt;/p&gt;&lt;p&gt;For generating a &amp;quot;finder&amp;quot; image, getting rid of the timestamp is &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;essential&lt;/span&gt; for getting a good image to image registration based on the star field movement. If the timestamp is not removed, then the stacking process will likely register on the timestamp instead.&lt;/p&gt;&lt;p&gt;This entry is as used when preparing a frame for submission to nova.astrometry.net for WCS calibration.&lt;/p&gt;&lt;p&gt;If there is a timestamp overlay, its presence may make the WCS location and calibration harder (takes longer) for nova.astrometry.net. So, before submitting an image to nova.astrometry.net, we like to 'redact' the timestamp area by replacing the bottom lines with the average background (sampled from the center of the image). The value in this box controls how many lines from the bottom get this treatment.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This entry is used to specify how many lines from the image bottom (or top) to remove to get rid of the timestamp. A positive number redacts from the bottom up while a negative number redacts from the top down.&lt;/p&gt;&lt;p&gt;For generating a &amp;quot;finder&amp;quot; image, getting rid of the timestamp is &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;essential&lt;/span&gt; for getting a good image to image registration based on the star field movement. If the timestamp is not removed, then the stacking process will likely register on the timestamp instead.&lt;/p&gt;&lt;p&gt;This entry is also used when preparing a frame for submission to nova.astrometry.net for WCS calibration.&lt;/p&gt;&lt;p&gt;If there is a timestamp overlay, its presence may make the WCS location and calibration harder (takes longer) for nova.astrometry.net. So, before submitting an image to nova.astrometry.net, we like to 'redact' the timestamp area by replacing the bottom lines with the average background (sampled from the center of the image). The value in this box controls how many lines from the bottom get this treatment.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
               <string> redact lines</string>
@@ -1156,7 +1162,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <layout class="QVBoxLayout" name="verticalLayout_16">
          <item>
           <widget class="ImageView" name="frameView">
@@ -1633,6 +1639,9 @@
       <widget class="QSplitter" name="splitterOne">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="handleWidth">
+        <number>14</number>
        </property>
        <widget class="QWidget" name="layoutWidget">
         <layout class="QVBoxLayout" name="verticalLayout_15">
