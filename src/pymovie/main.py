@@ -1790,6 +1790,17 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         # self.showMsg('appDictList has been filled')
 
+    def setThumbnails(self, aperture, showDefaultMaskInThumbnail2):
+        # self.showMsg(f'We will execute a thumbnail update on {aperture.name}', blankLine=False)
+        # self.showMsg(f'... showDefaultMaskInThumbnail2 is {showDefaultMaskInThumbnail2}')
+        if showDefaultMaskInThumbnail2:
+            self.getApertureStats(aperture, show_stats=True)
+            mask = aperture.defaultMask
+            self.thumbTwoView.setImage(mask)
+        else:
+            self.getApertureStats(aperture, show_stats=True)
+        QtGui.QGuiApplication.processEvents()
+
     def editApertures(self):
         # Fill self.appDictList from apertures --- this will be passed to EditApertureDialog
         self.fillApertureDictionaries()
@@ -1800,7 +1811,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             dictList=self.appDictList,
             appSize=self.roi_size,
             threshSpinner=self.threshValueEdit,
-            imageUpdate=self.frameView.getView().update
+            imageUpdate=self.frameView.getView().update,
+            setThumbnails=self.setThumbnails
         )
 
         # Set size and position of the dialog window to last known...
@@ -2498,13 +2510,22 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         options = QFileDialog.Options()
         # options |= QFileDialog.DontUseNativeDialog
 
-        filename, _ = QFileDialog.getSaveFileName(
-            self,  # parent
-            "Select video file",  # title for dialog
-            self.settings.value('avidir', "./"),  # starting directory
-            "csv files (*.csv);; all files (*.*)",
-            options=options
-        )
+        if self.fits_folder_in_use:
+            filename, _ = QFileDialog.getSaveFileName(
+                self,  # parent
+                "Select video file",  # title for dialog
+                self.settings.value('fitsdir', "./"),  # starting directory
+                "csv files (*.csv);; all files (*.*)",
+                options=options
+            )
+        else:
+            filename, _ = QFileDialog.getSaveFileName(
+                self,  # parent
+                "Select video file",  # title for dialog
+                self.settings.value('avidir', "./"),  # starting directory
+                "csv files (*.csv);; all files (*.*)",
+                options=options
+            )
 
         QtGui.QGuiApplication.processEvents()
 
@@ -3484,7 +3505,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.one_time_suppress_stats = False
             return None
 
-        # Grap the properties that we need from the aperture object
+        # Grab the properties that we need from the aperture object
         bbox = aperture.getBbox()
         x0, y0, nx, ny = bbox
         name = aperture.name

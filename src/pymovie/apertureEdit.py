@@ -7,7 +7,7 @@ import numpy as np
 
 
 class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
-    def __init__(self, messager, saver, dictList, appSize, threshSpinner, imageUpdate):
+    def __init__(self, messager, saver, dictList, appSize, threshSpinner, imageUpdate, setThumbnails):
         super(EditApertureDialog, self).__init__()
         self.setupUi(self)
         self.msgRoutine = messager
@@ -16,15 +16,39 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
         self.fillApertureTable()
         self.appSize = appSize
         self.threshSpinner = threshSpinner
-        self.writeTableButton.clicked.connect(self.writeTable)
         self.imageUpdate = imageUpdate
+        self.tableWidget.cellClicked.connect(self.cellClicked)
+        self.tableWidget.cellChanged.connect(self.cellClicked)
+        self.tableWidget.cellActivated.connect(self.cellClicked)
+        self.tableWidget.itemSelectionChanged.connect(self.selectionChange)
+        self.setThumbnails = setThumbnails
+        self.ignoreCellClick = False
+
+    def selectionChange(self):
+        row = self.tableWidget.currentRow()
+        col = self.tableWidget.currentColumn()
+        self.cellClicked(row, col)
+
+    def cellClicked(self, row, column):
+        if self.ignoreCellClick:
+            self.ignoreCellClick = False
+            return
+        # self.msgRoutine( f'row {row} column {column} was clicked')
+        aperture = self.dictList[row]['appRef']
+        self.writeTable()
+        showDefaultMaskInThumbnailTwo = column == 3
+        self.setThumbnails(aperture, showDefaultMaskInThumbnailTwo)
+        # The xy position may have changed because of 'snap' when threshold is changed.
+        self.ignoreCellClick = True
+        xc, yc = aperture.getCenter()
+        self.msgRoutine(f'({xc},{yc})')
+        item = QTableWidgetItem(str(f'({xc},{yc})'))
+        self.tableWidget.setItem(row, 1, item)
 
     def writeTable(self):
-        # self.msgRoutine('writeTable() called')
         self.updateAperturesFromTable()
 
     def fillApertureTable(self):
-        # self.showMsg('Aperture table filled from appDictList')
         for rowDict in self.dictList:
             numRows = self.tableWidget.rowCount()
             self.tableWidget.insertRow(numRows)
@@ -78,7 +102,6 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
         return mask, maskPixelCount, radius
 
     def closeEvent(self, event):
-        # self.msgRoutine("Saving aperture dialog settings")
         self.settingsSaver.setValue('appEditDialogSize', self.size())
         self.settingsSaver.setValue('appEditDialogPos', self.pos())
         self.updateAperturesFromTable()
@@ -272,7 +295,7 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
         if thresh < 0:
             thresh = 0
 
-        # self.threshSpinner.setValue(thresh)
+        self.threshSpinner.setValue(thresh)
 
     def setYellow(self):
         numYellow = 0

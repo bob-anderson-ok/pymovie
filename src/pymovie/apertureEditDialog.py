@@ -48,14 +48,6 @@ class Ui_Dialog(object):
         self.verticalLayout.addWidget(self.tableWidget)
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
-        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.horizontalLayout.addItem(spacerItem)
-        self.writeTableButton = QtWidgets.QPushButton(Dialog)
-        self.writeTableButton.setMinimumSize(QtCore.QSize(120, 54))
-        self.writeTableButton.setObjectName("writeTableButton")
-        self.horizontalLayout.addWidget(self.writeTableButton)
-        spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.horizontalLayout.addItem(spacerItem1)
         self.verticalLayout.addLayout(self.horizontalLayout)
         self.gridLayout.addLayout(self.verticalLayout, 0, 0, 1, 1)
 
@@ -83,6 +75,5 @@ class Ui_Dialog(object):
         item.setText(_translate("Dialog", "thumbnail source"))
         item = self.tableWidget.horizontalHeaderItem(8)
         item.setText(_translate("Dialog", "csv output order"))
-        self.writeTableButton.setText(_translate("Dialog", "Write"))
 
 
