@@ -302,7 +302,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # Use 'sticky' settings (from earlier session) to size and position the main screen
         self.resize(self.settings.value('size', QSize(800, 800)))
         self.move(self.settings.value('pos', QPoint(50, 50)))
-        # self.logScalingCheckBox.setChecked( self.settings.value('logscale', False) == 'true' )
         self.cascadeCheckBox.setChecked(self.settings.value('cascade', False) == 'true')
         self.plotSymbolSizeSpinBox.setValue(int(self.settings.value('plot_symbol_size', 4)))
 
@@ -336,8 +335,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         view.menu.addSeparator()
         addSnapApp = view.menu.addAction("Add snap-to-blob aperture")
         addFixedApp = view.menu.addAction('Add static aperture (no snap)')
+        addAppStack = view.menu.addAction('Add stack of 5 apertures')
         addSnapApp.triggered.connect(self.addSnapAperture)
         addFixedApp.triggered.connect(self.addStaticAperture)
+        addAppStack.triggered.connect(self.addApertureStack)
 
         # We use mouse movements to dynamically display in the status bar the mouse
         # coordinates and pixel value under the mouse cursor.
@@ -762,9 +763,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.view3DButton.clicked.connect(self.show3DThumbnail)
         self.view3DButton.installEventFilter(self)
 
-        # self.saveStateButton.clicked.connect(self.saveCurrentState)
-        # self.saveStateButton.installEventFilter(self)
-
         self.transportReturnToMark.clicked.connect(self.restoreSavedState)
         self.transportReturnToMark.installEventFilter(self)
 
@@ -798,6 +796,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.helperThing.textEdit.insertHtml(msg)
         self.helperThing.raise_()
         self.helperThing.show()
+
+    def addApertureStack(self):
+        self.showMsg('Not yet implemented')
+        for i in range(5):
+            self.addStaticAperture(askForName=False)
+        for app in self.getApertureList():
+            if app.color == 'green':
+                app.setRed()
 
     def composeApertureStateDictionary(self, aperture):
         my_dict = {}
@@ -1092,32 +1098,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 for entry in dict_list:
                     dictionary_list.append(entry)
             return dictionary_list
-
-    # def saveCurrentOcrProfile(self):
-    #     if not self.avi_wcs_folder_in_use:
-    #         self.showMsg(f'This operation only available when an AVI-WCS folder is in use.')
-    #         return
-    #
-    #     title_getter = OcrProfileNameDialog()
-    #     return_value = title_getter.exec_()
-    #     if return_value == QDialog.Accepted:
-    #         profile_title = title_getter.profileNameEdit.text()
-    #         self.showMsg(f'Came out through OK hole')
-    #         return
-    #     else:
-    #         self.showMsg(f'Came out the other hole')
-    #         return
-    #
-    #     my_profile_fn = '/pymovie-ocr-profiles.p'
-    #     mine = self.readSavedOcrProfiles()
-    #     code_to_save = self.readFormatTypeFile()
-    #     if self.kiwiInUse:
-    #         self.currentFrameSpinBox.setValue(1)
-    #
-    #     mine.append({'id': profile_title, 'upper-boxes': self.upperOcrBoxesLeft,
-    #                  'lower-boxes': self.lowerOcrBoxesLeft, 'digits': self.modelDigits,
-    #                  'formatter-code': code_to_save})
-    #     pickle.dump(mine, open(self.profilesDir + my_profile_fn, "wb"))
 
     def handleChangeOfDisplayMode(self):
         # self.showMsg(f'View avi fields: {self.viewFieldsCheckBox.isChecked()}')
@@ -1680,25 +1660,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         profile_dict = self.readSavedOcrProfiles()
 
         code_to_save = self.formatterCode
-        # if self.kiwiInUse:
-        #     if not self.currentUpperBoxPos == self.currentLowerBoxPos:
-        #         self.showMsg(f'Cannot save Kiwi profile when upper and lower boxes not in same position!')
-        #         return
-        #     if self.currentUpperBoxPos == 'alt':
-        #         if self.formatterCode == 'kiwi-left':
-        #             code_to_save = 'kiwi-right'
-        #         else:
-        #             code_to_save = 'kiwi-left'
-        #         current_profile = {'id': 'default', 'upper-boxes': self.kiwiAltUpperOcrBoxes,
-        #                            'lower-boxes': self.kiwiAltLowerOcrBoxes, 'digits': self.modelDigits,
-        #                            'formatter-code': code_to_save}
-        #     else:
-        #         current_profile = {'id': 'default', 'upper-boxes': self.kiwiUpperOcrBoxes,
-        #                            'lower-boxes': self.kiwiLowerOcrBoxes, 'digits': self.modelDigits,
-        #                            'formatter-code': code_to_save}
-        #
-        #
-        # else:
+
         current_profile = {'id': 'default',
                            'upper-boxes-left': self.upperOcrBoxesLeft,
                            'lower-boxes-left': self.lowerOcrBoxesLeft,
@@ -1793,6 +1755,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
     def setThumbnails(self, aperture, showDefaultMaskInThumbnail2):
         # self.showMsg(f'We will execute a thumbnail update on {aperture.name}', blankLine=False)
         # self.showMsg(f'... showDefaultMaskInThumbnail2 is {showDefaultMaskInThumbnail2}')
+        self.centerAperture(aperture, show_stats=False)
         if showDefaultMaskInThumbnail2:
             self.getApertureStats(aperture, show_stats=True)
             mask = aperture.defaultMask
@@ -1903,11 +1866,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if early_exit:
             return
 
-        # if num_lines_to_redact < 0 or num_lines_to_redact > image_height / 2:
-        #     self.showMsg(f'{num_lines_to_redact} is an unreasonable number of lines to redact.')
-        #     self.showMsg(f'Operation aborted.')
-        #     return
-
         if abs(num_lines_to_redact) > image_height / 2:
             self.showMsg(f'{num_lines_to_redact} is an unreasonable number of lines to redact.')
             self.showMsg(f'Operation aborted.')
@@ -1922,7 +1880,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             for i in range(0, abs(num_lines_to_redact)):
                 for j in range(0, image_width):
                     redacted_image[i, j] = mean
-
 
         self.image = redacted_image
         self.frameView.setImage(self.image)
@@ -2946,7 +2903,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.computeInitialThreshold(aperture)
 
-    def addStaticAperture(self):
+    def addStaticAperture(self, askForName = True):
         if self.image is None:  # Don't add an aperture if there is no image showing yet.
             return
 
@@ -2956,7 +2913,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.one_time_suppress_stats = True
         self.threshValueEdit.setValue(self.big_thresh)  # Causes call to self.changeThreshold()
 
-        self.nameAperture(aperture)
+        if askForName:
+            self.nameAperture(aperture)
 
     def addOcrAperture(self, fieldbox, boxnum, position):
 
