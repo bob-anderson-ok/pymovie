@@ -337,7 +337,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         addFixedApp = view.menu.addAction('Add static aperture (no snap)')
         addAppStack = view.menu.addAction('Add stack of 5 apertures')
         addSnapApp.triggered.connect(self.addSnapAperture)
-        addFixedApp.triggered.connect(self.addStaticAperture)
+        addFixedApp.triggered.connect(self.addNamedStaticAperture)
         addAppStack.triggered.connect(self.addApertureStack)
 
         # We use mouse movements to dynamically display in the status bar the mouse
@@ -2902,6 +2902,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.nameAperture(aperture)
 
         self.computeInitialThreshold(aperture)
+
+    def addNamedStaticAperture(self):
+        self.addStaticAperture(askForName=True)
 
     def addStaticAperture(self, askForName = True):
         if self.image is None:  # Don't add an aperture if there is no image showing yet.
