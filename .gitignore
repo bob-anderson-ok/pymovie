@@ -16,3 +16,4 @@ src/pymovie.egg-info/PKG-INFO
 src/pymovie.egg-info/SOURCES.txt
 src/pymovie/vtiList*.p
 src/pymovie/*boxes*.p
+src/pymovie/simple-ote.ini
