@@ -5589,7 +5589,7 @@ def main():
         print(f'os: MacOS')
     else:
         print(f'os: Windows')
-        app.setStyleSheet("QLabel, QPushButton, QToolButton, QCheckBox, QRadioButton {font-size: 8pt}")
+        app.setStyleSheet("QLabel, QPushButton, QToolButton, QCheckBox, QRadioButton, QLineEdit {font-size: 8pt}")
 
     # Save the current/proper sys.excepthook object
     # sys._excepthook = sys.excepthook
