@@ -62,6 +62,7 @@ import warnings
 from astropy.utils.exceptions import AstropyWarning
 import sys
 import os
+import errno
 import platform
 import pickle
 from pathlib import Path
@@ -1057,13 +1058,28 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.settings.setValue('avidir', full_dir_path)  # Make dir 'sticky'"
 
             pathlib.Path(full_dir_path).mkdir(parents=True, exist_ok=True)
-            if os.name == 'posix':
+            if sys.platform == 'darwin':
                 ok, file, dir, retval, source = alias_lnk_resolver.create_osx_alias_in_dir(self.filename, full_dir_path)
                 if not ok:
                     self.showMsg('Failed to create and populate AVI-WCS folder')
                 else:
                     self.showMsg('AVI-WCS folder created and populated')
                 # self.showMsg(f'  file: {file}\n  dir: {dir}\n  retval: {retval}\n  source: {source}')
+
+            elif sys.platform == 'linux':
+                src = self.filename
+                dst = os.path.join(dirname, base, base_with_ext)
+                try:
+                    os.symlink(src,dst)
+                    self.showMsgPopup('AVI-WCS folder created and populated')
+                except OSError as e:
+                    if e.errno == errno.EEXIST:
+                        os.remove(dst)
+                        os.symlink(src,dst)
+                        self.showMsgPopup('AVI-WCS folder created and old symlink overwritten')
+                    else:
+                        self.showMsgPopup('Failed to create and populate AVI-WCS folder')
+
             else:
                 # self.showMsg(f'os.name={os.name} not yet fully supported for AVI-WCS folder creation.')
                 # Make sure that there is a directory waiting for the shortcut file
@@ -1414,7 +1430,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                              f'{self.upper_left_count}/{self.upper_right_count}',
                              blankLine=False)
                 self.showMsg(f'lower field timestamp:{self.lower_timestamp}  '
-                             f'time:{self.lower_time:0.4f}  scores:{self.lower_scores} ' 
+                             f'time:{self.lower_time:0.4f}  scores:{self.lower_scores} '
                              f'{self.lower_left_count}/{self.lower_right_count}')
             else:
                 self.showMsg(f'upper field timestamp:{self.upper_timestamp}  '
@@ -1791,7 +1807,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.apertureEditor.show()
 
     def copy_desktop_icon_file_to_home_directory(self):
-        if platform.mac_ver()[0]:
+        if sys.platform == 'linux':
+            pass
+        elif platform.mac_ver()[0]:
             icon_dest_path = f"{os.environ['HOME']}{r'/Desktop/run-pymovie'}"
             if not os.path.exists(icon_dest_path):
                 # Here is where the .bat file will be when running an installed pymovie
@@ -4111,14 +4129,24 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             # We need to know what OS we're running under in order to look for
             # either 'aliases' (MacOs) or 'shortcuts' (Windows) to the avi file
-            if os.name == 'posix':
-                # self.showMsg(f'os: MacOS')
-                macOS = True
-                windows = False
+
+            # if os.name == 'posix':
+            #     # self.showMsg(f'os: MacOS')
+            #     macOS = True
+            #     windows = False
+            # else:
+            #     macOS = False
+            #     windows = True
+            #     # self.showMsg(f'os: Windows')
+
+            # use `sys.platform` to distinguish macOS from Linux
+            if sys.platform == 'linux':
+                linux, macOS, windows = True, False, False
+            elif sys.platform == 'darwin':
+                linux, macOS, windows = False, True, False
             else:
-                macOS = False
-                windows = True
-                # self.showMsg(f'os: Windows')
+                linux, macOS, windows = False, False, True
+
 
             # Find a .avi file in the given directory.  Enforce that there be only one.
             # Note: this picks up alias (mac) and shortcut (Windows) files too.
@@ -4131,6 +4159,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 avi_location = avi_filenames[0]
                 if macOS:
                     avi_location = alias_lnk_resolver.resolve_osx_alias(avi_location)
+
+                elif linux:
+                    avi_location = os.readlink(avi_location)
                 else:
                     target = winshell.shortcut(avi_location)
                     avi_location = target.path
@@ -5546,7 +5577,15 @@ def main():
     QtGui.QApplication.setStyle('fusion')
     app = QtGui.QApplication(sys.argv)
 
-    if os.name == 'posix':
+    # if os.name == 'posix':
+    #     print(f'os: MacOS')
+    # else:
+    #     print(f'os: Windows')
+    #     app.setStyleSheet("QLabel, QPushButton, QToolButton, QCheckBox, QRadioButton {font-size: 8pt}")
+
+    if sys.platform == 'linux':
+        print(f'os: Linux')
+    elif sys.platform == 'darwin':
         print(f'os: MacOS')
     else:
         print(f'os: Windows')
