@@ -1274,6 +1274,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         digits_path = os.path.join(self.ocrDigitsDir, digits_fn)
         if os.path.exists(digits_path):
             os.remove(digits_path)
+        for i in range(10):
+            self.modelDigits[i] = None
 
     def loadModelDigits(self):
         pickled_digits_fn = self.modelDigitsFilename
@@ -2932,7 +2934,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             showtemplates=self.showDigitTemplates,
             neededdigits=self.needDigits,
             kiwi=self.kiwiInUse,
-            samplemenu=self.enableOcrTemplateSampling
+            # samplemenu=self.enableOcrTemplateSampling
+            samplemenu=True
         )
         view = self.frameView.getView()
         view.addItem(aperture)
@@ -2953,6 +2956,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.modelDigits[i] = None
             self.saveModelDigits()
             self.acceptAviFolderDirectoryWithoutUserIntervention = True
+            self.showMissingModelDigits()
+            return
 
         for img in self.modelDigits:
             if not img is None:

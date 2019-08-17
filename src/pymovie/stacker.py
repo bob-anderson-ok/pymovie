@@ -123,6 +123,8 @@ def frameStacker(pr, progress_bar, event_process,
         else:
             inimage = read_fits_frame(next_frame, trim=timestamp_trim)
         next_frame += 1
+        # TODO Remove this experiment
+        # next_frame += 63
 
         # Calculate progress [1..100]
         fraction_done = (next_frame - first_frame) / (last_frame - first_frame)
@@ -158,7 +160,7 @@ def frameStacker(pr, progress_bar, event_process,
 
     progress_bar.setValue(0)
 
-    # Sharpen the image 2 and 10 were ok  5 an2 were smudgy
+    # Sharpen the image 2 and 10 were ok  5 and 2 were smudgy
     sharper_image = unsharp_mask(asinhScale(image_sum), radius=2, amount=10.0, preserve_range=True)
 
     if timestamp_image is not None:
