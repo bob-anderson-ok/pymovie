@@ -440,6 +440,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         # Initialize all instance variables as a block (to satisfy PEP 8 standard)
 
+        self.printKeyCodes = False
+        self.consecutiveKcount = 0
+
         self.savedStateApertures = []
         self.savedStateFrameNumber = None
         self.savedPositions = []
@@ -2024,7 +2027,32 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         else:
             self.showMsg(f'There is no Thumbnail One image to show')
 
+    def displayKeystroke(self, event):
+        if not self.printKeyCodes:
+            return
+
+        key = event.key()
+        modifiers = int(event.modifiers())
+        if (key != Qt.Key_Shift and key != Qt.Key_Alt and
+                key != Qt.Key_Control and key != Qt.Key_Meta):
+            keyname = PyQt5.QtGui.QKeySequence(modifiers + key).toString()
+            self.showMsg(f'key(s) pressed: {keyname}  raw: {key}')
+
     def processKeystroke(self, event):
+
+        key = event.key()
+        modifiers = int(event.modifiers())
+
+        self.displayKeystroke(event)
+
+        if key == ord('K'):  # Could be 'k' or 'K'
+            if modifiers & Qt.SHIFT == Qt.SHIFT: # it's 'K'
+                self.consecutiveKcount += 1
+                if self.consecutiveKcount >= 2:
+                    self.printKeyCodes = True
+            elif modifiers == 0:
+                self.printKeyCodes = False
+                self.consecutiveKcount = 0
 
         joggable_aperture_available = False
         app_list = self.getApertureList()
@@ -2043,26 +2071,29 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 break
 
         if not joggable_aperture_available and not joggable_ocr_box_available:
-            return False
+            return True
 
-        key = event.key()
         got_arrow_key = False
         dx = 0
         dy = 0
         if key == Qt.Key_Up:
-            # self.showMsg(f'Got an up arrow key')
+            if self.printKeyCodes:
+                self.showMsg(f'Jogging up')
             dy = -1
             got_arrow_key = True
         elif key == Qt.Key_Down:
-            # self.showMsg(f'Got a down arrow key')
+            if self.printKeyCodes:
+                self.showMsg(f'Jogging down')
             dy = 1
             got_arrow_key = True
         elif key == Qt.Key_Left:
-            # self.showMsg(f'Got a left arrow key')
+            if self.printKeyCodes:
+                self.showMsg(f'Jogging left')
             dx = -1
             got_arrow_key = True
         elif key == Qt.Key_Right:
-            # self.showMsg(f'Got a right arrow key')
+            if self.printKeyCodes:
+              self.showMsg(f'Jogging right')
             dx = 1
             got_arrow_key = True
 
@@ -2632,7 +2663,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def eventFilter(self, obj, event):
         if event.type() == QtCore.QEvent.KeyPress:
-            # self.showMsg(f'key:{event.key()}')
             handled = self.processKeystroke(event)
             if handled:
                 return True
