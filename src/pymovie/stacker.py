@@ -29,9 +29,9 @@ def asinhScale(img, limcut = 0):  # img needs to be float32 type
 def frameStacker(pr, progress_bar, event_process,
                  first_frame, last_frame, timestamp_trim,
                  fitsReader,
-                 avi_location, out_dir_path):
+                 avi_location, out_dir_path, bkg_threshold):
     # fitReader is self.getFitsFrame()
-    # pr sis self.showMsg() provided by the caller
+    # pr is self.showMsg() provided by the caller
     # progress_bar is a reference to the caller's progress bar item so
     # that can update it to show progess
 
@@ -45,7 +45,7 @@ def frameStacker(pr, progress_bar, event_process,
                 return None
 
             if trim is None or trim == 0:
-                image = frame[:, :, 0].astype('float32')
+                image = frame[:, :].astype('float32')
             else:
                 if trim > 0:
                     image = frame[0:-trim, :].astype('float32')
@@ -98,12 +98,15 @@ def frameStacker(pr, progress_bar, event_process,
     else:
         inimage = fitsReader(first_frame)
 
-    if timestamp_trim <= 0:
+    if timestamp_trim < 0:
         # If redact is from the top, this is assumed to be a FITS file for
         # which there is no timestamp to be preserved, just a few 'corrupted' lines at the top.
-        timestamp_image = None
-    else:
+        timestamp_junk = inimage[0:-timestamp_trim,:]
+        timestamp_image = np.zeros_like(timestamp_junk)
+    elif timestamp_trim > 0:
         timestamp_image = inimage[-timestamp_trim:,:]
+    else:
+        timestamp_image = None
 
     # Re-read the reference frame with the timestamp trimmed off and use it
     # to initialize the stack sum
@@ -115,7 +118,9 @@ def frameStacker(pr, progress_bar, event_process,
     image_sum = inimage[:,:]
 
     # g1 is our reference image transform
-    g1 = np.fft.fftshift(np.fft.fft2(inimage))
+    # g1 = np.fft.fftshift(np.fft.fft2(inimage))
+    ret, th_inimage = cv2.threshold(inimage, bkg_threshold, 0, cv2.THRESH_TOZERO)
+    g1 = np.fft.fftshift(np.fft.fft2(th_inimage))
 
     while next_frame <= last_frame:
         if fitsReader is None:
@@ -123,15 +128,16 @@ def frameStacker(pr, progress_bar, event_process,
         else:
             inimage = read_fits_frame(next_frame, trim=timestamp_trim)
         next_frame += 1
-        # TODO Remove this experiment
-        # next_frame += 63
 
         # Calculate progress [1..100]
         fraction_done = (next_frame - first_frame) / (last_frame - first_frame)
         progress_bar.setValue(fraction_done * 100)
         event_process()
 
-        g2 = np.fft.fftshift(np.fft.fft2(inimage))
+        # g2 = np.fft.fftshift(np.fft.fft2(inimage))
+        ret, th_inimage = cv2.threshold(inimage, bkg_threshold, 0, cv2.THRESH_TOZERO)
+        g2 = np.fft.fftshift(np.fft.fft2(th_inimage))
+
 
         g2conj = g2.conj()
 
@@ -148,7 +154,9 @@ def frameStacker(pr, progress_bar, event_process,
         # print(mag_r.shape, max_row, max_col)
         rows_to_roll_to_center = max_row - int(mag_r.shape[0] / 2)
         cols_to_roll_to_center = max_col - int(mag_r.shape[1] / 2)
-        # print(rows_to_roll_to_center, cols_to_roll_to_center, next_frame-1)
+        pr(f'row-shift:{rows_to_roll_to_center:4d}  col-shift:{cols_to_roll_to_center:4d}  frame: {next_frame-1}',
+           blankLine=False)
+
         # tracking_list.append([rows_to_roll_to_center, cols_to_roll_to_center])
 
         # Center the image
@@ -163,10 +171,12 @@ def frameStacker(pr, progress_bar, event_process,
     # Sharpen the image 2 and 10 were ok  5 and 2 were smudgy
     sharper_image = unsharp_mask(asinhScale(image_sum), radius=2, amount=10.0, preserve_range=True)
 
-    if timestamp_image is not None:
+    if timestamp_image is None:
+        unredacted = sharper_image
+    elif timestamp_trim > 0:
         unredacted = np.append(sharper_image, asinhScale(timestamp_image), axis=0)
     else:
-        unredacted = sharper_image
+        unredacted = np.append(timestamp_image, sharper_image, axis=0)
 
     # plt.imshow(unredacted, cmap='gray')
     # print(unredacted.shape)

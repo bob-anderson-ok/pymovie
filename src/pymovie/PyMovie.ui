@@ -163,7 +163,7 @@
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Click this button to invert the Y axes on the main image as well as the two thumbnails.&lt;/p&gt;&lt;p&gt;This control is necessary because: the origin of composite video images is the upper left corner of the image; for .fits files, the origin is at the lower left corner of the image.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
-              <string>Invert images</string>
+              <string>Flip images top/bottom</string>
              </property>
             </widget>
            </item>
@@ -766,7 +766,7 @@
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This entry is used to specify how many lines from the image bottom (or top) to remove to get rid of the timestamp. A positive number redacts from the bottom up while a negative number redacts from the top down.&lt;/p&gt;&lt;p&gt;For generating a &amp;quot;finder&amp;quot; image, getting rid of the timestamp is &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;essential&lt;/span&gt; for getting a good image to image registration based on the star field movement. If the timestamp is not removed, then the stacking process will likely register on the timestamp instead.&lt;/p&gt;&lt;p&gt;This entry is also used when preparing a frame for submission to nova.astrometry.net for WCS calibration.&lt;/p&gt;&lt;p&gt;If there is a timestamp overlay, its presence may make the WCS location and calibration harder (takes longer) for nova.astrometry.net. So, before submitting an image to nova.astrometry.net, we like to 'redact' the timestamp area by replacing the bottom lines with the average background (sampled from the center of the image). The value in this box controls how many lines from the bottom get this treatment.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
-              <string> redact lines</string>
+              <string>:redact lines</string>
              </property>
             </widget>
            </item>
@@ -833,7 +833,7 @@
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This edit box specifies how many frames to register and sum. For the purpose of locating a star that can produce an occultation light curve, a number of frames in the range of 100 to 400 is effective. If this number is set too high, while the target star might become visible in this enhanced image, it is likely to be lost in quantization and noise effects when frame by frame aperture photometry is attempted.&lt;/p&gt;&lt;p&gt;Of course, your objective might be to get a 'pretty picture' of the star field. If so, have at it, but be aware that stars may 'appear' for which an occultation light curve cannot be extracted when processing is done frame by frame.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
-              <string>num frames</string>
+              <string>:num frames</string>
              </property>
             </widget>
            </item>
@@ -977,6 +977,26 @@
               </size>
              </property>
             </spacer>
+           </item>
+           <item>
+            <widget class="QLabel" name="finderThresholdLabel">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When generating a &amp;quot;finder&amp;quot; image, it is often necessary to suppress the background, otherwise the images will be aligned to background features/texture rather than the star features. Ideally, the alignment works best with stars against a black background.&lt;/p&gt;&lt;p&gt;The value in this box sets the background threshold: all pixel values at or below this value are set to zero for the purpose of aligning images. The raw image values are then used in the stacked sum.&lt;/p&gt;&lt;p&gt;If you leave this box empty, a value will be estimated for you by using the Robust Mean estimator on a region in the center of the image. The threshold will be set 5 standard deviations above the mean value. But if this procedure is not effective, you can use the image contrast control to find out what setting produces stars on a black ground and place that value in this box.&lt;/p&gt;&lt;p&gt;You can also place an aperture somewhere with a medium bright star and click the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Plot Robust Mean&lt;/span&gt; button. From that plot it is easy to estimate a threshold that will selct only star pixel values.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>&quot;finder&quot; image threshold:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="finderThresholdEdit">
+             <property name="maximumSize">
+              <size>
+               <width>60</width>
+               <height>16777215</height>
+              </size>
+             </property>
+            </widget>
            </item>
           </layout>
          </item>

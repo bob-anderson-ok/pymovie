@@ -749,6 +749,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.finderRedactLinesLabel.installEventFilter(self)
         self.finderNumFramesLabel.installEventFilter(self)
+        self.finderThresholdLabel.installEventFilter(self)
 
         self.frameToFitsButton.clicked.connect(self.getWCSsolution)
         self.frameToFitsButton.installEventFilter(self)
@@ -1960,12 +1961,24 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         else:
             fitsReader = None
 
+        bkg_thresh = 0
+        bkg_thresh_text = self.finderThresholdEdit.text()
+        if not bkg_thresh_text:
+            bkg_thresh = self.calcFinderBkgThreshold()
+            self.finderThresholdEdit.setText(str(bkg_thresh))
+        else:
+            try:
+                bkg_thresh = int(bkg_thresh_text)
+            except ValueError:
+                self.showMsg(f'Invalid entry in :finder" image threshold edit box')
+                return
+
         stacker.frameStacker(
             self.showMsg, self.stackerProgressBar, QtGui.QGuiApplication.processEvents,
             first_frame=first_frame, last_frame=last_frame,
             timestamp_trim=num_lines_to_redact,
             fitsReader = fitsReader,
-            avi_location=self.avi_location, out_dir_path=self.folder_dir)
+            avi_location=self.avi_location, out_dir_path=self.folder_dir, bkg_threshold=bkg_thresh)
 
         # Now that we're back, if we got a new enhanced-image.fit, display it.
         if os.path.isfile(self.folder_dir + r'/enhanced-image.fit'):
@@ -2107,12 +2120,20 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 if app.auto_display:
                     self.getApertureStats(app, show_stats=True)
 
+        joggable_ocr_box_count = 0
+        last_ocr_box = None
         for ocr in ocr_list:
             if ocr.joggable:
+                joggable_ocr_box_count += 1
+                last_ocr_box = ocr
+
                 # The following call also calls pickleOcrBoxes
                 self.jogSingleOcrBox(dx=dx, dy=dy,
                                      boxnum=ocr.boxnum,
                                      position=ocr.position, ocr=ocr)
+
+        if joggable_ocr_box_count == 1:
+            self.showOcrboxInThumbnails(last_ocr_box.getBox())
 
         self.frameView.getView().update()
 
@@ -2638,6 +2659,20 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
     def handleYellowMaskClick(self):
         self.use_yellow_mask = self.useYellowMaskCheckBox.isChecked()
 
+    def calcFinderBkgThreshold(self):
+        height, width = self.image.shape
+        center_y = int(height / 2)
+        center_x = int(width / 2)
+
+        img = self.image[center_y:center_y + 52, center_x:center_x + 52]
+
+        bkavg, std, *_ = robustMeanStd(img)
+
+        background = int(np.ceil(bkavg))
+
+        thresh = background + 5 * int(np.ceil(std))
+        return thresh
+
     def computeInitialThreshold(self, aperture):
 
         # This method is called by a click on an item in a context menu.
@@ -2905,26 +2940,29 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         #         self.showMsg(f'{plate_scale_str} is an invalid entry.')
         #         return
 
-        if ref1['x'] > ref2['x']:
-            flip_x = ref1['ra'] < ref2['ra']
-        else:
-            flip_x = ref1['ra'] > ref2['ra']
+        # if ref1['x'] > ref2['x']:
+        #     flip_x = ref1['ra'] < ref2['ra']
+        # else:
+        #     flip_x = ref1['ra'] > ref2['ra']
+        #
+        # if ref1['y'] > ref2['y']:
+        #     flip_y = ref1['dec'] < ref2['dec']
+        # else:
+        #     flip_y = ref1['dec'] > ref2['dec']
+        #
+        # self.showMsg(f'flip_x: {flip_x}  flip_y: {flip_y}')
 
-        if ref1['y'] > ref2['y']:
-            flip_y = ref1['dec'] < ref2['dec']
-        else:
-            flip_y = ref1['dec'] > ref2['dec']
+        # solution, plate_scale, targ_theta, ra_dec_x_y_rotation = wcs_helper_functions.solve_triangle(
+        #     ref1, ref2, targ, self.pixelAspectRatio, plate_scale=plate_scale, xflipped=flip_x, yflipped=flip_y
+        # )
 
-        self.showMsg(f'flip_x: {flip_x}  flip_y: {flip_y}')
-
-        solution, plate_scale, targ_theta, ra_dec_x_y_rotation = wcs_helper_functions.solve_triangle(
-            ref1, ref2, targ, self.pixelAspectRatio, plate_scale=plate_scale, xflipped=flip_x, yflipped=flip_y
+        solution, plate_scale, ra_dec_x_y_rotation = wcs_helper_functions.new_solve_triangle(
+            ref1, ref2, targ, self.pixelAspectRatio, plate_scale=plate_scale
         )
 
         self.showMsg(f'solution: {repr(solution)}', blankLine=False)
-        self.showMsg(f'plate_scale: {plate_scale:0.5f} arc-seconds/pixel'
-                     f'  ref1-to-target angle: {targ_theta:0.1f} degrees', blankLine=False)
-        self.showMsg(f'ra_dec_x_y angle: {ra_dec_x_y_rotation:0.1f} degrees')
+        self.showMsg(f'    plate_scale: {plate_scale:0.5f} arc-seconds/pixel', blankLine=False)
+        self.showMsg(f'    ra_dec_x_y angle: {ra_dec_x_y_rotation:0.1f} degrees')
         self.showMsg("", blankLine=False)
 
         # The -0.5 is meant to correct for the fact that RA DEC coords are associated with
@@ -4555,7 +4593,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 try:
                     try:
                         self.image = pyfits.getdata(
-                            self.fits_filenames[frame_to_show], 0).astype('int16', casting='unsafe')
+                            self.fits_filenames[frame_to_show], 0).astype('uint16', casting='unsafe')
                         # self.showMsg(f'image shape: {self.image.shape}')
                     except:
                         self.image = None
