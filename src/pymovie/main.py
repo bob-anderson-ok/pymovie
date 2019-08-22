@@ -2591,13 +2591,17 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     f.write(f'# date at frame 0: {self.fits_date}\n')
 
                 # csv column headers with aperture names in entry order
+                # Tangra uses FrameNo
                 f.write(f'FrameNum,timeInfo')
                 # Put all signals in the first columns so that R-OTE and PyOTE can read the file
                 for name in names:
                     f.write(f',signal-{name}')
+
+                # TODO make this conditional for AOTA compatibility
                 for name in names:
                     f.write(f',appsum-{name},avgbkg-{name},stdbkg-{name},nmaskpx-{name},'
                             f'maxpx-{name},xcentroid-{name},ycentroid-{name}')
+
                 f.write('\n')
 
                 # Now we add the data lines
@@ -2611,6 +2615,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                         signal = appdata[k][i][4]
                         f.write(f',{signal:0.2f}')
 
+                    # TODO make this conditional for AOTA compatibility
                     for k in range(num_apps):
                         appsum = appdata[k][i][5]
                         bkgnd = appdata[k][i][6]
@@ -2625,6 +2630,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                             f.write(f',{xcentroid:0.2f},{ycentroid:0.2f}')
                         else:
                             f.write(f',,')
+
                     f.write('\n')
                     f.flush()
 
@@ -4874,15 +4880,22 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             msg.exec()
             return
 
-        if num_lines_to_redact < 0 or num_lines_to_redact > image_height / 2:
+        if (num_lines_to_redact < -image_height / 2) or (num_lines_to_redact > image_height / 2):
             self.showMsg(f'{num_lines_to_redact} is an unreasonable number of lines to redact.')
             self.showMsg(f'Operation aborted.')
             return
 
-        redacted_image = self.image[:,:].astype('int16')
-        for i in range(image_height - num_lines_to_redact, image_height):
-            for j in range(0, image_width):
-                redacted_image[i, j] = mean
+        redacted_image = self.image[:,:].astype('uint16')
+
+        if num_lines_to_redact > 0:
+            for i in range(image_height - num_lines_to_redact, image_height):
+                for j in range(0, image_width):
+                    redacted_image[i, j] = mean
+
+        if num_lines_to_redact < 0:
+            for i in range(0, -num_lines_to_redact):
+                for j in range(0, image_width):
+                    redacted_image[i, j] = mean
 
         self.image = redacted_image
         self.frameView.setImage(self.image)
