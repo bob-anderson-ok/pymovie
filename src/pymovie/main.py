@@ -656,8 +656,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.transportCurrentFrameLabel.installEventFilter(self)
         self.transportStopAtFrameLabel.installEventFilter(self)
 
-        self.invertImagesCheckBox.clicked.connect(self.invertImages)
-        self.invertImagesCheckBox.installEventFilter(self)
+        self.flipImagesTopToBottomCheckBox.clicked.connect(self.flipImagesTopToBottom)
+        self.flipImagesTopToBottomCheckBox.installEventFilter(self)
+
+        self.flipImagesLeftToRightCheckBox.clicked.connect(self.flipImagesLeftToRight)
+        self.flipImagesLeftToRightCheckBox.installEventFilter(self)
 
         self.showImageControlCheckBox.clicked.connect(self.toggleImageControl)
         self.showImageControlCheckBox.installEventFilter(self)
@@ -2155,10 +2158,18 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         #
         # self.showMsg(f'key pressed was: {key}')
 
-    def invertImages(self):
-        self.frameView.view.invertY(not self.invertImagesCheckBox.isChecked())
-        self.thumbOneView.view.invertY(not self.invertImagesCheckBox.isChecked())
-        self.thumbTwoView.view.invertY(not self.invertImagesCheckBox.isChecked())
+    def flipImagesTopToBottom(self):
+        checked = self.flipImagesTopToBottomCheckBox.isChecked()
+        # The 'inversion' of checked is because the intial state of frameView is with invertedY because
+        self.frameView.view.invertY(not checked)
+        self.thumbOneView.view.invertY(not checked)
+        self.thumbTwoView.view.invertY(not checked)
+
+    def flipImagesLeftToRight(self):
+        checked = self.flipImagesLeftToRightCheckBox.isChecked()
+        self.frameView.view.invertX(checked)
+        self.thumbOneView.view.invertX(checked)
+        self.thumbTwoView.view.invertX(checked)
 
     def toggleImageControl(self):
         if self.showImageControlCheckBox.isChecked():
@@ -4845,8 +4856,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'RA: {star_loc.ra.value}')
             self.showMsg(f'Dec: {star_loc.dec.value}')
 
-        self.clearApertures()
-        self.showFrame()
+        # If a "finder" image has just been loaded, then self.record_target_aperture will be true.
+        # We use that flag to allow a "finder" image to be submitted to nova.astrometry.net
+        if not self.record_target_aperture:
+            self.clearApertures()
+            self.showFrame()
 
         # Get a robust mean from near the center of the current image
         y0 = int(self.image.shape[0]/2)

@@ -121,6 +121,13 @@
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_6">
            <item>
+            <widget class="QCheckBox" name="flipImagesLeftToRightCheckBox">
+             <property name="text">
+              <string>Flip images left/right</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <spacer name="horizontalSpacer_14">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
@@ -158,7 +165,7 @@
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_3">
            <item>
-            <widget class="QCheckBox" name="invertImagesCheckBox">
+            <widget class="QCheckBox" name="flipImagesTopToBottomCheckBox">
              <property name="toolTip">
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Click this button to invert the Y axes on the main image as well as the two thumbnails.&lt;/p&gt;&lt;p&gt;This control is necessary because: the origin of composite video images is the upper left corner of the image; for .fits files, the origin is at the lower left corner of the image.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
