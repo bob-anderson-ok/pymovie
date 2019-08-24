@@ -1964,17 +1964,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         else:
             fitsReader = None
 
-        bkg_thresh = 0
-        bkg_thresh_text = self.finderThresholdEdit.text()
-        if not bkg_thresh_text:
-            bkg_thresh = self.calcFinderBkgThreshold()
-            self.finderThresholdEdit.setText(str(bkg_thresh))
-        else:
-            try:
-                bkg_thresh = int(bkg_thresh_text)
-            except ValueError:
-                self.showMsg(f'Invalid entry in :finder" image threshold edit box')
-                return
+        bkg_thresh = self.getBkgThreshold()
+        if bkg_thresh is None:
+            return
 
         stacker.frameStacker(
             self.showMsg, self.stackerProgressBar, QtGui.QGuiApplication.processEvents,
@@ -1990,6 +1982,20 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 f.write(f'{first_frame}')
             self.clearApertures()
             self.readFinderImage()
+
+    def getBkgThreshold(self):
+        bkg_thresh = 0
+        bkg_thresh_text = self.finderThresholdEdit.text()
+        if not bkg_thresh_text:
+            bkg_thresh = self.calcFinderBkgThreshold()
+            self.finderThresholdEdit.setText(str(bkg_thresh))
+        else:
+            try:
+                bkg_thresh = int(bkg_thresh_text)
+            except ValueError:
+                self.showMsg(f'Invalid entry in :finder" image threshold edit box')
+                return None
+        return bkg_thresh
 
     def clearCoordinatesEdit(self):
         self.coordinatesEdit.setText('')
@@ -2949,29 +2955,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # self.showMsg(repr(targ))
 
         plate_scale = None
-        # plate_scale_str = self.plateScaleEdit.text()
-        # if plate_scale_str:
-        #     try:
-        #         plate_scale = float(plate_scale_str)
-        #     except ValueError:
-        #         self.showMsg(f'{plate_scale_str} is an invalid entry.')
-        #         return
-
-        # if ref1['x'] > ref2['x']:
-        #     flip_x = ref1['ra'] < ref2['ra']
-        # else:
-        #     flip_x = ref1['ra'] > ref2['ra']
-        #
-        # if ref1['y'] > ref2['y']:
-        #     flip_y = ref1['dec'] < ref2['dec']
-        # else:
-        #     flip_y = ref1['dec'] > ref2['dec']
-        #
-        # self.showMsg(f'flip_x: {flip_x}  flip_y: {flip_y}')
-
-        # solution, plate_scale, targ_theta, ra_dec_x_y_rotation = wcs_helper_functions.solve_triangle(
-        #     ref1, ref2, targ, self.pixelAspectRatio, plate_scale=plate_scale, xflipped=flip_x, yflipped=flip_y
-        # )
 
         solution, plate_scale, ra_dec_x_y_rotation = wcs_helper_functions.new_solve_triangle(
             ref1, ref2, targ, self.pixelAspectRatio, plate_scale=plate_scale
@@ -3458,6 +3441,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             yin = y0 < y < y0 + h
             return xin and yin
 
+        def inOcrBox(x, y, box_coords):
+            xin = box_coords[0] <= x <= box_coords[1]
+            yin = box_coords[2] <= y <= box_coords[3]
+            return xin and yin
+
         def statusMsg(aperture):
             msg = f'  For aperture( {aperture.name} ):'
             if aperture.jogging_enabled:
@@ -3481,6 +3469,17 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.mousey = y
 
         if self.viewFieldsCheckBox.isChecked():
+            # Check for ocr character selection boxes showing.  If they are, see if the cursor is
+            # inside one.  If it is, show the contents in the Thumbnails
+            ocr_boxes = self.getOcrBoxList()
+            if ocr_boxes:
+                # Test for cursor inside one of the boxes
+                for box in ocr_boxes:
+                    box_coords = box.getBox()
+                    if inOcrBox(x, y, box_coords):
+                        # self.showMsg(f'Cursor is in an ocr box')
+                        self.showOcrCharacter(box_coords)
+
             ylim, xlim = self.image.shape
             if 0 <= y < ylim and 0 <= x < xlim:
                 self.statusbar.showMessage(f'x={x} y={y} intensity={self.image_fields[y, x]}')
@@ -4910,6 +4909,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             for i in range(0, -num_lines_to_redact):
                 for j in range(0, image_width):
                     redacted_image[i, j] = mean
+
+        # Experimental code to reduce background and 'blobs' sent to nova.astrometry.net
+        # bkg_thresh = self.getBkgThreshold()
+        # if not bkg_thresh is None:
+        #     _, redacted_image = cv2.threshold(redacted_image, bkg_thresh, 0, cv2.THRESH_TOZERO)
 
         self.image = redacted_image
         self.frameView.setImage(self.image)
