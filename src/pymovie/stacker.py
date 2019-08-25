@@ -28,9 +28,10 @@ def asinhScale(img, limcut = 0):  # img needs to be float32 type
 
 def frameStacker(pr, progress_bar, event_process,
                  first_frame, last_frame, timestamp_trim,
-                 fitsReader,
+                 fitsReader, serReader,
                  avi_location, out_dir_path, bkg_threshold):
-    # fitReader is self.getFitsFrame()
+    # fitsReader is self.getFitsFrame()
+    # serReader is self.getSerFrame()
     # pr is self.showMsg() provided by the caller
     # progress_bar is a reference to the caller's progress bar item so
     # that can update it to show progess
@@ -54,6 +55,27 @@ def frameStacker(pr, progress_bar, event_process,
 
         except Exception as e:
             pr(f'Problem reading FITS file: {e}')
+            return None
+
+        return image
+
+    def read_ser_frame(frame_to_read, trim=None):
+        try:
+            frame = serReader(frame_to_read)
+            if frame is None:
+                pr(f'Problem reading SER file: frame == None returned')
+                return None
+
+            if trim is None or trim == 0:
+                image = frame[:, :].astype('float32')
+            else:
+                if trim > 0:
+                    image = frame[0:-trim, :].astype('float32')
+                else:
+                    image = frame[-trim:, :].astype('float32')
+
+        except Exception as e:
+            pr(f'Problem reading SER file: {e}')
             return None
 
         return image
@@ -84,7 +106,7 @@ def frameStacker(pr, progress_bar, event_process,
             pr(f'...file opened just fine.')
             return cap
 
-    if fitsReader is None:
+    if fitsReader is None and serReader is None:
         cap = openAviReader(avi_location=avi_location)
         if cap is None:
             return
@@ -93,13 +115,20 @@ def frameStacker(pr, progress_bar, event_process,
 
     # Read reference frame image without trimming the timestamp portion off
     # so that we can save the timestamp for later replacement.
-    if fitsReader is None:
-        inimage = read_avi_frame(first_frame)
+    if fitsReader:
+        inimage = read_fits_frame(first_frame)
+    elif serReader:
+        inimage = read_ser_frame(first_frame)
     else:
-        inimage = fitsReader(first_frame)
+        inimage = read_avi_frame(first_frame)
+
+    # if fitsReader is None:
+    #     inimage = read_avi_frame(first_frame)
+    # else:
+    #     inimage = fitsReader(first_frame)
 
     if timestamp_trim < 0:
-        # If redact is from the top, this is assumed to be a FITS file for
+        # If redact is from the top, this is assumed to be a FITS or SER file for
         # which there is no timestamp to be preserved, just a few 'corrupted' lines at the top.
         timestamp_junk = inimage[0:-timestamp_trim,:]
         timestamp_image = np.zeros_like(timestamp_junk)
@@ -110,10 +139,12 @@ def frameStacker(pr, progress_bar, event_process,
 
     # Re-read the reference frame with the timestamp trimmed off and use it
     # to initialize the stack sum
-    if fitsReader is None:
-        inimage = read_avi_frame(first_frame, trim=timestamp_trim)
-    else:
+    if fitsReader:
         inimage = read_fits_frame(first_frame, trim=timestamp_trim)
+    elif serReader:
+        inimage = read_ser_frame(first_frame, trim=timestamp_trim)
+    else:
+        inimage = read_avi_frame(first_frame, trim=timestamp_trim)
 
     image_sum = inimage[:,:]
 
@@ -123,10 +154,13 @@ def frameStacker(pr, progress_bar, event_process,
     g1 = np.fft.fftshift(np.fft.fft2(th_inimage))
 
     while next_frame <= last_frame:
-        if fitsReader is None:
-            inimage = read_avi_frame(next_frame, trim=timestamp_trim)
-        else:
+        if fitsReader:
             inimage = read_fits_frame(next_frame, trim=timestamp_trim)
+        elif serReader:
+            inimage = read_ser_frame(next_frame, trim=timestamp_trim)
+        else:
+            inimage = read_avi_frame(next_frame, trim=timestamp_trim)
+
         next_frame += 1
 
         # Calculate progress [1..100]
@@ -137,7 +171,6 @@ def frameStacker(pr, progress_bar, event_process,
         # g2 = np.fft.fftshift(np.fft.fft2(inimage))
         ret, th_inimage = cv2.threshold(inimage, bkg_threshold, 0, cv2.THRESH_TOZERO)
         g2 = np.fft.fftshift(np.fft.fft2(th_inimage))
-
 
         g2conj = g2.conj()
 

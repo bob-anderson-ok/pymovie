@@ -76,6 +76,7 @@ from pymovie import selectProfile
 from pymovie import astrometry_client
 from pymovie import wcs_helper_functions
 from pymovie import stacker
+from pymovie import SER
 import pyqtgraph.exporters as pex
 from numpy import sqrt, arcsin
 from numpy import pi as PI
@@ -420,7 +421,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.restoreApertureState.clicked.connect(self.restoreApertureGroup)
         self.restoreApertureState.installEventFilter(self)
 
-        self.createAVIWCSfolderButton.clicked.connect(self.createAviWcsFolder)
+        self.createAVIWCSfolderButton.clicked.connect(self.createAviSerWcsFolder)
         self.createAVIWCSfolderButton.installEventFilter(self)
         self.createAVIWCSfolderButton.setEnabled(False)
 
@@ -533,6 +534,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.cap = None
         self.avi_in_use = False
         self.preserve_apertures = False
+
+        # If a ser file was selected, these variables come into play
+        self.ser_file_in_use = False
+        self.ser_meta_data = {}
+        self.ser_timestamps = []
+        self.ser_timestamp = ''  # Holds timestamp of current frame
+        self.ser_date = ''
+        self.ser_file_handle = None
 
         # If a FITS file folder was selected, this variable gets filled with a list
         # of the filenames ending in .fits found within the selected FITS folder.
@@ -694,10 +703,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.openBmpPushButton.clicked.connect(self.readFinderImage)
         self.openBmpPushButton.installEventFilter(self)
 
-        self.readAviFileButton.clicked.connect(self.readAviFile)
+        self.readAviFileButton.clicked.connect(self.readAviSerFile)
         self.readAviFileButton.installEventFilter(self)
 
-        self.selectAviWcsFolderButton.clicked.connect(self.selectAviFolder)
+        self.selectAviWcsFolderButton.clicked.connect(self.selectAviSerFolder)
         self.selectAviWcsFolderButton.installEventFilter(self)
 
         self.currentFrameSpinBox.valueChanged.connect(self.updateFrameWithTracking)
@@ -1057,26 +1066,26 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.showMsg('The new version is installed but not yet running.')
         self.showMsg('Close and reopen PyMovie to start the new version running.')
 
-    def createAviWcsFolder(self):
+    def createAviSerWcsFolder(self):
         options = QFileDialog.Options()
         # options |= QFileDialog.DontUseNativeDialog
         options |= QFileDialog.DirectoryOnly
 
         dirname = QFileDialog.getExistingDirectory(
             self,  # parent
-            "Select directory where AVI-WCS folder should be placed",  # title for dialog
+            "Select directory where AVI/SER-WCS folder should be placed",  # title for dialog
             self.settings.value('avidir', "./"),  # starting directory
             options=options
         )
         if dirname:
 
-            self.showMsg(f'AVI-WCS folder will be created in: {dirname}', blankLine=False)
+            self.showMsg(f'AVI/SER-WCS folder will be created in: {dirname}', blankLine=False)
             base_with_ext  = os.path.basename(self.filename)
             base, _ = os.path.splitext(base_with_ext)
             self.showMsg(f'and the folder will be named {base}')
             full_dir_path = os.path.join(dirname, base)
 
-            msg = f'AVI-WCS folder will be created in: {dirname}\n\n'
+            msg = f'AVI/SER-WCS folder will be created in: {dirname}\n\n'
             msg += f'Folder name: {base}'
             self.showMsgPopup(msg)
 
@@ -1086,9 +1095,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             if sys.platform == 'darwin':
                 ok, file, dir, retval, source = alias_lnk_resolver.create_osx_alias_in_dir(self.filename, full_dir_path)
                 if not ok:
-                    self.showMsg('Failed to create and populate AVI-WCS folder')
+                    self.showMsg('Failed to create and populate AVI/SER-WCS folder')
                 else:
-                    self.showMsg('AVI-WCS folder created and populated')
+                    self.showMsg('AVI/SER-WCS folder created and populated')
                 # self.showMsg(f'  file: {file}\n  dir: {dir}\n  retval: {retval}\n  source: {source}')
 
             elif sys.platform == 'linux':
@@ -1096,14 +1105,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 dst = os.path.join(dirname, base, base_with_ext)
                 try:
                     os.symlink(src,dst)
-                    self.showMsgPopup('AVI-WCS folder created and populated')
+                    self.showMsgPopup('AVI/SER-WCS folder created and populated')
                 except OSError as e:
                     if e.errno == errno.EEXIST:
                         os.remove(dst)
                         os.symlink(src,dst)
-                        self.showMsgPopup('AVI-WCS folder created and old symlink overwritten')
+                        self.showMsgPopup('AVI/SER-WCS folder created and old symlink overwritten')
                     else:
-                        self.showMsgPopup('Failed to create and populate AVI-WCS folder')
+                        self.showMsgPopup('Failed to create and populate AVI/SER-WCS folder')
 
             else:
                 # self.showMsg(f'os.name={os.name} not yet fully supported for AVI-WCS folder creation.')
@@ -1117,7 +1126,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 shortcut.write()
 
             self.acceptAviFolderDirectoryWithoutUserIntervention = True
-            self.selectAviFolder()
+            self.selectAviSerFolder()
         else:
             self.showMsg(f'Operation was cancelled.')
 
@@ -2007,6 +2016,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         else:
             fitsReader = None
 
+        if self.ser_file_in_use:
+            serReader = self.getSerFrame
+        else:
+            serReader = None
+
         bkg_thresh = self.getBkgThreshold()
         if bkg_thresh is None:
             return
@@ -2016,6 +2030,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             first_frame=first_frame, last_frame=last_frame,
             timestamp_trim=num_lines_to_redact,
             fitsReader = fitsReader,
+            serReader = serReader,
             avi_location=self.avi_location, out_dir_path=self.folder_dir, bkg_threshold=bkg_thresh)
 
         # Now that we're back, if we got a new enhanced-image.fit, display it.
@@ -2025,6 +2040,17 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 f.write(f'{first_frame}')
             self.clearApertures()
             self.readFinderImage()
+
+    def getSerFrame(self, frameNum):
+        bytes_per_pixel = self.ser_meta_data['BytesPerPixel']
+        image_width = self.ser_meta_data['ImageWidth']
+        image_height = self.ser_meta_data['ImageHeight']
+        little_endian = self.ser_meta_data['LittleEndian']
+        image = SER.getSerImage(
+            self.ser_file_handle, frameNum,
+            bytes_per_pixel, image_width, image_height, little_endian
+        )
+        return image
 
     def getBkgThreshold(self):
         bkg_thresh = 0
@@ -2406,70 +2432,75 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'################# End frame {frame}:{file_name} data ###############')
 
             # pyfits.info(file_name)  # This prints to the console only
+            return
 
-        self.num_yellow_apertures = 0
-        for app in self.getApertureList():
-            if app.color == 'yellow':
-                self.num_yellow_apertures += 1
+        if self.ser_file_in_use:
+            self.showSerMetaData()
+            return
 
-        # self.num_yellow_apertures can only take on values of 0, 1, and 2.  This is enforced
-        # by self.handleSetYellowSignal()
-
-        # If there are two yellow apertures, we need to record the initial geometries
-        if self.num_yellow_apertures == 2:
-            yellow_count = 0
-            for app in self.getApertureList():
-                if app.color == 'yellow' and yellow_count == 0:  # This our yellow #1
-                    yellow_count += 1
-                    if self.use_yellow_mask:
-                        xc_roi, yc_roi, xc_world, yc_world, *_ = \
-                            self.getApertureStats(app, show_stats=False, save_yellow_mask=True)
-                    else:
-                        xc_roi, yc_roi, xc_world, yc_world, *_ = \
-                            self.getApertureStats(app, show_stats=False)
-
-                    app.xc = xc_world
-                    app.yc = yc_world
-                    app.dx = 0
-                    app.dy = 0
-                    app.theta = 0.0
-
-                    # Save the coordinates of yellow #1 aperture
-                    self.yellow_x = xc_world
-                    self.yellow_y = yc_world
-
-                elif app.color == 'yellow' and yellow_count == 1:  # This is our yellow #2
-                    xc_roi, yc_roi, xc_world, yc_world, *_ = \
-                        self.getApertureStats(app, show_stats=False)
-
-                    app.xc = xc_world
-                    app.yc = yc_world
-
-                    # Get the distance and angle measurements back to yellow #1
-                    dy = yc_world - self.yellow_y
-                    dx = xc_world - self.yellow_x
-
-                    app.dx = dx
-                    app.dy = dy
-                    app.theta, _ = calcTheta(dx, dy)
-
-                    # Set the current field rotation angle
-                    self.delta_theta = 0.0
-
-            for app in self.getApertureList():
-                if not app.color == 'yellow':
-                    xc_roi, yc_roi, xc_world, yc_world, *_ = \
-                        self.getApertureStats(app, show_stats=False)
-                    app.xc = xc_world
-                    app.yc = yc_world
-
-                    # Get the distance measurements back to yellow #1
-                    dy = yc_world - self.yellow_y
-                    dx = xc_world - self.yellow_x
-
-                    app.dx = dx
-                    app.dy = dy
-                    app.theta = None  # We don't use this value during tracking
+        # self.num_yellow_apertures = 0
+        # for app in self.getApertureList():
+        #     if app.color == 'yellow':
+        #         self.num_yellow_apertures += 1
+        #
+        # # self.num_yellow_apertures can only take on values of 0, 1, and 2.  This is enforced
+        # # by self.handleSetYellowSignal()
+        #
+        # # If there are two yellow apertures, we need to record the initial geometries
+        # if self.num_yellow_apertures == 2:
+        #     yellow_count = 0
+        #     for app in self.getApertureList():
+        #         if app.color == 'yellow' and yellow_count == 0:  # This our yellow #1
+        #             yellow_count += 1
+        #             if self.use_yellow_mask:
+        #                 xc_roi, yc_roi, xc_world, yc_world, *_ = \
+        #                     self.getApertureStats(app, show_stats=False, save_yellow_mask=True)
+        #             else:
+        #                 xc_roi, yc_roi, xc_world, yc_world, *_ = \
+        #                     self.getApertureStats(app, show_stats=False)
+        #
+        #             app.xc = xc_world
+        #             app.yc = yc_world
+        #             app.dx = 0
+        #             app.dy = 0
+        #             app.theta = 0.0
+        #
+        #             # Save the coordinates of yellow #1 aperture
+        #             self.yellow_x = xc_world
+        #             self.yellow_y = yc_world
+        #
+        #         elif app.color == 'yellow' and yellow_count == 1:  # This is our yellow #2
+        #             xc_roi, yc_roi, xc_world, yc_world, *_ = \
+        #                 self.getApertureStats(app, show_stats=False)
+        #
+        #             app.xc = xc_world
+        #             app.yc = yc_world
+        #
+        #             # Get the distance and angle measurements back to yellow #1
+        #             dy = yc_world - self.yellow_y
+        #             dx = xc_world - self.yellow_x
+        #
+        #             app.dx = dx
+        #             app.dy = dy
+        #             app.theta, _ = calcTheta(dx, dy)
+        #
+        #             # Set the current field rotation angle
+        #             self.delta_theta = 0.0
+        #
+        #     for app in self.getApertureList():
+        #         if not app.color == 'yellow':
+        #             xc_roi, yc_roi, xc_world, yc_world, *_ = \
+        #                 self.getApertureStats(app, show_stats=False)
+        #             app.xc = xc_world
+        #             app.yc = yc_world
+        #
+        #             # Get the distance measurements back to yellow #1
+        #             dy = yc_world - self.yellow_y
+        #             dx = xc_world - self.yellow_x
+        #
+        #             app.dx = dx
+        #             app.dy = dy
+        #             app.theta = None  # We don't use this value during tracking
 
     def autoPlayLeft(self):
         self.setTransportButtonEnableState(False)
@@ -2643,12 +2674,20 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             appdata = answer[2]
 
             with open(filename, 'w') as f:
-                # Standard header (single line)
+                # Standard header
                 f.write(f'# PyMovie Version {version.version()}\n')
                 f.write(f'# source: {self.filename}\n')
 
                 if not self.avi_in_use:
-                    f.write(f'# date at frame 0: {self.fits_date}\n')
+                    if self.fits_folder_in_use:
+                        f.write(f'# date at frame 0: {self.fits_date}\n')
+                    elif self.ser_file_in_use:
+                        f.write(f'# date at frame 0: {self.ser_date}\n')
+                        lines = self.formatSerMetaData()
+                        for line in lines:
+                            f.write(f'{line}\n')
+                    else:
+                        f.write(f'# error: unexpected folder type encountered\n')
 
                 # csv column headers with aperture names in entry order
                 # Tangra uses FrameNo
@@ -3806,7 +3845,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                                     frame_num + 0.5, cvxhull, maxpx, std, timestamp)
 
         if not self.avi_in_use:
-            timestamp = self.fits_timestamp
+            if self.fits_folder_in_use:
+                timestamp = self.fits_timestamp
+            elif self.ser_file_in_use:
+                timestamp = self.ser_timestamp
+            else:
+                self.showMsg(f'Unexpected folder type in use.')
         else:
             if self.topFieldFirstRadioButton.isChecked():
                 if self.upperTimestamp:
@@ -4070,22 +4114,61 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         return False, None
 
-    def readAviFile(self):
+    def formatSerMetaData(self):
+        lines = []
+        lines.append(f'# Begin SER meta-data =====================')
+        lines.append(f'# FileID: {self.ser_meta_data["FileID"]}')
+        lines.append(f'# LuID: {self.ser_meta_data["LuID"]}')
+        lines.append(f'# ColorID: {self.ser_meta_data["ColorID"]}')
+        lines.append(f'# LittleEndian: {self.ser_meta_data["LittleEndian"]}')
+        lines.append(f'# ImageWidth: {self.ser_meta_data["ImageWidth"]}')
+        lines.append(f'# ImageHeight: {self.ser_meta_data["ImageHeight"]}')
+        lines.append(f'# PixelDepthPerPlane: {self.ser_meta_data["PixelDepthPerPlane"]}')
+        lines.append(f'# FrameCount: {self.ser_meta_data["FrameCount"]}')
+        lines.append(f'# NumTimestamps: {self.ser_meta_data["NumTimestamps"]}')
+        lines.append(f'# Observer: {self.ser_meta_data["Observer"]}')
+        lines.append(f'# Instrument: {self.ser_meta_data["Instrument"]}')
+        lines.append(f'# Telescope: {self.ser_meta_data["Telescope"]}')
+        lines.append(f'# DateTimeLocal: {self.ser_meta_data["DateTimeLocal"]}')
+        lines.append(f'# DateTimeUTC: {self.ser_meta_data["DateTimeUTC"]}')
+        lines.append(f'# End SER meta-data =====================')
 
-        options = QFileDialog.Options()
-        # options |= QFileDialog.DontUseNativeDialog
+        return lines
 
-        self.filename, _ = QFileDialog.getOpenFileName(
-            self,  # parent
-            "Select avi file",  # title for dialog
-            self.settings.value('avidir', "./"),  # starting directory
-            "avi files (*.avi);; all files (*.*)",
-            options=options
-        )
+    def showSerMetaData(self):
+        lines = self.formatSerMetaData()
+        for line in lines:
+            self.showMsg(line, blankLine=False)
+        self.showMsg('', blankLine=False)
+
+    def readAviSerFile(self, skipDialog=False):
+
+        if not skipDialog:
+            options = QFileDialog.Options()
+            # options |= QFileDialog.DontUseNativeDialog
+
+            self.filename, _ = QFileDialog.getOpenFileName(
+                self,  # parent
+                "Select avi/ser file",  # title for dialog
+                self.settings.value('avidir', "./"),  # starting directory
+                "avi files (*.avi);;ser files (*.ser);; all files (*.*)",
+                options=options
+            )
 
         QtGui.QGuiApplication.processEvents()
 
         if self.filename:
+            # Test for SER file in use
+            self.ser_file_in_use = Path(self.filename).suffix == '.ser'
+            self.avi_in_use = not self.ser_file_in_use
+
+            if self.ser_file_in_use:
+                self.ser_meta_data, self.ser_timestamps = SER.getMetaData(self.filename)
+                self.ser_file_handle = open(self.filename, 'rb')
+            else:
+                self.ser_meta_data = {}
+                self.ser_timestamps = []
+
             self.saveStateNeeded = True
             self.wcs_solution_available = False
             self.wcs_frame_num = None
@@ -4113,63 +4196,69 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.num_yellow_apertures = 0
             self.levels = []
 
-            self.showMsg(f'Opened: {self.filename}')
-            if self.cap:
-                self.cap.release()
-            self.cap = cv2.VideoCapture(self.filename, cv2.CAP_FFMPEG)
-            if not self.cap.isOpened():
-                self.showMsg(f'  {self.filename} could not be opened!')
-                self.fourcc = ''
-            else:
-                self.avi_in_use = True
-                self.savedApertures = None
-                self.enableControlsForAviData()
-                self.saveApertureState.setEnabled(False)
-                # Let's get the FOURCC code
-                fourcc = int(self.cap.get(cv2.CAP_PROP_FOURCC))
-                fourcc_str = f'{fourcc & 0xff:c}{fourcc >> 8 & 0xff:c}{fourcc >> 16 & 0xff:c}{fourcc >> 24 & 0xff:c}'
-                self.fourcc = fourcc_str
-                self.showMsg(f'FOURCC codec ID: {fourcc_str}')
-
-                fps = self.cap.get(cv2.CAP_PROP_FPS)
-                if fps > 29.0:
-                    # self.showMsg('Changing navigation buttons to 30 frames')
-                    self.frameJumpSmall = 30
-                    self.frameJumpBig = 300
-                    self.changeNavButtonTitles()
+            if self.avi_in_use:
+                self.showMsg(f'Opened: {self.filename}')
+                if self.cap:
+                    self.cap.release()
+                self.cap = cv2.VideoCapture(self.filename, cv2.CAP_FFMPEG)
+                if not self.cap.isOpened():
+                    self.showMsg(f'  {self.filename} could not be opened!')
+                    self.fourcc = ''
                 else:
-                    # self.showMsg('Changing navigation buttons to 25 frames')
-                    self.frameJumpSmall = 25
-                    self.frameJumpBig = 250
-                    self.changeNavButtonTitles()
+                    # self.avi_in_use = True
+                    self.savedApertures = None
+                    self.enableControlsForAviData()
+                    self.saveApertureState.setEnabled(False)
+                    # Let's get the FOURCC code
+                    fourcc = int(self.cap.get(cv2.CAP_PROP_FOURCC))
+                    fourcc_str = f'{fourcc & 0xff:c}{fourcc >> 8 & 0xff:c}{fourcc >> 16 & 0xff:c}{fourcc >> 24 & 0xff:c}'
+                    self.fourcc = fourcc_str
+                    self.showMsg(f'FOURCC codec ID: {fourcc_str}')
+
+                    fps = self.cap.get(cv2.CAP_PROP_FPS)
+                    if fps > 29.0:
+                        # self.showMsg('Changing navigation buttons to 30 frames')
+                        self.frameJumpSmall = 30
+                        self.frameJumpBig = 300
+                        self.changeNavButtonTitles()
+                    else:
+                        # self.showMsg('Changing navigation buttons to 25 frames')
+                        self.frameJumpSmall = 25
+                        self.frameJumpBig = 250
+                        self.changeNavButtonTitles()
 
 
-                self.showMsg(f'frames per second:{fps:0.6f}')
+                    self.showMsg(f'frames per second:{fps:0.6f}')
 
-                frame_count = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                self.showMsg(f'There are {frame_count} frames in the file.')
+                    frame_count = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                    self.showMsg(f'There are {frame_count} frames in the file.')
+            else: # must be SER
+                self.enableControlsForAviData()
+                self.showMsg(f'Opened: {self.filename}')
+                self.showSerMetaData()
+                self.saveApertureState.setEnabled(False)
+                frame_count = self.ser_meta_data['FrameCount']
+                self.showMsg(f'There are {frame_count} frames in the SER file.')
+                bytes_per_pixel = self.ser_meta_data['BytesPerPixel']
+                self.showMsg(f'Image data is encoded in {bytes_per_pixel} bytes per pixel')
 
-                # We need to do this before self.showFrame() is called either directly
-                # or indirectly (when self.currentFrameSpinBox is changed, it invokes
-                # self.showFrame())
+            self.currentOcrBox = None
 
-                self.currentOcrBox = None
+            self.vtiSelectComboBox.setCurrentIndex(0)
+            self.vtiSelected()
 
-                self.vtiSelectComboBox.setCurrentIndex(0)
-                self.vtiSelected()
+            self.currentFrameSpinBox.setMaximum(frame_count-1)
+            self.currentFrameSpinBox.setValue(0)
+            self.stopAtFrameSpinBox.setMaximum(frame_count - 1)
+            self.stopAtFrameSpinBox.setValue(frame_count - 1)
 
-                self.currentFrameSpinBox.setMaximum(frame_count-1)
-                self.currentFrameSpinBox.setValue(0)
-                self.stopAtFrameSpinBox.setMaximum(frame_count - 1)
-                self.stopAtFrameSpinBox.setValue(frame_count - 1)
+            # This will get our image display initialized with default pan/zoom state
+            self.initialFrame = True
+            self.showFrame()
+            self.clearOcrBoxes()
 
-                # This will get our image display initialized with default pan/zoom state
-                self.initialFrame = True
-                self.showFrame()
-                self.clearOcrBoxes()
-
-                self.thumbOneView.clear()
-                self.thumbTwoView.clear()
+            self.thumbOneView.clear()
+            self.thumbTwoView.clear()
 
     def setTimestampFormatter(self):
         self.kiwiInUse = False
@@ -4195,7 +4284,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             code = f.readline()
             return code
 
-    def selectAviFolder(self):
+    def selectAviSerFolder(self):
 
         if not self.acceptAviFolderDirectoryWithoutUserIntervention:
             options = QFileDialog.Options()
@@ -4221,6 +4310,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.acceptAviFolderDirectoryWithoutUserIntervention = False
 
         if dir_path:
+
+            self.timestampReadingEnabled = False
 
             self.saveStateNeeded = True
             self.upper_left_count  = 0  # When Kiwi used: accumulate count ot times t2 was at left in upper field
@@ -4252,6 +4343,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 QtGui.QGuiApplication.processEvents()
                 if self.cap:
                     self.cap.release()
+                if self.ser_file_handle:
+                    self.ser_file_handle.close()
             except Exception as e:
                 self.showMsg(f'While trying to clear FrameView got following exception:',
                              blankLine=False)
@@ -4278,18 +4371,25 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 linux, macOS, windows = False, False, True
 
 
-            # Find a .avi file in the given directory.  Enforce that there be only one.
+            # Find an .avi or .ser file in the given directory.  Enforce that there be only one.
             # Note: this picks up alias (mac) and shortcut (Windows) files too.
             avi_filenames = glob.glob(dir_path + '/*.avi*')
+            self.avi_in_use = True
+            if len(avi_filenames) == 0:
+                avi_filenames = glob.glob(dir_path + '/*.ser*')
+                if avi_filenames:
+                    self.loadCustomProfilesButton.setEnabled(False)
+                    self.clearOcrDataButton.setEnabled(False)
+                self.ser_file_in_use = True
+                self.avi_in_use = False
 
             avi_location = ''
-            num_avifiles = len(avi_filenames)
+            num_avi_ser_files = len(avi_filenames)
 
-            if num_avifiles == 1:  # one avi (or alias or shortcut) is in the folder)
+            if num_avi_ser_files == 1:  # one avi or ser (or alias or shortcut) is in the folder)
                 avi_location = avi_filenames[0]
                 if macOS:
                     avi_location = alias_lnk_resolver.resolve_osx_alias(avi_location)
-
                 elif linux:
                     avi_location = os.readlink(avi_location)
                 else:
@@ -4298,12 +4398,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 # Save as instance variable for use in stacker
                 self.avi_location = avi_location
                 self.filename = avi_location
-            elif num_avifiles > 1:
-                self.showMsg(f'{num_avifiles} avi files were found.  Only one is allowed in an AVI-WCS folder')
+            elif num_avi_ser_files > 1:
+                self.showMsg(f'{num_avi_ser_files} avi/ser files were found.  Only one is allowed in an AVI/SER-WCS folder')
                 return
             else:
-                self.showMsg(f'No avi files were found in that folder.')
+                self.showMsg(f'No avi/ser files were found in that folder.')
                 return
+
 
             # remove the apertures (possibly) left from previous file
             if not self.preserve_apertures:
@@ -4313,70 +4414,106 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.num_yellow_apertures = 0
             self.levels = []
 
-            self.showMsg(f'Opened: {avi_location}')
-            if self.cap:
-                self.cap.release()
-            self.cap = cv2.VideoCapture(avi_location)
-            if not self.cap.isOpened():
-                self.showMsg(f'  {avi_location} could not be opened!')
-            else:
+            self.ser_meta_data = {}
+            self.ser_timestamps = []
+
+            if self.avi_in_use:
+                self.showMsg(f'Opened: {avi_location}')
+                if self.cap:
+                    self.cap.release()
+                self.cap = cv2.VideoCapture(avi_location)
+                if not self.cap.isOpened():
+                    self.showMsg(f'  {avi_location} could not be opened!')
+                else:
+                    self.timestampReadingEnabled = False
+                    self.vtiSelectComboBox.setCurrentIndex(0)
+                    self.avi_in_use = True
+                    self.savedApertures = None
+                    self.enableControlsForAviData()
+                    # Let's get the FOURCC code
+                    fourcc = int(self.cap.get(cv2.CAP_PROP_FOURCC))
+                    fourcc_str = f'{fourcc & 0xff:c}{fourcc >> 8 & 0xff:c}{fourcc >> 16 & 0xff:c}{fourcc >> 24 & 0xff:c}'
+                    self.showMsg(f'FOURCC codec ID: {fourcc_str}')
+                    self.showMsg(f'frames per second:{self.cap.get(cv2.CAP_PROP_FPS):0.6f}')
+
+                    frame_count = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                    self.showMsg(f'There are {frame_count} frames in the file.')
+
+                    fps = self.cap.get(cv2.CAP_PROP_FPS)
+                    if fps > 29.0:
+                        self.frameJumpSmall = 30
+                        self.frameJumpBig = 300
+                        self.changeNavButtonTitles()
+                    else:
+                        self.frameJumpSmall = 25
+                        self.frameJumpBig = 250
+                        self.changeNavButtonTitles()
+
+
+                    # This will get our image display initialized with default pan/zoom state
+                    self.initialFrame = True
+                    self.showFrame()
+
+                    # Initialize ocr related directories
+                    self.ocrDigitsDir = self.folder_dir
+                    self.ocrBoxesDir = self.folder_dir
+                    self.currentOcrBox = None
+                    self.clearOcrBoxes()  # From any previous ocr setup
+
+                    self.modelDigitsFilename = 'custom-digits.p'
+                    self.ocrboxBasePath = 'custom-boxes'
+
+                    self.processTargetAperturePlacementFiles()
+
+                    # Check for the presence of a 'saved aperture group' and enable the Restore group
+                    # button accordingly
+                    file1 = self.folder_dir + '/markedApertures.p'
+                    file2 = self.folder_dir + '/markedFrameNumber.p'
+
+                    if os.path.exists(file1) and os.path.exists(file2):
+                        self.restoreApertureState.setEnabled(True)
+
+                    self.startTimestampReading()
+                    self.showFrame()  # So that we get the first frame timestamp (if possible)
+
+            else:  # must be a ser file
+                self.ser_meta_data, self.ser_timestamps = SER.getMetaData(self.filename)
+                self.ser_file_handle = open(self.filename, 'rb')
+
+                self.showMsg(f'Opened: {self.filename}')
+
+                self.showSerMetaData()
+
+                self.enableControlsForAviData()
+
+                self.disableControlsWhenNoData()
+                self.enableControlsForFitsData()
+
                 self.timestampReadingEnabled = False
                 self.vtiSelectComboBox.setCurrentIndex(0)
-                self.avi_in_use = True
-                self.savedApertures = None
-                self.enableControlsForAviData()
-                # Let's get the FOURCC code
-                fourcc = int(self.cap.get(cv2.CAP_PROP_FOURCC))
-                fourcc_str = f'{fourcc & 0xff:c}{fourcc >> 8 & 0xff:c}{fourcc >> 16 & 0xff:c}{fourcc >> 24 & 0xff:c}'
-                self.showMsg(f'FOURCC codec ID: {fourcc_str}')
-                self.showMsg(f'frames per second:{self.cap.get(cv2.CAP_PROP_FPS):0.6f}')
+                self.currentOcrBox = None
+                self.clearOcrBoxes()  # From any previous ocr setup
+                self.viewFieldsCheckBox.setChecked(False)
+                self.viewFieldsCheckBox.setEnabled(False)
 
-                frame_count = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                self.showMsg(f'There are {frame_count} frames in the file.')
 
-                fps = self.cap.get(cv2.CAP_PROP_FPS)
-                if fps > 29.0:
-                    self.frameJumpSmall = 30
-                    self.frameJumpBig = 300
-                    self.changeNavButtonTitles()
-                else:
-                    self.frameJumpSmall = 25
-                    self.frameJumpBig = 250
-                    self.changeNavButtonTitles()
-
-                self.currentFrameSpinBox.setMaximum(frame_count-1)
-                self.currentFrameSpinBox.setValue(0)
-                self.stopAtFrameSpinBox.setMaximum(frame_count - 1)
-                self.stopAtFrameSpinBox.setValue(frame_count - 1)
+                self.saveApertureState.setEnabled(False)
+                frame_count = self.ser_meta_data['FrameCount']
+                self.showMsg(f'There are {frame_count} frames in the SER file.')
+                bytes_per_pixel = self.ser_meta_data['BytesPerPixel']
+                self.showMsg(f'Image data is encoded in {bytes_per_pixel} bytes per pixel')
 
                 # This will get our image display initialized with default pan/zoom state
                 self.initialFrame = True
                 self.showFrame()
 
-                # Initialize ocr related directories
-                self.ocrDigitsDir = self.folder_dir
-                self.ocrBoxesDir = self.folder_dir
-                self.currentOcrBox = None
-                self.clearOcrBoxes()  # From any previous ocr setup
+            self.currentFrameSpinBox.setMaximum(frame_count - 1)
+            self.currentFrameSpinBox.setValue(0)
+            self.stopAtFrameSpinBox.setMaximum(frame_count - 1)
+            self.stopAtFrameSpinBox.setValue(frame_count - 1)
 
-                self.modelDigitsFilename = 'custom-digits.p'
-                self.ocrboxBasePath = 'custom-boxes'
-
-                self.processTargetAperturePlacementFiles()
-
-                # Check for the presence of a 'saved aperture group' and enable the Restore group
-                # button accordingly
-                file1 = self.folder_dir + '/markedApertures.p'
-                file2 = self.folder_dir + '/markedFrameNumber.p'
-
-                if os.path.exists(file1) and os.path.exists(file2):
-                    self.restoreApertureState.setEnabled(True)
-
-                self.startTimestampReading()
-                self.showFrame()  # So that we get the first frame timestamp (if possible)
-
-                self.thumbOneView.clear()
-                self.thumbTwoView.clear()
+            self.thumbOneView.clear()
+            self.thumbTwoView.clear()
 
     def startTimestampReading(self):
         # This is how we starup timestamp extraction.
@@ -4651,6 +4788,30 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
                 except Exception as e:
                     self.showMsg(f'Problem reading avi file: {e}')
+            elif self.ser_file_in_use:
+                try:
+                    bytes_per_pixel = self.ser_meta_data['BytesPerPixel']
+                    image_width = self.ser_meta_data['ImageWidth']
+                    image_height = self.ser_meta_data['ImageHeight']
+                    little_endian = self.ser_meta_data['LittleEndian']
+                    self.image = SER.getSerImage(
+                        self.ser_file_handle, frame_to_show,
+                        bytes_per_pixel, image_width, image_height, little_endian
+                    )
+                    raw_ser_timestamp = self.ser_timestamps[frame_to_show]
+                    parts = raw_ser_timestamp.split('T')
+                    self.showMsg(f'Timestamp found: {parts[0]} @ {parts[1]}')
+                    # We only want to save the date from the first file (to add to the csv file)...
+                    if self.initialFrame:
+                        self.ser_date = parts[0]
+
+                    # ...but we need the time from every new frame.
+                    self.ser_timestamp = f'[{parts[1]}]'
+
+                except Exception as e:
+                    self.image = None
+                    self.showMsg(f'{e}')
+
             else:  # We're dealing with FITS files
                 try:
                     try:
@@ -5508,6 +5669,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         if self.cap:
             self.cap.release()
+
+        if self.ser_file_handle:
+            self.ser_file_handle.close()
 
         self.timer.stop()
 
