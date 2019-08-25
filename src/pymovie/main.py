@@ -428,6 +428,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.loadCustomProfilesButton.installEventFilter(self)
         self.loadCustomProfilesButton.setEnabled(False)
 
+        self.clearOcrDataButton.clicked.connect(self.deleteOcrFiles)
+        self.clearOcrDataButton.installEventFilter(self)
+        self.clearOcrDataButton.setEnabled(False)
+
         # For now, we will save OCR profiles in the users home directory. If
         # later we find a better place, this is the only line we need to change
         self.profilesDir = os.path.expanduser('~')
@@ -812,6 +816,20 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         for app in self.getApertureList():
             if app.color == 'green':
                 app.setRed()
+
+    def deleteOcrFiles(self):
+        self.deleteModelDigits()
+        self.deleteOcrBoxes()
+
+        self.timestampReadingEnabled = False
+        self.vtiSelectComboBox.setEnabled(True)
+
+        ocrboxes = self.getOcrBoxList()
+        for ocrbox in ocrboxes:
+            self.frameView.getView().removeItem(ocrbox)
+        self.frameView.getView().update()
+
+        self.showMsg(f'OCR data files deleted from current folder')
 
     def composeApertureStateDictionary(self, aperture):
         my_dict = {}
@@ -1233,6 +1251,31 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         pickle.dump(self.upperOcrBoxesRight, open(upper_boxes_right, "wb"))
         pickle.dump(self.lowerOcrBoxesRight, open(lower_boxes_right, "wb"))
+
+        return
+
+    def deleteOcrBoxes(self):
+        base_path = self.ocrboxBasePath
+        upper_boxes_fn = f'{base_path}-upper.p'
+        lower_boxes_fn = f'{base_path}-lower.p'
+
+        upper_boxes_right_fn = f'{base_path}-upper-right.p'
+        lower_boxes_right_fn = f'{base_path}-lower-right.p'
+
+        upper_boxes = os.path.join(self.ocrBoxesDir, upper_boxes_fn)
+        lower_boxes = os.path.join(self.ocrBoxesDir, lower_boxes_fn)
+
+        upper_boxes_right = os.path.join(self.ocrBoxesDir, upper_boxes_right_fn)
+        lower_boxes_right = os.path.join(self.ocrBoxesDir, lower_boxes_right_fn)
+
+        if os.path.exists(upper_boxes):
+            os.remove(upper_boxes)
+        if os.path.exists(lower_boxes):
+            os.remove(lower_boxes)
+        if os.path.exists(upper_boxes_right):
+            os.remove(upper_boxes_right)
+        if os.path.exists(lower_boxes_right):
+            os.remove(lower_boxes_right)
 
         return
 
@@ -3833,6 +3876,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.clearTextBox()
             self.saveTargetLocButton.setEnabled(True)
             self.loadCustomProfilesButton.setEnabled(False)
+            self.clearOcrDataButton.setEnabled(False)
 
 
             self.createAVIWCSfolderButton.setEnabled(False)
@@ -4049,6 +4093,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.fits_folder_in_use = False
             self.saveTargetLocButton.setEnabled(False)
             self.loadCustomProfilesButton.setEnabled(False)
+            self.clearOcrDataButton.setEnabled(False)
 
             self.pixelAspectRatio = None
 
@@ -4190,6 +4235,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.fits_folder_in_use = False
             self.saveTargetLocButton.setEnabled(True)
             self.loadCustomProfilesButton.setEnabled(True)
+            self.clearOcrDataButton.setEnabled(True)
 
             self.createAVIWCSfolderButton.setEnabled(False)
             self.vtiSelectComboBox.setEnabled(False)

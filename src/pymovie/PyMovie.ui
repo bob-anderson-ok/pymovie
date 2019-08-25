@@ -649,6 +649,16 @@
             </widget>
            </item>
            <item>
+            <widget class="QPushButton" name="clearOcrDataButton">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button deletes all OCR profile files from the current folder--- it's a 'clean start-over' to be used when an OCR setup/training session has gone pear-shaped in a big way.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>Clear ocr data</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <spacer name="horizontalSpacer_10">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
