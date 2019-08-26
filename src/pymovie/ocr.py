@@ -163,7 +163,6 @@ def setup_for_iota_720_full_screen_mode2():
 
     return upper_field_boxes, lower_field_boxes
 
-
 def setup_for_iota_640_full_screen_mode2():
     # Do initializations needed for IOTA VTI timestamp extraction
     # Parameters for IOTA VTI timestamp characters when in full screen mode
@@ -201,6 +200,46 @@ def kiwi_720_boxes(dx):
 
     return xcU, ycU, xcL, ycL
 
+def kiwi_PAL_720_boxes(dx):
+    # Define xy coordinates of upper field character box corners
+    xcU = [47, 71, 118, 142, 189, 213, 283, 307, 331, 402, 426, 449]
+    ycU = [253] * 12
+
+    # Define xy coordinates of lower field character box corners
+    xcL = [47, 71, 118, 142, 189, 213, 283, 307, 331, 402, 426, 449]
+
+    ycL = [253] * 12
+
+    xcU = [x + dx for x in xcU]
+    xcL = [x + dx for x in xcL]
+
+    return xcU, ycU, xcL, ycL
+
+def setup_for_kiwi_PAL_720_left():
+
+    xcU, ycU, xcL, ycL = kiwi_PAL_720_boxes(0)
+
+    # Turn box corners into full box coordinate tuples
+    upper_field_boxes = [None] * len(xcL)
+    lower_field_boxes = [None] * len(xcL)
+    for i in range(len(xcL)):
+        upper_field_boxes[i] = ((xcU[i], xcU[i] + 23, ycU[i], ycU[i] + 13))
+        lower_field_boxes[i] = ((xcL[i], xcL[i] + 23, ycL[i], ycL[i] + 13))
+
+    return upper_field_boxes, lower_field_boxes
+
+def setup_for_kiwi_PAL_720_right():
+
+    xcU, ycU, xcL, ycL = kiwi_PAL_720_boxes(11)
+
+    # Turn box corners into full box coordinate tuples
+    upper_field_boxes = [None] * len(xcL)
+    lower_field_boxes = [None] * len(xcL)
+    for i in range(len(xcL)):
+        upper_field_boxes[i] = ((xcU[i], xcU[i] + 23, ycU[i], ycU[i] + 13))
+        lower_field_boxes[i] = ((xcL[i], xcL[i] + 23, ycL[i], ycL[i] + 13))
+
+    return upper_field_boxes, lower_field_boxes
 
 def setup_for_kiwi_vti_720_left():
 
@@ -342,7 +381,7 @@ def cv2_score(image, field_digits):
     # return (ans, min_found, min_vals)
 
 
-def extract_timestamp(field, field_boxes, field_digits, formatter, thresh, kiwi=False, t2fromleft=None):
+def extract_timestamp(field, field_boxes, field_digits, formatter, thresh, kiwi=False, slant=False, t2fromleft=None):
     ts = ''  # ts 'means' timestamp
 
     blankscore = .5
@@ -352,7 +391,7 @@ def extract_timestamp(field, field_boxes, field_digits, formatter, thresh, kiwi=
     scores = ''
 
     for k in range(len(field_boxes)):
-        t_img = timestamp_box_image(field, field_boxes[k], kiwi)
+        t_img = timestamp_box_image(field, field_boxes[k], kiwi, slant)
         if kiwi:  # We use boxsums to better detect empty boxes
             boxsums.append(np.sum(t_img))
             # b_img = cv2.GaussianBlur(t_img, ksize=(5, 5), sigmaX=0)
@@ -546,12 +585,12 @@ def format_boxsprite3_timestamp(ts, t2fromleft):
         return f'[00:00:00.0000]', -1.0, None  # Indicate invalid timestamp by returning negative time
 
 
-def timestamp_box_image(img, box, kiwi):
+def timestamp_box_image(img, box, kiwi, slant):
     # Note: img must be in field mode
     (xL, xR, yL, yU) = box
-    if not kiwi:
+    if not (kiwi or slant):
         return img[yL:yU+1, xL:xR+1].copy()
-    else:
+    elif slant:
         w = xR - xL + 1
         h = yU - yL + 1
         rh = int(h/2) + 1
@@ -585,6 +624,42 @@ def timestamp_box_image(img, box, kiwi):
         img_row += 2
         patch[6, :] = img[img_row, (xL + offset):(xR + offset + 1)]
 
+
+        return patch
+
+    else:
+        w = xR - xL + 1
+        h = yU - yL + 1
+        rh = int(h / 2) + 1
+        patch = np.ndarray((rh, w), dtype='uint8')
+
+        offset = 0
+        img_row = yL
+        patch[0, :] = img[img_row, (xL + offset):(xR + offset + 1)]
+
+        offset = 0
+        img_row += 2
+        patch[1, :] = img[img_row, (xL + offset):(xR + offset + 1)]
+
+        offset = 0
+        img_row += 2
+        patch[2, :] = img[img_row, (xL + offset):(xR + offset + 1)]
+
+        offset = 0
+        img_row += 2
+        patch[3, :] = img[img_row, (xL + offset):(xR + offset + 1)]
+
+        offset = 0
+        img_row += 2
+        patch[4, :] = img[img_row, (xL + offset):(xR + offset + 1)]
+
+        offset = 0
+        img_row += 2
+        patch[5, :] = img[img_row, (xL + offset):(xR + offset + 1)]
+
+        offset = 0
+        img_row += 2
+        patch[6, :] = img[img_row, (xL + offset):(xR + offset + 1)]
 
         return patch
 
