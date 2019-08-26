@@ -2165,7 +2165,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
     def show3DThumbnail(self):
         if self.thumbOneImage is not None:
             title = f'Frame={self.currentFrameSpinBox.value()} Aperture( {self.thumbnail_one_aperture_name} ) '
-            mpl = Qt5MplCanvas(self.thumbOneImage, title=title, invert=self.invertImagesCheckBox.isChecked())
+            # mpl = Qt5MplCanvas(self.thumbOneImage, title=title, invert=self.invertImagesCheckBox.isChecked())
+            mpl = Qt5MplCanvas(self.thumbOneImage, title=title)
             self.plots.append(mpl)
             mpl.show()
         else:

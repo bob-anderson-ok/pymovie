@@ -102,7 +102,7 @@
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Note: avi files are read using OpenCV which employs ffmpeg to do the actual file reading. As a result, a wide range of avi codecs are standardly available.&lt;/p&gt;&lt;p&gt;In particular, avi files using Lagarith compression will be read without problem.&lt;/p&gt;&lt;p&gt;There is a remote possibility that an avi was recorded with an unusual codec and so fail to be read by PyMovie. In that case, you will need to use an external file conversion program that can decode the file as recorded and rewrite it using a more common codec.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
-              <string>Open AVI file</string>
+              <string>Open AVI/SER file</string>
              </property>
             </widget>
            </item>
