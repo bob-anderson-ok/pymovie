@@ -491,6 +491,16 @@ def format_iota_timestamp(ts, t2fromleft):
         hh = 10 * int(ts[0]) + int(ts[1])
         mm = 10 * int(ts[2]) + int(ts[3])
         ss = 10 * int(ts[4]) + int(ts[5])
+
+        # A little hack to allow timestamp reading of Christian Weber's VTI (His VTI looks like
+        # IOTA with least signicant milliseconds digit missing (blank).  We fudge in a trailing zero
+        ch_list = list(ts)
+        if ch_list[9] == ' ' and not(ch_list[8] == ' '):
+            ch_list[9] = '0'
+        if ch_list[13] == ' ' and not(ch_list[12] == ' '):
+            ch_list[13] = '0'
+        ts = "".join(ch_list)
+
         if not (ts[6] == ' ' or ts[7] == ' ' or ts[8] == ' ' or ts[9] == ' '):
             ff = 1000 * int(ts[6]) + 100 * int(ts[7]) + 10 * int(ts[8]) + int(ts[9])
         else:

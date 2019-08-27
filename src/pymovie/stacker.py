@@ -27,7 +27,7 @@ def asinhScale(img, limcut = 0):  # img needs to be float32 type
 
 
 def frameStacker(pr, progress_bar, event_process,
-                 first_frame, last_frame, timestamp_trim,
+                 first_frame, last_frame, timestamp_trim_top, timestamp_trim_bottom,
                  fitsReader, serReader,
                  avi_location, out_dir_path, bkg_threshold):
     # fitsReader is self.getFitsFrame()
@@ -38,20 +38,24 @@ def frameStacker(pr, progress_bar, event_process,
 
     cap = None
 
-    def read_fits_frame(frame_to_read, trim=None):
+    def read_fits_frame(frame_to_read, trim_top=0, trim_bottom=0):
         try:
             frame = fitsReader(frame_to_read)
             if frame is None:
                 pr(f'Problem reading FITS file: frame == None returned')
                 return None
 
-            if trim is None or trim == 0:
-                image = frame[:, :].astype('float32')
-            else:
-                if trim > 0:
-                    image = frame[0:-trim, :].astype('float32')
-                else:
-                    image = frame[-trim:, :].astype('float32')
+            image = frame[:, :].astype('float32')
+
+            if trim_bottom:
+                image = image[0:-trim_bottom, :]
+
+            if trim_top:
+                image = image[trim_top:, :]
+            # if trim > 0:
+            #     image = frame[0:-trim, :].astype('float32')
+            # else:
+            #     image = frame[-trim:, :].astype('float32')
 
         except Exception as e:
             pr(f'Problem reading FITS file: {e}')
@@ -59,20 +63,27 @@ def frameStacker(pr, progress_bar, event_process,
 
         return image
 
-    def read_ser_frame(frame_to_read, trim=None):
+    def read_ser_frame(frame_to_read, trim_top=0, trim_bottom=0):
         try:
             frame = serReader(frame_to_read)
             if frame is None:
                 pr(f'Problem reading SER file: frame == None returned')
                 return None
 
-            if trim is None or trim == 0:
-                image = frame[:, :].astype('float32')
-            else:
-                if trim > 0:
-                    image = frame[0:-trim, :].astype('float32')
-                else:
-                    image = frame[-trim:, :].astype('float32')
+            image = frame[:, :].astype('float32')
+
+            if trim_bottom:
+                image = image[0:-trim_bottom, :]
+
+            if trim_top:
+                image = image[trim_top:, :]
+            # if trim is None or trim == 0:
+            #     image = frame[:, :].astype('float32')
+            # else:
+            #     if trim > 0:
+            #         image = frame[0:-trim, :].astype('float32')
+            #     else:
+            #         image = frame[-trim:, :].astype('float32')
 
         except Exception as e:
             pr(f'Problem reading SER file: {e}')
@@ -80,14 +91,26 @@ def frameStacker(pr, progress_bar, event_process,
 
         return image
 
-    def read_avi_frame(frame_to_read, trim=None):
+    def read_avi_frame(frame_to_read, trim_top=0, trim_bottom=0):
         try:
             cap.set(cv2.CAP_PROP_POS_FRAMES, frame_to_read)
             status, frame = cap.read()
-            if trim is None or trim == 0:
-                image = frame[:, :, 0].astype('float32')
-            else:
-                image = frame[0:-trim, :, 0].astype('float32')
+
+            if len(frame.shape) == 3:
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+            image = frame[:, :].astype('float32')
+
+            if trim_bottom:
+                image = image[0:-trim_bottom, :]
+
+            if trim_top:
+                image = image[trim_top:, :]
+
+            # if trim is None or trim == 0:
+            #     image = frame[:, :, 0].astype('float32')
+            # else:
+            #     image = frame[0:-trim, :, 0].astype('float32')
             # plt.imshow(asinhScale(image), cmap='gray')
         except Exception as e:
             pr(f'Problem reading avi file: {e}')
@@ -122,29 +145,27 @@ def frameStacker(pr, progress_bar, event_process,
     else:
         inimage = read_avi_frame(first_frame)
 
-    # if fitsReader is None:
-    #     inimage = read_avi_frame(first_frame)
-    # else:
-    #     inimage = fitsReader(first_frame)
-
-    if timestamp_trim < 0:
+    if timestamp_trim_top > 0:
         # If redact is from the top, this is assumed to be a FITS or SER file for
         # which there is no timestamp to be preserved, just a few 'corrupted' lines at the top.
-        timestamp_junk = inimage[0:-timestamp_trim,:]
-        timestamp_image = np.zeros_like(timestamp_junk)
-    elif timestamp_trim > 0:
-        timestamp_image = inimage[-timestamp_trim:,:]
+        timestamp_image_top = inimage[0:timestamp_trim_top,:]
+        # timestamp_image = np.zeros_like(timestamp_junk)
     else:
-        timestamp_image = None
+        timestamp_image_top = None
+
+    if timestamp_trim_bottom > 0:
+        timestamp_image_bottom = inimage[-timestamp_trim_bottom:,:]
+    else:
+        timestamp_image_bottom = None
 
     # Re-read the reference frame with the timestamp trimmed off and use it
     # to initialize the stack sum
     if fitsReader:
-        inimage = read_fits_frame(first_frame, trim=timestamp_trim)
+        inimage = read_fits_frame(first_frame, trim_top=timestamp_trim_top, trim_bottom=timestamp_trim_bottom)
     elif serReader:
-        inimage = read_ser_frame(first_frame, trim=timestamp_trim)
+        inimage = read_ser_frame(first_frame, trim_top=timestamp_trim_top, trim_bottom=timestamp_trim_bottom)
     else:
-        inimage = read_avi_frame(first_frame, trim=timestamp_trim)
+        inimage = read_avi_frame(first_frame, trim_top=timestamp_trim_top, trim_bottom=timestamp_trim_bottom)
 
     image_sum = inimage[:,:]
 
@@ -155,11 +176,11 @@ def frameStacker(pr, progress_bar, event_process,
 
     while next_frame <= last_frame:
         if fitsReader:
-            inimage = read_fits_frame(next_frame, trim=timestamp_trim)
+            inimage = read_fits_frame(next_frame, trim_top=timestamp_trim_top, trim_bottom=timestamp_trim_bottom)
         elif serReader:
-            inimage = read_ser_frame(next_frame, trim=timestamp_trim)
+            inimage = read_ser_frame(next_frame, trim_top=timestamp_trim_top, trim_bottom=timestamp_trim_bottom)
         else:
-            inimage = read_avi_frame(next_frame, trim=timestamp_trim)
+            inimage = read_avi_frame(next_frame, trim_top=timestamp_trim_top, trim_bottom=timestamp_trim_bottom)
 
         next_frame += 1
 
@@ -203,13 +224,12 @@ def frameStacker(pr, progress_bar, event_process,
 
     # Sharpen the image 2 and 10 were ok  5 and 2 were smudgy
     sharper_image = unsharp_mask(asinhScale(image_sum), radius=2, amount=10.0, preserve_range=True)
+    unredacted = sharper_image
 
-    if timestamp_image is None:
-        unredacted = sharper_image
-    elif timestamp_trim > 0:
-        unredacted = np.append(sharper_image, asinhScale(timestamp_image), axis=0)
-    else:
-        unredacted = np.append(timestamp_image, sharper_image, axis=0)
+    if not timestamp_image_bottom is None:
+        unredacted = np.append(unredacted, asinhScale(timestamp_image_bottom), axis=0)
+    if not timestamp_image_top is None:
+        unredacted = np.append(asinhScale(timestamp_image_top), unredacted, axis=0)
 
     # plt.imshow(unredacted, cmap='gray')
     # print(unredacted.shape)

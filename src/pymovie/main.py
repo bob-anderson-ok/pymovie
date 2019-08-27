@@ -755,9 +755,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.plotSymbolSizeSpinBox.valueChanged.connect(self.changePlotSymbolSize)
         self.plotSymbolSizeLabel.installEventFilter(self)
 
-        # self.displayPlotsButton.clicked.connect(self.showLightcurves)
-        # self.displayPlotsButton.installEventFilter(self)
-
         self.cascadeCheckBox.installEventFilter(self)
 
         self.manualWcsButton.clicked.connect(self.manualWcsCalibration)
@@ -766,7 +763,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.stackFramesButton.clicked.connect(self.performFrameStacking)
         self.stackFramesButton.installEventFilter(self)
 
-        self.finderRedactLinesLabel.installEventFilter(self)
+        self.finderRedactTopLinesLabel.installEventFilter(self)
+        self.finderRedactBottomLinesLabel.installEventFilter(self)
+
         self.finderNumFramesLabel.installEventFilter(self)
         self.finderThresholdLabel.installEventFilter(self)
 
@@ -1945,6 +1944,38 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 with open(icon_src_path) as src, open(icon_dest_path, 'w') as dest:
                     dest.writelines(src.readlines())
 
+    def getRedactLineParameters(self):
+        num_lines_to_redact_from_top = 0
+        num_lines_to_redact_from_bottom = 0
+
+        if self.redactLinesTopEdit.text():
+            try:
+                num_lines_to_redact_from_top = int(self.redactLinesTopEdit.text())
+            except ValueError:
+                self.showMsg(f'invalid numeric entry in top lines redact: {self.redactLinesTopEdit.text()}')
+                return False, 0, 0
+
+        if self.redactLinesBottomEdit.text():
+            try:
+                num_lines_to_redact_from_bottom = int(self.redactLinesBottomEdit.text())
+            except ValueError:
+                self.showMsg(f'invalid numeric entry in bottom lines redact: {self.redactLinesBottomEdit.text()}')
+                return False, 0, 0
+
+        if num_lines_to_redact_from_top == 0 and num_lines_to_redact_from_bottom == 0:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Question)
+            msg.setText(f'It is necessary to remove any timestamp overlay that may be '
+                        f'present as such an overlay will keep the image registration '
+                        f'from working properly.'
+                        f'\n\nPlease enter values in the redact lines edit boxes. '
+                        f'Enter 0 if there is no timestamp in that region.')
+            msg.setWindowTitle('Please fill in redact lines')
+            msg.setStandardButtons(QMessageBox.Ok)
+            msg.exec()
+        else:
+            return True, abs(num_lines_to_redact_from_top), abs(num_lines_to_redact_from_bottom)
+
     def performFrameStacking(self):
         if not (self.avi_wcs_folder_in_use or self.fits_folder_in_use):
             self.showMsg(f'This function can only be performed in the context of an AVI-WCS or FITS folder.')
@@ -1966,23 +1997,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         early_exit = False
 
-        if self.redactLinesEdit.text():
-            try:
-                num_lines_to_redact = int(self.redactLinesEdit.text())
-            except ValueError:
-                self.showMsg(f'invalid numeric entry: {self.redactLinesEdit.text()}')
-                return
-        else:
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Question)
-            msg.setText(f'It is necessary to remove any timestamp overlay that may be '
-                        f'present as such an overlay will keep the image registration '
-                        f'from working properly.'
-                        f'\n\nPlease enter a number in the redact lines edit box. '
-                        f'Enter 0 if there is no timestamp.')
-            msg.setWindowTitle('Please fill in redact lines')
-            msg.setStandardButtons(QMessageBox.Ok)
-            msg.exec()
+        valid_entries, num_top, num_bottom = self.getRedactLineParameters()
+
+        if not valid_entries:
             early_exit = True
 
         if not self.numFramesToStackEdit.text():
@@ -1998,18 +2015,20 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if early_exit:
             return
 
-        if abs(num_lines_to_redact) > image_height / 2:
-            self.showMsg(f'{num_lines_to_redact} is an unreasonable number of lines to redact.')
+        if num_bottom + num_top > image_height - 4:
+            self.showMsg(f'{num_bottom + num_top} is an unreasonable number of lines to redact.')
             self.showMsg(f'Operation aborted.')
             return
 
         redacted_image = self.image[:,:].astype('int16')
-        if num_lines_to_redact > 0:
-            for i in range(image_height - num_lines_to_redact, image_height):
+
+        if num_bottom > 0:
+            for i in range(image_height - num_bottom, image_height):
                 for j in range(0, image_width):
                     redacted_image[i, j] = mean
-        else:
-            for i in range(0, abs(num_lines_to_redact)):
+
+        if num_top > 0:
+            for i in range(0, num_top):
                 for j in range(0, image_width):
                     redacted_image[i, j] = mean
 
@@ -2020,7 +2039,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Question)
-        msg.setText('Is the timestamp completely removed?')
+        msg.setText('Is the timestamp data completely removed?')
         msg.setWindowTitle('Is timestamp removed')
         msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
         retval = msg.exec_()
@@ -2081,7 +2100,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         stacker.frameStacker(
             self.showMsg, self.stackerProgressBar, QtGui.QGuiApplication.processEvents,
             first_frame=first_frame, last_frame=last_frame,
-            timestamp_trim=num_lines_to_redact,
+            timestamp_trim_top=num_top,
+            timestamp_trim_bottom=num_bottom,
             fitsReader = fitsReader,
             serReader = serReader,
             avi_location=self.avi_location, out_dir_path=self.folder_dir, bkg_threshold=bkg_thresh)
@@ -3968,6 +3988,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         QtGui.QGuiApplication.processEvents()
 
         if dir_path:
+
+            self.finderThresholdEdit.setText('')
+
             self.saveStateNeeded = True
             self.avi_wcs_folder_in_use = False
             self.fits_folder_in_use = True
@@ -4223,6 +4246,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.ser_meta_data = {}
                 self.ser_timestamps = []
 
+            self.finderThresholdEdit.setText('')
+
+
             self.saveStateNeeded = True
             self.wcs_solution_available = False
             self.wcs_frame_num = None
@@ -4371,6 +4397,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if dir_path:
 
             self.timestampReadingEnabled = False
+
+            self.finderThresholdEdit.setText('')
 
             self.saveStateNeeded = True
             self.upper_left_count  = 0  # When Kiwi used: accumulate count ot times t2 was at left in upper field
@@ -5139,40 +5167,25 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         image_width = self.image.shape[1]   # number of columns
 
         num_lines_to_redact = 0
+        valid_entries, num_top, num_bottom = self.getRedactLineParameters()
 
-        if self.redactLinesEdit.text():
-            try:
-                num_lines_to_redact = int(self.redactLinesEdit.text())
-            except ValueError:
-                self.showMsg(f'invalid numeric entry: {self.redactLinesEdit.text()}')
-                return
-        else:
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Question)
-            msg.setText(f'It is good practice to remove any timestamp overlay that may be '
-                        f'present as such an overlay may impair star field identification. '
-                        f'\n\nPlease enter the number of lines from the bottom to remove '
-                        f'in the redact lines edit box. '
-                        f'Enter 0 if there is no timestamp.')
-            msg.setWindowTitle('Please fill in redact lines')
-            msg.setStandardButtons(QMessageBox.Ok)
-            msg.exec()
+        if not valid_entries:
             return
 
-        if (num_lines_to_redact < -image_height / 2) or (num_lines_to_redact > image_height / 2):
-            self.showMsg(f'{num_lines_to_redact} is an unreasonable number of lines to redact.')
+        if num_bottom + num_top > image_height - 4:
+            self.showMsg(f'{num_bottom + num_top} is an unreasonable number of lines to redact.')
             self.showMsg(f'Operation aborted.')
             return
 
         redacted_image = self.image[:,:].astype('uint16')
 
-        if num_lines_to_redact > 0:
-            for i in range(image_height - num_lines_to_redact, image_height):
+        if num_bottom > 0:
+            for i in range(image_height - num_bottom, image_height):
                 for j in range(0, image_width):
                     redacted_image[i, j] = mean
 
-        if num_lines_to_redact < 0:
-            for i in range(0, -num_lines_to_redact):
+        if num_top > 0:
+            for i in range(0, num_top):
                 for j in range(0, image_width):
                     redacted_image[i, j] = mean
 

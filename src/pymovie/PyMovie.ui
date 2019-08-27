@@ -740,21 +740,75 @@
             </widget>
            </item>
            <item>
-            <widget class="QLineEdit" name="redactLinesEdit">
+            <widget class="QLabel" name="finderRedactTopLinesLabel">
              <property name="minimumSize">
               <size>
-               <width>60</width>
+               <width>0</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This entry is used to specify how many lines from the image top to remove to get rid of timestamp information.&lt;/p&gt;&lt;p&gt;For generating a &amp;quot;finder&amp;quot; image, getting rid of the timestamp is &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;essential&lt;/span&gt; for getting a good image to image registration based on the star field movement. If the timestamp is not removed, then the stacking process will likely register on the timestamp instead.&lt;/p&gt;&lt;p&gt;This entry is also used when preparing a frame for submission to nova.astrometry.net for WCS calibration.&lt;/p&gt;&lt;p&gt;If there is a timestamp overlay, its presence may make the WCS location and calibration harder (takes longer) for nova.astrometry.net. So, before submitting an image to nova.astrometry.net, we like to 'redact' the timestamp data by replacingthose lines with the average background (sampled from the center of the image). The value in this box controls how many lines from the top get this treatment.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>redact top=</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="redactLinesTopEdit">
+             <property name="minimumSize">
+              <size>
+               <width>40</width>
                <height>0</height>
               </size>
              </property>
              <property name="maximumSize">
               <size>
-               <width>60</width>
+               <width>40</width>
                <height>16777215</height>
               </size>
              </property>
              <property name="toolTip">
               <string/>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="finderRedactBottomLinesLabel">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This entry is used to specify how many lines from the image bottom to remove to get rid of timestamp information.&lt;/p&gt;&lt;p&gt;For generating a &amp;quot;finder&amp;quot; image, getting rid of the timestamp is &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;essential&lt;/span&gt; for getting a good image to image registration based on the star field movement. If the timestamp is not removed, then the stacking process will likely register on the timestamp instead.&lt;/p&gt;&lt;p&gt;This entry is also used when preparing a frame for submission to nova.astrometry.net for WCS calibration.&lt;/p&gt;&lt;p&gt;If there is a timestamp overlay, its presence may make the WCS location and calibration harder (takes longer) for nova.astrometry.net. So, before submitting an image to nova.astrometry.net, we like to 'redact' the timestamp data by replacingthose lines with the average background (sampled from the center of the image). The value in this box controls how many lines from the bottom get this treatment.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>   redact bottom=</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+             </property>
+             <property name="indent">
+              <number>-1</number>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="redactLinesBottomEdit">
+             <property name="minimumSize">
+              <size>
+               <width>40</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>40</width>
+               <height>16777215</height>
+              </size>
              </property>
             </widget>
            </item>
@@ -772,31 +826,24 @@
             </widget>
            </item>
            <item>
-            <widget class="QLabel" name="finderRedactLinesLabel">
+            <widget class="QLabel" name="finderNumFramesLabel">
              <property name="minimumSize">
               <size>
-               <width>85</width>
+               <width>0</width>
                <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>16777215</height>
               </size>
              </property>
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This entry is used to specify how many lines from the image bottom (or top) to remove to get rid of the timestamp. A positive number redacts from the bottom up while a negative number redacts from the top down.&lt;/p&gt;&lt;p&gt;For generating a &amp;quot;finder&amp;quot; image, getting rid of the timestamp is &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;essential&lt;/span&gt; for getting a good image to image registration based on the star field movement. If the timestamp is not removed, then the stacking process will likely register on the timestamp instead.&lt;/p&gt;&lt;p&gt;This entry is also used when preparing a frame for submission to nova.astrometry.net for WCS calibration.&lt;/p&gt;&lt;p&gt;If there is a timestamp overlay, its presence may make the WCS location and calibration harder (takes longer) for nova.astrometry.net. So, before submitting an image to nova.astrometry.net, we like to 'redact' the timestamp area by replacing the bottom lines with the average background (sampled from the center of the image). The value in this box controls how many lines from the bottom get this treatment.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This edit box specifies how many frames to register and sum. For the purpose of locating a star that can produce an occultation light curve, a number of frames in the range of 100 to 400 is effective. If this number is set too high, while the target star might become visible in this enhanced image, it is likely to be lost in quantization and noise effects when frame by frame aperture photometry is attempted.&lt;/p&gt;&lt;p&gt;Of course, your objective might be to get a 'pretty picture' of the star field. If so, have at it, but be aware that stars may 'appear' for which an occultation light curve cannot be extracted when processing is done frame by frame.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
-              <string>:redact lines</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_14">
-             <property name="minimumSize">
-              <size>
-               <width>10</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="text">
-              <string/>
+              <string>num frames=</string>
              </property>
             </widget>
            </item>
@@ -829,28 +876,6 @@
              </property>
              <property name="text">
               <string/>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="finderNumFramesLabel">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This edit box specifies how many frames to register and sum. For the purpose of locating a star that can produce an occultation light curve, a number of frames in the range of 100 to 400 is effective. If this number is set too high, while the target star might become visible in this enhanced image, it is likely to be lost in quantization and noise effects when frame by frame aperture photometry is attempted.&lt;/p&gt;&lt;p&gt;Of course, your objective might be to get a 'pretty picture' of the star field. If so, have at it, but be aware that stars may 'appear' for which an occultation light curve cannot be extracted when processing is done frame by frame.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="text">
-              <string>:num frames</string>
              </property>
             </widget>
            </item>
