@@ -1988,7 +1988,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         ny = 51
         nx = 51
         thumbnail = self.image[y0:y0 + ny, x0:x0 + nx]
-        mean, *_ = robustMeanStd(thumbnail, outlier_fraction=.5)
+        mean, *_ = newRobustMeanStd(thumbnail, outlier_fraction=.5)
 
         image_height = self.image.shape[0]  # number of rows
         image_width = self.image.shape[1]   # number of columns
@@ -2845,7 +2845,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         img = self.image[center_y:center_y + 52, center_x:center_x + 52]
 
-        bkavg, std, *_ = robustMeanStd(img)
+        bkavg, std, *_ = newRobustMeanStd(img)
 
         background = int(np.ceil(bkavg))
 
@@ -2865,7 +2865,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # img is the portion of the main image that is covered by the aperture bounding box
         img = self.image[y0:y0 + ny, x0:x0 + nx]
 
-        bkavg, std, *_ = robustMeanStd(img)
+        bkavg, std, *_ = newRobustMeanStd(img)
 
         background = int(np.ceil(bkavg))
 
@@ -3736,7 +3736,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         # thumbnail is the portion of the main image that is covered by the aperture bounding box
         thumbnail = self.image[y0:y0+ny, x0:x0+nx]
-        mean, std, sorted_data, *_ = robustMeanStd(thumbnail, outlier_fraction=.5)
+        mean, std, sorted_data, *_ = newRobustMeanStd(thumbnail, outlier_fraction=.5)
 
         maxpx = sorted_data[-1]
 
@@ -5161,7 +5161,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         ny = 51
         nx = 51
         thumbnail = self.image[y0:y0 + ny, x0:x0 + nx]
-        mean, *_ = robustMeanStd(thumbnail, outlier_fraction=.5)
+        mean, *_ = newRobustMeanStd(thumbnail, outlier_fraction=.5)
 
         image_height = self.image.shape[0]  # number of rows
         image_width = self.image.shape[1]   # number of columns
@@ -5469,7 +5469,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'No image in Thumbnail One to use for demo')
             return
 
-        good_mean, sigma, sorted_data, window, data_size, left, right = robustMeanStd(self.thumbOneImage)
+        # good_mean, sigma, sorted_data, window, data_size, left, right = robustMeanStd(self.thumbOneImage)
+        good_mean, sigma, sorted_data, window, data_size, left, right = newRobustMeanStd(self.thumbOneImage)
         # self.showMsg(f'{good_mean} {sigma} {window} {data_size} {left}  {right}')
 
         # Start a new plot
@@ -5841,7 +5842,7 @@ def get_mask(
     # the following calculation will be invalid
     roi_center = int(img.shape[0] / 2)
 
-    bkavg, *_ = robustMeanStd(img, outlier_fraction=outlier_fraction)
+    bkavg, *_ = newRobustMeanStd(img, outlier_fraction=outlier_fraction)
     blob_signals = []
 
     if blob_count > 0:
@@ -5941,12 +5942,48 @@ def robustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=Tru
     # It can be related to standard deviation by a correction factor if the data can be assumed to be drawn
     # from a gaussian distribution.
     # med = np.median(sorted_data)
-    sigma = np.median(np.abs(sorted_data - good_mean))  # This is the MAD estimator
+    sigma = np.median(np.abs(sorted_data - good_mean))  # This is my MAD estimator; usually good_mean is med
     if assume_gaussian:
         sigma = sigma * 1.486  # sigma(gaussian) can be proved to equal 1.486*MAD
 
     return good_mean, sigma, sorted_data, window, data.size, first_index, last_index
 
+
+def newRobustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=True):
+    # Note:  it is expected that type(data) is numpy.darray
+
+    # Protect the user against accidentally running this procedure with an
+    # excessively large number of data points (which could take too long)
+    if data.size > max_pts:
+        raise Exception(
+            f'In robustMean(): data.size limit of {max_pts} exceeded. (Change max_pts if needed)'
+        )
+
+    if outlier_fraction > 1:
+        raise Exception(
+            f'In robustMean(): {outlier_fraction} was given as outlier_fraction. This value must be <= 1.0'
+        )
+
+    # The None 'flattens' data automatically so sorted_data will be 1D
+    sorted_data = np.sort(data, None)
+
+    med = np.median(sorted_data)
+
+    med_loc = np.where(sorted_data >= med)[0][0]
+
+    win_delta = int(sorted_data.size * (1 - outlier_fraction) / 2)
+
+    first_index = med_loc - win_delta
+    last_index = med_loc + win_delta
+
+    good_mean = np.mean(sorted_data[first_index:last_index + 1])
+
+    # MAD means: Median Absolute Deviation
+    MAD = np.median(np.abs(sorted_data - med))
+    if assume_gaussian:
+        MAD = MAD * 1.486  # sigma(gaussian) can be proved to equal 1.486*MAD
+
+    return good_mean, MAD, sorted_data, win_delta, data.size, first_index, last_index
 
 def main():
     if sys.version_info < (3,7):
