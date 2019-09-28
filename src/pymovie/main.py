@@ -5967,23 +5967,76 @@ def newRobustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=
     # The None 'flattens' data automatically so sorted_data will be 1D
     sorted_data = np.sort(data, None)
 
-    middle = int(data.size / 2)
+    if outlier_fraction > 0:
+        # window is the number points to be included in the 'mean' calculation
+        window = int(sorted_data.size * (1 - outlier_fraction))
 
-    med = sorted_data[middle]
+        # Handle the case of outlier_fraction too close to zero
+        if window == data.size:
+            window -= 1
 
-    win_delta = int(sorted_data.size * (1 - outlier_fraction) / 2)
+        # nout is the number of outliers to exclude
+        nout = sorted_data.size - window
+        diffs = sorted_data[window:window + nout] - sorted_data[0:nout]
 
-    first_index = middle - win_delta
-    last_index = middle + win_delta
+        min_diff_pts = np.where(diffs == min(diffs))
 
-    good_mean = np.mean(sorted_data[first_index:last_index + 1])
+        j = min_diff_pts[0][0]
+        k = min_diff_pts[0][-1]
+        good_mean = np.mean(sorted_data[j:k + window])
 
+        first_index = j
+        last_index = k + window
+    else:
+        good_mean = np.mean(sorted_data)
+        window = data.size
+
+    upper_indices = np.where(sorted_data > good_mean)
     # MAD means: Median Absolute Deviation
-    MAD = np.median(np.abs(sorted_data - good_mean))
+    MAD = np.median(sorted_data[upper_indices[0][0]:])
+    MAD = MAD - good_mean
     if assume_gaussian:
-        MAD = MAD * 1.486  # sigma(gaussian) can be proved to equal 1.486*MAD
+        MAD = MAD * 1.486
+        # sigma(gaussian) can be proved to equal 1.486*MAD for diuble sided data
+        # MAD = MAD / 1.9075  # but for one-sided data, this vale was found empirically
 
-    return good_mean, MAD, sorted_data, win_delta, data.size, first_index, last_index
+    return good_mean, MAD, sorted_data, window, data.size, first_index, last_index
+
+# def newRobustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=True):
+#     # Note:  it is expected that type(data) is numpy.darray
+#
+#     # Protect the user against accidentally running this procedure with an
+#     # excessively large number of data points (which could take too long)
+#     if data.size > max_pts:
+#         raise Exception(
+#             f'In robustMean(): data.size limit of {max_pts} exceeded. (Change max_pts if needed)'
+#         )
+#
+#     if outlier_fraction > 1:
+#         raise Exception(
+#             f'In robustMean(): {outlier_fraction} was given as outlier_fraction. This value must be <= 1.0'
+#         )
+#
+#     # The None 'flattens' data automatically so sorted_data will be 1D
+#     sorted_data = np.sort(data, None)
+#
+#     middle = int(data.size / 2)
+#
+#     med = sorted_data[middle]
+#
+#     win_delta = int(sorted_data.size * (1 - outlier_fraction) / 2)
+#
+#     first_index = middle - win_delta
+#     last_index = middle + win_delta
+#
+#     good_mean = np.mean(sorted_data[first_index:last_index + 1])
+#
+#     # MAD means: Median Absolute Deviation
+#     MAD = np.median(np.abs(sorted_data - good_mean))
+#     if assume_gaussian:
+#         MAD = MAD * 1.486  # sigma(gaussian) can be proved to equal 1.486*MAD
+#
+#     return good_mean, MAD, sorted_data, win_delta, data.size, first_index, last_index
 
 def main():
     if sys.version_info < (3,7):
