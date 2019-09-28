@@ -5967,19 +5967,19 @@ def newRobustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=
     # The None 'flattens' data automatically so sorted_data will be 1D
     sorted_data = np.sort(data, None)
 
-    med = np.median(sorted_data)
+    middle = int(data.size / 2)
 
-    med_loc = np.where(sorted_data >= med)[0][0]
+    med = sorted_data[middle]
 
     win_delta = int(sorted_data.size * (1 - outlier_fraction) / 2)
 
-    first_index = med_loc - win_delta
-    last_index = med_loc + win_delta
+    first_index = middle - win_delta
+    last_index = middle + win_delta
 
     good_mean = np.mean(sorted_data[first_index:last_index + 1])
 
     # MAD means: Median Absolute Deviation
-    MAD = np.median(np.abs(sorted_data - med))
+    MAD = np.median(np.abs(sorted_data - good_mean))
     if assume_gaussian:
         MAD = MAD * 1.486  # sigma(gaussian) can be proved to equal 1.486*MAD
 
