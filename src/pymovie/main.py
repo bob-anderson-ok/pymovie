@@ -76,6 +76,7 @@ from pymovie import selectProfile
 from pymovie import astrometry_client
 from pymovie import wcs_helper_functions
 from pymovie import stacker
+from pymovie import gammaUtils
 from pymovie import SER
 import pyqtgraph.exporters as pex
 from numpy import sqrt, arcsin
@@ -375,6 +376,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.vtiSelectLabel.installEventFilter(self)
 
+        self.gammaLabel.installEventFilter(self)
+
         self.roiComboBox.currentIndexChanged.connect(self.setRoiFromComboBox)
         self.roiComboBox.installEventFilter(self)
         self.selectApertureSizeLabel.installEventFilter(self)
@@ -413,6 +416,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.lowerTimestamp = ''
         self.ocrboxBasePath = None
         self.modelDigitsFilename = None
+
+        # self.gammaLut is a lookup table for doing fast gamma correction.
+        # It gets filled in whenver the gamma spinner is changed IF there is an
+        # image file in use (becuase we need to know whether to do a 16 or 8 bit lookup table)
+        self.gammaLut = None
+        self.currentGamma = self.gammaSettingOfCamera.value()
+
+        self.gammaSettingOfCamera.valueChanged.connect(self.processGammaChange)
 
         self.vtiSelectComboBox.installEventFilter(self)
         self.vtiSelectComboBox.currentIndexChanged.connect(self.vtiSelected)
@@ -821,12 +832,61 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.helperThing.show()
 
     def addApertureStack(self):
-        self.showMsg('Not yet implemented')
         for i in range(5):
             self.addStaticAperture(askForName=False)
         for app in self.getApertureList():
             if app.color == 'green':
                 app.setRed()
+
+    def doGammaCorrection(self):
+        if self.currentGamma == 1.00:
+            return
+        # self.showMsg('Gamma correction asked for but not yet implemented')
+        self.image = self.gammaLut.take(self.image)
+
+    def processGammaChange(self):
+        # Get gamma value from the spinner
+        self.currentGamma = self.gammaSettingOfCamera.value()
+
+        if not (self.avi_in_use or self.fits_folder_in_use or self.ser_file_in_use):
+            if self.currentGamma == 1.0:
+                return
+            self.showMsg(f'gamma changes are accepted ONLY when an image file has been selected.')
+            self.setGammaToUnity()
+        else:
+            # Compute the new lookup table
+            if self.fits_folder_in_use:
+                # Compute a 16 bit lookup table
+                self.gammaLut = np.array(
+                    [gammaUtils.gammaDecode16bit(i, gamma=self.currentGamma) for i in range(65536)]).astype('uint16')
+                self.showMsg(f'A 16 bit correction table for gamma={self.currentGamma:0.2f} has been calculated.')
+            elif self.avi_in_use:
+                # Compute an 8 bit lookup table
+                self.gammaLut = np.array(
+                    [gammaUtils.gammaDecode8bit(i, gamma=self.currentGamma) for i in range(256)]).astype('uint8')
+                self.showMsg(f'An 8 bit correction table for gamma={self.currentGamma:0.2f} has been calculated.')
+            elif self.ser_file_in_use:
+                if self.ser_meta_data['BytesPerPixel'] == 1:
+                    # Compute an 8 bit lookup table
+                    self.gammaLut = np.array(
+                        [gammaUtils.gammaDecode8bit(i, gamma=self.currentGamma) for i in range(256)]).astype('uint8')
+                    self.showMsg(f'An 8 bit correction table for gamma={self.currentGamma:0.2f} has been calculated.')
+                else:
+                    # Compute a 16 bit lookup table
+                    self.gammaLut = np.array(
+                        [gammaUtils.gammaDecode16bit(i, gamma=self.currentGamma) for i in range(65536)]).astype('uint16')
+                    self.showMsg(f'A 16 bit correction table for gamma={self.currentGamma:0.2f} has been calculated.')
+
+            else:
+                self.showMsg(f'In processGammaChange(): Unknown file type in use.')
+                return
+
+        # This call will cause the current frame to be redisplayed and so show the effect of the gamma change
+        self.showFrame()
+
+    def setGammaToUnity(self):
+        self.gammaSettingOfCamera.setValue(1.00)
+        self.currentGamma = 1.00
 
     def deleteOcrFiles(self):
         self.deleteModelDigits()
@@ -4045,6 +4105,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             # to the csv file
             self.initialFrame = True
             self.currentOcrBox = None
+
+            self.setGammaToUnity()
             self.showFrame()
 
             self.thumbOneView.clear()
@@ -4059,6 +4121,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             if os.path.exists(file1) and os.path.exists(file2):
                 self.restoreApertureState.setEnabled(True)
+
 
     def showMsgDialog(self, msg):
         msg_box = QMessageBox()
@@ -4248,7 +4311,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             self.finderThresholdEdit.setText('')
 
-
             self.saveStateNeeded = True
             self.wcs_solution_available = False
             self.wcs_frame_num = None
@@ -4332,6 +4394,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.stopAtFrameSpinBox.setMaximum(frame_count - 1)
             self.stopAtFrameSpinBox.setValue(frame_count - 1)
 
+            self.setGammaToUnity()
+
             # This will get our image display initialized with default pan/zoom state
             self.initialFrame = True
             self.showFrame()
@@ -4339,6 +4403,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             self.thumbOneView.clear()
             self.thumbTwoView.clear()
+
 
     def setTimestampFormatter(self):
         self.kiwiInUse = False
@@ -4395,6 +4460,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.acceptAviFolderDirectoryWithoutUserIntervention = False
 
         if dir_path:
+
+            self.setGammaToUnity()
 
             self.timestampReadingEnabled = False
 
@@ -4487,9 +4554,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.filename = avi_location
             elif num_avi_ser_files > 1:
                 self.showMsg(f'{num_avi_ser_files} avi/ser files were found.  Only one is allowed in an AVI/SER-WCS folder')
+                self.avi_in_use = False
+                self.ser_file_in_use = False
                 return
             else:
                 self.showMsg(f'No avi/ser files were found in that folder.')
+                self.avi_in_use = False
+                self.ser_file_in_use = False
                 return
 
 
@@ -4601,6 +4672,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             self.thumbOneView.clear()
             self.thumbTwoView.clear()
+
 
     def startTimestampReading(self):
         # This is how we starup timestamp extraction.
@@ -4868,10 +4940,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                         success, frame = self.getFrame(frame_to_show)
                         if len(frame.shape) == 3:
                             self.image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                            self.doGammaCorrection()
                     else:
                         self.cap.set(cv2.CAP_PROP_POS_FRAMES, frame_to_show)
                         status, frame = self.cap.read()
                         self.image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                        self.doGammaCorrection()
 
                 except Exception as e:
                     self.showMsg(f'Problem reading avi file: {e}')
@@ -4885,6 +4959,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                         self.ser_file_handle, frame_to_show,
                         bytes_per_pixel, image_width, image_height, little_endian
                     )
+                    self.doGammaCorrection()
                     raw_ser_timestamp = self.ser_timestamps[frame_to_show]
                     parts = raw_ser_timestamp.split('T')
                     self.showMsg(f'Timestamp found: {parts[0]} @ {parts[1]}')
@@ -4904,8 +4979,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     try:
                         self.image = pyfits.getdata(
                             self.fits_filenames[frame_to_show], 0).astype('uint16', casting='unsafe')
-                        # self.showMsg(f'image shape: {self.image.shape}')
-                    except:
+                        self.doGammaCorrection()
+                    except Exception as e:
+                        self.showMsg(f'While reading image data from FITS file: {e}')
                         self.image = None
 
                     hdr = pyfits.getheader(self.fits_filenames[frame_to_show], 0)
@@ -4928,7 +5004,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     # except as an example
                     # self.image = (pyfits.getdata(self.fits_filenames[frame_to_show], 0) / 3.0).astype('int16', casting='safe')
                 except:
-                    self.showMsg(f'Cannot convert image to int16 safely')
+                    self.showMsg(f'Cannot convert image to uint16 safely')
                     return
                 # self.image = (pyfits.getdata(self.fits_filenames[frame_to_show], 0) / 3.0).astype('int16')
                 # self.showMsg(f'image shape: {self.image.shape}  type: {type(self.image[0,0])}')
