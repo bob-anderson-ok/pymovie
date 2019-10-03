@@ -3243,9 +3243,18 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         view.addItem(aperture)
 
     def needDigits(self):
+        num_needed = 0
         needs_list = []
         for img in self.modelDigits:
+            if img is None:
+                num_needed += 1
             needs_list.append(img is None)
+
+        if num_needed == 0:
+            needs_list = []
+            for i in range(10):
+                needs_list.append(True)
+
         return needs_list
 
     def showDigitTemplates(self, retrain=False):
