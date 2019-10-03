@@ -962,6 +962,21 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 y0 = dict['y0']
                 xsize = dict['xsize']
                 ysize = dict['ysize']
+
+                # Set the aperture size selection to match the incoming aperture group.
+                if xsize == 51:
+                    self.roiComboBox.setCurrentIndex(0)
+                elif xsize == 41:
+                    self.roiComboBox.setCurrentIndex(1)
+                elif xsize == 31:
+                    self.roiComboBox.setCurrentIndex(2)
+                elif xsize == 21:
+                    self.roiComboBox.setCurrentIndex(3)
+                else:
+                    self.showMsg(f'Unexpected aperture size of {xsize} in restored aperture group')
+
+
+
                 bbox = (x0, y0, xsize, ysize)
                 name = dict['name']
                 max_xpos = dict['max_xpos']
@@ -2830,7 +2845,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 for name in names:
                     f.write(f',signal-{name}')
 
-                # TODO make this conditional for AOTA compatibility
                 for name in names:
                     f.write(f',appsum-{name},avgbkg-{name},stdbkg-{name},nmaskpx-{name},'
                             f'maxpx-{name},xcentroid-{name},ycentroid-{name}')
@@ -2848,7 +2862,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                         signal = appdata[k][i][4]
                         f.write(f',{signal:0.2f}')
 
-                    # TODO make this conditional for AOTA compatibility
                     for k in range(num_apps):
                         appsum = appdata[k][i][5]
                         bkgnd = appdata[k][i][6]
@@ -5704,7 +5717,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             p1.showGrid(y=True, alpha=1.0)
             p1.setXRange(xvalues[0] - 1, xvalues[-1] + 1)
 
-            # TODO remove this experiment
             p1.setMouseEnabled(x=True, y=False)
 
             self.plots[-1].nextRow()  # Tell GraphicsWindow that we want another row of plots
