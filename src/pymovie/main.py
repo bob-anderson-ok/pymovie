@@ -4969,8 +4969,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                         self.image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                         self.doGammaCorrection()
 
-                except Exception as e:
-                    self.showMsg(f'Problem reading avi file: {e}')
+                except Exception as e1:
+                    self.showMsg(f'Problem reading avi file: {e1}')
             elif self.ser_file_in_use:
                 try:
                     bytes_per_pixel = self.ser_meta_data['BytesPerPixel']
@@ -4992,9 +4992,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     # ...but we need the time from every new frame.
                     self.ser_timestamp = f'[{parts[1]}]'
 
-                except Exception as e:
+                except Exception as e2:
                     self.image = None
-                    self.showMsg(f'{e}')
+                    self.showMsg(f'{e2}')
 
             else:  # We're dealing with FITS files
                 try:
@@ -5002,8 +5002,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                         self.image = pyfits.getdata(
                             self.fits_filenames[frame_to_show], 0).astype('uint16', casting='unsafe')
                         self.doGammaCorrection()
-                    except Exception as e:
-                        self.showMsg(f'While reading image data from FITS file: {e}')
+                    except Exception as e3:
+                        self.showMsg(f'While reading image data from FITS file: {e3}')
                         self.image = None
 
                     hdr = pyfits.getheader(self.fits_filenames[frame_to_show], 0)
@@ -5019,8 +5019,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
                         # ...but we need the time from every new frame.
                         self.fits_timestamp = f'[{parts[1]}]'
-                    except Exception as e:
-                        self.showMsg(f'{e}')
+                    except Exception as e4:
+                        self.showMsg(f'{e4}')
                         pass
                     # This scaling was used to be able to read a file from Joel --- not generally useful
                     # except as an example
@@ -5044,10 +5044,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     if self.timestampFormatter is not None:
                         self.upperTimestamp, time1, score1, _, self.lowerTimestamp, time2, score2, _ = \
                             self.extractTimestamps()
-            except Exception as e:
+            except Exception as e5:
                 self.showMsg(f'The following exception occurred while trying to read timestamp:',
                              blankLine=False)
-                self.showMsg(repr(e))
+                self.showMsg(repr(e5))
 
             if self.levels:
                 self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
@@ -5079,8 +5079,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             # We've changed philosophy: now apertures always 'track'
             try:
                 self.centerAllApertures()
-            except Exception as e:
-                self.showMsg(f'during centerAllApertures(): {repr(e)} ')
+            except Exception as e6:
+                self.showMsg(f'during centerAllApertures(): {repr(e6)} ')
             self.frameView.getView().update()
 
             # Find the auto_display (if any).  We do dynamic thumbnail
@@ -5095,8 +5095,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     if app.thumbnail_source:
                         self.getApertureStats(app)
 
-        except Exception as e:
-            self.showMsg(repr(e))
+        except Exception as e0:
+            self.showMsg(repr(e0))
             self.showMsg(f'There are no frames to display.  Have you read a file?')
 
     def removeAperture(self, aperture):
@@ -6097,6 +6097,9 @@ def newRobustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=
         app_avg = app_sum / data.size
         good_mean = app_avg
 
+        # Now we have a good first approximation for good_mean, but it could contain star pixels.
+        # We'll remove those pixels
+
     upper_indices = np.where(sorted_data > good_mean)
     # MAD means: Median Absolute Deviation
     MAD = np.median(sorted_data[upper_indices[0][0]:])
@@ -6105,6 +6108,20 @@ def newRobustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=
         MAD = MAD * 1.486
         # sigma(gaussian) can be proved to equal 1.486*MAD for double sided data
         # MAD = MAD / 1.9075  # but for one-sided data, this vale was found empirically
+
+    if first_index == 0:
+        upper_indices = np.where(sorted_data > good_mean + 3 * MAD)
+        # We have to do the following test because there is always the possibility
+        # that no data point will be above good_mean + 3 * MAD, in which case
+        # there is no need to recompute good_mean
+        try:
+            top = upper_indices[0][0]
+            app_sum = np.sum(sorted_data[0:top])
+            app_avg = app_sum / top
+            # print(good_mean, app_avg)
+            good_mean = app_avg
+        except Exception as e:
+            pass
 
     return good_mean, MAD, sorted_data, window, data.size, first_index, last_index
 
