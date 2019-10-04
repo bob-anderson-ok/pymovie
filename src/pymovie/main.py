@@ -5976,7 +5976,6 @@ def get_mask(
             min_row, min_col, max_row, max_col = bbox
             extent = max(max_col - min_col, max_row - min_row)
 
-        # TODO Do we still want to consider min_pixels?
         if max_area >= min_pixels:
             for point in coords:
                 mask[point[0], point[1]] = 1
@@ -6088,13 +6087,23 @@ def newRobustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=
         good_mean = np.mean(sorted_data)
         window = data.size
 
+    # TODO remove this exp code
+    # Here we treat 'clipped' backgrounds as a special case.  We calculute the mean
+    # from ALL pixels, including any star pixels that may be present.  We do this because
+    # 'clipped' data makes it impossible to remove outliers by the same means that works
+    # so well with true gaussian (or at least symmetrical) noise with outliers
+    if first_index == 0:  # This implies 'clipped' data
+        app_sum = np.sum(sorted_data)
+        app_avg = app_sum / data.size
+        good_mean = app_avg
+
     upper_indices = np.where(sorted_data > good_mean)
     # MAD means: Median Absolute Deviation
     MAD = np.median(sorted_data[upper_indices[0][0]:])
     MAD = MAD - good_mean
     if assume_gaussian:
         MAD = MAD * 1.486
-        # sigma(gaussian) can be proved to equal 1.486*MAD for diuble sided data
+        # sigma(gaussian) can be proved to equal 1.486*MAD for double sided data
         # MAD = MAD / 1.9075  # but for one-sided data, this vale was found empirically
 
     return good_mean, MAD, sorted_data, window, data.size, first_index, last_index

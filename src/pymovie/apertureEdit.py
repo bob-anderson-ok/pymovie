@@ -41,7 +41,7 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
         # The xy position may have changed because of 'snap' when threshold is changed.
         self.ignoreCellClick = True
         xc, yc = aperture.getCenter()
-        self.msgRoutine(f'({xc},{yc})')
+        # self.msgRoutine(f'({xc},{yc})')
         item = QTableWidgetItem(str(f'({xc},{yc})'))
         self.tableWidget.setItem(row, 1, item)
 
