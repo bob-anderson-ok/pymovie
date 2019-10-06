@@ -458,6 +458,28 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         # Initialize all instance variables as a block (to satisfy PEP 8 standard)
 
+        # Start: Tracking path variables ...
+        self.tpathEarlyX = None
+        self.tpathEarlyY = None
+        self.tpathEarlyFrame = None
+        self.tpathLateX = None
+        self.tpathLateY = None
+        self.tpathLateFrame = None
+
+        # When the following variable is True, xc and yc of the yellow tracking aperture
+        # can be calculated from the frame number. (See equations below)
+        self.tpathSpecified = False
+
+        # When specification is complete and proper, the yellow aperture center is:
+        #   xc = int(tpathXa * frame + tpathXb) and
+        #   yc = int(tpathYa * frame + tpathYb)
+        self.tpathXa = None
+        self.tpathXb = None
+        self.tpathYa = None
+        self.tpathYb = None
+
+        # End tracking path variables
+
         self.printKeyCodes = False
         self.consecutiveKcount = 0
 
@@ -942,6 +964,24 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         else:
             return
 
+        tpathFilename = self.folder_dir + '/trackingPath.p'
+        if os.path.exists(tpathFilename):
+            tpath_tuple = pickle.load(open(tpathFilename, 'rb'))
+
+
+            self.tpathEarlyX = tpath_tuple[0]
+            self.tpathEarlyY = tpath_tuple[1]
+            self.tpathEarlyFrame = tpath_tuple[2]
+            self.tpathLateX = tpath_tuple[3]
+            self.tpathLateY = tpath_tuple[4]
+            self.tpathLateFrame = tpath_tuple[5]
+            self.tpathXa = tpath_tuple[6]
+            self.tpathXb = tpath_tuple[7]
+            self.tpathYa = tpath_tuple[8]
+            self.tpathYb = tpath_tuple[9]
+            self.tpathSpecified = True
+            self.showTrackingPathParameters()
+
         # Force frame view
         self.viewFieldsCheckBox.setChecked(False)
 
@@ -1036,7 +1076,23 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.savedStateFrameNumber = self.currentFrameSpinBox.value()
         pickle.dump(self.savedStateFrameNumber, open(self.folder_dir + '/markedFrameNumber.p', "wb"))
 
-        self.showMsg(f'Current aperture group and frame number saved.')
+        if self.tpathSpecified:
+            tpath_tuple = (
+                self.tpathEarlyX,
+                self.tpathEarlyY,
+                self.tpathEarlyFrame,
+                self.tpathLateX,
+                self.tpathLateY,
+                self.tpathLateFrame,
+                self.tpathXa,
+                self.tpathXb,
+                self.tpathYa,
+                self.tpathYb
+            )
+            pickle.dump(tpath_tuple, open(self.folder_dir + '/trackingPath.p', "wb"))
+            self.showMsg(f'Current aperture group, frame number, and tracking path saved.')
+        else:
+            self.showMsg(f'Current aperture group and frame number saved.')
 
     def saveCurrentState(self):
         # We need to have the apertures visible before we can save them
@@ -2948,6 +3004,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.one_time_suppress_stats = True
         self.threshValueEdit.setValue(aperture.thresh)
 
+    def showHelp(self, obj):
+        if obj.toolTip():
+            self.helperThing.textEdit.clear()
+            self.helperThing.textEdit.insertHtml(obj.toolTip())
+            self.helperThing.raise_()
+            self.helperThing.show()
+
     def eventFilter(self, obj, event):
         if event.type() == QtCore.QEvent.KeyPress:
             handled = self.processKeystroke(event)
@@ -2992,7 +3055,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.one_time_suppress_stats = True
             self.threshValueEdit.setValue(aperture.thresh)
 
-
     @pyqtSlot('PyQt_PyObject')
     def handleSetYellowSignal(self, aperture):
         num_yellow_apertures = 0
@@ -3006,6 +3068,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         else:
             self.showMsg(f'  !!!!  Only two yellow apertures are allowed at a time !!!!')
 
+        if num_yellow_apertures == 1 and self.tpathSpecified:
+            self.clearTrackingPathParameters()
+            self.showMsg(f'The tracking path associated with the other yellow aperture has been deleted.')
+
     @pyqtSlot('PyQt_PyObject')
     def handleSetThreshSignal(self, aperture):
         try:
@@ -3018,6 +3084,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
     @pyqtSlot('PyQt_PyObject')
     def handleDeleteSignal(self, aperture):
         # self.showMsg(f'Aperture {aperture.name} has asked to be removed')
+        if aperture.color == 'yellow' and self.tpathSpecified:
+            self.clearTrackingPathParameters()
+            self.showMsg(f'A tracking path was associated with this aperture. It has been deleted.')
         self.removeAperture(aperture)
 
     @pyqtSlot('PyQt_PyObject')
@@ -3074,6 +3143,115 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
     def disconnectSetRaDecSignalToSlot(self, app_object):
         app_object.sendSetRaDec.disconnect(self.handleSetRaDecSignal)
 
+    def makeSetEarlyPathPointToSlotConnection(self, app_object):
+        app_object.sendSetEarlyTrackPathPoint.connect(self.handleEarlyTrackPathPoint)
+
+    def disconnectSetEarlyPathPointToSlotConnection(self, app_object):
+        app_object.sendSetEarlyTrackPathPoint.disconnect(self.handleEarlyTrackPathPoint)
+
+    def makeSetLatePathPointToSlotConnection(self, app_object):
+        app_object.sendSetLateTrackPathPoint.connect(self.handleLateTrackPathPoint)
+
+    def disconnectSetLatePathPointToSlotConnection(self, app_object):
+        app_object.sendSetLateTrackPathPoint.disconnect(self.handleLateTrackPathPoint)
+
+    def clearTrackingPathParameters(self):
+        self.tpathEarlyX = None
+        self.tpathEarlyY = None
+        self.tpathEarlyFrame = None
+        self.tpathLateX = None
+        self.tpathLateY = None
+        self.tpathLateFrame = None
+
+        # When the following variable is True, xc and yc of the yellow tracking aperture
+        # can be calculated from the frame number. (See equations below)
+        self.tpathSpecified = False
+
+        # When specification is complete and proper, the yellow aperture center is:
+        #   xc = int(tpathXa * frame + tpathXb) and
+        #   yc = int(tpathYa * frame + tpathYb)
+        self.tpathXa = None
+        self.tpathXb = None
+        self.tpathYa = None
+        self.tpathYb = None
+
+    def showTrackingPathParameters(self):
+        self.showMsg("", blankLine=False)
+        if self.tpathEarlyX is not None:
+            self.showMsg(
+                f'Early tracking path point: x={self.tpathEarlyX:4d}  y={self.tpathEarlyY:4d}  frame={self.tpathEarlyFrame}',
+                blankLine=False
+            )
+            early_point_defined = True
+        else:
+            self.showMsg(f'Early tracking path point: Not yet specified', blankLine=False)
+            early_point_defined = False
+
+
+        if self.tpathLateX is not None:
+            self.showMsg(
+                f'Late  tracking path point: x={self.tpathLateX:4d}  y={self.tpathLateY:4d}  frame={self.tpathLateFrame}',
+                blankLine=False
+            )
+            late_point_defined = True
+        else:
+            self.showMsg(f'Late  tracking path point: Not yet specified', blankLine=False)
+            late_point_defined = False
+
+        self.showMsg("", blankLine=False)
+
+        if early_point_defined and late_point_defined:
+            if self.tpathEarlyFrame == self.tpathLateFrame:
+                self.showMsg(f'Invalid tracking path specification: early and late frame numbers are the same')
+                return
+            else:
+                self.calculateTrackingPathCoefficients()
+
+    def calculateTrackingPathCoefficients(self):
+        frame_delta = self.tpathEarlyFrame - self.tpathLateFrame
+        if frame_delta == 0:
+            self.showMsg(f'Invalid tracking path specification: early and late frame numbers are the same')
+            return
+
+        self.tpathXa = (self.tpathEarlyX - self.tpathLateX) / frame_delta
+        self.tpathXb = self.tpathEarlyX - self.tpathXa * self.tpathEarlyFrame
+
+        self.tpathYa = (self.tpathEarlyY - self.tpathLateY) / frame_delta
+        self.tpathYb = self.tpathEarlyY - self.tpathYa * self.tpathEarlyFrame
+
+        self.tpathSpecified = True
+
+        self.showMsg(f'Coefficients for tracking path equations: a * frame + b = coordinate')
+        self.showMsg(f'   xa:{self.tpathXa}  xb:{self.tpathXb}', blankLine=False)
+        self.showMsg(f'   ya:{self.tpathYa}  yb:{self.tpathYb}')
+
+    def getNewCenterFromTrackingPath(self, frame):
+        xc = round(self.tpathXa * frame + self.tpathXb)
+        yc = round(self.tpathYa * frame + self.tpathYb)
+        return int(xc), int(yc)
+
+    @pyqtSlot('PyQt_PyObject')
+    def handleEarlyTrackPathPoint(self, aperture):
+        if not aperture.color == 'yellow':
+            self.showHelp(self.h1)
+
+        self.tpathEarlyX, self.tpathEarlyY = aperture.getCenter()
+        self.tpathEarlyFrame = self.currentFrameSpinBox.value()
+        self.showTrackingPathParameters()
+
+    @pyqtSlot('PyQt_PyObject')
+    def handleLateTrackPathPoint(self, aperture):
+        if not aperture.color == 'yellow':
+            self.showHelp(self.h1)
+            return
+
+        self.tpathLateX, self.tpathLateY = aperture.getCenter()
+        self.tpathLateFrame = self.currentFrameSpinBox.value()
+        self.showTrackingPathParameters()
+
+
+
+    @pyqtSlot('PyQt_PyObject')
     def handleSetRaDecSignal(self, aperture):
         if self.manual_wcs_state == 0:
             self.showMsg(f'There is no manual WCS procedure active at the moment!')
@@ -3401,6 +3579,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.makeDeleteSignalToSlotConnection(aperture)
         self.makeSetThumbnailSourceSignalToSlotConnection(aperture)
         self.makeSetRaDecSignalToSlotConnection(aperture)
+        self.makeSetEarlyPathPointToSlotConnection(aperture)
+        self.makeSetLatePathPointToSlotConnection(aperture)
 
     def disconnectAllSlots(self, aperture):
         self.disconnectApertureSignalToSlot(aperture)
@@ -3411,6 +3591,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.disconnectDeleteSignalToSlot(aperture)
         self.disconnectSetThumbnailSourceSignalToSlot(aperture)
         self.disconnectSetRaDecSignalToSlot(aperture)
+        self.disconnectSetEarlyPathPointToSlotConnection(aperture)
+        self.disconnectSetLatePathPointToSlotConnection(aperture)
 
     def addGenericAperture(self):
         # self.mousex and self.mousey are continuously updated by mouseMovedInFrameView()
@@ -3539,22 +3721,36 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                         #         self.getApertureStats(app, show_stats=False, save_yellow_mask=True)
                         # else:
                         # Find out where the centroid of this yellow aperture is located
-                        xc_roi, yc_roi, xc_world, yc_world, *_ = \
+                        if self.tpathSpecified:
+                            # Get current center so that we can calculate change.
+                            current_xc, current_yc = app.getCenter()
+                            # Get the new center from the track path calculation
+                            xc_world, yc_world = self.getNewCenterFromTrackingPath(self.currentFrameSpinBox.value())
+                            xc_roi = int(app.xsize / 2)
+                            yc_roi = int(app.ysize / 2)
+                            delta_xc = current_xc - xc_world
+                            delta_yc = current_yc - yc_world
+                            # Set new center
+                            app.xc = xc_world
+                            app.yc = yc_world
+                        else:
+                            xc_roi, yc_roi, xc_world, yc_world, *_ = \
                             self.getApertureStats(app, show_stats=False)
 
-                        app.xc = xc_world
-                        app.yc = yc_world
-                        app.dx = 0
-                        app.dy = 0
-                        app.theta = 0.0
+                            app.xc = xc_world # Set new center
+                            app.yc = yc_world
+                            app.dx = 0
+                            app.dy = 0
+                            app.theta = 0.0
+
+                            # Compute the needed jog values (will be used/needed if there is but one yellow aperture)
+                            delta_xc = self.roi_center - int(round(xc_roi))
+                            delta_yc = self.roi_center - int(round(yc_roi))
 
                         # Save the current coordinates of the number 1 yellow aperture
                         self.yellow_x = xc_world
                         self.yellow_y = yc_world
 
-                        # Compute the needed jog values (will be used/needed if there is but one yellow aperture)
-                        delta_xc = self.roi_center - int(round(xc_roi))
-                        delta_yc = self.roi_center - int(round(yc_roi))
 
                         # If we're referencing everything off of yellow #1, we need to jog it
                         # so that translations are followed by the aperture when we are in field
@@ -4072,6 +4268,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if dir_path:
 
             self.finderThresholdEdit.setText('')
+            self.clearTrackingPathParameters()
 
             self.saveStateNeeded = True
             self.avi_wcs_folder_in_use = False
@@ -4333,6 +4530,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             self.finderThresholdEdit.setText('')
 
+            self.clearTrackingPathParameters()
+
             self.saveStateNeeded = True
             self.wcs_solution_available = False
             self.wcs_frame_num = None
@@ -4484,6 +4683,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if dir_path:
 
             self.setGammaToUnity()
+
+            self.clearTrackingPathParameters()
 
             self.timestampReadingEnabled = False
 
@@ -6063,6 +6264,9 @@ def newRobustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=
     # The None 'flattens' data automatically so sorted_data will be 1D
     sorted_data = np.sort(data, None)
 
+    # TODO Remove this experimental code (lunar hack)
+    # lunar_mean = np.mean(sorted_data)
+
     if outlier_fraction > 0:
         # window is the number points to be included in the 'mean' calculation
         window = int(sorted_data.size * (1 - outlier_fraction))
@@ -6087,7 +6291,6 @@ def newRobustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=
         good_mean = np.mean(sorted_data)
         window = data.size
 
-    # TODO remove this exp code
     # Here we treat 'clipped' backgrounds as a special case.  We calculute the mean
     # from ALL pixels, including any star pixels that may be present.  We do this because
     # 'clipped' data makes it impossible to remove outliers by the same means that works
@@ -6098,7 +6301,7 @@ def newRobustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=
         good_mean = app_avg
 
         # Now we have a good first approximation for good_mean, but it could contain star pixels.
-        # We'll remove those pixels
+        # We'll remove those pixels after we get a sigma estimate
 
     upper_indices = np.where(sorted_data > good_mean)
     # MAD means: Median Absolute Deviation
@@ -6110,6 +6313,7 @@ def newRobustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=
         # MAD = MAD / 1.9075  # but for one-sided data, this vale was found empirically
 
     if first_index == 0:
+        # Here we remove bright pixels (if any) from the mean calculation.
         upper_indices = np.where(sorted_data > good_mean + 3 * MAD)
         # We have to do the following test because there is always the possibility
         # that no data point will be above good_mean + 3 * MAD, in which case
@@ -6122,6 +6326,9 @@ def newRobustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=
             good_mean = app_avg
         except Exception as e:
             pass
+
+    # TODO remove this experimental code (lunar hack)
+    # good_mean = lunar_mean
 
     return good_mean, MAD, sorted_data, window, data.size, first_index, last_index
 

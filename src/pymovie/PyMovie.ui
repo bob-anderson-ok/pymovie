@@ -1149,6 +1149,19 @@
             </widget>
            </item>
            <item>
+            <widget class="QLabel" name="h1">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;You are seeing this help panel because you clicked on a &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;'track path'&lt;/span&gt; menu item in a non-yellow aperture --- those menu items have an effect &lt;span style=&quot; font-weight:600;&quot;&gt;only&lt;/span&gt; in the context of a yellow aperture and are used to define a 'tracking path', a tracking option designed to assist in processing 'drift-through' videos.&lt;/p&gt;&lt;p&gt;A 'tracking path' is a straight line across an image that is to be followed frame-by-frame by the center of a yellow tracking aperture as the video is analyzed. This can be used to 'follow' an object that disappears completely, particularly useful in the situation where there are no other stars that remain visible enough to provide a separate tracking reference. And, as always, the presence of a yellow aperture locks all apertures into a 'constellation' that moves as a unit.&lt;/p&gt;&lt;p&gt;Note: to ease the task of re-positioning the yellow aperture as you advance to later frames, enable jogging on the aperture.&lt;/p&gt;&lt;p&gt;To define a 'tracking path', use a &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;single&lt;/span&gt; yellow aperture and position that aperture at a desired point early in the video (it does &lt;span style=&quot; font-weight:600;&quot;&gt;not&lt;/span&gt; have to be frame 0) and click on the menu item &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Use current position as early track path point&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;To complete the definition of the 'tracking path', position the tracking aperture at a desired point late in the video (it does not have to be the last frame) and click on the menu item &lt;/span&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Use current position as late track path point&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Note: with a 'tracking path' defined, the entire aperture constellation will move in a straight line (defined by the xy and frame number values of the early and late points). While this constellation will not itself follow windshake, stars can continue to 'dance' within the apertures and will be 'followed' by the mask generating routines --- for red apertures, it will look for a bright blob within an 8 pixel radius; for yellow apertures, it will look for the brightest blob anywhere in the aperture. You can always set a very high threshold to force the use of fixed circular masks in apertures where you want to suppress this behavior.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Note: If you delete the yellow aperture (or add a second one), the current tracking path data will be erased.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Note: You can overwrite either of the data points at any time.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>    </string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <spacer name="horizontalSpacer_15">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>

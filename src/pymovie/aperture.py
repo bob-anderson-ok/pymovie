@@ -29,6 +29,8 @@ class MeasurementAperture(pg.GraphicsObject):
     sendDelete = pyqtSignal('PyQt_PyObject')
     sendThumbnailSource = pyqtSignal('PyQt_PyObject')
     sendSetRaDec = pyqtSignal('PyQt_PyObject')
+    sendSetEarlyTrackPathPoint = pyqtSignal('PyQt_PyObject')
+    sendSetLateTrackPathPoint = pyqtSignal('PyQt_PyObject')
 
     def __init__(self, name, bbox, max_xpos, max_ypos):  # Intialize aperture specified by a bounding box
         self.name = name
@@ -219,6 +221,16 @@ class MeasurementAperture(pg.GraphicsObject):
 
             self.menu.addSeparator()
 
+            early_track_path_point = QtGui.QAction("Use current position as early track path point", self.menu)
+            early_track_path_point.triggered.connect(self.setEarlyTrackPathPoint)
+            self.menu.addAction(early_track_path_point)
+
+            late_track_path_point = QtGui.QAction("Use current position as late track path point", self.menu)
+            late_track_path_point.triggered.connect(self.setLateTrackPathPoint)
+            self.menu.addAction(late_track_path_point)
+
+            self.menu.addSeparator()
+
             ra_dec = QtGui.QAction("Set RA Dec (from VizieR query results)", self.menu)
             ra_dec.triggered.connect(self.setRaDec)
             self.menu.addAction(ra_dec)
@@ -226,6 +238,12 @@ class MeasurementAperture(pg.GraphicsObject):
         return self.menu
 
     # Define context menu callbacks
+
+    def setEarlyTrackPathPoint(self):
+        self.sendSetEarlyTrackPathPoint.emit(self)
+
+    def setLateTrackPathPoint(self):
+        self.sendSetLateTrackPathPoint.emit(self)
 
     # We have to emit this as a message so that the main program can look
     # through the list of apertures all clear any other aperture that has thumbnail_source set
