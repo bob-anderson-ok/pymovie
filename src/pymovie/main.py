@@ -425,6 +425,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.gammaSettingOfCamera.valueChanged.connect(self.processGammaChange)
 
+        self.lunarCheckBox.installEventFilter(self)
+        self.lunarCheckBox.clicked.connect(self.lunarBoxChecked)
+
         self.vtiSelectComboBox.installEventFilter(self)
         self.vtiSelectComboBox.currentIndexChanged.connect(self.vtiSelected)
 
@@ -845,6 +848,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.checkForNewerVersion()
 
         self.copy_desktop_icon_file_to_home_directory()
+
+    def lunarBoxChecked(self):
+        if self.lunarCheckBox.isChecked():
+            self.showHelp(self.lunarCheckBox)
 
     def mainImageHelp(self):
         msg = self.transportHelp.toolTip()
@@ -2994,7 +3001,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # img is the portion of the main image that is covered by the aperture bounding box
         img = self.image[y0:y0 + ny, x0:x0 + nx]
 
-        bkavg, std, *_ = newRobustMeanStd(img)
+        bkavg, std, *_ = newRobustMeanStd(img, lunar=self.lunarCheckBox.isChecked())
 
         background = int(np.ceil(bkavg))
 
@@ -4014,7 +4021,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         # thumbnail is the portion of the main image that is covered by the aperture bounding box
         thumbnail = self.image[y0:y0+ny, x0:x0+nx]
-        mean, std, sorted_data, *_ = newRobustMeanStd(thumbnail, outlier_fraction=.5)
+        mean, std, sorted_data, *_ = newRobustMeanStd(thumbnail, outlier_fraction=.5, lunar=self.lunarCheckBox.isChecked())
 
         maxpx = sorted_data[-1]
 
@@ -4029,7 +4036,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if aperture.color == 'yellow':
             max_area, mask, t_mask, centroid, cvxhull, nblobs, extent = \
                     get_mask(thumbnail, ksize=self.gaussian_blur, cut=threshold, outlier_fraction=0.5,
-                            apply_centroid_distance_constraint=False, max_centroid_distance=self.allowed_centroid_delta)
+                             apply_centroid_distance_constraint=False, max_centroid_distance=self.allowed_centroid_delta,
+                             lunar=self.lunarCheckBox.isChecked())
         elif aperture.color == 'white':
             max_area = self.roi_size * self.roi_size
             centroid = (self.roi_center, self.roi_center)
@@ -4046,7 +4054,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             # This handles 'red' and 'green' apertures
             max_area, mask, t_mask, centroid, cvxhull, nblobs, extent = \
                 get_mask(thumbnail, ksize=self.gaussian_blur, cut=threshold, outlier_fraction=0.5,
-                         apply_centroid_distance_constraint=True, max_centroid_distance=self.allowed_centroid_delta)
+                         apply_centroid_distance_constraint=True, max_centroid_distance=self.allowed_centroid_delta,
+                         lunar=self.lunarCheckBox.isChecked())
 
         if save_yellow_mask:
             self.yellow_mask = mask.copy()
@@ -4269,6 +4278,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             self.finderThresholdEdit.setText('')
             self.clearTrackingPathParameters()
+
+            self.lunarCheckBox.setChecked(False)
+
 
             self.saveStateNeeded = True
             self.avi_wcs_folder_in_use = False
@@ -4517,6 +4529,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         QtGui.QGuiApplication.processEvents()
 
         if self.filename:
+
+            self.lunarCheckBox.setChecked(False)
+
             # Test for SER file in use
             self.ser_file_in_use = Path(self.filename).suffix == '.ser'
             self.avi_in_use = not self.ser_file_in_use
@@ -4685,6 +4700,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.setGammaToUnity()
 
             self.clearTrackingPathParameters()
+
+            self.lunarCheckBox.setChecked(False)
 
             self.timestampReadingEnabled = False
 
@@ -5769,7 +5786,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             return
 
         # good_mean, sigma, sorted_data, window, data_size, left, right = robustMeanStd(self.thumbOneImage)
-        good_mean, sigma, sorted_data, window, data_size, left, right = newRobustMeanStd(self.thumbOneImage)
+        good_mean, sigma, sorted_data, window, data_size, left, right = newRobustMeanStd(
+            self.thumbOneImage, lunar=self.lunarCheckBox.isChecked()
+        )
         # self.showMsg(f'{good_mean} {sigma} {window} {data_size} {left}  {right}')
 
         # Start a new plot
@@ -6120,7 +6139,7 @@ def calcTheta(dx, dy):
 def get_mask(
         img, ksize=(5, 5), cut=None, min_pixels=9,
         outlier_fraction=0.5,
-        apply_centroid_distance_constraint=False, max_centroid_distance=None):
+        apply_centroid_distance_constraint=False, max_centroid_distance=None, lunar=False):
 
     blurred_img = cv2.GaussianBlur(img, ksize=ksize, sigmaX=0)
 
@@ -6140,7 +6159,7 @@ def get_mask(
     # the following calculation will be invalid
     roi_center = int(img.shape[0] / 2)
 
-    bkavg, *_ = newRobustMeanStd(img, outlier_fraction=outlier_fraction)
+    bkavg, *_ = newRobustMeanStd(img, outlier_fraction=outlier_fraction, lunar=lunar)
     blob_signals = []
 
     if blob_count > 0:
@@ -6246,7 +6265,7 @@ def robustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=Tru
     return good_mean, sigma, sorted_data, window, data.size, first_index, last_index
 
 
-def newRobustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=True):
+def newRobustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=True, lunar=False):
     # Note:  it is expected that type(data) is numpy.darray
 
     # Protect the user against accidentally running this procedure with an
@@ -6265,7 +6284,25 @@ def newRobustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=
     sorted_data = np.sort(data, None)
 
     # TODO Remove this experimental code (lunar hack)
-    # lunar_mean = np.mean(sorted_data)
+    if lunar:
+        mean = round(np.mean(sorted_data))
+        mean_at = np.where(sorted_data >= mean)[0][0]
+        # print(f'mean: {mean} @ {mean_at}')
+        lower_mean = np.mean(sorted_data[0:mean_at])
+        # upper_mean = np.mean(sorted_data[mean_at:])
+        # print(f'lower_mean: {lower_mean}  upper_mean: {upper_mean}')
+
+        # MAD means: Median Absolute Deviation
+        MAD = np.median(np.abs(sorted_data[0:mean_at] - lower_mean))
+        if assume_gaussian:
+            MAD = MAD * 1.486  # sigma(gaussian) can be proved to equal 1.486*MAD
+
+        window = 0
+        first_index = 0
+        last_index = mean_at
+
+        return lower_mean, MAD, sorted_data, window, data.size, first_index, last_index
+
 
     if outlier_fraction > 0:
         # window is the number points to be included in the 'mean' calculation

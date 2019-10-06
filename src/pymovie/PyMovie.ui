@@ -427,6 +427,29 @@
             </widget>
            </item>
            <item>
+            <spacer name="horizontalSpacer_17">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="lunarCheckBox">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Only for use with lunar occultations&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;When an aperture is placed on a sunlit lunar limb, it will contain pixels from the sky, pixels from the lunar limb, and pixels from the about-to-be-occulted star. This is also true for a fixed circular sampling mask positioned on the star. In that situation, what is the 'correct' way to subtract 'background'? Limovie has answered that question by providing a special aperture (Avoid Sunlit Face) that can be positioned so that a semi-circular area can be oriented so that only sky pixels are contained. Those pixels are then used to calculate the background value.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;When this box is checked, PyMovie does effectively the same thing but by a different method: it uses a statistical analysis of all the pixels in an aperture and sorts out which are from the sky and which are not by how their intensities are distributed. You can check what is happening by clicking on the Plot Robust Mean button to see where it placed the green line that shows the calculated mean value.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>lunar</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <spacer name="horizontalSpacer_5">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
