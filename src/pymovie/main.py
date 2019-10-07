@@ -963,13 +963,17 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def restoreApertureGroup(self):
         # Set to the correct frame first (if present).
-        frameFn = self.folder_dir + '/markedFrameNumber.p'
+        frameFn = self.folder_dir + '/savedFrameNumber.p'
         if os.path.exists(frameFn):
-            markedFrameNumber = pickle.load(open(frameFn, 'rb'))
-            self.showMsg(f'marked frame number is: {markedFrameNumber}')
-            self.currentFrameSpinBox.setValue(markedFrameNumber)
+            savedFrameNumber = pickle.load(open(frameFn, 'rb'))
+            self.showMsg(f'Saved frame number is: {savedFrameNumber}')
+            self.currentFrameSpinBox.setValue(savedFrameNumber)
         else:
             return
+
+        # Erase state saved by a 'Mark'
+        self.savedStateApertures = []
+        self.transportReturnToMark.setEnabled(False)
 
         tpathFilename = self.folder_dir + '/trackingPath.p'
         if os.path.exists(tpathFilename):
@@ -998,7 +1002,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
 
         # Then place all the apertures with complete state
-        aperturesFn = self.folder_dir + '/markedApertures.p'
+        aperturesFn = self.folder_dir + '/savedApertures.p'
         if os.path.exists(aperturesFn):
             savedApertureDicts = pickle.load(open(aperturesFn, "rb"))
             self.showMsg(f'Num saved apertures: {len(savedApertureDicts)}')
@@ -1078,10 +1082,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             savedApertureDicts.append(dict)
 
         # Pickle the saved aperture dictionaries for use during opening of file/folder
-        pickle.dump(savedApertureDicts, open(self.folder_dir + '/markedApertures.p', "wb"))
+        pickle.dump(savedApertureDicts, open(self.folder_dir + '/savedApertures.p', "wb"))
 
         self.savedStateFrameNumber = self.currentFrameSpinBox.value()
-        pickle.dump(self.savedStateFrameNumber, open(self.folder_dir + '/markedFrameNumber.p', "wb"))
+        pickle.dump(self.savedStateFrameNumber, open(self.folder_dir + '/savedFrameNumber.p', "wb"))
 
         if self.tpathSpecified:
             tpath_tuple = (
@@ -4347,8 +4351,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             # Check for the presence of a 'saved aperture group' and enable the Restore group
             # button accordingly
-            file1 = self.folder_dir + '/markedApertures.p'
-            file2 = self.folder_dir + '/markedFrameNumber.p'
+            file1 = self.folder_dir + '/savedApertures.p'
+            file2 = self.folder_dir + '/savedFrameNumber.p'
 
             if os.path.exists(file1) and os.path.exists(file2):
                 self.restoreApertureState.setEnabled(True)
@@ -4865,8 +4869,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
                     # Check for the presence of a 'saved aperture group' and enable the Restore group
                     # button accordingly
-                    file1 = self.folder_dir + '/markedApertures.p'
-                    file2 = self.folder_dir + '/markedFrameNumber.p'
+                    file1 = self.folder_dir + '/savedApertures.p'
+                    file2 = self.folder_dir + '/savedFrameNumber.p'
 
                     if os.path.exists(file1) and os.path.exists(file2):
                         self.restoreApertureState.setEnabled(True)
