@@ -968,8 +968,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             savedFrameNumber = pickle.load(open(frameFn, 'rb'))
             self.showMsg(f'Saved frame number is: {savedFrameNumber}')
             self.currentFrameSpinBox.setValue(savedFrameNumber)
-        else:
-            return
+        else: # legacy file names
+            frameFn = self.folder_dir + '/markedFrameNumber.p'
+            if os.path.exists(frameFn):
+                savedFrameNumber = pickle.load(open(frameFn, 'rb'))
+                self.showMsg(f'Saved frame number is: {savedFrameNumber}')
+                self.currentFrameSpinBox.setValue(savedFrameNumber)
+            else:
+                return
 
         # Erase state saved by a 'Mark'
         self.savedStateApertures = []
@@ -1006,6 +1012,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if os.path.exists(aperturesFn):
             savedApertureDicts = pickle.load(open(aperturesFn, "rb"))
             self.showMsg(f'Num saved apertures: {len(savedApertureDicts)}')
+        else: # legacy file names
+            aperturesFn = self.folder_dir + '/markedApertures.p'
+            if os.path.exists(aperturesFn):
+                savedApertureDicts = pickle.load(open(aperturesFn, "rb"))
+                self.showMsg(f'Num saved apertures: {len(savedApertureDicts)}')
+
 
         for dict in savedApertureDicts:
             try:
@@ -4357,6 +4369,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             if os.path.exists(file1) and os.path.exists(file2):
                 self.restoreApertureState.setEnabled(True)
 
+            # Check for the presence of a 'saved aperture group' and enable the Restore group
+            # button accordingly
+            file1 = self.folder_dir + '/markedApertures.p'
+            file2 = self.folder_dir + '/markedFrameNumber.p'
+
+            if os.path.exists(file1) and os.path.exists(file2):
+                self.restoreApertureState.setEnabled(True)
+
 
     def showMsgDialog(self, msg):
         msg_box = QMessageBox()
@@ -4871,6 +4891,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     # button accordingly
                     file1 = self.folder_dir + '/savedApertures.p'
                     file2 = self.folder_dir + '/savedFrameNumber.p'
+
+                    if os.path.exists(file1) and os.path.exists(file2):
+                        self.restoreApertureState.setEnabled(True)
+
+                    file1 = self.folder_dir + '/markedApertures.p'
+                    file2 = self.folder_dir + '/markedFrameNumber.p'
 
                     if os.path.exists(file1) and os.path.exists(file2):
                         self.restoreApertureState.setEnabled(True)
@@ -5894,6 +5920,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         cascadeDelta = 26
 
         color_index = 0
+
+        # reorderedAppList = appList.sort(key = appList.order_number)
+
         for app in appList:
             # Trap user asking for plots before data is present
             if len(app.data) == 0:
