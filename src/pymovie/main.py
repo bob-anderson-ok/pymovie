@@ -5919,53 +5919,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         cascadePosition = 50
         cascadeDelta = 26
 
-    # Add a composite plot of all lightcurves --- because created first, will be bottom-most plot in z order
-        self.plots.append(pg.GraphicsWindow(title=f'PyMovie {version.version()} composite lightcurve'))
-        # pw = PlotWidget(title=f'PyMovie {version.version()} composite lightcurve')
-        # self.plots.append(pw.getPlotItem())
-        self.plots[-1].resize(1000, 600)
-        if self.cascadeCheckBox.isChecked():
-            self.plots[-1].move(QPoint(cascadePosition, cascadePosition))
-            cascadePosition += cascadeDelta
-        p1 = self.plots[-1].addPlot(title=f'Composite lightcurve plot')
-        p1.addLegend()
-        p1.setMouseEnabled(x=True, y=False)
-
-        max_max = 0
-        color_index = 0
-        min_min = 0
-        for app in appList:
-            yvalues = []
-            xvalues = []
-            for entry in app.data:
-                yvalues.append(entry[4])  # signal==4  appsum==5  frame_num == 8
-                xvalues.append(entry[8])  # signal==4  appsum==5  frame_num == 8
-            p1.plot(
-                x=xvalues, y=yvalues, title="Aperture intensity",
-                pen=light_gray, symbolBrush=my_colors[color_index],
-                symbolSize=self.plot_symbol_size, pxMode=True, symbolPen=my_colors[color_index],
-                name=f'<html>&nbsp;&nbsp;&nbsp;&nbsp;{app.name}</html>'
-            )
-            max_max = max(max_max, max(yvalues))
-            min_min = min(min_min, min(yvalues))
-            p1.setYRange(min(0, min_min), max_max)
-
-            # Move to the next color, wrapping if end of available unique colors
-            # has been reached.
-            color_index += 1
-            if color_index >= len(my_colors):
-                color_index = 0
-
-        p1.showGrid(y=True)
-
-        self.plots[-1].show()  # Let everyone see the results
-
-        QtGui.QGuiApplication.processEvents()
-    # End add composite plot
-
-
-        color_index = 0
-
         # Use an aperture list that is ordered --- we have to do reverse ordering because the last
         # plot created is highest in the z order of the display --- this reordering makes to plot
         # order match that of the csv file signal column order
@@ -5974,7 +5927,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             order.append(app.order_number)
             reorderedAppList = sort_together([order, appList], key_list=[0], reverse=True)[1]
 
-        # for app in appList:
+        color_index = 0
+
+        # for app in appList:  a plot for each individual light curve
         for app in reorderedAppList:
             # Trap user asking for plots before data is present
             if len(app.data) == 0:
@@ -6064,49 +6019,49 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             if color_index >= len(my_colors):
                 color_index = 0
 
-        # # Add a composite plot of all lightcurves
-        # self.plots.append(pg.GraphicsWindow(title=f'PyMovie {version.version()} composite lightcurve'))
-        # # pw = PlotWidget(title=f'PyMovie {version.version()} composite lightcurve')
-        # # self.plots.append(pw.getPlotItem())
-        # self.plots[-1].resize(1000, 600)
-        # if self.cascadeCheckBox.isChecked():
-        #     self.plots[-1].move(QPoint(cascadePosition, cascadePosition))
-        # p1 = self.plots[-1].addPlot(title=f'Composite lightcurve plot')
-        # p1.addLegend()
-        # p1.setMouseEnabled(x=True, y=False)
-        #
-        # max_max = 0
-        # color_index = 0
-        # min_min = 0
-        # for app in appList:
-        #     yvalues = []
-        #     xvalues = []
-        #     for entry in app.data:
-        #         yvalues.append(entry[4])  # signal==4  appsum==5  frame_num == 8
-        #         xvalues.append(entry[8])  # signal==4  appsum==5  frame_num == 8
-        #     p1.plot(
-        #         x=xvalues, y=yvalues, title="Aperture intensity",
-        #         pen=light_gray, symbolBrush=my_colors[color_index],
-        #         symbolSize=self.plot_symbol_size, pxMode=True, symbolPen=my_colors[color_index],
-        #         name=f'<html>&nbsp;&nbsp;&nbsp;&nbsp;{app.name}</html>'
-        #     )
-        #     max_max = max(max_max, max(yvalues))
-        #     min_min = min(min_min, min(yvalues))
-        #     p1.setYRange(min(0, min_min), max_max)
-        #
-        #     # Move to the next color, wrapping if end of available unique colors
-        #     # has been reached.
-        #     color_index += 1
-        #     if color_index >= len(my_colors):
-        #         color_index = 0
-        #
-        # p1.showGrid(y=True)
-        #
-        # self.plots[-1].show()  # Let everyone see the results
-        #
-        # QtGui.QGuiApplication.processEvents()
+        # Add a composite plot of all lightcurves --- because created first, will be bottom-most plot in z order
+        self.plots.append(pg.GraphicsWindow(title=f'PyMovie {version.version()} composite lightcurve'))
+        # pw = PlotWidget(title=f'PyMovie {version.version()} composite lightcurve')
+        # self.plots.append(pw.getPlotItem())
+        self.plots[-1].resize(1000, 600)
+        if self.cascadeCheckBox.isChecked():
+            self.plots[-1].move(QPoint(cascadePosition, cascadePosition))
+            cascadePosition += cascadeDelta
+        p1 = self.plots[-1].addPlot(title=f'Composite lightcurve plot')
+        p1.addLegend()
+        p1.setMouseEnabled(x=True, y=False)
 
-        # self.save_p1 = p1
+        max_max = 0
+        color_index = 0
+        min_min = 0
+        for app in reorderedAppList:
+            yvalues = []
+            xvalues = []
+            for entry in app.data:
+                yvalues.append(entry[4])  # signal==4  appsum==5  frame_num == 8
+                xvalues.append(entry[8])  # signal==4  appsum==5  frame_num == 8
+            p1.plot(
+                x=xvalues, y=yvalues, title="Aperture intensity",
+                pen=light_gray, symbolBrush=my_colors[color_index],
+                symbolSize=self.plot_symbol_size, pxMode=True, symbolPen=my_colors[color_index],
+                name=f'<html>&nbsp;&nbsp;&nbsp;&nbsp;{app.name}</html>'
+            )
+            max_max = max(max_max, max(yvalues))
+            min_min = min(min_min, min(yvalues))
+            p1.setYRange(min(0, min_min), max_max)
+
+            # Move to the next color, wrapping if end of available unique colors
+            # has been reached.
+            color_index += 1
+            if color_index >= len(my_colors):
+                color_index = 0
+
+        p1.showGrid(y=True)
+
+        self.plots[-1].show()  # Let everyone see the results
+
+        QtGui.QGuiApplication.processEvents()
+    # End add composite plot
 
 
     def clearTextBox(self):
