@@ -31,6 +31,7 @@ class MeasurementAperture(pg.GraphicsObject):
     sendSetRaDec = pyqtSignal('PyQt_PyObject')
     sendSetEarlyTrackPathPoint = pyqtSignal('PyQt_PyObject')
     sendSetLateTrackPathPoint = pyqtSignal('PyQt_PyObject')
+    sendHotPixelRecord = pyqtSignal('PyQt_PyObject')
 
     def __init__(self, name, bbox, max_xpos, max_ypos):  # Intialize aperture specified by a bounding box
         self.name = name
@@ -149,19 +150,7 @@ class MeasurementAperture(pg.GraphicsObject):
             setthresh.triggered.connect(self.setThresh)
             self.menu.addAction(setthresh)
 
-            # incthresh = QtGui.QAction("Inc thresh", self.menu)
-            # incthresh.triggered.connect(self.incThresh)
-            # self.menu.addAction(incthresh)
-
-            # decthresh = QtGui.QAction("Dec thresh", self.menu)
-            # decthresh.triggered.connect(self.decThresh)
-            # self.menu.addAction(decthresh)
-
             self.menu.addSeparator()
-
-            # recenter = QtGui.QAction("Recenter blob", self.menu)
-            # recenter.triggered.connect(self.recenter)
-            # self.menu.addAction(recenter)
 
             delete = QtGui.QAction("Delete", self.menu)
             delete.triggered.connect(self.delete)
@@ -235,9 +224,18 @@ class MeasurementAperture(pg.GraphicsObject):
             ra_dec.triggered.connect(self.setRaDec)
             self.menu.addAction(ra_dec)
 
+            self.menu.addSeparator()
+
+            hot_pixel = QtGui.QAction("Record as hot-pixel", self.menu)
+            hot_pixel.triggered.connect(self.handleHotPixel)
+            self.menu.addAction(hot_pixel)
+
         return self.menu
 
     # Define context menu callbacks
+
+    def handleHotPixel(self):
+        self.sendHotPixelRecord.emit(self)
 
     def setEarlyTrackPathPoint(self):
         self.sendSetEarlyTrackPathPoint.emit(self)

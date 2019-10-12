@@ -29,18 +29,15 @@
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
-      <property name="handleWidth">
-       <number>14</number>
-      </property>
       <widget class="QSplitter" name="splitterTwo">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <property name="handleWidth">
-        <number>14</number>
-       </property>
-       <widget class="QWidget" name="layoutWidget">
+       <widget class="QWidget" name="">
         <layout class="QVBoxLayout" name="verticalLayout_3">
+         <property name="spacing">
+          <number>0</number>
+         </property>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_10" stretch="2,2,0">
            <item>
@@ -768,6 +765,56 @@
           </widget>
          </item>
          <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_9">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QPushButton" name="loadHotPixelProfileButton">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If you have created, named, and saved hot-pixel lists from previous videos captured with the current camera, clicking this button will bring up a table of those hot-pixel profiles.&lt;/p&gt;&lt;p&gt;Selecting one of those will restore the apertures and the hot-pixel list of the original session. This gives you an opportunity to verify that the list is still relevant and to make any changes that may be required.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>load/save/edit hot-pixel profiles</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="createHotPixelListButton">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Click this button after placing apertures on all of the hot pixels present in the image.&lt;/p&gt;&lt;p&gt;This list will be used to remove those hot-pixels from each frame that is to be used in the creation of a &amp;quot;finder&amp;quot; image. This is desirable because hot-pixels, which do not move, often interfere with the algorithm that is used to align/stack frames --- a Fourier Correlation calculation is used to determine the x and y offsets needed to align successive images --- it performs that correlation over all pixels in the image and pixels that are bright and don't move can keep the algorithm from detecting a needed xy shift.&lt;/p&gt;&lt;p&gt;It is also useful to remove hot pixel groups so that they don't add confusing asterisms --- it's easier to correlate a finder image without spurious 'stars' with a sky chart.&lt;/p&gt;&lt;p&gt;Use the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;load/save/edit hot-pixels profiles&lt;/span&gt; button to the left if you want to to name and save this list into a hot-pixel list database for future use. Since the hot pixel constellation for a given camera/camera setting will change slowly with time, such saved profiles can be quickly recalled and will often be sufficient for hot pixel removal. At the very least, it will serve as good starting point.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>extract hot-pixels from apertures</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer_6">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="applyHotPixelRemovalCheckBox">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If a hot pixel list is loaded, checking this box will cause the erasure of hot pixels during visual examination of the video. It will be automatically unchecked whenever an analysis (data capture) is started so that light curve intensities will remain unaffected by the presence of a hot pixel list.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;However&lt;/span&gt;, after an analysis is started, you &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;can&lt;/span&gt; re-enable hot pixel erasure if you really &lt;span style=&quot; text-decoration: underline;&quot;&gt;really&lt;/span&gt; think it can help the light curve extraction. &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Beware:&lt;/span&gt; there is always the possibility of gerating a spurious 'dip' in a light curve that has a hot pixel group overlapping a star image, particularly on a drift-through video.&lt;/p&gt;&lt;p&gt;The primary reason for a hot pixel list is its use during the generation of a &amp;quot;finder&amp;quot; image where it is often critical to the success of that operation. It is not intended to 'correct' a star image that overlaps a hot pixel group.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#0000ff;&quot;&gt;Hot pixel erasure is performed on a frame by frame basis by calculating an average background for that frame through a Robust Mean calculation performed on a 51 x 51 pixel aperture placed at the center of the frame. Then, this value is used to overwrite the pixel value at each coordinate point present in the hot pixel list.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>Erase hot pixels</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
           <layout class="QHBoxLayout" name="horizontalLayout_11">
            <property name="spacing">
             <number>0</number>
@@ -778,7 +825,7 @@
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;To assist in locating a dim target star, an enhanced &amp;quot;finder&amp;quot; image can be generated by aligning and stacking (summing) a number of frames.&lt;/p&gt;&lt;p&gt;This intensified image can then be used for positioning an aperture on the target star, even though that star might be invisible in a single frame.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;NOTE:&lt;/span&gt; in order for this procedure to work, it is &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;essential&lt;/span&gt; to remove any timestamp overlay that may be present. That is because, unlike a program like RegiStax that registers frames using star centroids, the procedure used here is to apply the 'Fourier transform phase correlation algorithm' to calculate the pixel offset between the reference frame and the subsequent frames. If there is anything in the image that does not move (like a timestamp), that math calculation will fail and the resulting 'stack' will not be useful --- it will register the frames on the timestamp rather than the star field.&lt;/p&gt;&lt;p&gt;The edit box labelled 'redact lines' specifies how many lines to remove from the bottom of the image to get rid of the timestamp.&lt;/p&gt;&lt;p&gt;The edit box labelled 'num frames' specifies how many frames to register and sum. For the purpose of locating a star that can produce an occultation light curve, a number of frames in the range of 100 to 400 is effective. If this number is set too high, while the target star might become visible in this enhanced image, it is likely to be lost in quantization and noise effects when frame by frame aperture photometry is attempted.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;NOTE:&lt;/span&gt; if timestamps were present (but redacted), the &amp;quot;finder&amp;quot; image will show the timestamp of the first frame in the stack, the so-called reference frame that all others are aligned/registered against to build the 'stack'.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
-              <string>Generate &quot;finder&quot; image</string>
+              <string>Generate &quot;finder&quot;</string>
              </property>
             </widget>
            </item>
@@ -813,7 +860,7 @@
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This entry is used to specify how many lines from the image top to remove to get rid of timestamp information.&lt;/p&gt;&lt;p&gt;For generating a &amp;quot;finder&amp;quot; image, getting rid of the timestamp is &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;essential&lt;/span&gt; for getting a good image to image registration based on the star field movement. If the timestamp is not removed, then the stacking process will likely register on the timestamp instead.&lt;/p&gt;&lt;p&gt;This entry is also used when preparing a frame for submission to nova.astrometry.net for WCS calibration.&lt;/p&gt;&lt;p&gt;If there is a timestamp overlay, its presence may make the WCS location and calibration harder (takes longer) for nova.astrometry.net. So, before submitting an image to nova.astrometry.net, we like to 'redact' the timestamp data by replacingthose lines with the average background (sampled from the center of the image). The value in this box controls how many lines from the top get this treatment.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
-              <string>redact top=</string>
+              <string>redact: top </string>
              </property>
             </widget>
            </item>
@@ -833,28 +880,6 @@
              </property>
              <property name="toolTip">
               <string/>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="finderRedactBottomLinesLabel">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This entry is used to specify how many lines from the image bottom to remove to get rid of timestamp information.&lt;/p&gt;&lt;p&gt;For generating a &amp;quot;finder&amp;quot; image, getting rid of the timestamp is &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;essential&lt;/span&gt; for getting a good image to image registration based on the star field movement. If the timestamp is not removed, then the stacking process will likely register on the timestamp instead.&lt;/p&gt;&lt;p&gt;This entry is also used when preparing a frame for submission to nova.astrometry.net for WCS calibration.&lt;/p&gt;&lt;p&gt;If there is a timestamp overlay, its presence may make the WCS location and calibration harder (takes longer) for nova.astrometry.net. So, before submitting an image to nova.astrometry.net, we like to 'redact' the timestamp data by replacingthose lines with the average background (sampled from the center of the image). The value in this box controls how many lines from the bottom get this treatment.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="text">
-              <string>   redact bottom=</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-             </property>
-             <property name="indent">
-              <number>-1</number>
              </property>
             </widget>
            </item>
@@ -888,6 +913,28 @@
             </widget>
            </item>
            <item>
+            <widget class="QLabel" name="finderRedactBottomLinesLabel">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This entry is used to specify how many lines from the image bottom to remove to get rid of timestamp information.&lt;/p&gt;&lt;p&gt;For generating a &amp;quot;finder&amp;quot; image, getting rid of the timestamp is &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;essential&lt;/span&gt; for getting a good image to image registration based on the star field movement. If the timestamp is not removed, then the stacking process will likely register on the timestamp instead.&lt;/p&gt;&lt;p&gt;This entry is also used when preparing a frame for submission to nova.astrometry.net for WCS calibration.&lt;/p&gt;&lt;p&gt;If there is a timestamp overlay, its presence may make the WCS location and calibration harder (takes longer) for nova.astrometry.net. So, before submitting an image to nova.astrometry.net, we like to 'redact' the timestamp data by replacingthose lines with the average background (sampled from the center of the image). The value in this box controls how many lines from the bottom get this treatment.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>bottom   </string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+             </property>
+             <property name="indent">
+              <number>-1</number>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QLabel" name="finderNumFramesLabel">
              <property name="minimumSize">
               <size>
@@ -905,7 +952,7 @@
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This edit box specifies how many frames to register and sum. For the purpose of locating a star that can produce an occultation light curve, a number of frames in the range of 100 to 400 is effective. If this number is set too high, while the target star might become visible in this enhanced image, it is likely to be lost in quantization and noise effects when frame by frame aperture photometry is attempted.&lt;/p&gt;&lt;p&gt;Of course, your objective might be to get a 'pretty picture' of the star field. If so, have at it, but be aware that stars may 'appear' for which an occultation light curve cannot be extracted when processing is done frame by frame.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
-              <string>num frames=</string>
+              <string>num frames:</string>
              </property>
             </widget>
            </item>
@@ -955,15 +1002,28 @@
             </widget>
            </item>
            <item>
-            <widget class="QLabel" name="label_16">
+            <widget class="QLabel" name="finderThresholdLabel">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When generating a &amp;quot;finder&amp;quot; image, it is often necessary to suppress the background, otherwise the images will be aligned to background features/texture rather than the star features. Ideally, the alignment works best with stars against a black background.&lt;/p&gt;&lt;p&gt;The value in this box sets the background threshold: all pixel values at or below this value are set to zero for the purpose of aligning images. The raw image values are then used in the stacked sum.&lt;/p&gt;&lt;p&gt;If you leave this box empty, a value will be estimated for you by using the Robust Mean estimator on a region in the center of the image. The threshold will be set 5 standard deviations above the mean value. But if this procedure is not effective, you can use the image contrast control to find out what setting produces stars on a black ground and place that value in this box.&lt;/p&gt;&lt;p&gt;You can also place an aperture somewhere with a medium bright star and click the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Plot Robust Mean&lt;/span&gt; button. From that plot it is easy to estimate a threshold that will selct only star pixel values.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>&quot;finder&quot; bkgnd:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="finderThresholdEdit">
              <property name="minimumSize">
               <size>
-               <width>10</width>
+               <width>60</width>
                <height>0</height>
               </size>
              </property>
-             <property name="text">
-              <string/>
+             <property name="maximumSize">
+              <size>
+               <width>60</width>
+               <height>16777215</height>
+              </size>
              </property>
             </widget>
            </item>
@@ -981,6 +1041,88 @@
            <property name="spacing">
             <number>0</number>
            </property>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_7">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QPushButton" name="manualWcsButton">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button starts a 'manual' WCS calibration (user guided reference star designation).&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Manual WCS calibration&lt;/span&gt; utilizes two stars with known icrs coordinates together with their xy position in the image to compute a mapping from icrs coordinates to pixel coordinates.&lt;/p&gt;&lt;p&gt;When this button is pressed, all previous manual WCS calibration data is erased (you have to confirm this action). Then the work flow expected is:&lt;/p&gt;&lt;p&gt;1) Use the VizieR query to get the icrs coordinates of the first reference star. (So do your star chart with UCAC4 annotations).&lt;/p&gt;&lt;p&gt;2) Put an aperture on that star.&lt;/p&gt;&lt;p&gt;3) Adjust (if necessary) the aperture so that the centering is satisfactory.&lt;/p&gt;&lt;p&gt;4) Right click on the aperture and click on &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Set RA Dec (from VizieR query results)&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;5) Repeat steps 1...4 for the second reference star.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;6) If you have already defined the target coordinates, an aperture will immediately appear at the proper image location, otherwise ...&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;7) ... use the VizieR query to get the target coordintes and then click the &lt;/span&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Set as target&lt;/span&gt;&lt;span style=&quot; color:#000000;&quot;&gt; button. The target aperture will then appear.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>Manual WCS calib</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="frameToFitsButton">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>150</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>1677215</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button is used to get a WCS calibration for the current image by utilizing the on-line service nova.astrometry.net&lt;/p&gt;&lt;p&gt;If this service fails (see discussion below) then you could try the&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt; Manual WCS calibration&lt;/span&gt; button. It prompts you to put an aperture around two known stars in your image by using a star chart (preferably with UCAC4 star designations). If those stars are sufficiently far apart, we can use the icrs coordinates in conjuction with the xy position of the aperture to 'calibrate' that image.&lt;/p&gt;&lt;p&gt;nova.astrometry.net is designed to do 'blind' identification and WCS calibration on star field images. But it will not be able to identify images that have a too narrow field of view. If your field of view is under 15 arcmin, it is not likely to be able to calibrate that image and it will spend a long time (many minutes) trying. If an image is going to be successfully identified, it will take only a few seconds of cpu time after getting a job assigned (which takes one to two minutes).&lt;/p&gt;&lt;p&gt;Note: another possible reason for a 'failure' is that the camera pixels used for the video were not square and the proper pixel width and height values were not specified properly.&lt;/p&gt;&lt;p&gt;Clicking this button reads the current frame and redacts the timestamp area by replacing all bytes in the timestamp zone with the Robust background (constant value).&lt;/p&gt;&lt;p&gt;The number of lines to be redacted are controlled by the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;redact lines&lt;/span&gt; edit box.&lt;/p&gt;&lt;p&gt;This redacted image is written as a file suitable for submission to nova.astrometry.net together with a user entered target star position (RA and Dec at J2000). The image will have been resized based on the pixel width and height information for non-square pixels in the source camera.&lt;/p&gt;&lt;p&gt;The entries for the star position values are entered into a star position dialog that will appear if no star position has yet been defined.&lt;/p&gt;&lt;p&gt;That same dialog form provides for the entry of the user's nova.astrometry.net api key. This value will be 'sticky' (preserved across runs of PyMovie) and is required for submitting images for WCS calibration. It's easy (and free) to obtain. Simply go to nova.astrometry.net and sign in by clicking on your choice of credential supplier, no need to create a username/password combination. After signing in, click on My Profile and your api key will be displayed there.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>astrometry WCS calib</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="h1">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;You are seeing this help panel because you clicked on a &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;'track path'&lt;/span&gt; menu item in a non-yellow aperture --- those menu items have an effect &lt;span style=&quot; font-weight:600;&quot;&gt;only&lt;/span&gt; in the context of a yellow aperture and are used to define a 'tracking path', a tracking option designed to assist in processing 'drift-through' videos.&lt;/p&gt;&lt;p&gt;A 'tracking path' is a straight line across an image that is to be followed frame-by-frame by the center of a yellow tracking aperture as the video is analyzed. This can be used to 'follow' an object that disappears completely, particularly useful in the situation where there are no other stars that remain visible enough to provide a separate tracking reference. And, as always, the presence of a yellow aperture locks all apertures into a 'constellation' that moves as a unit.&lt;/p&gt;&lt;p&gt;Note: to ease the task of re-positioning the yellow aperture as you advance to later frames, enable jogging on the aperture.&lt;/p&gt;&lt;p&gt;To define a 'tracking path', use a &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;single&lt;/span&gt; yellow aperture and position that aperture at a desired point early in the video (it does &lt;span style=&quot; font-weight:600;&quot;&gt;not&lt;/span&gt; have to be frame 0) and click on the menu item &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Use current position as early track path point&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;To complete the definition of the 'tracking path', position the tracking aperture at a desired point late in the video (it does not have to be the last frame) and click on the menu item &lt;/span&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Use current position as late track path point&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Note: with a 'tracking path' defined, the entire aperture constellation will move in a straight line (defined by the xy and frame number values of the early and late points). While this constellation will not itself follow windshake, stars can continue to 'dance' within the apertures and will be 'followed' by the mask generating routines --- for red apertures, it will look for a bright blob within an 8 pixel radius; for yellow apertures, it will look for the brightest blob anywhere in the aperture. You can always set a very high threshold to force the use of fixed circular masks in apertures where you want to suppress this behavior.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Note: If you delete the yellow aperture (or add a second one), the current tracking path data will be erased.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Note: You can overwrite either of the data points at any time.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
            <item>
             <widget class="QLabel" name="pixelHeightLabel">
              <property name="sizePolicy">
@@ -1066,121 +1208,6 @@
              </property>
              <property name="text">
               <string>: pixel width</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_6">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item>
-            <widget class="QLabel" name="finderThresholdLabel">
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When generating a &amp;quot;finder&amp;quot; image, it is often necessary to suppress the background, otherwise the images will be aligned to background features/texture rather than the star features. Ideally, the alignment works best with stars against a black background.&lt;/p&gt;&lt;p&gt;The value in this box sets the background threshold: all pixel values at or below this value are set to zero for the purpose of aligning images. The raw image values are then used in the stacked sum.&lt;/p&gt;&lt;p&gt;If you leave this box empty, a value will be estimated for you by using the Robust Mean estimator on a region in the center of the image. The threshold will be set 5 standard deviations above the mean value. But if this procedure is not effective, you can use the image contrast control to find out what setting produces stars on a black ground and place that value in this box.&lt;/p&gt;&lt;p&gt;You can also place an aperture somewhere with a medium bright star and click the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Plot Robust Mean&lt;/span&gt; button. From that plot it is easy to estimate a threshold that will selct only star pixel values.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="text">
-              <string>&quot;finder&quot; image threshold:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLineEdit" name="finderThresholdEdit">
-             <property name="maximumSize">
-              <size>
-               <width>60</width>
-               <height>16777215</height>
-              </size>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_7">
-           <property name="spacing">
-            <number>0</number>
-           </property>
-           <item>
-            <widget class="QPushButton" name="manualWcsButton">
-             <property name="enabled">
-              <bool>true</bool>
-             </property>
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button starts a 'manual' WCS calibration (user guided reference star designation).&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Manual WCS calibration&lt;/span&gt; utilizes two stars with known icrs coordinates together with their xy position in the image to compute a mapping from icrs coordinates to pixel coordinates.&lt;/p&gt;&lt;p&gt;When this button is pressed, all previous manual WCS calibration data is erased (you have to confirm this action). Then the work flow expected is:&lt;/p&gt;&lt;p&gt;1) Use the VizieR query to get the icrs coordinates of the first reference star. (So do your star chart with UCAC4 annotations).&lt;/p&gt;&lt;p&gt;2) Put an aperture on that star.&lt;/p&gt;&lt;p&gt;3) Adjust (if necessary) the aperture so that the centering is satisfactory.&lt;/p&gt;&lt;p&gt;4) Right click on the aperture and click on &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Set RA Dec (from VizieR query results)&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;5) Repeat steps 1...4 for the second reference star.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;6) If you have already defined the target coordinates, an aperture will immediately appear at the proper image location, otherwise ...&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;7) ... use the VizieR query to get the target coordintes and then click the &lt;/span&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Set as target&lt;/span&gt;&lt;span style=&quot; color:#000000;&quot;&gt; button. The target aperture will then appear.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="text">
-              <string>Manual WCS calib</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="frameToFitsButton">
-             <property name="enabled">
-              <bool>true</bool>
-             </property>
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>150</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>1677215</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button is used to get a WCS calibration for the current image by utilizing the on-line service nova.astrometry.net&lt;/p&gt;&lt;p&gt;If this service fails (see discussion below) then you could try the&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt; Manual WCS calibration&lt;/span&gt; button. It prompts you to put an aperture around two known stars in your image by using a star chart (preferably with UCAC4 star designations). If those stars are sufficiently far apart, we can use the icrs coordinates in conjuction with the xy position of the aperture to 'calibrate' that image.&lt;/p&gt;&lt;p&gt;nova.astrometry.net is designed to do 'blind' identification and WCS calibration on star field images. But it will not be able to identify images that have a too narrow field of view. If your field of view is under 15 arcmin, it is not likely to be able to calibrate that image and it will spend a long time (many minutes) trying. If an image is going to be successfully identified, it will take only a few seconds of cpu time after getting a job assigned (which takes one to two minutes).&lt;/p&gt;&lt;p&gt;Note: another possible reason for a 'failure' is that the camera pixels used for the video were not square and the proper pixel width and height values were not specified properly.&lt;/p&gt;&lt;p&gt;Clicking this button reads the current frame and redacts the timestamp area by replacing all bytes in the timestamp zone with the Robust background (constant value).&lt;/p&gt;&lt;p&gt;The number of lines to be redacted are controlled by the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;redact lines&lt;/span&gt; edit box.&lt;/p&gt;&lt;p&gt;This redacted image is written as a file suitable for submission to nova.astrometry.net together with a user entered target star position (RA and Dec at J2000). The image will have been resized based on the pixel width and height information for non-square pixels in the source camera.&lt;/p&gt;&lt;p&gt;The entries for the star position values are entered into a star position dialog that will appear if no star position has yet been defined.&lt;/p&gt;&lt;p&gt;That same dialog form provides for the entry of the user's nova.astrometry.net api key. This value will be 'sticky' (preserved across runs of PyMovie) and is required for submitting images for WCS calibration. It's easy (and free) to obtain. Simply go to nova.astrometry.net and sign in by clicking on your choice of credential supplier, no need to create a username/password combination. After signing in, click on My Profile and your api key will be displayed there.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="text">
-              <string>astrometry WCS calib</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="h1">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;You are seeing this help panel because you clicked on a &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;'track path'&lt;/span&gt; menu item in a non-yellow aperture --- those menu items have an effect &lt;span style=&quot; font-weight:600;&quot;&gt;only&lt;/span&gt; in the context of a yellow aperture and are used to define a 'tracking path', a tracking option designed to assist in processing 'drift-through' videos.&lt;/p&gt;&lt;p&gt;A 'tracking path' is a straight line across an image that is to be followed frame-by-frame by the center of a yellow tracking aperture as the video is analyzed. This can be used to 'follow' an object that disappears completely, particularly useful in the situation where there are no other stars that remain visible enough to provide a separate tracking reference. And, as always, the presence of a yellow aperture locks all apertures into a 'constellation' that moves as a unit.&lt;/p&gt;&lt;p&gt;Note: to ease the task of re-positioning the yellow aperture as you advance to later frames, enable jogging on the aperture.&lt;/p&gt;&lt;p&gt;To define a 'tracking path', use a &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;single&lt;/span&gt; yellow aperture and position that aperture at a desired point early in the video (it does &lt;span style=&quot; font-weight:600;&quot;&gt;not&lt;/span&gt; have to be frame 0) and click on the menu item &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Use current position as early track path point&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;To complete the definition of the 'tracking path', position the tracking aperture at a desired point late in the video (it does not have to be the last frame) and click on the menu item &lt;/span&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Use current position as late track path point&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Note: with a 'tracking path' defined, the entire aperture constellation will move in a straight line (defined by the xy and frame number values of the early and late points). While this constellation will not itself follow windshake, stars can continue to 'dance' within the apertures and will be 'followed' by the mask generating routines --- for red apertures, it will look for a bright blob within an 8 pixel radius; for yellow apertures, it will look for the brightest blob anywhere in the aperture. You can always set a very high threshold to force the use of fixed circular masks in apertures where you want to suppress this behavior.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Note: If you delete the yellow aperture (or add a second one), the current tracking path data will be erased.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Note: You can overwrite either of the data points at any time.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="text">
-              <string>    </string>
              </property>
             </widget>
            </item>
@@ -1777,11 +1804,8 @@
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <property name="handleWidth">
-        <number>14</number>
-       </property>
-       <widget class="QWidget" name="layoutWidget">
-        <layout class="QVBoxLayout" name="verticalLayout_15">
+       <widget class="QWidget" name="">
+        <layout class="QVBoxLayout" name="verticalLayout_4">
          <item>
           <layout class="QVBoxLayout" name="verticalLayout_14">
            <item>
@@ -1876,6 +1900,11 @@
   <action name="actionOr_preferences">
    <property name="text">
     <string>Or preferences</string>
+   </property>
+  </action>
+  <action name="actionOpen_AVI_SER_file">
+   <property name="text">
+    <string>Open AVI/SER file</string>
    </property>
   </action>
  </widget>

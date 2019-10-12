@@ -8,6 +8,10 @@ The helpDialog module was created by typing
    !pyuic5 helpDialog.ui -o helpDialog.py
 in the IPython console while in src/pymovie directory
 
+The hotPixelDialog module was created by typing
+   !pyuic5 hotPixelDialog.ui -o hotPixelDialog.py
+in the IPython console while in src/pymovie directory
+
 The apertureEditDialog module was created by typing
    !pyuic5 apertureEditDialog.ui -o apertureEditDialog.py
 in the IPython console while in src/pymovie directory
@@ -22,6 +26,10 @@ in the IPython console while in src/pymovie directory
 
 The selectProfile module was created by typing
    !pyuic5 selectProfile.ui -o selectProfile.py
+in the IPython console while in src/pymovie directory
+
+The selectHotPixelProfile module was created by typing
+   !pyuic5 selectHotPixelProfile.ui -o selectHotPixelProfile.py
 in the IPython console while in src/pymovie directory
 
 The starPositionDialog module was created by typing
@@ -67,12 +75,15 @@ import platform
 import pickle
 from pathlib import Path
 from urllib.request import urlopen
+from copy import deepcopy
 import numpy as np
 from pymovie.checkForNewerVersion import getMostRecentVersionOfPyMovie
 from pymovie.checkForNewerVersion import upgradePyMovie
 from pymovie import starPositionDialog
+from pymovie import hotPixelDialog
 from pymovie import ocrProfileNameDialog
 from pymovie import selectProfile
+from pymovie import selectHotPixelProfile
 from pymovie import astrometry_client
 from pymovie import wcs_helper_functions
 from pymovie import stacker
@@ -157,6 +168,12 @@ class HelpDialog(QDialog, helpDialog.Ui_Dialog):
         self.setupUi(self)
 
 
+class HotPixelDialog(QDialog, hotPixelDialog.Ui_hotPixelThresholdDialog):
+    def __init__(self):
+        super(HotPixelDialog, self).__init__()
+        self.setupUi(self)
+
+
 class OcrProfileNameDialog(QDialog, ocrProfileNameDialog.Ui_ocrNameDialog):
     def __init__(self):
         super(OcrProfileNameDialog, self).__init__()
@@ -186,6 +203,72 @@ class SelectProfileDialog(QDialog, selectProfile.Ui_Dialog):
         self.addProfileButton.clicked.connect(self.addCurrentProfile)
 
         self.loadButton.clicked.connect(self.loadSelectedProfile)
+
+    def loadSelectedProfile(self):
+        profile_selected = self.selectionTable.currentIndex()
+        row = profile_selected.row()
+        self.resultCode = row
+        self.close()
+
+    def getResult(self):
+        return self.resultCode
+
+    def addCurrentProfile(self):
+        self.currentProfile['id'] = self.profileNameEdit.text()
+        self.profiles.append(self.currentProfile)
+        self.selectionTable.setRowCount(0)
+        self.fillTableFromProfileList()
+
+    def fillTableFromProfileList(self):
+        for profile in self.profiles:
+            title = profile['id']
+            numRows = self.selectionTable.rowCount()
+            self.selectionTable.insertRow(numRows)
+            item = QTableWidgetItem(str(title))
+            self.selectionTable.setItem(numRows, 0, item)
+
+    def deleteSelection(self):
+        profile_selected = self.selectionTable.currentIndex()
+        row = profile_selected.row()
+        # self.msger(f'deleting row: {row}')
+        self.profiles.pop(row)  # Remove from dictionary
+        self.selectionTable.setRowCount(0)
+        self.fillTableFromProfileList()  # Update table display
+
+    def exitProcedure(self):
+        for i in range(self.selectionTable.rowCount()):
+            new_id = self.selectionTable.item(i, 0).text()
+            self.profiles[i]['id'] = new_id
+        self.close()
+
+
+class SelectHotPixelProfileDialog(QDialog, selectHotPixelProfile.Ui_Dialog):
+    def __init__(self, msger, profile_dict_list, current_profile_dict, save_only=True):
+        super(SelectHotPixelProfileDialog, self).__init__()
+        self.setupUi(self)
+        self.msger = msger
+        self.profiles = profile_dict_list
+        self.currentProfile = current_profile_dict
+        self.resultCode = -1  # Load profile was not performed
+
+        self.exitButton.clicked.connect(self.exitProcedure)
+
+        self.fillTableFromProfileList()
+
+        # We do this so as to erase the default selection of row 0.  Don't know why
+        # this works, but it seems reliable.
+        profile_selected = self.selectionTable.currentIndex()
+        self.selectionTable.setCurrentIndex(profile_selected)
+
+        self.deleteButton.clicked.connect(self.deleteSelection)
+
+        self.addProfileButton.clicked.connect(self.addCurrentProfile)
+
+        self.loadButton.clicked.connect(self.loadSelectedProfile)
+
+        if save_only:
+            self.deleteButton.setEnabled(False)
+            self.loadButton.setEnabled(False)
 
     def loadSelectedProfile(self):
         profile_selected = self.selectionTable.currentIndex()
@@ -323,7 +406,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # an extended context menu to be generated for ocr character selection boxes.
         # However, if one or modelDigits are found missing, the menu will appear for
         # normal users too.
-        self.enableOcrTemplateSampling = self.settings.value('ocrsamplemenu', 'false') == 'true'
+        # self.enableOcrTemplateSampling = self.settings.value('ocrsamplemenu', 'false') == 'true'
 
         self.modelDigits = [None] * 10
 
@@ -374,6 +457,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.roiComboBox.addItem("31")
         self.roiComboBox.addItem("21")
 
+        # TODO hot-pixel mod
+        self.roiComboBox.addItem("11")
+
         self.vtiSelectLabel.installEventFilter(self)
 
         self.gammaLabel.installEventFilter(self)
@@ -417,6 +503,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.ocrboxBasePath = None
         self.modelDigitsFilename = None
 
+        self.hotPixelList = []
+        self.alwaysEraseHotPixels = False
+        self.hotPixelProfileDict = {}
+
         # self.gammaLut is a lookup table for doing fast gamma correction.
         # It gets filled in whenver the gamma spinner is changed IF there is an
         # image file in use (becuase we need to know whether to do a 16 or 8 bit lookup table)
@@ -434,8 +524,16 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.saveApertureState.clicked.connect(self.saveApertureGroup)
         self.saveApertureState.installEventFilter(self)
 
+        self.loadHotPixelProfileButton.clicked.connect(self.loadHotPixelProfile)
+        self.loadHotPixelProfileButton.installEventFilter(self)
+
+        self.createHotPixelListButton.clicked.connect(self.createHotPixelList)
+        self.createHotPixelListButton.installEventFilter(self)
+
         self.restoreApertureState.clicked.connect(self.restoreApertureGroup)
         self.restoreApertureState.installEventFilter(self)
+
+        # self.expCodeButton.clicked.connect(self.runExperimentalCode)
 
         self.createAVIWCSfolderButton.clicked.connect(self.createAviSerWcsFolder)
         self.createAVIWCSfolderButton.installEventFilter(self)
@@ -448,6 +546,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.clearOcrDataButton.clicked.connect(self.deleteOcrFiles)
         self.clearOcrDataButton.installEventFilter(self)
         self.clearOcrDataButton.setEnabled(False)
+
+        self.applyHotPixelRemovalCheckBox.clicked.connect(self.handleApplyHotPixelChecked)
+        self.applyHotPixelRemovalCheckBox.installEventFilter(self)
 
         # For now, we will save OCR profiles in the users home directory. If
         # later we find a better place, this is the only line we need to change
@@ -796,7 +897,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.manualWcsButton.clicked.connect(self.manualWcsCalibration)
         self.manualWcsButton.installEventFilter(self)
 
-        self.stackFramesButton.clicked.connect(self.performFrameStacking)
+        self.stackFramesButton.clicked.connect(self.generateFinderFrame)
         self.stackFramesButton.installEventFilter(self)
 
         self.finderRedactTopLinesLabel.installEventFilter(self)
@@ -848,6 +949,154 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.checkForNewerVersion()
 
         self.copy_desktop_icon_file_to_home_directory()
+
+    def handleApplyHotPixelChecked(self):
+        if not self.hotPixelList:
+            self.applyHotPixelRemovalCheckBox.setChecked(False)
+            self.showMsg(f'There is no hot pixel list loaded!')
+        else:
+            self.alwaysEraseHotPixels = self.applyHotPixelRemovalCheckBox.isChecked()
+            if self.alwaysEraseHotPixels:
+                self.applyHotPixelErasure()
+                if not self.initialFrame:
+                    if self.levels:
+                        self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
+                        self.thumbOneView.setLevels(min=self.levels[0], max=self.levels[1])
+
+    def loadHotPixelProfile(self):
+        self.showMsg(f'loadHotPixelProfile: partially implemented')
+        if self.image is None:
+            self.showMsg(f'There is no frame showing yet.')
+            return
+
+        hot_pixel_profile_list = self.readSavedHotPixelProfiles()
+
+        selector = SelectHotPixelProfileDialog(
+            self.showMsg,
+            profile_dict_list=hot_pixel_profile_list,
+            current_profile_dict=self.hotPixelProfileDict,
+            save_only=False
+        )
+        selector.exec_()
+
+        # We assume that some change to the profile dictionary may have been made and
+        # so simply always re-pickle that dictionary
+        my_profile_fn = '/pymovie-hot-pixel-profiles.p'
+        pickle.dump(hot_pixel_profile_list, open(self.profilesDir + my_profile_fn, "wb"))
+
+        row = selector.getResult()
+
+        if row >= 0:
+            self.showMsg(f'The hot-pixel profile in row {row} is to be loaded')
+            self.restoreHotPixelApertureGroup(hot_pixel_profile=hot_pixel_profile_list[row])
+        else:
+            self.showMsg(f'No profile was selected for loading.')
+
+    def createHotPixelList(self):
+
+        self.hotPixelList = []
+
+        hot_apps = self.getApertureList()
+        if not hot_apps:
+            self.showMsg(f'There are no apertures on the frame.')
+            return
+
+        hpxdialog = HotPixelDialog()
+        result = hpxdialog.exec_()
+
+        if result == QDialog.Accepted:
+            try:
+                text = hpxdialog.hotPixelThresholdEdit.text()
+                threshold = int(text)
+            except ValueError:
+                self.showMsg(f'"{text}" is an invalid integer')
+                return
+        else:
+            self.showMsg(f'Operation cancelled.')
+            return
+
+        self.showMsg(f'Hot-pixel threshold to be used: {threshold} ')
+
+        for app in hot_apps:
+            bbox = app.getBbox()
+            x0, y0, nx, ny = bbox
+
+            # app_image is the portion of the main image that is covered by the aperture bounding box
+            app_img = self.image[y0:y0 + ny, x0:x0 + nx]
+            hot_pixels = np.nonzero(app_img >= threshold)
+            # self.showMsg(f'{repr(hot_pixels)}')
+
+            yvals = hot_pixels[0] + y0
+            xvals = hot_pixels[1] + x0
+            # self.showMsg(f'xvals: {repr(xvals)}')
+            # self.showMsg(f'yvals: {repr(yvals)}')
+
+            hot_list = list(tuple(zip(yvals, xvals)))
+            # self.showMsg(f'hot_list: {repr(hot_list)}')
+
+            for pair in hot_list:
+                self.hotPixelList.append(pair)
+
+        self.showMsg(f'hot_pixel_list: {repr(self.hotPixelList)}')
+
+        avg_bkgnd = self.getBackgroundFromImageCenter()
+
+        self.showMsg(f'average background: {avg_bkgnd:.2f}')
+
+        savedApertureDictList = []
+
+        for aperture in hot_apps:
+            dict_entry = self.composeApertureStateDictionary(aperture)
+            savedApertureDictList.append(dict_entry)
+
+        dict_entry = {}
+        dict_entry.update({'id': 'TBD'})
+        dict_entry.update({'aperture_dict_list': savedApertureDictList})
+        dict_entry.update({'hot_pixels_list': self.hotPixelList})
+
+        self.hotPixelProfileDict = dict_entry
+
+        # self.applyHotPixelErasure(avg_bkgnd)
+
+
+    def getBackgroundFromImageCenter(self):
+        # Get a robust mean from near the center of the current image
+        y0 = int(self.image.shape[0] / 2)
+        x0 = int(self.image.shape[1] / 2)
+        ny = 51
+        nx = 51
+        thumbnail = self.image[y0:y0 + ny, x0:x0 + nx]
+        avg_bkgnd, *_ = newRobustMeanStd(thumbnail, outlier_fraction=.5)
+        return avg_bkgnd
+
+    def applyHotPixelErasure(self, avg_bkgnd=None):
+        if self.hotPixelList is None:
+            return
+        if avg_bkgnd is None:
+            avg_bkgnd = self.getBackgroundFromImageCenter()
+        for y, x in self.hotPixelList:
+            self.image[y, x] = avg_bkgnd
+
+        # Preserve the current zomm/pan state
+        view_box = self.frameView.getView()
+        state = view_box.getState()
+        self.frameView.setImage(self.image)
+        view_box.setState(state)
+
+    def applyHotPixelErasureToImg(self, img):
+        if self.hotPixelList is None:
+            return
+
+        # Get a robust mean from near the center of the current image
+        y0 = int(img.shape[0] / 2)
+        x0 = int(img.shape[1] / 2)
+        ny = 51
+        nx = 51
+        thumbnail = img[y0:y0 + ny, x0:x0 + nx]
+        avg_bkgnd, *_ = newRobustMeanStd(thumbnail, outlier_fraction=.5)
+
+        for y, x in self.hotPixelList:
+            img[y, x] = avg_bkgnd
 
     def lunarBoxChecked(self):
         if self.lunarCheckBox.isChecked():
@@ -959,6 +1208,90 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         my_dict.update({'max_xpos': aperture.max_xpos})
         my_dict.update({'max_ypos': aperture.max_ypos})
         return my_dict
+
+
+    def restoreHotPixelApertureGroup(self, hot_pixel_profile):
+
+        if self.image is None:
+            self.showMsg(f'There is no frame showing yet.')
+            return
+
+        # Force frame view
+        self.viewFieldsCheckBox.setChecked(False)
+
+        # Remove all apertures that have been already placed (particularly the target
+        # aperture that is automatically placed when a WCS solution was present)
+        self.clearApertures()
+
+        # Then place all the apertures with complete state
+        for mydict in hot_pixel_profile['aperture_dict_list']:
+            try:
+                x0 = mydict['x0']
+                y0 = mydict['y0']
+                xsize = mydict['xsize']
+                ysize = mydict['ysize']
+
+                # Set the aperture size selection to match the incoming aperture group.
+                if xsize == 51:
+                    self.roiComboBox.setCurrentIndex(0)
+                elif xsize == 41:
+                    self.roiComboBox.setCurrentIndex(1)
+                elif xsize == 31:
+                    self.roiComboBox.setCurrentIndex(2)
+                elif xsize == 21:
+                    self.roiComboBox.setCurrentIndex(3)
+                else:
+                    self.showMsg(f'Unexpected aperture size of {xsize} in restored aperture group')
+
+                bbox = (x0, y0, xsize, ysize)
+                name = mydict['name']
+                max_xpos = mydict['max_xpos']
+                max_ypos = mydict['max_ypos']
+
+                # Create an aperture object (box1) and connect it to us (self)
+                aperture = MeasurementAperture(name, bbox, max_xpos, max_ypos)
+
+                aperture.thresh = mydict['thresh']
+
+                color = mydict['color']
+                if color == 'red':
+                    aperture.setRed()
+                elif color == 'green':
+                    aperture.setGreen()
+                elif color == 'white':
+                    aperture.setWhite()
+                elif color == 'yellow':
+                    aperture.setYellowNoCheck()
+                else:
+                    self.showMsg(f'Unexpected color (color) found while restoring marked apertures')
+
+                aperture.jogging_enabled = mydict['jogging_enabled']
+                aperture.auto_display = mydict['auto_display']
+                aperture.thumbnail_source = mydict['thumbnail_source']
+                aperture.default_mask_radius = mydict['default_mask_radius']
+                aperture.order_number = mydict['order_number']
+                aperture.defaultMask = mydict['defaultMask']
+                aperture.defaultMaskPixelCount = mydict['defaultMaskPixelCount']
+                aperture.theta = mydict['theta']
+                aperture.dx = mydict['dx']
+                aperture.dy = mydict['dy']
+                aperture.xc = mydict['xc']
+                aperture.yc = mydict['yc']
+
+                self.connectAllSlots(aperture)
+
+                view = self.frameView.getView()
+                view.addItem(aperture)
+
+            except Exception as e:
+                self.showMsg(f'While restoring aperture constellation exception: {e}')
+                return
+
+        self.hotPixelList = hot_pixel_profile['hot_pixels_list']
+
+        # Because an average background was not supplied as an argument in the following call,
+        # it will automatically extract one from the center of the current image
+        # self.applyHotPixelErasure()
 
 
     def restoreApertureGroup(self):
@@ -1188,6 +1521,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.analysisPaused = False
         self.setTransportButtonEnableState(False)
         self.transportPause.setEnabled(True)
+        self.applyHotPixelRemovalCheckBox.setChecked(False)
+        self.alwaysEraseHotPixels = False
         self.autoRun()
 
     @staticmethod
@@ -1308,6 +1643,20 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 for entry in dict_list:
                     dictionary_list.append(entry)
             return dictionary_list
+
+    def readSavedHotPixelProfiles(self):
+
+            available_profiles = glob.glob(self.profilesDir + '/pymovie-hot-pixel-profiles.p')
+
+            dictionary_list = []
+            if len(available_profiles) == 0:
+                return dictionary_list
+            else:
+                for file in available_profiles:
+                    dict_list = pickle.load(open(file, "rb"))
+                    for entry in dict_list:
+                        dictionary_list.append(entry)
+                return dictionary_list
 
     def handleChangeOfDisplayMode(self):
         # self.showMsg(f'View avi fields: {self.viewFieldsCheckBox.isChecked()}')
@@ -2130,7 +2479,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         else:
             return True, abs(num_lines_to_redact_from_top), abs(num_lines_to_redact_from_bottom)
 
-    def performFrameStacking(self):
+    def generateFinderFrame(self):
         if not (self.avi_wcs_folder_in_use or self.fits_folder_in_use):
             self.showMsg(f'This function can only be performed in the context of an AVI-WCS or FITS folder.')
             return
@@ -2258,7 +2607,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             timestamp_trim_bottom=num_bottom,
             fitsReader = fitsReader,
             serReader = serReader,
-            avi_location=self.avi_location, out_dir_path=self.folder_dir, bkg_threshold=bkg_thresh)
+            avi_location=self.avi_location, out_dir_path=self.folder_dir, bkg_threshold=bkg_thresh,
+            hot_pixel_erase=self.applyHotPixelErasureToImg
+        )
 
         # Now that we're back, if we got a new enhanced-image.fit, display it.
         if os.path.isfile(self.folder_dir + r'/enhanced-image.fit'):
@@ -2424,6 +2775,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 # self.showMsg(f'The jog will be applied to {app.name}', blankLine=False)
                 jogAperture(app, -dx, -dy)
                 if app.auto_display:
+                    self.one_time_suppress_stats = False
                     self.getApertureStats(app, show_stats=True)
 
         joggable_ocr_box_count = 0
@@ -3178,6 +3530,15 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
     def disconnectSetLatePathPointToSlotConnection(self, app_object):
         app_object.sendSetLateTrackPathPoint.disconnect(self.handleLateTrackPathPoint)
 
+    def makeRecordHotPixelToSlotConnection(self, app_object):
+        app_object.sendHotPixelRecord.connect(self.handleRecordHotPixel)
+
+    def disconnectRecordHotPixelToSlotConnection(self, app_object):
+        app_object.sendHotPixelRecord.disconnect(self.handleRecordHotPixel)
+
+    def handleRecordHotPixel(self):
+        self.showMsg(f'Hot pixel recording requested')
+
     def clearTrackingPathParameters(self):
         self.tpathEarlyX = None
         self.tpathEarlyY = None
@@ -3254,6 +3615,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         return int(xc), int(yc)
 
     @pyqtSlot('PyQt_PyObject')
+    def handleRecordHotPixel(self, aperture):
+        self.showMsg(f'Hot pixel record requested')
+
+    @pyqtSlot('PyQt_PyObject')
     def handleEarlyTrackPathPoint(self, aperture):
         if not aperture.color == 'yellow':
             self.showHelp(self.h1)
@@ -3271,8 +3636,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.tpathLateX, self.tpathLateY = aperture.getCenter()
         self.tpathLateFrame = self.currentFrameSpinBox.value()
         self.showTrackingPathParameters()
-
-
 
     @pyqtSlot('PyQt_PyObject')
     def handleSetRaDecSignal(self, aperture):
@@ -3591,6 +3954,23 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         aperture.thresh = self.big_thresh
         self.handleSetGreenSignal(aperture)
 
+        for app in self.getApertureList():
+            app.jogging_enabled = False
+            app.thumbnail_source = False
+            app.auto_display = False
+
+        aperture.jogging_enabled = True
+        aperture.thumbnail_source = True
+        aperture.auto_display = True
+
+        self.pointed_at_aperture = aperture
+
+        self.one_time_suppress_stats = False
+        self.getApertureStats(aperture, show_stats=True)
+        self.showFrame()
+
+        self.showMsg(f'The aperture just added is joggable.  All others have jogging disabled.')
+
         return aperture
 
     def connectAllSlots(self, aperture):
@@ -3604,6 +3984,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.makeSetRaDecSignalToSlotConnection(aperture)
         self.makeSetEarlyPathPointToSlotConnection(aperture)
         self.makeSetLatePathPointToSlotConnection(aperture)
+        self.makeRecordHotPixelToSlotConnection(aperture)
 
     def disconnectAllSlots(self, aperture):
         self.disconnectApertureSignalToSlot(aperture)
@@ -3616,6 +3997,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.disconnectSetRaDecSignalToSlot(aperture)
         self.disconnectSetEarlyPathPointToSlotConnection(aperture)
         self.disconnectSetLatePathPointToSlotConnection(aperture)
+        self.disconnectRecordHotPixelToSlotConnection(aperture)
 
     def addGenericAperture(self):
         # self.mousex and self.mousey are continuously updated by mouseMovedInFrameView()
@@ -4297,6 +4679,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             self.lunarCheckBox.setChecked(False)
 
+            self.hotPixelList = []
+            self.alwaysEraseHotPixels = False
+            self.hotPixelProfileDict = {}
+            self.applyHotPixelRemovalCheckBox.setChecked(False)
+
 
             self.saveStateNeeded = True
             self.avi_wcs_folder_in_use = False
@@ -4556,6 +4943,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             self.lunarCheckBox.setChecked(False)
 
+            self.hotPixelList = []
+            self.alwaysEraseHotPixels = False
+            self.applyHotPixelRemovalCheckBox.setChecked(False)
+            self.hotPixelProfileDict = {}
+
+
             # Test for SER file in use
             self.ser_file_in_use = Path(self.filename).suffix == '.ser'
             self.avi_in_use = not self.ser_file_in_use
@@ -4726,6 +5119,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.clearTrackingPathParameters()
 
             self.lunarCheckBox.setChecked(False)
+
+            self.hotPixelList = []
+            self.alwaysEraseHotPixels = False
+            self.hotPixelProfileDict = {}
+            self.applyHotPixelRemovalCheckBox.setChecked(False)
 
             self.timestampReadingEnabled = False
 
@@ -5200,7 +5598,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 # We want to maintain whatever pan/zoom is in effect ...
                 view_box = self.frameView.getView()
                 # ... so we read and save the current state of the view box of our frameView
-                state = view_box.getState()
+                stateOfView = view_box.getState()
+
 
             frame_to_show = self.currentFrameSpinBox.value()  # Get the desired frame number from the spinner
 
@@ -5216,6 +5615,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                         status, frame = self.cap.read()
                         self.image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                         self.doGammaCorrection()
+                    if self.alwaysEraseHotPixels:
+                        self.applyHotPixelErasure()
 
                 except Exception as e1:
                     self.showMsg(f'Problem reading avi file: {e1}')
@@ -5304,7 +5705,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             if not self.initialFrame:
                 # Displaying the new image resets the pan/zoom to none ..
                 # ... so here we restore the view box to the state extracted above.
-                view_box.setState(state)
+                view_box.setState(stateOfView)
             else:
                 self.initialFrame = False
                 height, width = self.image.shape
@@ -5709,12 +6110,134 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def runExperimentalCode(self):
 
-        # exporter = FixedImageExporter(self.save_p1.sceneObj)
-        # exporter.makeWidthHeightInts()
-        # targetFile = self.folder_dir + '/composite.png'
-        # exporter.export(targetFile)
-        # self.showMsg(f'A work in progress')
-        pass
+        self.showMsg('Experimental code: hot pixel detection')
+
+        if not (self.avi_wcs_folder_in_use or self.fits_folder_in_use):
+            self.showMsg(f'This function can only be performed in the context of an AVI-WCS or FITS folder.')
+            return
+
+        # Deal with timestamp redaction first.
+        # Get a robust mean from near the center of the current image
+        y0 = int(self.image.shape[0]/2)
+        x0 = int(self.image.shape[1]/2)
+        ny = 51
+        nx = 51
+        thumbnail = self.image[y0:y0 + ny, x0:x0 + nx]
+        mean, *_ = newRobustMeanStd(thumbnail, outlier_fraction=.5)
+
+        image_height = self.image.shape[0]  # number of rows
+        image_width = self.image.shape[1]   # number of columns
+
+        num_lines_to_redact = 0
+
+        early_exit = False
+
+        valid_entries, num_top, num_bottom = self.getRedactLineParameters()
+
+        if not valid_entries:
+            early_exit = True
+
+        if not self.numFramesToStackEdit.text():
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Question)
+            msg.setText(f'Please specify the number of frames to stack. '
+                        f'\n\nA number in the range of 100 to 400 would be usual.')
+            msg.setWindowTitle('Please fill in num frames')
+            msg.setStandardButtons(QMessageBox.Ok)
+            msg.exec()
+            early_exit = True
+
+        if early_exit:
+            return
+
+        if num_bottom + num_top > image_height - 4:
+            self.showMsg(f'{num_bottom + num_top} is an unreasonable number of lines to redact.')
+            self.showMsg(f'Operation aborted.')
+            return
+
+        redacted_image = self.image[:,:].astype('int16')
+
+        if num_bottom > 0:
+            for i in range(image_height - num_bottom, image_height):
+                for j in range(0, image_width):
+                    redacted_image[i, j] = mean
+
+        if num_top > 0:
+            for i in range(0, num_top):
+                for j in range(0, image_width):
+                    redacted_image[i, j] = mean
+
+        self.image = redacted_image
+        self.frameView.setImage(self.image)
+        if self.levels:
+            self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
+
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Question)
+        msg.setText('Is the timestamp data completely removed?')
+        msg.setWindowTitle('Is timestamp removed')
+        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        retval = msg.exec_()
+        ready_for_submission = retval == QMessageBox.Yes
+
+        if not ready_for_submission:
+            self.showFrame()
+            return
+
+        hot_pixel_list, fixed_image = stacker.find_outlier_pixels(self.image.astype('float64'))
+        self.image = fixed_image
+        self.frameView.setImage(self.image)
+
+        return
+
+        first_frame = self.currentFrameSpinBox.value()
+
+        try:
+            txt = self.numFramesToStackEdit.text()
+            num_frames_to_stack = int(txt)
+        except ValueError:
+            self.showMsg(f'" {txt} " is an invalid specification of number of frames to stack')
+            return
+
+        if num_frames_to_stack > 400:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Question)
+            msg.setText(f'{num_frames_to_stack} is rather large.'
+                        f'\n\nDo you wish to proceed anyway?')
+            msg.setWindowTitle('Num frames to stack ok')
+            msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            retval = msg.exec_()
+            if retval == QMessageBox.No:
+                return
+
+        last_frame = first_frame + num_frames_to_stack - 1
+        last_frame = min(last_frame, self.stopAtFrameSpinBox.maximum())
+
+        if self.fits_folder_in_use:
+            fitsReader = self.getFitsFrame
+        else:
+            fitsReader = None
+
+        if self.ser_file_in_use:
+            serReader = self.getSerFrame
+        else:
+            serReader = None
+
+        bkg_thresh = self.getBkgThreshold()
+        if bkg_thresh is None:
+            return
+
+        hot_pix_image = stacker.hotPixelStack(
+            self.showMsg, self.stackerProgressBar, QtGui.QGuiApplication.processEvents,
+            first_frame=first_frame, last_frame=last_frame,
+            timestamp_trim_top=num_top,
+            timestamp_trim_bottom=num_bottom,
+            fitsReader = fitsReader,
+            serReader = serReader,
+            avi_location=self.avi_location, out_dir_path=self.folder_dir, bkg_threshold=bkg_thresh)
+
+        self.image = hot_pix_image
+        self.frameView.setImage(self.image)
 
     def manualWcsCalibration(self):
         if not (self.avi_wcs_folder_in_use or self.fits_folder_in_use):
@@ -5829,7 +6352,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         p1 = self.plots[-1].addPlot(
             row=0, col=0,
             y= self.thumbOneImage.flatten(),
-            title=f'pixel values in thumbnail image (mean: green line; +/- sigma: red lines)',
+            title=f'pixel values in thumbnail image (mean: green line; +/- sigma: red lines  3 sigma: blue)',
             pen=dark_gray
         )
         hLineMean = pg.InfiniteLine(angle=0, movable=False, pen='g')
@@ -5843,6 +6366,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         hLineLowerStd = pg.InfiniteLine(angle=0, movable=False, pen='r')
         p1.addItem(hLineLowerStd, ignoreBounds=True)
         hLineLowerStd.setPos(good_mean - sigma)
+
+        hLine3Sigma = pg.InfiniteLine(angle=0, movable=False, pen='b')
+        p1.addItem(hLine3Sigma, ignoreBounds=True)
+        hLine3Sigma.setPos(good_mean + 3 * sigma)
 
         self.plots[-1].nextRow()  # Tell GraphicsWindow that we want another row of plots
 
@@ -6323,7 +6850,7 @@ def newRobustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=
     # The None 'flattens' data automatically so sorted_data will be 1D
     sorted_data = np.sort(data, None)
 
-    # TODO Remove this experimental code (lunar hack)
+    # TODO Confirm by user feedback that this is good code (lunar)
     if lunar:
         mean = round(np.mean(sorted_data))
         mean_at = np.where(sorted_data >= mean)[0][0]
@@ -6380,7 +6907,7 @@ def newRobustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=
         # Now we have a good first approximation for good_mean, but it could contain star pixels.
         # We'll remove those pixels after we get a sigma estimate
 
-    upper_indices = np.where(sorted_data > good_mean)
+    upper_indices = np.where(sorted_data >= good_mean)
     # MAD means: Median Absolute Deviation
     MAD = np.median(sorted_data[upper_indices[0][0]:])
     MAD = MAD - good_mean
@@ -6403,9 +6930,6 @@ def newRobustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=
             good_mean = app_avg
         except Exception as e:
             pass
-
-    # TODO remove this experimental code (lunar hack)
-    # good_mean = lunar_mean
 
     return good_mean, MAD, sorted_data, window, data.size, first_index, last_index
 
