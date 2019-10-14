@@ -29,7 +29,7 @@ def asinhScale(img, limcut = 0):  # img needs to be float32 type
 def frameStacker(pr, progress_bar, event_process,
                  first_frame, last_frame, timestamp_trim_top, timestamp_trim_bottom,
                  fitsReader, serReader,
-                 avi_location, out_dir_path, bkg_threshold, hot_pixel_erase):
+                 avi_location, out_dir_path, bkg_threshold, hot_pixel_erase, delta_x, delta_y):
     # fitsReader is self.getFitsFrame()
     # serReader is self.getSerFrame()
     # pr is self.showMsg() provided by the caller
@@ -179,12 +179,6 @@ def frameStacker(pr, progress_bar, event_process,
 
     image_sum = inimage[:,:]
 
-    current_row_shift = None
-    current_col_shift = None
-
-    row_delta = 0
-    col_delta = 0
-
     frames_skipped = 0
 
     # g1 is our reference image transform
@@ -200,6 +194,8 @@ def frameStacker(pr, progress_bar, event_process,
         else:
             inimage = read_avi_frame(next_frame, trim_top=timestamp_trim_top, trim_bottom=timestamp_trim_bottom)
 
+        delta_frame = next_frame - first_frame
+
         next_frame += 1
 
         # Calculate progress [1..100]
@@ -207,42 +203,34 @@ def frameStacker(pr, progress_bar, event_process,
         progress_bar.setValue(fraction_done * 100)
         event_process()
 
-        # g2 = np.fft.fftshift(np.fft.fft2(inimage))
-        ret, th_inimage = cv2.threshold(inimage, bkg_threshold, 0, cv2.THRESH_TOZERO)
-        g2 = np.fft.fftshift(np.fft.fft2(th_inimage))
+        if delta_x is None:
+            # g2 = np.fft.fftshift(np.fft.fft2(inimage))
+            ret, th_inimage = cv2.threshold(inimage, bkg_threshold, 0, cv2.THRESH_TOZERO)
+            g2 = np.fft.fftshift(np.fft.fft2(th_inimage))
 
-        g2conj = g2.conj()
+            g2conj = g2.conj()
 
-        R = g1 * g2conj / abs(g1 * g2conj)
+            R = g1 * g2conj / abs(g1 * g2conj)
 
-        r = np.fft.fftshift(np.fft.ifft2(R))
+            r = np.fft.fftshift(np.fft.ifft2(R))
 
-        mag_r = abs(r * r.conj())  # mag_r is a matrix of positive reals (not complex)
+            mag_r = abs(r * r.conj())  # mag_r is a matrix of positive reals (not complex)
 
-        mag_r_max = mag_r.max()
+            mag_r_max = mag_r.max()
 
-        max_row, max_col = np.unravel_index(mag_r.argmax(), mag_r.shape)
+            max_row, max_col = np.unravel_index(mag_r.argmax(), mag_r.shape)
 
-        # print(mag_r.shape, max_row, max_col)
-        rows_to_roll_to_center = max_row - int(mag_r.shape[0] / 2)
-        cols_to_roll_to_center = max_col - int(mag_r.shape[1] / 2)
-        # good_row_shift = abs(rows_to_roll_to_center - current_row_shift) % height < 7
-        # good_col_shift = abs(cols_to_roll_to_center - current_col_shift) % width  < 7
-        good_row_shift = True
-        good_col_shift = True
-        if good_col_shift and good_row_shift:
-            pr(f'row-shift:{rows_to_roll_to_center:4d}  col-shift:{cols_to_roll_to_center:4d}  frame: {next_frame-1}',
-               blankLine=False)
-            current_row_shift = rows_to_roll_to_center
-            current_col_shift = cols_to_roll_to_center
-        else:
-            frames_skipped += 1
-            pr(f'row-shift:{rows_to_roll_to_center:4d}  col-shift:{cols_to_roll_to_center:4d}  frame: {next_frame - 1}'
-               f' suppressed',
-               blankLine=False)
-            continue
+            # print(mag_r.shape, max_row, max_col)
+            rows_to_roll_to_center = max_row - int(mag_r.shape[0] / 2)
+            cols_to_roll_to_center = max_col - int(mag_r.shape[1] / 2)
 
-        # tracking_list.append([rows_to_roll_to_center, cols_to_roll_to_center])
+        if not delta_x is None:
+            rows_to_roll_to_center = round(-delta_y * delta_frame)
+            cols_to_roll_to_center = round(-delta_x * delta_frame)
+
+        pr(f'row-shift:{rows_to_roll_to_center:4d}  col-shift:{cols_to_roll_to_center:4d}  frame: {next_frame-1}',
+            blankLine=False)
+
 
         # Center the image
         inimage = np.roll(inimage, rows_to_roll_to_center, axis=0)
@@ -265,7 +253,10 @@ def frameStacker(pr, progress_bar, event_process,
     # plt.imshow(unredacted, cmap='gray')
     # print(unredacted.shape)
 
-    outfile = out_dir_path + r'/enhanced-image.fit'
+    fn = f'/enhanced-image-{first_frame}.fit'
+
+    # outfile = out_dir_path + r'/enhanced-image.fit'
+    outfile = out_dir_path + fn
 
     # Create the fits ojbect for this image using the header of the first image
 

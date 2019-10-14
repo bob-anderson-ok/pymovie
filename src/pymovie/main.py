@@ -560,7 +560,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # need the user's name for some other reason.
         self.userName = os.path.basename(self.profilesDir)
 
+        # ########################################################################
         # Initialize all instance variables as a block (to satisfy PEP 8 standard)
+        # ########################################################################
+
+        self.disableUpdateFrameWithTracking = False
+
+        self.finderFrameBeingDisplayed = False
 
         # Start: Tracking path variables ...
         self.tpathEarlyX = None
@@ -2450,10 +2456,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
     def getRedactLineParameters(self):
         num_lines_to_redact_from_top = 0
         num_lines_to_redact_from_bottom = 0
+        entry_present = False
 
         if self.redactLinesTopEdit.text():
             try:
                 num_lines_to_redact_from_top = int(self.redactLinesTopEdit.text())
+                entry_present = True
             except ValueError:
                 self.showMsg(f'invalid numeric entry in top lines redact: {self.redactLinesTopEdit.text()}')
                 return False, 0, 0
@@ -2461,11 +2469,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if self.redactLinesBottomEdit.text():
             try:
                 num_lines_to_redact_from_bottom = int(self.redactLinesBottomEdit.text())
+                entry_present = True
             except ValueError:
                 self.showMsg(f'invalid numeric entry in bottom lines redact: {self.redactLinesBottomEdit.text()}')
                 return False, 0, 0
 
-        if num_lines_to_redact_from_top == 0 and num_lines_to_redact_from_bottom == 0:
+        if not entry_present:
             msg = QMessageBox()
             msg.setIcon(QMessageBox.Question)
             msg.setText(f'It is necessary to remove any timestamp overlay that may be '
@@ -2476,6 +2485,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             msg.setWindowTitle('Please fill in redact lines')
             msg.setStandardButtons(QMessageBox.Ok)
             msg.exec()
+            return False, 0, 0
         else:
             return True, abs(num_lines_to_redact_from_top), abs(num_lines_to_redact_from_bottom)
 
@@ -2575,16 +2585,18 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         last_frame = first_frame + num_frames_to_stack - 1
         last_frame = min(last_frame, self.stopAtFrameSpinBox.maximum())
 
-        # Remove the current enhanced-image.fit and associated frame num file
+        enhanced_filename_with_frame_num = f'/enhanced-image-{first_frame}.fit'
+
+        # Remove an enhanced image with a matching frame number
         try:
-            os.remove(self.folder_dir + r'/enhanced-image.fit')
+            os.remove(self.folder_dir + enhanced_filename_with_frame_num)
         except FileNotFoundError:
             pass
 
-        try:
-            os.remove(self.folder_dir + r'/enhanced-image-frame-num.txt')
-        except FileNotFoundError:
-            pass
+        # try:
+        #     os.remove(self.folder_dir + r'/enhanced-image-frame-num.txt')
+        # except FileNotFoundError:
+        #     pass
 
         if self.fits_folder_in_use:
             fitsReader = self.getFitsFrame
@@ -2600,6 +2612,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if bkg_thresh is None:
             return
 
+        if self.tpathSpecified:
+            dx_dframe = self.tpathXa
+            dy_dframe = self.tpathYa
+            self.showMsg(f'Frame stacking will be controlled by tracking path.')
+        else:
+            dx_dframe = None
+            dy_dframe = None
+
         stacker.frameStacker(
             self.showMsg, self.stackerProgressBar, QtGui.QGuiApplication.processEvents,
             first_frame=first_frame, last_frame=last_frame,
@@ -2608,16 +2628,21 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             fitsReader = fitsReader,
             serReader = serReader,
             avi_location=self.avi_location, out_dir_path=self.folder_dir, bkg_threshold=bkg_thresh,
-            hot_pixel_erase=self.applyHotPixelErasureToImg
+            hot_pixel_erase=self.applyHotPixelErasureToImg,
+            delta_x=dx_dframe,
+            delta_y=dy_dframe
         )
 
         # Now that we're back, if we got a new enhanced-image.fit, display it.
-        if os.path.isfile(self.folder_dir + r'/enhanced-image.fit'):
+        fullpath = self.folder_dir + enhanced_filename_with_frame_num
+        if os.path.isfile(fullpath):
             # And now is time to write the frame number of the corresponding reference frame
-            with open(self.folder_dir + r'/enhanced-image-frame-num.txt', 'w') as f:
-                f.write(f'{first_frame}')
+            # with open(self.folder_dir + r'/enhanced-image-frame-num.txt', 'w') as f:
+            #     f.write(f'{first_frame}')
             self.clearApertures()
-            self.readFinderImage()
+            self.openFitsImageFile(fullpath)
+            self.finderFrameBeingDisplayed = True
+            # self.readFinderImage()
 
     def getSerFrame(self, frameNum):
         bytes_per_pixel = self.ser_meta_data['BytesPerPixel']
@@ -2858,6 +2883,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.plot_symbol_size = self.plotSymbolSizeSpinBox.value()
 
     def updateFrameWithTracking(self):
+        # This flag is set by self.readFinderImage()
+        if self.disableUpdateFrameWithTracking:
+            self.disableUpdateFrameWithTracking = False
+            return
         if not self.analysisRequested:
             self.initializeTracking()
         self.showFrame()
@@ -3530,12 +3559,25 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
     def disconnectSetLatePathPointToSlotConnection(self, app_object):
         app_object.sendSetLateTrackPathPoint.disconnect(self.handleLateTrackPathPoint)
 
+    def makeClearTrackPathToSlotConnection(self, app_object):
+        app_object.sendClearTrackPath.connect(self.handleClearTrackPath)
+
+    def disconnectClearTrackPathToSlotConnection(self, app_object):
+        app_object.sendClearTrackPath.disconnect(self.handleClearTrackPath)
+
     def makeRecordHotPixelToSlotConnection(self, app_object):
         app_object.sendHotPixelRecord.connect(self.handleRecordHotPixel)
 
     def disconnectRecordHotPixelToSlotConnection(self, app_object):
         app_object.sendHotPixelRecord.disconnect(self.handleRecordHotPixel)
 
+    @pyqtSlot('PyQt_PyObject')
+    def handleClearTrackPath(self):
+        if self.tpathSpecified:
+            self.clearTrackingPathParameters()
+            self.showMsg(f'The tracking path parameters have been cleared.')
+
+    @pyqtSlot('PyQt_PyObject')
     def handleRecordHotPixel(self):
         self.showMsg(f'Hot pixel recording requested')
 
@@ -3967,7 +4009,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.one_time_suppress_stats = False
         self.getApertureStats(aperture, show_stats=True)
-        self.showFrame()
+
+        if not self.finderFrameBeingDisplayed:
+            self.showFrame()
 
         self.showMsg(f'The aperture just added is joggable.  All others have jogging disabled.')
 
@@ -3985,6 +4029,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.makeSetEarlyPathPointToSlotConnection(aperture)
         self.makeSetLatePathPointToSlotConnection(aperture)
         self.makeRecordHotPixelToSlotConnection(aperture)
+        self.makeClearTrackPathToSlotConnection(aperture)
 
     def disconnectAllSlots(self, aperture):
         self.disconnectApertureSignalToSlot(aperture)
@@ -3998,6 +4043,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.disconnectSetEarlyPathPointToSlotConnection(aperture)
         self.disconnectSetLatePathPointToSlotConnection(aperture)
         self.disconnectRecordHotPixelToSlotConnection(aperture)
+        self.disconnectClearTrackPathToSlotConnection(aperture)
 
     def addGenericAperture(self):
         # self.mousex and self.mousey are continuously updated by mouseMovedInFrameView()
@@ -4654,11 +4700,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # offsets between the apertures that at least one of them is yellow, otherwise
         # the positioning will be lost when the first fits file loads and the apertures try to
         # 'snap' to better positions.  Here we remind the user to do so.
-        if self.preserve_apertures:
-            ok = self.yellowAperturePresent()
-            if not ok:
-                # self.showMsg(f'No yellow aperture(s)!!!  Need to add query to confirm')
-                return
+        # if self.preserve_apertures:
+        #     ok = self.yellowAperturePresent()
+        #     if not ok:
+        #         # self.showMsg(f'No yellow aperture(s)!!!  Need to add query to confirm')
+        #         return
 
         options = QFileDialog.Options()
         options |= QFileDialog.ShowDirsOnly
@@ -4797,24 +4843,30 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def readFinderImage(self):
 
-        if self.avi_wcs_folder_in_use or self.fits_folder_in_use:
-            # Look for enhanced-image.fit and if present, open it and return
-            # otherwise let the user find a .bmp file whereever.
-            fullpath = self.folder_dir + r'/enhanced-image.fit'
-            if os.path.isfile(fullpath):
-                self.showMsg(f'Found an enhanced image file')
-                self.openFitsImageFile(fullpath)
-                self.record_target_aperture = True
-                return
+        if not (self.avi_wcs_folder_in_use or self.fits_folder_in_use):
+            self.showMsg(f'"finder" files must reside in a folder')
+            return
+
+        # Give priority to enhanced-image.fit.  Exit if found, otherwise continue on
+        # to look for .bmp files (could have come from RegiStax)
+        # if self.avi_wcs_folder_in_use or self.fits_folder_in_use:
+        #     # Look for enhanced-image.fit and if present, open it and return
+        #     # otherwise let the user find a .bmp file whereever.
+        #     fullpath = self.folder_dir + r'/enhanced-image.fit'
+        #     if os.path.isfile(fullpath):
+        #         self.showMsg(f'Found an enhanced image file')
+        #         self.openFitsImageFile(fullpath)
+        #         self.record_target_aperture = True
+        #         return
 
         options = QFileDialog.Options()
         # options |= QFileDialog.DontUseNativeDialog
 
         self.filename, _ = QFileDialog.getOpenFileName(
             self,  # parent
-            "Select bmp image",  # title for dialog
-            self.settings.value('bmpdir', "./"),  # starting directory
-            "bmp images (*.bmp);; all files (*.*)",
+            "Select enhanced image",  # title for dialog
+            self.folder_dir, #starting directory
+            "finder images (*.bmp enhanced*.fit);; all files (*.*)",
             options=options
         )
 
@@ -4823,18 +4875,41 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if self.filename:
             self.createAVIWCSfolderButton.setEnabled(False)
             self.clearTextBox()
-            self.preserve_apertures = True
+
+            # self.preserve_apertures = True  Removed in version 2.2.6
+
             # remove the apertures (possibly) left from previous file
-            self.clearApertures()
+            # self.clearApertures()  Removed in version 2.2.6
+
+            self.finderFrameBeingDisplayed = True # Added in version 2.2.6
+
             self.apertureId = 0
             self.num_yellow_apertures = 0
             self.levels = []
 
-            dirpath, _ = os.path.split(self.filename)
+            dirpath, basefn= os.path.split(self.filename)
+            rootfn, ext = os.path.splitext(basefn)
+
+            # Now we extract the frame number from the filename
+            rootfn_parts = rootfn.split('-')
+            frame_num_text = rootfn_parts[-1]
+            try:
+                frame_num = int(frame_num_text)
+            except:
+                frame_num = 0
+
+            self.disableUpdateFrameWithTracking = True  # skip all the things that usually happen on a frame change
+            self.currentFrameSpinBox.setValue(frame_num)
+
             self.settings.setValue('bmpdir', dirpath)  # Make dir 'sticky'"
             self.showMsg(f'Opened: {self.filename}')
-            img = cv2.imread(self.filename)
-            self.image = img[:, :, 0]
+
+            # If selected filename ends in .fit we use our FITS reader, otherwise we use cv2 (it handles .bmp)
+            if ext == '.fit':
+                self.openFitsImageFile(self.filename)
+            else:
+                img = cv2.imread(self.filename)
+                self.image = img[:, :, 0]
 
             self.frameView.setImage(self.image)
             height, width = self.image.shape
@@ -5560,34 +5635,34 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def showFrame(self):
 
-        if self.record_target_aperture:
-            self.showMsg(f'We will save the aperture location for enhanced placement')
-            self.record_target_aperture = False
-            app_list = self.getApertureList()
-            if len(app_list) > 1:
-                self.showMsg(f'!!!! Only a single target may be designated !!!!')
-                self.clearApertures()
-            elif len(app_list) == 1:
-                aperture = app_list[0]
-                x0, y0, _, _ = aperture.getBbox()
-                xc = x0 + self.roi_center
-                yc = y0 + self.roi_center
-
-                # Save the aperture coordinates...
-                self.showMsg(f'recorded: x:{xc} y:{yc}')
-                with open(self.folder_dir + r'/target-aperture-xy.txt', 'w') as f:
-                    f.writelines(f'{xc} {yc}')
-
-                # and set the current frame to the proper reference frame
-                frame_file = 'enhanced-image-frame-num.txt'
-                file_found, frame_num = self.getFrameNumberFromFile(frame_file)
-                if file_found:
-                    if frame_num is None:
-                        self.showMsg(f'Content error in: {frame_file}')
-                        return
-                    else:
-                        self.showMsg(f'Set current frame to reference frame {frame_num}')
-                        self.currentFrameSpinBox.setValue(frame_num)
+        # if self.record_target_aperture:
+        #     self.showMsg(f'We will save the aperture location for enhanced placement')
+        #     self.record_target_aperture = False
+        #     app_list = self.getApertureList()
+        #     if len(app_list) > 1:
+        #         self.showMsg(f'!!!! Only a single target may be designated !!!!')
+        #         self.clearApertures()
+        #     elif len(app_list) == 1:
+        #         aperture = app_list[0]
+        #         x0, y0, _, _ = aperture.getBbox()
+        #         xc = x0 + self.roi_center
+        #         yc = y0 + self.roi_center
+        #
+        #         # Save the aperture coordinates...
+        #         self.showMsg(f'recorded: x:{xc} y:{yc}')
+        #         with open(self.folder_dir + r'/target-aperture-xy.txt', 'w') as f:
+        #             f.writelines(f'{xc} {yc}')
+        #
+        #         # and set the current frame to the proper reference frame
+        #         frame_file = 'enhanced-image-frame-num.txt'
+        #         file_found, frame_num = self.getFrameNumberFromFile(frame_file)
+        #         if file_found:
+        #             if frame_num is None:
+        #                 self.showMsg(f'Content error in: {frame_file}')
+        #                 return
+        #             else:
+        #                 self.showMsg(f'Set current frame to reference frame {frame_num}')
+        #                 self.currentFrameSpinBox.setValue(frame_num)
 
         # Local variables used to save and restore the pan/zoom state of the main image
         state = None
@@ -5687,6 +5762,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             else:
                 self.frameView.setImage(self.image)
                 self.createImageFields()
+
+            self.finderFrameBeingDisplayed = False
 
             try:
                 if self.avi_wcs_folder_in_use and self.timestampReadingEnabled:
@@ -5896,9 +5973,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'RA: {star_loc.ra.value}')
             self.showMsg(f'Dec: {star_loc.dec.value}')
 
-        # If a "finder" image has just been loaded, then self.record_target_aperture will be true.
+        # If a "finder" image has just been loaded, then self.finderFrameBeingDisplayed will be true.
         # We use that flag to allow a "finder" image to be submitted to nova.astrometry.net
-        if not self.record_target_aperture:
+        if not self.finderFrameBeingDisplayed:
             self.clearApertures()
             self.showFrame()
 

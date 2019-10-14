@@ -32,6 +32,7 @@ class MeasurementAperture(pg.GraphicsObject):
     sendSetEarlyTrackPathPoint = pyqtSignal('PyQt_PyObject')
     sendSetLateTrackPathPoint = pyqtSignal('PyQt_PyObject')
     sendHotPixelRecord = pyqtSignal('PyQt_PyObject')
+    sendClearTrackPath = pyqtSignal('PyQt_PyObject')
 
     def __init__(self, name, bbox, max_xpos, max_ypos):  # Intialize aperture specified by a bounding box
         self.name = name
@@ -141,11 +142,6 @@ class MeasurementAperture(pg.GraphicsObject):
             self.menu = QtGui.QMenu()
             self.menu.setTitle(self.name + " options..")  # This appears to do nothing
 
-            # show_name = QtGui.QAction(f'Aperture name: {self.name}', self.menu)
-            # self.menu.addAction(show_name)
-            #
-            # self.menu.addSeparator()
-
             setthresh = QtGui.QAction("Set thresh", self.menu)
             setthresh.triggered.connect(self.setThresh)
             self.menu.addAction(setthresh)
@@ -218,6 +214,10 @@ class MeasurementAperture(pg.GraphicsObject):
             late_track_path_point.triggered.connect(self.setLateTrackPathPoint)
             self.menu.addAction(late_track_path_point)
 
+            clear_track_path = QtGui.QAction("Clear track path", self.menu)
+            clear_track_path.triggered.connect(self.clearTrackPath)
+            self.menu.addAction(clear_track_path)
+
             self.menu.addSeparator()
 
             ra_dec = QtGui.QAction("Set RA Dec (from VizieR query results)", self.menu)
@@ -242,6 +242,9 @@ class MeasurementAperture(pg.GraphicsObject):
 
     def setLateTrackPathPoint(self):
         self.sendSetLateTrackPathPoint.emit(self)
+
+    def clearTrackPath(self):
+        self.sendClearTrackPath.emit(self)
 
     # We have to emit this as a message so that the main program can look
     # through the list of apertures all clear any other aperture that has thumbnail_source set
