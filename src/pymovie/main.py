@@ -16,6 +16,10 @@ The apertureEditDialog module was created by typing
    !pyuic5 apertureEditDialog.ui -o apertureEditDialog.py
 in the IPython console while in src/pymovie directory
 
+The aperturesFileTagDialog module was created by typing
+   !pyuic5 aperturesFileTagDialog.ui -o aperturesFileTagDialog.py
+in the IPython console while in src/pymovie directory
+
 The apertureNameDialog module was created by typing
    !pyuic5 apertureNameDialog.ui -o apertureNameDialog.py
 in the IPython console while in src/pymovie directory
@@ -80,6 +84,7 @@ import numpy as np
 from pymovie.checkForNewerVersion import getMostRecentVersionOfPyMovie
 from pymovie.checkForNewerVersion import upgradePyMovie
 from pymovie import starPositionDialog
+from pymovie import aperturesFileTagDialog
 from pymovie import hotPixelDialog
 from pymovie import ocrProfileNameDialog
 from pymovie import selectProfile
@@ -311,6 +316,12 @@ class SelectHotPixelProfileDialog(QDialog, selectHotPixelProfile.Ui_Dialog):
 class StarPositionDialog(QDialog, starPositionDialog.Ui_Dialog):
     def __init__(self):
         super(StarPositionDialog, self).__init__()
+        self.setupUi(self)
+
+
+class AppGroupTagDialog(QDialog, aperturesFileTagDialog.Ui_Dialog):
+    def __init__(self):
+        super(AppGroupTagDialog, self).__init__()
         self.setupUi(self)
 
 
@@ -1301,13 +1312,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
 
     def restoreApertureGroup(self):
-        # Set to the correct frame first (if present).
-        frameFn = self.folder_dir + '/savedFrameNumber.p'
-        if os.path.exists(frameFn):
-            savedFrameNumber = pickle.load(open(frameFn, 'rb'))
-            self.showMsg(f'Saved frame number is: {savedFrameNumber}')
-            self.currentFrameSpinBox.setValue(savedFrameNumber)
-        else: # legacy file names
+
+        # Check the form of saved aperture filenames to see if we need to deal with legacy filenames
+        saved_aperture_groups = glob.glob(self.folder_dir + '/savedApertures*.p')
+
+        if not saved_aperture_groups:
+
+            # We have no new format aperture groups, so process as old
             frameFn = self.folder_dir + '/markedFrameNumber.p'
             if os.path.exists(frameFn):
                 savedFrameNumber = pickle.load(open(frameFn, 'rb'))
@@ -1316,14 +1327,105 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             else:
                 return
 
-        # Erase state saved by a 'Mark'
-        self.savedStateApertures = []
-        self.transportReturnToMark.setEnabled(False)
+            # Erase state saved by a 'Mark'
+            self.savedStateApertures = []
+            self.transportReturnToMark.setEnabled(False)
 
-        tpathFilename = self.folder_dir + '/trackingPath.p'
-        if os.path.exists(tpathFilename):
+            self.clearApertures()
+
+            tpathFilename = self.folder_dir + '/trackingPath.p'
+            if os.path.exists(tpathFilename):
+                tpath_tuple = pickle.load(open(tpathFilename, 'rb'))
+
+                self.tpathEarlyX = tpath_tuple[0]
+                self.tpathEarlyY = tpath_tuple[1]
+                self.tpathEarlyFrame = tpath_tuple[2]
+                self.tpathLateX = tpath_tuple[3]
+                self.tpathLateY = tpath_tuple[4]
+                self.tpathLateFrame = tpath_tuple[5]
+                self.tpathXa = tpath_tuple[6]
+                self.tpathXb = tpath_tuple[7]
+                self.tpathYa = tpath_tuple[8]
+                self.tpathYb = tpath_tuple[9]
+                self.tpathSpecified = True
+                self.showTrackingPathParameters()
+
+            # Force frame view
+            self.viewFieldsCheckBox.setChecked(False)
+
+            # Remove all apertures that have been already placed (particularly the target
+            # aperture that is automatically placed when a WCS solution was present)
+            self.clearApertures()
+
+            aperturesFn = self.folder_dir + '/markedApertures.p'
+            if os.path.exists(aperturesFn):
+                savedApertureDicts = pickle.load(open(aperturesFn, "rb"))
+                self.showMsg(f'Num saved apertures: {len(savedApertureDicts)}')
+            else:
+                self.showMsg(f'Failed to find markedApertures.p file.')
+                return
+        else:
+            # Show file select dialog for selection of appropriate saved aperture group
+            options = QFileDialog.Options()
+            # options |= QFileDialog.DontUseNativeDialog
+
+            filename, _ = QFileDialog.getOpenFileName(
+                self,  # parent
+                "Select aperture group",  # title for dialog
+                self.folder_dir,  # starting directory
+                "saved aperture groups (savedApertures*.p)",
+                options=options
+            )
+
+            QtGui.QGuiApplication.processEvents()
+
+            if not filename:
+                return
+
+            # Erase state saved by a 'Mark'
+            self.savedStateApertures = []
+            self.transportReturnToMark.setEnabled(False)
+
+            self.clearApertures()
+
+            dirpath, basefn = os.path.split(filename)
+            rootfn, ext = os.path.splitext(basefn)
+
+            # Now we extract the id from the filename
+            rootfn_parts = rootfn.split('-')
+            app_group_id = rootfn_parts[-1]
+
+            if app_group_id == 'savedApertures':
+                app_group_id = '<none found>'
+
+            self.showMsg(f'file selected: {basefn}  aperture group id: {app_group_id}')
+
+            if app_group_id == '<none found>':
+                frameFn = self.folder_dir + '/savedFrameNumber.p'
+                tpathFilename = self.folder_dir + '/trackingPath.p'
+                aperturesFn = self.folder_dir + '/savedApertures.p'
+            else:
+                frameFn = self.folder_dir + f'/savedFrameNumber-{app_group_id}.p'
+                tpathFilename = self.folder_dir + f'/trackingPath-{app_group_id}.p'
+                aperturesFn = self.folder_dir + f'/savedApertures-{app_group_id}.p'
+
+            if not os.path.exists(frameFn):
+                self.showMsg(f'Failed to find {frameFn} file.')
+                return
+
+            if not os.path.exists(aperturesFn):
+                self.showMsg(f'Failed to find {aperturesFn} file.')
+                return
+
+            if not os.path.exists(tpathFilename):
+                self.showMsg(f'Failed to find {tpathFilename} file.')
+                return
+
+            savedFrameNumber = pickle.load(open(frameFn, 'rb'))
+            self.showMsg(f'Saved frame number is: {savedFrameNumber}')
+            self.currentFrameSpinBox.setValue(savedFrameNumber)
+
             tpath_tuple = pickle.load(open(tpathFilename, 'rb'))
-
 
             self.tpathEarlyX = tpath_tuple[0]
             self.tpathEarlyY = tpath_tuple[1]
@@ -1338,26 +1440,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.tpathSpecified = True
             self.showTrackingPathParameters()
 
-        # Force frame view
-        self.viewFieldsCheckBox.setChecked(False)
+            # Force frame view
+            self.viewFieldsCheckBox.setChecked(False)
 
-        # Remove all apertures that have been already placed (particularly the target
-        # aperture that is automatically placed when a WCS solution was present)
-        self.clearApertures()
-
-
-        # Then place all the apertures with complete state
-        aperturesFn = self.folder_dir + '/savedApertures.p'
-        if os.path.exists(aperturesFn):
             savedApertureDicts = pickle.load(open(aperturesFn, "rb"))
             self.showMsg(f'Num saved apertures: {len(savedApertureDicts)}')
-        else: # legacy file names
-            aperturesFn = self.folder_dir + '/markedApertures.p'
-            if os.path.exists(aperturesFn):
-                savedApertureDicts = pickle.load(open(aperturesFn, "rb"))
-                self.showMsg(f'Num saved apertures: {len(savedApertureDicts)}')
 
-
+        # Then place all the apertures with complete state
         for dict in savedApertureDicts:
             try:
                 x0 = dict['x0']
@@ -1376,8 +1465,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     self.roiComboBox.setCurrentIndex(3)
                 else:
                     self.showMsg(f'Unexpected aperture size of {xsize} in restored aperture group')
-
-
 
                 bbox = (x0, y0, xsize, ysize)
                 name = dict['name']
@@ -1423,20 +1510,42 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.showMsg(f'While restoring aperture constellation exception: {e}')
 
     def saveApertureGroup(self):
+
         # We need to have the apertures visible before we can save them
         if self.viewFieldsCheckBox.isChecked():
             self.viewFieldsCheckBox.setChecked(False)
         self.savedStateApertures = self.getApertureList()
+
+        # ... and we need some apertures to save
+        if not self.savedStateApertures:
+            self.showMsg(f'There are no apertures to save.')
+            return
+
+        # Ask for the tag to use to identify this aperture group
+        tagDialog = AppGroupTagDialog()
+        result = tagDialog.exec_()
+        if not result == QDialog.Accepted:
+            self.showMsg(f'Operation cancelled.')
+            return
+
+        tag = tagDialog.apertureGroupTagEdit.text().strip()
+        if not tag:
+            self.showMsg(f'Tag for saved aperture group cannot be blank.')
+            return
+
+        tag = tag.replace('-', ' ')
+        self.showMsg(f'tag given: {tag}')
+
         savedApertureDicts = []
         for aperture in self.savedStateApertures:
             dict = self.composeApertureStateDictionary(aperture)
             savedApertureDicts.append(dict)
 
         # Pickle the saved aperture dictionaries for use during opening of file/folder
-        pickle.dump(savedApertureDicts, open(self.folder_dir + '/savedApertures.p', "wb"))
+        pickle.dump(savedApertureDicts, open(self.folder_dir + f'/savedApertures-{tag}.p', "wb"))
 
         self.savedStateFrameNumber = self.currentFrameSpinBox.value()
-        pickle.dump(self.savedStateFrameNumber, open(self.folder_dir + '/savedFrameNumber.p', "wb"))
+        pickle.dump(self.savedStateFrameNumber, open(self.folder_dir + f'/savedFrameNumber-{tag}.p', "wb"))
 
         if self.tpathSpecified:
             tpath_tuple = (
@@ -1451,9 +1560,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.tpathYa,
                 self.tpathYb
             )
-            pickle.dump(tpath_tuple, open(self.folder_dir + '/trackingPath.p', "wb"))
+            pickle.dump(tpath_tuple, open(self.folder_dir + f'/trackingPath-{tag}.p', "wb"))
             self.showMsg(f'Current aperture group, frame number, and tracking path saved.')
         else:
+            try:
+                os.remove(self.folder_dir + f'/trackingPath-{tag}.p')
+            except:
+                pass
             self.showMsg(f'Current aperture group and frame number saved.')
 
     def saveCurrentState(self):
@@ -4794,22 +4907,21 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             self.processTargetAperturePlacementFiles()
 
-            # Check for the presence of a 'saved aperture group' and enable the Restore group
-            # button accordingly
-            file1 = self.folder_dir + '/savedApertures.p'
-            file2 = self.folder_dir + '/savedFrameNumber.p'
+            self.checkForSavedApertureGroups()
 
-            if os.path.exists(file1) and os.path.exists(file2):
-                self.restoreApertureState.setEnabled(True)
+    def checkForSavedApertureGroups(self):
 
-            # Check for the presence of a 'saved aperture group' and enable the Restore group
-            # button accordingly
-            file1 = self.folder_dir + '/markedApertures.p'
-            file2 = self.folder_dir + '/markedFrameNumber.p'
+        saved_aperture_groups = glob.glob(self.folder_dir + '/savedApertures*.p')
 
-            if os.path.exists(file1) and os.path.exists(file2):
-                self.restoreApertureState.setEnabled(True)
+        if saved_aperture_groups:
+            self.restoreApertureState.setEnabled(True)
+            return
 
+        saved_aperture_groups = glob.glob(self.folder_dir + '/markedApertures.p')
+
+        if saved_aperture_groups:
+            self.restoreApertureState.setEnabled(True)
+            return
 
     def showMsgDialog(self, msg):
         msg_box = QMessageBox()
@@ -4846,18 +4958,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if not (self.avi_wcs_folder_in_use or self.fits_folder_in_use):
             self.showMsg(f'"finder" files must reside in a folder')
             return
-
-        # Give priority to enhanced-image.fit.  Exit if found, otherwise continue on
-        # to look for .bmp files (could have come from RegiStax)
-        # if self.avi_wcs_folder_in_use or self.fits_folder_in_use:
-        #     # Look for enhanced-image.fit and if present, open it and return
-        #     # otherwise let the user find a .bmp file whereever.
-        #     fullpath = self.folder_dir + r'/enhanced-image.fit'
-        #     if os.path.isfile(fullpath):
-        #         self.showMsg(f'Found an enhanced image file')
-        #         self.openFitsImageFile(fullpath)
-        #         self.record_target_aperture = True
-        #         return
 
         options = QFileDialog.Options()
         # options |= QFileDialog.DontUseNativeDialog
@@ -5360,19 +5460,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
                     self.processTargetAperturePlacementFiles()
 
-                    # Check for the presence of a 'saved aperture group' and enable the Restore group
-                    # button accordingly
-                    file1 = self.folder_dir + '/savedApertures.p'
-                    file2 = self.folder_dir + '/savedFrameNumber.p'
-
-                    if os.path.exists(file1) and os.path.exists(file2):
-                        self.restoreApertureState.setEnabled(True)
-
-                    file1 = self.folder_dir + '/markedApertures.p'
-                    file2 = self.folder_dir + '/markedFrameNumber.p'
-
-                    if os.path.exists(file1) and os.path.exists(file2):
-                        self.restoreApertureState.setEnabled(True)
+                    self.checkForSavedApertureGroups()
 
                     self.startTimestampReading()
                     self.showFrame()  # So that we get the first frame timestamp (if possible)
