@@ -579,6 +579,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.finderFrameBeingDisplayed = False
 
+        self.stackXtrack = []
+        self.stackYtrack = []
+        self.stackFrame = []
+
         # Start: Tracking path variables ...
         self.tpathEarlyX = None
         self.tpathEarlyY = None
@@ -1584,7 +1588,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.showMsg(f'Configuration marked.')
 
     def restoreSavedState(self):
-        # We should be showing full frame before adding back in the save apertures
+        # We should be showing full frame before adding back in the saved apertures
         if self.viewFieldsCheckBox.isChecked():
             self.viewFieldsCheckBox.setChecked(False)
         self.clearOcrBoxes()
@@ -2725,13 +2729,51 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if bkg_thresh is None:
             return
 
-        if self.tpathSpecified:
-            dx_dframe = self.tpathXa
-            dy_dframe = self.tpathYa
-            self.showMsg(f'Frame stacking will be controlled by tracking path.')
+        stack_aperture_present = False
+        app_list = self.getApertureList()
+        for app in app_list:
+            if app.name.strip().startswith('stack'):
+                self.stackXtrack = []
+                self.stackYtrack = []
+                self.stackFrame = []
+                self.showMsg(f'Frame stacking will be controlled from the "stack" aperture')
+                stack_aperture_present = True
+                dx_dframe = None
+                dy_dframe = None
+
+                saved_stop_frame = self.stopAtFrameSpinBox.value()
+                saved_current_frame = self.currentFrameSpinBox.value()
+
+                self.stopAtFrameSpinBox.setValue(last_frame)
+
+                # if self.saveStateNeeded:
+                self.saveStateNeeded = False
+                self.saveCurrentState()
+                self.analysisRequested = True
+                self.analysisPaused = False
+                self.analysisInProgress = False
+                self.setTransportButtonEnableState(False)
+                self.transportPause.setEnabled(True)
+                # self.applyHotPixelRemovalCheckBox.setChecked(False)
+                # self.alwaysEraseHotPixels = False
+                self.autoRun()
+                self.stopAtFrameSpinBox.setValue(saved_stop_frame)
+                self.currentFrameSpinBox.setValue(saved_current_frame)
+
+        # We treat a stack aperture present as overriding a tracking path
+        if not stack_aperture_present:
+            if self.tpathSpecified:
+                dx_dframe = self.tpathXa
+                dy_dframe = self.tpathYa
+                self.showMsg(f'Frame stacking will be controlled by tracking path.')
+            else:
+                dx_dframe = None
+                dy_dframe = None
+
+        if self.stackXtrack:
+            shift_dict = {'x': self.stackXtrack, 'y': self.stackYtrack, 'frame': self.stackFrame}
         else:
-            dx_dframe = None
-            dy_dframe = None
+            shift_dict = None
 
         stacker.frameStacker(
             self.showMsg, self.stackerProgressBar, QtGui.QGuiApplication.processEvents,
@@ -2743,7 +2785,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             avi_location=self.avi_location, out_dir_path=self.folder_dir, bkg_threshold=bkg_thresh,
             hot_pixel_erase=self.applyHotPixelErasureToImg,
             delta_x=dx_dframe,
-            delta_y=dy_dframe
+            delta_y=dy_dframe,
+            shift_dict=shift_dict
         )
 
         # Now that we're back, if we got a new enhanced-image.fit, display it.
@@ -2756,6 +2799,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.openFitsImageFile(fullpath)
             self.finderFrameBeingDisplayed = True
             # self.readFinderImage()
+            self.restoreSavedState()
 
     def getSerFrame(self, frameNum):
         bytes_per_pixel = self.ser_meta_data['BytesPerPixel']
@@ -3112,7 +3156,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         result = appNamerThing.exec_()
 
         if result == QDialog.Accepted:
-            aperture.name = appNamerThing.apertureNameEdit.text()
+            aperture.name = appNamerThing.apertureNameEdit.text().strip()
 
     def setRoiFromComboBox(self):
         self.clearApertures()
@@ -3331,6 +3375,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             app.data = []
             app.last_theta = None
         self.showMsg(f'All aperture data has been removed.')
+        self.stackXtrack = []
+        self.stackYtrack = []
+        self.stackFrame = []
 
     def prepareAutorunPyoteFile(self, csv_file):
         with open(self.folder_dir + '/auto_run_pyote.py', "w") as f:
@@ -4375,6 +4422,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                             aperture.addData(self.field2_data)
                         else:
                             aperture.addData(data)
+                            if aperture.name.strip().startswith('stack'):
+                                self.stackXtrack.append(aperture.xc)
+                                self.stackYtrack.append(aperture.yc)
+                                self.stackFrame.append(self.currentFrameSpinBox.value())
+
                 return
 
         if self.num_yellow_apertures == 1:
@@ -4405,6 +4457,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                         aperture.addData(self.field2_data)
                     else:
                         aperture.addData(data)
+                    if aperture.name.strip().startswith('stack'):
+                        self.stackXtrack.append(int(round(aperture.xc)))
+                        self.stackYtrack.append(int(round(aperture.yc)))
+                        self.stackFrame.append(self.currentFrameSpinBox.value())
                 except Exception as e:
                     self.showMsg(f'while attempting to addData: {repr(e)}')
 
@@ -4941,17 +4997,17 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
     def openFitsImageFile(self, fpath):
         self.image = pyfits.getdata(fpath).astype('int16', casting='unsafe')
         self.frameView.setImage(self.image)
-        msg_box = QMessageBox()
-        msg_box.setText(f'Always use a single static (no-snap) aperture to designate the target!'
-                        f'\n\nThis technique forces the aperture to use a default mask (by setting '
-                        f'a very high mskth) which '
-                        f'means that this aperture will not move (snap) when you switch back '
-                        f'to the avi.'
-                        f'\n\nThe selected location will automatically be saved when a '
-                        f'frame change is made that returns the view to the avi.'
-                        f'\n\nThe avi will be automatically positioned to the frame '
-                        f'that was used as the reference frame for the enhanced image stack.')
-        msg_box.exec()
+        # msg_box = QMessageBox()
+        # msg_box.setText(f'Always use a single static (no-snap) aperture to designate the target!'
+        #                 f'\n\nThis technique forces the aperture to use a default mask (by setting '
+        #                 f'a very high mskth) which '
+        #                 f'means that this aperture will not move (snap) when you switch back '
+        #                 f'to the avi.'
+        #                 f'\n\nThe selected location will automatically be saved when a '
+        #                 f'frame change is made that returns the view to the avi.'
+        #                 f'\n\nThe avi will be automatically positioned to the frame '
+        #                 f'that was used as the reference frame for the enhanced image stack.')
+        # msg_box.exec()
 
     def readFinderImage(self):
 

@@ -308,4 +308,4 @@ class MeasurementAperture(pg.GraphicsObject):
         result = appNamerThing.exec_()
 
         if result == QDialog.Accepted:
-            self.name = appNamerThing.apertureNameEdit.text()
+            self.name = appNamerThing.apertureNameEdit.text().strip()

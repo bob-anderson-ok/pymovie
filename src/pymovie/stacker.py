@@ -29,7 +29,7 @@ def asinhScale(img, limcut = 0):  # img needs to be float32 type
 def frameStacker(pr, progress_bar, event_process,
                  first_frame, last_frame, timestamp_trim_top, timestamp_trim_bottom,
                  fitsReader, serReader,
-                 avi_location, out_dir_path, bkg_threshold, hot_pixel_erase, delta_x, delta_y):
+                 avi_location, out_dir_path, bkg_threshold, hot_pixel_erase, delta_x, delta_y, shift_dict):
     # fitsReader is self.getFitsFrame()
     # serReader is self.getSerFrame()
     # pr is self.showMsg() provided by the caller
@@ -82,13 +82,6 @@ def frameStacker(pr, progress_bar, event_process,
 
             if trim_top:
                 image = image[trim_top:, :]
-            # if trim is None or trim == 0:
-            #     image = frame[:, :].astype('float32')
-            # else:
-            #     if trim > 0:
-            #         image = frame[0:-trim, :].astype('float32')
-            #     else:
-            #         image = frame[-trim:, :].astype('float32')
 
         except Exception as e:
             pr(f'Problem reading SER file: {e}')
@@ -97,14 +90,15 @@ def frameStacker(pr, progress_bar, event_process,
         return image
 
     def read_avi_frame(frame_to_read, trim_top=0, trim_bottom=0):
+        # roi = [xleft, xright, ytop, ybottom]
         try:
             cap.set(cv2.CAP_PROP_POS_FRAMES, frame_to_read)
             status, frame = cap.read()
 
-            hot_pixel_erase(frame)
-
             if len(frame.shape) == 3:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+            hot_pixel_erase(frame)
 
             image = frame[:, :].astype('float32')
 
@@ -114,11 +108,6 @@ def frameStacker(pr, progress_bar, event_process,
             if trim_top:
                 image = image[trim_top:, :]
 
-            # if trim is None or trim == 0:
-            #     image = frame[:, :, 0].astype('float32')
-            # else:
-            #     image = frame[0:-trim, :, 0].astype('float32')
-            # plt.imshow(asinhScale(image), cmap='gray')
         except Exception as e:
             pr(f'Problem reading avi file: {e}')
         if status:
@@ -136,6 +125,26 @@ def frameStacker(pr, progress_bar, event_process,
             pr(f'...file opened just fine.')
             return cap
 
+    if shift_dict:
+        xc = shift_dict['x']
+        yc = shift_dict['y']
+        frame = shift_dict['frame']
+    else:
+        xc = []
+        yc = []
+        frame = []
+
+    if shift_dict:
+        err = False
+        if not first_frame == frame[0]:
+            pr(f'ERROR(not equal): frame[0]: {frame[0]}  first_frame: {first_frame}')
+            err = True
+        if not last_frame == frame[-1]:
+            pr(f'ERROR(not equal): frame[-1]: {frame[-1]}  last_frame: {last_frame}')
+            err = True
+        if err:
+            return
+
     if fitsReader is None and serReader is None:
         cap = openAviReader(avi_location=avi_location)
         if cap is None:
@@ -151,6 +160,10 @@ def frameStacker(pr, progress_bar, event_process,
         inimage = read_ser_frame(first_frame)
     else:
         inimage = read_avi_frame(first_frame)
+
+    if shift_dict:
+        first_frame_row = yc[0]
+        first_frame_col = xc[0]
 
     height, width = inimage.shape
     pr(f'image shape: {width} x {height}')
@@ -179,13 +192,15 @@ def frameStacker(pr, progress_bar, event_process,
 
     image_sum = inimage[:,:]
 
-    frames_skipped = 0
+    # frames_skipped = 0
 
     # g1 is our reference image transform
     # g1 = np.fft.fftshift(np.fft.fft2(inimage))
-    ret, th_inimage = cv2.threshold(inimage, bkg_threshold, 0, cv2.THRESH_TOZERO)
-    g1 = np.fft.fftshift(np.fft.fft2(th_inimage))
+    if not shift_dict:
+        ret, th_inimage = cv2.threshold(inimage, bkg_threshold, 0, cv2.THRESH_TOZERO)
+        g1 = np.fft.fftshift(np.fft.fft2(th_inimage))
 
+    k = 0
     while next_frame <= last_frame:
         if fitsReader:
             inimage = read_fits_frame(next_frame, trim_top=timestamp_trim_top, trim_bottom=timestamp_trim_bottom)
@@ -197,6 +212,7 @@ def frameStacker(pr, progress_bar, event_process,
         delta_frame = next_frame - first_frame
 
         next_frame += 1
+        k += 1
 
         # Calculate progress [1..100]
         fraction_done = (next_frame - first_frame) / (last_frame - first_frame)
@@ -205,24 +221,28 @@ def frameStacker(pr, progress_bar, event_process,
 
         if delta_x is None:
             # g2 = np.fft.fftshift(np.fft.fft2(inimage))
-            ret, th_inimage = cv2.threshold(inimage, bkg_threshold, 0, cv2.THRESH_TOZERO)
-            g2 = np.fft.fftshift(np.fft.fft2(th_inimage))
+            if not shift_dict:
+                ret, th_inimage = cv2.threshold(inimage, bkg_threshold, 0, cv2.THRESH_TOZERO)
+                g2 = np.fft.fftshift(np.fft.fft2(th_inimage))
 
-            g2conj = g2.conj()
+                g2conj = g2.conj()
 
-            R = g1 * g2conj / abs(g1 * g2conj)
+                R = g1 * g2conj / abs(g1 * g2conj)
 
-            r = np.fft.fftshift(np.fft.ifft2(R))
+                r = np.fft.fftshift(np.fft.ifft2(R))
 
-            mag_r = abs(r * r.conj())  # mag_r is a matrix of positive reals (not complex)
+                mag_r = abs(r * r.conj())  # mag_r is a matrix of positive reals (not complex)
 
-            mag_r_max = mag_r.max()
+                # mag_r_max = mag_r.max()
 
-            max_row, max_col = np.unravel_index(mag_r.argmax(), mag_r.shape)
+                max_row, max_col = np.unravel_index(mag_r.argmax(), mag_r.shape)
 
-            # print(mag_r.shape, max_row, max_col)
-            rows_to_roll_to_center = max_row - int(mag_r.shape[0] / 2)
-            cols_to_roll_to_center = max_col - int(mag_r.shape[1] / 2)
+                # print(mag_r.shape, max_row, max_col)
+                rows_to_roll_to_center = max_row - int(mag_r.shape[0] / 2)
+                cols_to_roll_to_center = max_col - int(mag_r.shape[1] / 2)
+            else:
+                rows_to_roll_to_center = yc[0] - yc[k]
+                cols_to_roll_to_center = xc[0] - xc[k]
 
         if not delta_x is None:
             rows_to_roll_to_center = round(-delta_y * delta_frame)
@@ -230,7 +250,6 @@ def frameStacker(pr, progress_bar, event_process,
 
         pr(f'row-shift:{rows_to_roll_to_center:4d}  col-shift:{cols_to_roll_to_center:4d}  frame: {next_frame-1}',
             blankLine=False)
-
 
         # Center the image
         inimage = np.roll(inimage, rows_to_roll_to_center, axis=0)
@@ -284,7 +303,6 @@ def frameStacker(pr, progress_bar, event_process,
     outhdr['DATE'] = file_time
     outhdr['FILE'] = avi_location
     outhdr['COMMENT'] = f'{last_frame - first_frame + 1} frames were stacked'
-    outhdr['COMMENT'] = f'{frames_skipped} frames were not included in the stack'
     outhdr['COMMENT'] = f'Initial frame number: {first_frame}'
     outhdr['COMMENT'] = f'Final frame number: {last_frame}'
 
