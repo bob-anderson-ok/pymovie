@@ -1634,7 +1634,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.analysisPaused = True
         self.playPaused = True
         self.analysisRequested = False
-        self.setTransportButtonEnableState(True)
+        self.setTransportButtonsEnableState(True)
 
     def startAnalysis(self):
         if self.saveStateNeeded:
@@ -1642,7 +1642,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.saveCurrentState()
         self.analysisRequested = True
         self.analysisPaused = False
-        self.setTransportButtonEnableState(False)
+        self.setTransportButtonsEnableState(False)
         self.transportPause.setEnabled(True)
         self.applyHotPixelRemovalCheckBox.setChecked(False)
         self.alwaysEraseHotPixels = False
@@ -2710,11 +2710,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         except FileNotFoundError:
             pass
 
-        # try:
-        #     os.remove(self.folder_dir + r'/enhanced-image-frame-num.txt')
-        # except FileNotFoundError:
-        #     pass
-
         if self.fits_folder_in_use:
             fitsReader = self.getFitsFrame
         else:
@@ -2746,22 +2741,26 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
                 self.stopAtFrameSpinBox.setValue(last_frame)
 
-                # if self.saveStateNeeded:
                 self.saveStateNeeded = False
                 self.saveCurrentState()
+
+                self.setTransportButtonsEnableState(False)
+                self.transportPause.setEnabled(True)
+
                 self.analysisRequested = True
                 self.analysisPaused = False
                 self.analysisInProgress = False
-                self.setTransportButtonEnableState(False)
-                self.transportPause.setEnabled(True)
-                # self.applyHotPixelRemovalCheckBox.setChecked(False)
-                # self.alwaysEraseHotPixels = False
                 self.autoRun()
+
                 self.stopAtFrameSpinBox.setValue(saved_stop_frame)
                 self.currentFrameSpinBox.setValue(saved_current_frame)
 
         # We treat a stack aperture present as overriding a tracking path
         if not stack_aperture_present:
+            # Get rid of possible previous data
+            self.stackXtrack = []
+            self.stackYtrack = []
+            self.stackFrame = []
             if self.tpathSpecified:
                 dx_dframe = self.tpathXa
                 dy_dframe = self.tpathYa
@@ -2798,7 +2797,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.clearApertures()
             self.openFitsImageFile(fullpath)
             self.finderFrameBeingDisplayed = True
-            # self.readFinderImage()
             self.restoreSavedState()
 
     def getSerFrame(self, frameNum):
@@ -3057,14 +3055,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.viewFieldsCheckBox.setEnabled(False)
         self.currentFrameSpinBox.setEnabled(False)
 
-        self.setTransportButtonEnableState(False)
+        self.setTransportButtonsEnableState(False)
         self.transportReturnToMark.setEnabled(False)
 
         self.processAsFieldsCheckBox.setEnabled(False)
         self.topFieldFirstRadioButton.setEnabled(False)
         self.bottomFieldFirstRadioButton.setEnabled(False)
 
-    def setTransportButtonEnableState(self, state):
+    def setTransportButtonsEnableState(self, state):
         self.transportMaxLeft.setEnabled(state)
         self.transportBigLeft.setEnabled(state)
         self.transportSmallLeft.setEnabled(state)
@@ -3082,7 +3080,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def enableControlsForAviData(self):
 
-        self.setTransportButtonEnableState(True)
+        self.setTransportButtonsEnableState(True)
         self.transportReturnToMark.setEnabled(False)
 
         self.saveApertureState.setEnabled(True)
@@ -3095,7 +3093,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def enableControlsForFitsData(self):
 
-        self.setTransportButtonEnableState(True)
+        self.setTransportButtonsEnableState(True)
         self.transportReturnToMark.setEnabled(False)
 
         self.saveApertureState.setEnabled(True)
@@ -3269,7 +3267,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         #             app.theta = None  # We don't use this value during tracking
 
     def autoPlayLeft(self):
-        self.setTransportButtonEnableState(False)
+        self.setTransportButtonsEnableState(False)
         self.transportPause.setEnabled(True)
         self.transportReturnToMark.setEnabled(False)
 
@@ -3280,7 +3278,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         while not self.playPaused:
             if currentFrame == 0:
                 self.playPaused = True
-                self.setTransportButtonEnableState(True)
+                self.setTransportButtonsEnableState(True)
                 mark_available = not self.savedStateFrameNumber is None
                 self.transportReturnToMark.setEnabled(mark_available)
                 return
@@ -3289,12 +3287,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.currentFrameSpinBox.setValue(currentFrame)
                 QtGui.QGuiApplication.processEvents()
 
-        self.setTransportButtonEnableState(True)
+        self.setTransportButtonsEnableState(True)
         mark_available = not self.savedStateFrameNumber is None
         self.transportReturnToMark.setEnabled(mark_available)
 
     def autoPlayRight(self):
-        self.setTransportButtonEnableState(False)
+        self.setTransportButtonsEnableState(False)
         self.transportPause.setEnabled(True)
         self.transportReturnToMark.setEnabled(False)
 
@@ -3305,7 +3303,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         while not self.playPaused:
             if currentFrame == lastFrame:
                 self.playPaused = True
-                self.setTransportButtonEnableState(True)
+                self.setTransportButtonsEnableState(True)
                 mark_available = not self.savedStateFrameNumber is None
                 self.transportReturnToMark.setEnabled(mark_available)
                 return
@@ -3314,7 +3312,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.currentFrameSpinBox.setValue(currentFrame)
                 QtGui.QGuiApplication.processEvents()
 
-        self.setTransportButtonEnableState(True)
+        self.setTransportButtonsEnableState(True)
         mark_available = not self.savedStateFrameNumber is None
         self.transportReturnToMark.setEnabled(mark_available)
 
@@ -3353,7 +3351,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 if currentFrame == lastFrame + stop_offset:
                     self.analysisPaused = True
                     self.analysisRequested = False
-                    self.setTransportButtonEnableState(True)
+                    self.setTransportButtonsEnableState(True)
                     mark_available = not self.savedStateFrameNumber is None
                     self.transportReturnToMark.setEnabled(mark_available)
                     return
