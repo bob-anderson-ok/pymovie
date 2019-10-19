@@ -12,7 +12,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
-        Dialog.resize(400, 102)
+        Dialog.resize(600, 102)
         Dialog.setMinimumSize(QtCore.QSize(400, 0))
         Dialog.setMaximumSize(QtCore.QSize(16777215, 16777215))
         self.gridLayout = QtWidgets.QGridLayout(Dialog)
@@ -48,7 +48,7 @@ class Ui_Dialog(object):
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate("Dialog", "Enter \'tag\' to identify Saved Aperture Group"))
-        self.label.setText(_translate("Dialog", "Enter tag string ..."))
+        Dialog.setWindowTitle(_translate("Dialog", "Enter id to append to aperture group files"))
+        self.label.setText(_translate("Dialog", "id to append (creates savedApertures-id.p, etc)"))
 
 

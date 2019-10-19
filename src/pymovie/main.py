@@ -475,6 +475,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.gammaLabel.installEventFilter(self)
 
+        self.twoPointHelpButton.installEventFilter(self)
+
         self.roiComboBox.currentIndexChanged.connect(self.setRoiFromComboBox)
         self.roiComboBox.installEventFilter(self)
         self.selectApertureSizeLabel.installEventFilter(self)
@@ -1421,28 +1423,25 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.showMsg(f'Failed to find {aperturesFn} file.')
                 return
 
-            if not os.path.exists(tpathFilename):
-                self.showMsg(f'Failed to find {tpathFilename} file.')
-                return
-
             savedFrameNumber = pickle.load(open(frameFn, 'rb'))
             self.showMsg(f'Saved frame number is: {savedFrameNumber}')
             self.currentFrameSpinBox.setValue(savedFrameNumber)
 
-            tpath_tuple = pickle.load(open(tpathFilename, 'rb'))
+            if os.path.exists(tpathFilename):
+                tpath_tuple = pickle.load(open(tpathFilename, 'rb'))
 
-            self.tpathEarlyX = tpath_tuple[0]
-            self.tpathEarlyY = tpath_tuple[1]
-            self.tpathEarlyFrame = tpath_tuple[2]
-            self.tpathLateX = tpath_tuple[3]
-            self.tpathLateY = tpath_tuple[4]
-            self.tpathLateFrame = tpath_tuple[5]
-            self.tpathXa = tpath_tuple[6]
-            self.tpathXb = tpath_tuple[7]
-            self.tpathYa = tpath_tuple[8]
-            self.tpathYb = tpath_tuple[9]
-            self.tpathSpecified = True
-            self.showTrackingPathParameters()
+                self.tpathEarlyX = tpath_tuple[0]
+                self.tpathEarlyY = tpath_tuple[1]
+                self.tpathEarlyFrame = tpath_tuple[2]
+                self.tpathLateX = tpath_tuple[3]
+                self.tpathLateY = tpath_tuple[4]
+                self.tpathLateFrame = tpath_tuple[5]
+                self.tpathXa = tpath_tuple[6]
+                self.tpathXb = tpath_tuple[7]
+                self.tpathYa = tpath_tuple[8]
+                self.tpathYb = tpath_tuple[9]
+                self.tpathSpecified = True
+                self.showTrackingPathParameters()
 
             # Force frame view
             self.viewFieldsCheckBox.setChecked(False)

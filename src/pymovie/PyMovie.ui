@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1539</width>
-    <height>876</height>
+    <width>1923</width>
+    <height>1026</height>
    </rect>
   </property>
   <property name="font">
@@ -39,11 +39,33 @@
           <number>0</number>
          </property>
          <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_10" stretch="2,2,0">
+          <layout class="QHBoxLayout" name="horizontalLayout_10" stretch="0,2,2,0">
+           <item>
+            <widget class="QPushButton" name="infoButton">
+             <property name="minimumSize">
+              <size>
+               <width>40</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking on this button will open a pdf file that provides version history. The most recent version change description will be at the top and so relevant for the version that is currently running.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>Version Info</string>
+             </property>
+            </widget>
+           </item>
            <item>
             <widget class="QPushButton" name="selectAviWcsFolderButton">
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;An AVI-WCS folder is a container for a single observation video and its related files. As such, there must be only a single .avi file in the folder either explicitly, or by shortcut (Windows) or alias (MacOS). This requirement is enforced.&lt;/p&gt;&lt;p&gt;This folder also holds a simple text file that contains the Ra and DEC coordinates of the occulted star, filled in by the user through a dialog box that appears when this position information file is found missing.&lt;/p&gt;&lt;p&gt;This folder is also where the WCS calibration data will be placed if the user opts for calibrating frame 0 by making an on-line submission to astrometry.net.&lt;/p&gt;&lt;p&gt;This folder is also the default location for storing csv files and copies of the last lightcurve plots.&lt;/p&gt;&lt;p&gt;Note: avi files are read using OpenCV which employs ffmpeg to do the actual file reading. As a result, a wide range of avi codecs are standardly available.&lt;/p&gt;&lt;p&gt;In particular, avi files using Lagarith compression will be read without problem.&lt;/p&gt;&lt;p&gt;There is a remote possibility that an avi was recorded with an unusual codec and so fail to be read by PyMovie. In that case, you will need to use an external file conversion program that can decode the file as recorded and rewrite it using a more common codec.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;An AVI/SER-WCS folder is a container for a single observation video and its related files. As such, there must be only a single .avi file in the folder either explicitly, or by shortcut (Windows) or alias (MacOS). This requirement is enforced.&lt;/p&gt;&lt;p&gt;This folder also holds a simple text file that contains the Ra and DEC coordinates of the occulted star, filled in by the user through a dialog box that appears when this position information file is found missing.&lt;/p&gt;&lt;p&gt;This folder is also where the WCS calibration data will be placed if the user opts for calibrating frame 0 by making an on-line submission to astrometry.net.&lt;/p&gt;&lt;p&gt;This folder is also the default location for storing csv files and copies of the last lightcurve plots.&lt;/p&gt;&lt;p&gt;Note: avi files are read using OpenCV which employs ffmpeg to do the actual file reading. As a result, a wide range of avi codecs are standardly available.&lt;/p&gt;&lt;p&gt;In particular, avi files using Lagarith compression will be read without problem.&lt;/p&gt;&lt;p&gt;There is a remote possibility that an avi was recorded with an unusual codec and so fail to be read by PyMovie. In that case, you will need to use an external file conversion program that can decode the file as recorded and rewrite it using a more common codec.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
               <string>Select AVI/SER-WCS folder</string>
@@ -458,6 +480,21 @@
               </size>
              </property>
             </spacer>
+           </item>
+           <item>
+            <widget class="QToolButton" name="twoPointHelpButton">
+             <property name="font">
+              <font>
+               <pointsize>13</pointsize>
+              </font>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;So-called 2 point tracking is a tool used primarily in conjunction with drift-through videos.&lt;/p&gt;&lt;p&gt;2 point tracking allows a 'tracking path' to be associated with a yellow aperture by using it to locate a star that is visible at two points in the video sequence and then recording the coordinate/frame values at those two points. &lt;/p&gt;&lt;p&gt;A 'tracking path' is a straight line across an image that is to be followed frame-by-frame by the center of a yellow tracking aperture as the video is analyzed. This can be used to 'follow' an object that disappears completely, particularly useful in the situation where there are no other stars that remain visible enough to provide a separate tracking reference. And, as always, the presence of a yellow aperture locks all apertures into a 'constellation' that moves as a unit.&lt;/p&gt;&lt;p&gt;Note: to ease the task of re-positioning the yellow aperture as you advance to later frames, jogging on newly added apertures is automatically enabled.&lt;/p&gt;&lt;p&gt;To define a 'tracking path', use a &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;single&lt;/span&gt; yellow aperture and position that aperture at a desired point early in the video (it does &lt;span style=&quot; font-weight:600;&quot;&gt;not&lt;/span&gt; have to be frame 0) and click on the menu item &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Use current position as early track path point&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;To complete the definition of the 'tracking path', position the tracking aperture at a desired point late in the video (it does not have to be the last frame) and click on the menu item &lt;/span&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Use current position as late track path point&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Note: with a 'tracking path' defined, the entire aperture constellation will move in a straight line (defined by the xy and frame number values of the early and late points). While this constellation will not itself follow windshake, stars can continue to 'dance' within the apertures and will be 'followed' by the mask generating routines --- for red apertures, it will look for a bright blob within an 8 pixel radius; for yellow apertures, it will look for the brightest blob anywhere in the aperture. You can always set a very high threshold to force the use of fixed circular masks in apertures where you want to suppress this behavior.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Note: If you delete the yellow aperture (or add a second one), the current tracking path data will be erased.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Note: You can overwrite either of the data points at any time.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;If an aperture group is saved, any tracking path defined will be saved as well.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>Help for 2pt tracking</string>
+             </property>
+            </widget>
            </item>
            <item>
             <widget class="QToolButton" name="transportHelp">
@@ -1231,28 +1268,6 @@
            <property name="spacing">
             <number>0</number>
            </property>
-           <item>
-            <widget class="QPushButton" name="infoButton">
-             <property name="minimumSize">
-              <size>
-               <width>40</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking on this button will open a pdf file that provides version history. The most recent version change description will be at the top and so relevant for the version that is currently running.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="text">
-              <string>Version Info</string>
-             </property>
-            </widget>
-           </item>
            <item>
             <widget class="QPushButton" name="documentationPushButton">
              <property name="toolTip">

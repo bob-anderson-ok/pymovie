@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
+    <width>600</width>
     <height>102</height>
    </rect>
   </property>
@@ -23,7 +23,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>Enter 'tag' to identify Saved Aperture Group</string>
+   <string>Enter id to append to aperture group files</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
@@ -33,7 +33,7 @@
        <item>
         <widget class="QLabel" name="label">
          <property name="text">
-          <string>Enter tag string ...</string>
+          <string>id to append (creates savedApertures-id.p, etc)</string>
          </property>
         </widget>
        </item>
