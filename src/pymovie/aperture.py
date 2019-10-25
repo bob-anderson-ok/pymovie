@@ -45,7 +45,7 @@ class MeasurementAperture(pg.GraphicsObject):
         self.auto_display = False
         self.thumbnail_source = False
 
-        self.default_mask_radius = 5.3
+        self.default_mask_radius = 3.0
         self.order_number = 0
         self.defaultMask = None
         self.defaultMaskPixelCount = None

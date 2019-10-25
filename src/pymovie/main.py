@@ -468,7 +468,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.roiComboBox.addItem("31")
         self.roiComboBox.addItem("21")
 
-        # TODO hot-pixel mod
         self.roiComboBox.addItem("11")
 
         self.vtiSelectLabel.installEventFilter(self)
@@ -860,7 +859,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.useYellowMaskCheckBox.clicked.connect(self.handleYellowMaskClick)
         self.useYellowMaskCheckBox.installEventFilter(self)
 
-        self.readFitsFolderButton.clicked.connect(self.readFitsFile)
+        self.readFitsFolderButton.clicked.connect(self.selectFitsFolder)
         self.readFitsFolderButton.installEventFilter(self)
 
         self.openBmpPushButton.clicked.connect(self.readFinderImage)
@@ -3977,7 +3976,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             return
 
         self.one_time_suppress_stats = True
-        aperture = self.addGenericAperture()
+        aperture = self.addGenericAperture()  # Just calls addApertureAtPosition() with mouse coords
 
         self.nameAperture(aperture)
 
@@ -4859,18 +4858,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 if ocrbox.position == position:
                     ocrbox.joggable = enable
 
-    def readFitsFile(self):
-
-        # If a bitmap has just been loaded, it is assumed that the user is employing
-        # a RegiStax star locator to place his apertures.  It is critical to maintaing the correct
-        # offsets between the apertures that at least one of them is yellow, otherwise
-        # the positioning will be lost when the first fits file loads and the apertures try to
-        # 'snap' to better positions.  Here we remind the user to do so.
-        # if self.preserve_apertures:
-        #     ok = self.yellowAperturePresent()
-        #     if not ok:
-        #         # self.showMsg(f'No yellow aperture(s)!!!  Need to add query to confirm')
-        #         return
+    def selectFitsFolder(self):
 
         options = QFileDialog.Options()
         options |= QFileDialog.ShowDirsOnly
@@ -4933,7 +4921,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.disableControlsWhenNoData()
             self.enableControlsForFitsData()
 
-            # self.showMsg('Changing navigation buttons to 25 frames')
             self.frameJumpSmall = 25
             self.frameJumpBig = 200
             self.changeNavButtonTitles()
@@ -4992,19 +4979,16 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
 
     def openFitsImageFile(self, fpath):
-        self.image = pyfits.getdata(fpath).astype('int16', casting='unsafe')
+        self.image = pyfits.getdata(fpath, 0)
+        self.showMsg(f'finder image type: {self.image.dtype}')
+
+        hdr = pyfits.getheader(fpath, 0)
+        msg = repr(hdr)
+        self.showMsg(f'############### Finder image FITS meta-data ###############')
+        self.showMsg(msg)
+        self.showMsg(f'########### End Finder image FITS meta-data ###############')
+
         self.frameView.setImage(self.image)
-        # msg_box = QMessageBox()
-        # msg_box.setText(f'Always use a single static (no-snap) aperture to designate the target!'
-        #                 f'\n\nThis technique forces the aperture to use a default mask (by setting '
-        #                 f'a very high mskth) which '
-        #                 f'means that this aperture will not move (snap) when you switch back '
-        #                 f'to the avi.'
-        #                 f'\n\nThe selected location will automatically be saved when a '
-        #                 f'frame change is made that returns the view to the avi.'
-        #                 f'\n\nThe avi will be automatically positioned to the frame '
-        #                 f'that was used as the reference frame for the enhanced image stack.')
-        # msg_box.exec()
 
     def readFinderImage(self):
 
@@ -5776,35 +5760,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def showFrame(self):
 
-        # if self.record_target_aperture:
-        #     self.showMsg(f'We will save the aperture location for enhanced placement')
-        #     self.record_target_aperture = False
-        #     app_list = self.getApertureList()
-        #     if len(app_list) > 1:
-        #         self.showMsg(f'!!!! Only a single target may be designated !!!!')
-        #         self.clearApertures()
-        #     elif len(app_list) == 1:
-        #         aperture = app_list[0]
-        #         x0, y0, _, _ = aperture.getBbox()
-        #         xc = x0 + self.roi_center
-        #         yc = y0 + self.roi_center
-        #
-        #         # Save the aperture coordinates...
-        #         self.showMsg(f'recorded: x:{xc} y:{yc}')
-        #         with open(self.folder_dir + r'/target-aperture-xy.txt', 'w') as f:
-        #             f.writelines(f'{xc} {yc}')
-        #
-        #         # and set the current frame to the proper reference frame
-        #         frame_file = 'enhanced-image-frame-num.txt'
-        #         file_found, frame_num = self.getFrameNumberFromFile(frame_file)
-        #         if file_found:
-        #             if frame_num is None:
-        #                 self.showMsg(f'Content error in: {frame_file}')
-        #                 return
-        #             else:
-        #                 self.showMsg(f'Set current frame to reference frame {frame_num}')
-        #                 self.currentFrameSpinBox.setValue(frame_num)
-
         # Local variables used to save and restore the pan/zoom state of the main image
         state = None
         view_box = None
@@ -5864,14 +5819,19 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             else:  # We're dealing with FITS files
                 try:
                     try:
+                        hdr = pyfits.getheader(self.fits_filenames[frame_to_show], 0)
+
                         self.image = pyfits.getdata(
-                            self.fits_filenames[frame_to_show], 0).astype('uint16', casting='unsafe')
+                            self.fits_filenames[frame_to_show], 0)
+
+                        # self.showMsg(f'image type: {self.image.dtype}')
+
                         self.doGammaCorrection()
                     except Exception as e3:
                         self.showMsg(f'While reading image data from FITS file: {e3}')
                         self.image = None
 
-                    hdr = pyfits.getheader(self.fits_filenames[frame_to_show], 0)
+                    # hdr = pyfits.getheader(self.fits_filenames[frame_to_show], 0)
 
                     try:
                         date_time = hdr['DATE-OBS']
@@ -6250,6 +6210,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         QtGui.QGuiApplication.processEvents()
 
         upload_result = c.upload(image_to_calibrate, **kwargs)
+
+        if upload_result is None:
+            self.showMsg(f'astrometry.net failed to accept image.')
+            return
 
         # Wait for the upload to be accepted and submission id to be returned (subid)
         # and then start waiting for a job number to be assigned (in the 'jobs' dict entry)
@@ -6926,7 +6890,18 @@ def get_mask(
         outlier_fraction=0.5,
         apply_centroid_distance_constraint=False, max_centroid_distance=None, lunar=False):
 
-    blurred_img = cv2.GaussianBlur(img, ksize=ksize, sigmaX=0)
+    # cv2.GaussianBlur() cannot deal with big-endian data (probably because it is c++ code
+    # # that has been ported.  If we have read a FITS file, there is the
+    # possibility that the image data (and hence img) is big-endian.  Here we test for that and do a
+    # byte swap if img is big-endian  NOTE: as long as operations on the image data are kept in the
+    # numpy world, there is no problem with big-endian data --- those operations adapt as necessary.
+
+    byte_order = img.dtype.byteorder  # Posiible returns: '<' '>' '=' '|' (little, big, native, not applicable)
+
+    if byte_order == '>':  # We assume our code will be run on Intel silicon
+        blurred_img = cv2.GaussianBlur(img.byteswap(), ksize=ksize, sigmaX=1.1)
+    else:
+        blurred_img = cv2.GaussianBlur(img, ksize=ksize, sigmaX=1.1)
 
     # cut is threshold
     ret, t_mask = cv2.threshold(blurred_img, cut, 1, cv2.THRESH_BINARY)

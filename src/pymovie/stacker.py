@@ -260,46 +260,53 @@ def frameStacker(pr, progress_bar, event_process,
 
     progress_bar.setValue(0)
 
+    # We removed sharpening at version 2.3.1 as being unnecessary and often distorting
     # Sharpen the image 2 and 10 were ok  5 and 2 were smudgy
-    sharper_image = unsharp_mask(asinhScale(image_sum), radius=2, amount=10.0, preserve_range=True)
-    unredacted = sharper_image
+    #sharper_image = unsharp_mask(asinhScale(image_sum), radius=2, amount=10.0, preserve_range=True)
+    #unredacted = sharper_image
+
+    # Instead of sharpening, we just divide by the number of frames that were summed
+    normed_image = image_sum / (last_frame - first_frame + 1)
+
+    # We do want to keep asinh scaling though
+    unredacted = asinhScale(normed_image)
 
     if not timestamp_image_bottom is None:
         unredacted = np.append(unredacted, asinhScale(timestamp_image_bottom), axis=0)
     if not timestamp_image_top is None:
         unredacted = np.append(asinhScale(timestamp_image_top), unredacted, axis=0)
 
-    # plt.imshow(unredacted, cmap='gray')
-    # print(unredacted.shape)
-
     fn = f'/enhanced-image-{first_frame}.fit'
 
-    # outfile = out_dir_path + r'/enhanced-image.fit'
     outfile = out_dir_path + fn
 
-    # Create the fits ojbect for this image using the header of the first image
-
-    # max_pixel = image_sum.max()
-    # image_sum = image_sum * 30000 / max_pixel
-    # outlist = pyfits.PrimaryHDU(image_sum)
-
-    # max_pixel = sharper_image.max()
-    # sharper_image = sharper_image * 30000 / max_pixel
-    # outlist = pyfits.PrimaryHDU(sharper_image)
-
+    # Rescale the asinh-scaled image to 0 to 255
     min_pixel = unredacted.min()
     unredacted = unredacted - min_pixel
     max_pixel = unredacted.max()
     unredacted = unredacted * 255 / max_pixel
+
+    # Convert to uint8 (because FITS is always big-endian and Intel is little-endian and this difference
+    unredacted = unredacted.astype('uint8')
+
     outlist = pyfits.PrimaryHDU(unredacted)
 
     # Provide a new date stamp
 
     file_time = strftime("%Y-%m-%d %H:%M:%S", gmtime())
 
-    # Update the header
+    # Compose the FITS header
 
     outhdr = outlist.header
+
+    # Add the REQUIRED elements in the REQUIRED order
+    outhdr['SIMPLE'] = True
+    outhdr['BITPIX'] = 8   # Indicate that the result is uint8
+    outhdr['NAXIS']  = 2
+    outhdr['NAXIS1'] = width
+    outhdr['NAXIS2'] = height
+    # End of required elements
+
     outhdr['DATE'] = file_time
     outhdr['FILE'] = avi_location
     outhdr['COMMENT'] = f'{last_frame - first_frame + 1} frames were stacked'
