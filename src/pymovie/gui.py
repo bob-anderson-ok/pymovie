@@ -879,7 +879,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
         self.roiComboBox.setCurrentIndex(-1)
-        self.tabWidget.setCurrentIndex(3)
+        self.tabWidget.setCurrentIndex(0)
         self.vtiSelectComboBox.setCurrentIndex(-1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
