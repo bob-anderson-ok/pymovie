@@ -45,9 +45,7 @@ import matplotlib
 
 matplotlib.use('Qt5Agg')
 
-# from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-# from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
 # Leave the following import in place, even though PyCharm thinks it is unused. Apparently
 # there is a side effect of this import that is needed to make 3d plots work even though
@@ -63,10 +61,8 @@ from more_itertools import sort_together
 
 try:
     from pyoteapp import pyote
-    # print('PyOTE installation found')
     pyote_available = True
 except ImportError:
-    # print('No PyOTE installation found')
     pyote_available = False
 
 import site
@@ -798,6 +794,15 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         # end instance variable declarations
 
+        self.alignWithStarInfoButton.installEventFilter(self)
+        self.alignWithStarInfoButton.clicked.connect(self.showAlignStarHelp)
+
+        self.alignWithFourierCorrInfoButton.installEventFilter(self)
+        self.alignWithFourierCorrInfoButton.clicked.connect(self.showAlignWithFourierCorrHelp)
+
+        self.alignWithTwoPointTrackInfoButton.installEventFilter(self)
+        self.alignWithTwoPointTrackInfoButton.clicked.connect(self.showAlignWithTwoPointTrackHelp)
+
         self.transportMaxLeft.installEventFilter(self)
         self.transportMaxLeft.clicked.connect(self.seekMaxLeft)
 
@@ -925,6 +930,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.finderRedactTopLinesLabel.installEventFilter(self)
         self.finderRedactBottomLinesLabel.installEventFilter(self)
 
+        self.wcsRedactTopLinesLabel.installEventFilter(self)
+        self.wcsRedactBottomLinesLabel.installEventFilter(self)
+
         self.finderNumFramesLabel.installEventFilter(self)
         self.finderThresholdLabel.installEventFilter(self)
 
@@ -971,6 +979,15 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.checkForNewerVersion()
 
         self.copy_desktop_icon_file_to_home_directory()
+
+    def showAlignStarHelp(self):
+        self.showHelp(self.alignWithStarInfoButton)
+
+    def showAlignWithFourierCorrHelp(self):
+        self.showHelp(self.alignWithFourierCorrInfoButton)
+
+    def showAlignWithTwoPointTrackHelp(self):
+        self.showHelp(self.alignWithTwoPointTrackInfoButton)
 
     def handleApplyHotPixelChecked(self):
         if not self.hotPixelList:
@@ -2604,9 +2621,46 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         else:
             return True, abs(num_lines_to_redact_from_top), abs(num_lines_to_redact_from_bottom)
 
+    def getWcsRedactLineParameters(self):
+        num_lines_to_redact_from_top = 0
+        num_lines_to_redact_from_bottom = 0
+        entry_present = False
+
+        if self.wcsRedactLinesTopEdit.text():
+            try:
+                num_lines_to_redact_from_top = int(self.wcsRedactLinesTopEdit.text())
+                entry_present = True
+            except ValueError:
+                self.showMsg(f'invalid numeric entry in top lines redact: {self.wcsRedactLinesTopEdit.text()}')
+                return False, 0, 0
+
+        if self.wcsRedactLinesBottomEdit.text():
+            try:
+                num_lines_to_redact_from_bottom = int(self.wcsRedactLinesBottomEdit.text())
+                entry_present = True
+            except ValueError:
+                self.showMsg(f'invalid numeric entry in bottom lines redact: {self.wcsRedactLinesBottomEdit.text()}')
+                return False, 0, 0
+
+        if not entry_present:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Question)
+            msg.setText(f'It is helpful to remove any timestamp overlay that may be '
+                        f'present as such additional image data may make the astrometry.net job'
+                        f' harder (take longer).'
+                        f'\n\nPlease enter values in the redact lines edit boxes. '
+                        f'Enter 0 if there is no timestamp in that region.')
+            msg.setWindowTitle('Please fill in redact lines')
+            msg.setStandardButtons(QMessageBox.Ok)
+            msg.exec()
+            return False, 0, 0
+        else:
+            return True, abs(num_lines_to_redact_from_top), abs(num_lines_to_redact_from_bottom)
+
+
     def generateFinderFrame(self):
         if not (self.avi_wcs_folder_in_use or self.fits_folder_in_use):
-            self.showMsg(f'This function can only be performed in the context of an AVI-WCS or FITS folder.')
+            self.showMsg(f'This function can only be performed in the context of an AVI/SER-WCS or FITS folder.')
             return
 
         # Deal with timestamp redaction first.
@@ -2718,10 +2772,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         else:
             serReader = None
 
-        bkg_thresh = self.getBkgThreshold()
-        if bkg_thresh is None:
-            return
-
         stack_aperture_present = False
         app_list = self.getApertureList()
         for app in app_list:
@@ -2772,6 +2822,20 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         else:
             shift_dict = None
 
+        if not (self.stackXtrack or stack_aperture_present):
+            bkg_thresh = self.getBkgThreshold()
+            if bkg_thresh is None:
+                return
+        else:
+            bkg_thresh = None
+
+        if stack_aperture_present:
+            self.finderMethodEdit.setText(f'Stack method in use --- Align: star')
+        elif self.stackXtrack:
+            self.finderMethodEdit.setText(f'Stack method in use --- Align: 2 point track')
+        else:
+            self.finderMethodEdit.setText(f'Stack method in use --- Align: image correlation')
+
         stacker.frameStacker(
             self.showMsg, self.stackerProgressBar, QtGui.QGuiApplication.processEvents,
             first_frame=first_frame, last_frame=last_frame,
@@ -2785,6 +2849,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             delta_y=dy_dframe,
             shift_dict=shift_dict
         )
+
+        self.finderMethodEdit.setText('')
 
         # Now that we're back, if we got a new enhanced-image.fit, display it.
         fullpath = self.folder_dir + enhanced_filename_with_frame_num
@@ -3558,7 +3624,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         background = int(np.ceil(bkavg))
 
-        thresh = background + int(np.ceil(std))
+        # Version 2.3.2 changed from 1 sigma to 2 sigma for intial threshold setting
+        thresh = background + 2 * int(np.ceil(std))
 
         aperture.thresh = thresh - background
         self.one_time_suppress_stats = True
@@ -6092,7 +6159,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         image_width = self.image.shape[1]   # number of columns
 
         num_lines_to_redact = 0
-        valid_entries, num_top, num_bottom = self.getRedactLineParameters()
+        valid_entries, num_top, num_bottom = self.getWcsRedactLineParameters()
 
         if not valid_entries:
             return
