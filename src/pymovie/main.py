@@ -398,6 +398,26 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.cascadeCheckBox.setChecked(self.settings.value('cascade', False) == 'true')
         self.plotSymbolSizeSpinBox.setValue(int(self.settings.value('plot_symbol_size', 4)))
 
+        self.defAppSize51RadioButton.setChecked(self.settings.value('appSize51', True) == 'true')
+        self.defAppSize41RadioButton.setChecked(self.settings.value('appSize41', False) == 'true')
+        self.defAppSize31RadioButton.setChecked(self.settings.value('appSize31', False) == 'true')
+        self.defAppSize21RadioButton.setChecked(self.settings.value('appSize21', False) == 'true')
+        self.defAppSize11RadioButton.setChecked(self.settings.value('appSize11', False) == 'true')
+
+        self.oneSigmaRadioButton.setChecked(self.settings.value('oneSigma', False) == 'true')
+        self.twoSigmaRadioButton.setChecked(self.settings.value('twoSigma', True) == 'true')
+        self.threeSigmaRadioButton.setChecked(self.settings.value('threeSigma', False) == 'true')
+
+        self.sigmaLevel = 1.0
+        if self.oneSigmaRadioButton.isChecked():
+            self.sigmaLevel = 1.0
+        elif self.twoSigmaRadioButton.isChecked():
+            self.sigmaLevel = 2.0
+        elif self.threeSigmaRadioButton.isChecked():
+            self.sigmaLevel = 3.0
+        else:
+            self.showMsg(f'!!! Found no sigma level radio button checked !!!')
+
         # splitterOne is the vertical splitter in the lower panel.
         # splitterTwo is the vertical splitter in the upper panel
         # splitterThree is the horizontal splitter between the top and bottom panel
@@ -463,8 +483,20 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.roiComboBox.addItem("41")
         self.roiComboBox.addItem("31")
         self.roiComboBox.addItem("21")
-
         self.roiComboBox.addItem("11")
+
+        if self.defAppSize51RadioButton.isChecked():
+            self.roiComboBox.setCurrentIndex(0)
+        elif self.defAppSize41RadioButton.isChecked():
+            self.roiComboBox.setCurrentIndex(1)
+        elif self.defAppSize31RadioButton.isChecked():
+            self.roiComboBox.setCurrentIndex(2)
+        elif self.defAppSize21RadioButton.isChecked():
+            self.roiComboBox.setCurrentIndex(3)
+        elif self.defAppSize11RadioButton.isChecked():
+            self.roiComboBox.setCurrentIndex(4)
+        else:
+            self.showMsg(f'!!! Found no app size radio button checked !!!')
 
         self.vtiSelectLabel.installEventFilter(self)
 
@@ -924,6 +956,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.manualWcsButton.clicked.connect(self.manualWcsCalibration)
         self.manualWcsButton.installEventFilter(self)
 
+        self.appSizeToolButton.installEventFilter(self)
+        self.appSizeToolButton.clicked.connect(self.showAppSizeToolButtonHelp)
+
+        self.sigmaLevelToolButton.installEventFilter(self)
+        self.sigmaLevelToolButton.clicked.connect(self.showSigmaLevelToolButtonHelp)
+
         self.stackFramesButton.clicked.connect(self.generateFinderFrame)
         self.stackFramesButton.installEventFilter(self)
 
@@ -979,6 +1017,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.checkForNewerVersion()
 
         self.copy_desktop_icon_file_to_home_directory()
+
+    def showAppSizeToolButtonHelp(self):
+        self.showHelp(self.appSizeToolButton)
+
+    def showSigmaLevelToolButtonHelp(self):
+        self.showHelp(self.sigmaLevelToolButton)
 
     def showAlignStarHelp(self):
         self.showHelp(self.alignWithStarInfoButton)
@@ -1279,6 +1323,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     self.roiComboBox.setCurrentIndex(2)
                 elif xsize == 21:
                     self.roiComboBox.setCurrentIndex(3)
+                elif xsize == 11:
+                    self.roiComboBox.setCurrentIndex(4)
                 else:
                     self.showMsg(f'Unexpected aperture size of {xsize} in restored aperture group')
 
@@ -3624,8 +3670,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         background = int(np.ceil(bkavg))
 
-        # Version 2.3.2 changed from 1 sigma to 2 sigma for intial threshold setting
-        thresh = background + 2 * int(np.ceil(std))
+        # Version 2.3.2 changed from 1 sigma to 2 sigma for initial threshold setting
+        thresh = background + int(self.sigmaLevel * np.ceil(std))
 
         aperture.thresh = thresh - background
         self.one_time_suppress_stats = True
@@ -6860,12 +6906,21 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # Capture the close request and update 'sticky' settings
         self.settings.setValue('size', self.size())
         self.settings.setValue('pos', self.pos())
-        # self.settings.setValue('logscale', self.logScalingCheckBox.isChecked())
         self.settings.setValue('cascade', self.cascadeCheckBox.isChecked())
         self.settings.setValue('plot_symbol_size', self.plotSymbolSizeSpinBox.value())
         self.settings.setValue('splitterOne', self.splitterOne.saveState())
         self.settings.setValue('splitterTwo', self.splitterTwo.saveState())
         self.settings.setValue('splitterThree', self.splitterThree.saveState())
+
+        self.settings.setValue('appSize51', self.defAppSize51RadioButton.isChecked())
+        self.settings.setValue('appSize41', self.defAppSize41RadioButton.isChecked())
+        self.settings.setValue('appSize31', self.defAppSize31RadioButton.isChecked())
+        self.settings.setValue('appSize21', self.defAppSize21RadioButton.isChecked())
+        self.settings.setValue('appSize11', self.defAppSize11RadioButton.isChecked())
+
+        self.settings.setValue('oneSigma', self.oneSigmaRadioButton.isChecked())
+        self.settings.setValue('twoSigma', self.twoSigmaRadioButton.isChecked())
+        self.settings.setValue('threeSigma', self.threeSigmaRadioButton.isChecked())
 
         if self.apertureEditor:
             self.apertureEditor.close()
