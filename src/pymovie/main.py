@@ -398,25 +398,23 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.cascadeCheckBox.setChecked(self.settings.value('cascade', False) == 'true')
         self.plotSymbolSizeSpinBox.setValue(int(self.settings.value('plot_symbol_size', 4)))
 
-        self.defAppSize51RadioButton.setChecked(self.settings.value('appSize51', True) == 'true')
+        self.defAppSize51RadioButton.setChecked(self.settings.value('appSize51', False) == 'true')
         self.defAppSize41RadioButton.setChecked(self.settings.value('appSize41', False) == 'true')
         self.defAppSize31RadioButton.setChecked(self.settings.value('appSize31', False) == 'true')
         self.defAppSize21RadioButton.setChecked(self.settings.value('appSize21', False) == 'true')
         self.defAppSize11RadioButton.setChecked(self.settings.value('appSize11', False) == 'true')
 
         self.oneSigmaRadioButton.setChecked(self.settings.value('oneSigma', False) == 'true')
-        self.twoSigmaRadioButton.setChecked(self.settings.value('twoSigma', True) == 'true')
+        self.twoSigmaRadioButton.setChecked(self.settings.value('twoSigma', False) == 'true')
         self.threeSigmaRadioButton.setChecked(self.settings.value('threeSigma', False) == 'true')
 
-        self.sigmaLevel = 1.0
-        if self.oneSigmaRadioButton.isChecked():
-            self.sigmaLevel = 1.0
-        elif self.twoSigmaRadioButton.isChecked():
-            self.sigmaLevel = 2.0
-        elif self.threeSigmaRadioButton.isChecked():
-            self.sigmaLevel = 3.0
-        else:
-            self.showMsg(f'!!! Found no sigma level radio button checked !!!')
+        self.radius20radioButton.setChecked(self.settings.value('2.0 mask', False) == 'true')
+        self.radius28radioButton.setChecked(self.settings.value('2.8 mask', False) == 'true')
+        self.radius32radioButton.setChecked(self.settings.value('3.2 mask', False) == 'true')
+        self.radius40radioButton.setChecked(self.settings.value('4.0 mask', False) == 'true')
+        self.radius45radioButton.setChecked(self.settings.value('4.5 mask', False) == 'true')
+        self.radius53radioButton.setChecked(self.settings.value('5.3 mask', False) == 'true')
+        self.radius68radioButton.setChecked(self.settings.value('6.8 mask', False) == 'true')
 
         # splitterOne is the vertical splitter in the lower panel.
         # splitterTwo is the vertical splitter in the upper panel
@@ -531,7 +529,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 {'name': 'Kiwi PAL (right)'} ]
 
             pickle.dump(self.VTIlist, open(vtiListFilename, "wb"))
-            self.showMsg(f'pickled self.VTIlist to {vtiListFilename}')
+            # self.showMsg(f'pickled self.VTIlist to {vtiListFilename}')
 
         for vtiDict in self.VTIlist:
             self.vtiSelectComboBox.addItem(vtiDict['name'])
@@ -3653,6 +3651,34 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         thresh = background + 5 * int(np.ceil(std))
         return thresh
 
+    def getDefaultMaskRadius(self):
+        if self.radius20radioButton.isChecked():
+            return 2.0
+        if self.radius28radioButton.isChecked():
+            return 2.8
+        if self.radius32radioButton.isChecked():
+            return 3.2
+        if self.radius40radioButton.isChecked():
+            return 4.0
+        if self.radius45radioButton.isChecked():
+            return 4.5
+        if self.radius53radioButton.isChecked():
+            return 5.3
+        if self.radius68radioButton.isChecked():
+            return 6.8
+
+        return 3.2
+
+    def getSigmaLevel(self):
+        if self.oneSigmaRadioButton.isChecked():
+            return 1.0
+        elif self.twoSigmaRadioButton.isChecked():
+            return 2.0
+        elif self.threeSigmaRadioButton.isChecked():
+            return 3.0
+        else:
+            return 2.0
+
     def computeInitialThreshold(self, aperture):
 
         # This method is called by a click on an item in a context menu.
@@ -3670,8 +3696,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         background = int(np.ceil(bkavg))
 
+        sigmaLevel = self.getSigmaLevel()
+
         # Version 2.3.2 changed from 1 sigma to 2 sigma for initial threshold setting
-        thresh = background + int(self.sigmaLevel * np.ceil(std))
+        thresh = background + int(sigmaLevel * np.ceil(std))
 
         aperture.thresh = thresh - background
         self.one_time_suppress_stats = True
@@ -4249,6 +4277,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         aperture = MeasurementAperture(f'app{self.apertureId:02d}', bbox, self.roi_max_x, self.roi_max_y)
 
         aperture.order_number = self.apertureId
+
+        aperture.default_mask_radius = self.getDefaultMaskRadius()
 
         self.connectAllSlots(aperture)
 
@@ -4987,6 +5017,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         if dir_path:
 
+            _, fn = os.path.split(dir_path)
+            self.fileInUseEdit.setText(fn)
+
             self.finderThresholdEdit.setText('')
             self.clearTrackingPathParameters()
 
@@ -5303,7 +5336,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.createAVIWCSfolderButton.setEnabled(True)
             self.vtiSelectComboBox.setEnabled(False)
 
-            dirpath, _ = os.path.split(self.filename)
+            dirpath, fn = os.path.split(self.filename)
+            self.fileInUseEdit.setText(fn)
             self.folder_dir = dirpath
             self.settings.setValue('avidir', dirpath)  # Make dir 'sticky'"
             self.clearTextBox()
@@ -5564,6 +5598,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             if self.avi_in_use:
                 self.showMsg(f'Opened: {avi_location}')
+
+                _, fn = os.path.split(avi_location)
+                self.fileInUseEdit.setText(fn)
+
                 if self.cap:
                     self.cap.release()
                 self.cap = cv2.VideoCapture(avi_location)
@@ -5620,6 +5658,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.ser_file_handle = open(self.filename, 'rb')
 
                 self.showMsg(f'Opened: {self.filename}')
+
+                _, fn = os.path.split(self.filename)
+                self.fileInUseEdit.setText(fn)
 
                 self.showSerMetaData()
 
@@ -6921,6 +6962,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.settings.setValue('oneSigma', self.oneSigmaRadioButton.isChecked())
         self.settings.setValue('twoSigma', self.twoSigmaRadioButton.isChecked())
         self.settings.setValue('threeSigma', self.threeSigmaRadioButton.isChecked())
+
+        self.settings.setValue('2.0 mask', self.radius20radioButton.isChecked())
+        self.settings.setValue('2.8 mask', self.radius28radioButton.isChecked())
+        self.settings.setValue('3.2 mask', self.radius32radioButton.isChecked())
+        self.settings.setValue('4.0 mask', self.radius40radioButton.isChecked())
+        self.settings.setValue('4.5 mask', self.radius45radioButton.isChecked())
+        self.settings.setValue('5.3 mask', self.radius53radioButton.isChecked())
+        self.settings.setValue('6.8 mask', self.radius68radioButton.isChecked())
 
         if self.apertureEditor:
             self.apertureEditor.close()
