@@ -1793,49 +1793,61 @@ used at startup</string>
                   </spacer>
                  </item>
                  <item>
-                  <layout class="QVBoxLayout" name="verticalLayout_18">
-                   <item>
-                    <widget class="QRadioButton" name="defAppSize51RadioButton">
-                     <property name="layoutDirection">
-                      <enum>Qt::LeftToRight</enum>
-                     </property>
-                     <property name="text">
-                      <string>51</string>
-                     </property>
-                     <property name="checked">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QRadioButton" name="defAppSize41RadioButton">
-                     <property name="text">
-                      <string>41</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QRadioButton" name="defAppSize31RadioButton">
-                     <property name="text">
-                      <string>31</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QRadioButton" name="defAppSize21RadioButton">
-                     <property name="text">
-                      <string>21</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QRadioButton" name="defAppSize11RadioButton">
-                     <property name="text">
-                      <string>11</string>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
+                  <widget class="QFrame" name="frame_2">
+                   <property name="frameShape">
+                    <enum>QFrame::StyledPanel</enum>
+                   </property>
+                   <property name="frameShadow">
+                    <enum>QFrame::Raised</enum>
+                   </property>
+                   <layout class="QHBoxLayout" name="horizontalLayout_30">
+                    <item>
+                     <layout class="QVBoxLayout" name="verticalLayout_18">
+                      <item>
+                       <widget class="QRadioButton" name="defAppSize51RadioButton">
+                        <property name="layoutDirection">
+                         <enum>Qt::LeftToRight</enum>
+                        </property>
+                        <property name="text">
+                         <string>51</string>
+                        </property>
+                        <property name="checked">
+                         <bool>true</bool>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QRadioButton" name="defAppSize41RadioButton">
+                        <property name="text">
+                         <string>41</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QRadioButton" name="defAppSize31RadioButton">
+                        <property name="text">
+                         <string>31</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QRadioButton" name="defAppSize21RadioButton">
+                        <property name="text">
+                         <string>21</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QRadioButton" name="defAppSize11RadioButton">
+                        <property name="text">
+                         <string>11</string>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
+                    </item>
+                   </layout>
+                  </widget>
                  </item>
                  <item>
                   <spacer name="horizontalSpacer_23">
@@ -1907,61 +1919,73 @@ above background</string>
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_21">
                  <item>
-                  <spacer name="horizontalSpacer_26">
-                   <property name="orientation">
-                    <enum>Qt::Horizontal</enum>
+                  <widget class="QFrame" name="frame">
+                   <property name="frameShape">
+                    <enum>QFrame::StyledPanel</enum>
                    </property>
-                   <property name="sizeHint" stdset="0">
-                    <size>
-                     <width>0</width>
-                     <height>20</height>
-                    </size>
+                   <property name="frameShadow">
+                    <enum>QFrame::Raised</enum>
                    </property>
-                  </spacer>
-                 </item>
-                 <item>
-                  <layout class="QVBoxLayout" name="verticalLayout_20">
-                   <item>
-                    <widget class="QRadioButton" name="oneSigmaRadioButton">
-                     <property name="text">
-                      <string>1 sigma</string>
-                     </property>
-                     <property name="checked">
-                      <bool>false</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QRadioButton" name="twoSigmaRadioButton">
-                     <property name="text">
-                      <string>2 sigma</string>
-                     </property>
-                     <property name="checked">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QRadioButton" name="threeSigmaRadioButton">
-                     <property name="text">
-                      <string>3 sigma</string>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </item>
-                 <item>
-                  <spacer name="horizontalSpacer_27">
-                   <property name="orientation">
-                    <enum>Qt::Horizontal</enum>
-                   </property>
-                   <property name="sizeHint" stdset="0">
-                    <size>
-                     <width>40</width>
-                     <height>20</height>
-                    </size>
-                   </property>
-                  </spacer>
+                   <layout class="QHBoxLayout" name="horizontalLayout_31">
+                    <item>
+                     <spacer name="horizontalSpacer_26">
+                      <property name="orientation">
+                       <enum>Qt::Horizontal</enum>
+                      </property>
+                      <property name="sizeHint" stdset="0">
+                       <size>
+                        <width>40</width>
+                        <height>20</height>
+                       </size>
+                      </property>
+                     </spacer>
+                    </item>
+                    <item>
+                     <layout class="QVBoxLayout" name="verticalLayout_20">
+                      <item>
+                       <widget class="QRadioButton" name="oneSigmaRadioButton">
+                        <property name="text">
+                         <string>1 sigma</string>
+                        </property>
+                        <property name="checked">
+                         <bool>false</bool>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QRadioButton" name="twoSigmaRadioButton">
+                        <property name="text">
+                         <string>2 sigma</string>
+                        </property>
+                        <property name="checked">
+                         <bool>true</bool>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QRadioButton" name="threeSigmaRadioButton">
+                        <property name="text">
+                         <string>3 sigma</string>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
+                    </item>
+                    <item>
+                     <spacer name="horizontalSpacer_27">
+                      <property name="orientation">
+                       <enum>Qt::Horizontal</enum>
+                      </property>
+                      <property name="sizeHint" stdset="0">
+                       <size>
+                        <width>40</width>
+                        <height>20</height>
+                       </size>
+                      </property>
+                     </spacer>
+                    </item>
+                   </layout>
+                  </widget>
                  </item>
                 </layout>
                </item>
@@ -2029,60 +2053,72 @@ aperture placement.</string>
                   </spacer>
                  </item>
                  <item>
-                  <layout class="QVBoxLayout" name="verticalLayout_23">
-                   <item>
-                    <widget class="QRadioButton" name="radius20radioButton">
-                     <property name="text">
-                      <string>2.0</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QRadioButton" name="radius28radioButton">
-                     <property name="text">
-                      <string>2.8</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QRadioButton" name="radius32radioButton">
-                     <property name="text">
-                      <string>3.2</string>
-                     </property>
-                     <property name="checked">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QRadioButton" name="radius40radioButton">
-                     <property name="text">
-                      <string>4.0</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QRadioButton" name="radius45radioButton">
-                     <property name="text">
-                      <string>4.5</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QRadioButton" name="radius53radioButton">
-                     <property name="text">
-                      <string>5.3</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QRadioButton" name="radius68radioButton">
-                     <property name="text">
-                      <string>6.8</string>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
+                  <widget class="QFrame" name="frame_3">
+                   <property name="frameShape">
+                    <enum>QFrame::StyledPanel</enum>
+                   </property>
+                   <property name="frameShadow">
+                    <enum>QFrame::Raised</enum>
+                   </property>
+                   <layout class="QHBoxLayout" name="horizontalLayout_32">
+                    <item>
+                     <layout class="QVBoxLayout" name="verticalLayout_23">
+                      <item>
+                       <widget class="QRadioButton" name="radius20radioButton">
+                        <property name="text">
+                         <string>2.0</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QRadioButton" name="radius28radioButton">
+                        <property name="text">
+                         <string>2.8</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QRadioButton" name="radius32radioButton">
+                        <property name="text">
+                         <string>3.2</string>
+                        </property>
+                        <property name="checked">
+                         <bool>true</bool>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QRadioButton" name="radius40radioButton">
+                        <property name="text">
+                         <string>4.0</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QRadioButton" name="radius45radioButton">
+                        <property name="text">
+                         <string>4.5</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QRadioButton" name="radius53radioButton">
+                        <property name="text">
+                         <string>5.3</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QRadioButton" name="radius68radioButton">
+                        <property name="text">
+                         <string>6.8</string>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
+                    </item>
+                   </layout>
+                  </widget>
                  </item>
                  <item>
                   <spacer name="horizontalSpacer_31">

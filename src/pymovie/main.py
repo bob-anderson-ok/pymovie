@@ -6107,6 +6107,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(repr(e0))
             self.showMsg(f'There are no frames to display.  Have you read a file?')
 
+        # TODO Remove this test code
+        self.showMsg(f'{self.image[0,0]} {self.image[0,1]} {self.image[0,2]} {self.image[0,3]} '
+                     f'{self.image[0,4]} {self.image[0,5]} {self.image[0,6]} {self.image[0,7]}'
+                     f'  type: {self.image.dtype}')
+
+
     def removeAperture(self, aperture):
         self.disconnectAllSlots(aperture)
         self.frameView.getView().removeItem(aperture)
