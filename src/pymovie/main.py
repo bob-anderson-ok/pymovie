@@ -526,7 +526,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 {'name': 'Kiwi NTSC (left)'},
                 {'name': 'Kiwi NTSC (right)'},
                 {'name': 'Kiwi PAL (left)'},
-                {'name': 'Kiwi PAL (right)'} ]
+                {'name': 'Kiwi PAL (right)'},
+                {'name': 'GHS VTI'}
+            ]
 
             pickle.dump(self.VTIlist, open(vtiListFilename, "wb"))
             # self.showMsg(f'pickled self.VTIlist to {vtiListFilename}')
@@ -2459,6 +2461,29 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.timestampFormatter = format_kiwi_timestamp
             self.writeFormatTypeFile('kiwi-PAL-right')
             self.formatterCode = 'kiwi-PAL-right'
+            self.extractTimestamps()
+            return
+
+        if self.currentVTIindex == 10:  # GHS
+
+            # Until we get more information, I cannot provide different boxes for different widths
+            # if width == 640:
+            #     self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft= setup_for_GHS_640()
+            # else:
+            #     self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft = setup_for_GHS_720()
+
+            self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft= setup_for_GHS_generic()
+
+            self.ocrboxBasePath = 'custom-boxes'
+            self.pickleOcrBoxes()
+
+            self.modelDigitsFilename = 'custom-digits.p'
+            self.loadModelDigits()
+            self.saveModelDigits()
+
+            self.placeOcrBoxesOnImage()
+            self.timestampFormatter = format_ghs_timestamp
+            self.writeFormatTypeFile('GHS')
             self.extractTimestamps()
             return
 
@@ -5434,6 +5459,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.timestampFormatter = format_kiwi_timestamp
             self.kiwiInUse = False
             self.kiwiPALinUse = True
+        elif self.formatterCode == 'GHS':
+            self.timestampFormatter = format_ghs_timestamp
         else:
             self.showMsg(f'Unknown timestamp formatter code: {self.formatterCode}.  Defaulting to Iota')
             self.timestampFormatter = format_iota_timestamp

@@ -185,6 +185,31 @@ def setup_for_iota_640_full_screen_mode2():
 
     return upper_field_boxes, lower_field_boxes
 
+def setup_for_GHS_generic():
+
+    x0 = 391
+    y0 = 193
+
+    # Define xy coordinates of upper field character box corners
+    xcU = [x0+00, x0+20, x0+60, x0+80, x0+120, x0+140, x0+180, x0+200, x0+220]
+    # xcU = [362, 386, 427, 451, 491, 515, 558, 582, 603]
+    ycU = [y0] * 9
+
+    # Define xy coordinates of lower field character box corners
+    xcL = [x0+00, x0+20, x0+60, x0+80, x0+120, x0+140, x0+180, x0+200, x0+220]
+    # xcL = [362, 386, 427, 451, 491, 515, 558, 582, 603]
+    ycL = [y0-1] * 9
+
+    upper_field_boxes = [None] * len(xcL)
+    lower_field_boxes = [None] * len(xcL)
+
+    # Turn box corners into full box coordinate tuples
+    for i in range(len(xcL)):
+        upper_field_boxes[i] = (xcU[i], xcU[i] + 20, ycU[i], ycU[i] + 16)
+        lower_field_boxes[i] = (xcL[i], xcL[i] + 20, ycL[i], ycL[i] + 16)
+
+    return upper_field_boxes, lower_field_boxes
+
 
 def kiwi_720_boxes(dx):
     # Define xy coordinates of upper field character box corners
@@ -594,6 +619,17 @@ def format_boxsprite3_timestamp(ts, t2fromleft):
     except ValueError:
         return f'[00:00:00.0000]', -1.0, None  # Indicate invalid timestamp by returning negative time
 
+def format_ghs_timestamp(ts, t2fromleft):
+    assert (len(ts) == 9), "len(ts) not equal to 9 in GHS timestamp formatter"
+    try:
+        hh = 10 * int(ts[0]) + int(ts[1])
+        mm = 10 * int(ts[2]) + int(ts[3])
+        ss = 10 * int(ts[4]) + int(ts[5])
+        ff = 100 * int(ts[6]) + 10 * int(ts[7]) + int(ts[8])
+        time = 3600 * hh + 60 * mm + ss + ff / 1000
+        return f'[{ts[0]}{ts[1]}:{ts[2]}{ts[3]}:{ts[4]}{ts[5]}.{ts[6]}{ts[7]}{ts[8]}]', time, None
+    except ValueError:
+        return f'[00:00:00.000]', -1.0, None  # Indicate invalid timestamp by returning negative time
 
 def timestamp_box_image(img, box, kiwi, slant):
     # Note: img must be in field mode
