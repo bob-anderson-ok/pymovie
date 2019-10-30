@@ -72,6 +72,7 @@ import sys
 import os
 import errno
 import platform
+from datetime import datetime, timedelta
 import pickle
 from pathlib import Path
 from urllib.request import urlopen
@@ -527,7 +528,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 {'name': 'Kiwi NTSC (right)'},
                 {'name': 'Kiwi PAL (left)'},
                 {'name': 'Kiwi PAL (right)'},
-                {'name': 'GHS VTI'}
+                {'name': 'GHS VTI'},
+                {'name': 'SharpCap 8 bit avi'}
             ]
 
             pickle.dump(self.VTIlist, open(vtiListFilename, "wb"))
@@ -605,6 +607,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # ########################################################################
 
         self.disableUpdateFrameWithTracking = False
+
+        self.sharpCapTimestampPresent = False
 
         self.finderFrameBeingDisplayed = False
 
@@ -753,6 +757,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.fits_timestamp = None
         self.fits_date = None
+
+        self.avi_timestamp = ''
 
         # This 'state' variable controls the writing of reference star data files
         # during manual WCS calibration. The method handleSetRaDecSignal uses this
@@ -1266,6 +1272,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.frameView.getView().update()
 
         self.showMsg(f'OCR data files deleted from current folder')
+
+        self.vtiSelectComboBox.setCurrentIndex(0)
 
     def composeApertureStateDictionary(self, aperture):
         my_dict = {}
@@ -2233,27 +2241,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.kiwiInUse = False
         self.kiwiPALinUse = False
 
-        self.viewFieldsCheckBox.setChecked(True)
-
-        # There is often something messed up with frame 0, so we protect the user
-        # by automatically moving to frame 1 in that case
-        if self.currentFrameSpinBox.value() == 0:
-            self.currentFrameSpinBox.setValue(1)
-
-        # Set the flag that we use to automatically detect which field is earliest in time.
-        # We only want to do this test once.
-
-        self.detectFieldTimeOrder = True
-
-        self.showFrame()
-
-        self.clearOcrBoxes()
+        # Moved into each VTI handler because SharpCap 8 bit avi needs different initialization
+        # self.doStandardVTIsetup()
 
         width = self.image.shape[1]
 
         if not (width == 640 or width == 720):
-            self.showMsg(f'Unexpected image width of {width}')
-            return
+            self.showMsg(f'Unexpected image width of {width} will be interpreted as 720')
+            # return
 
         self.ocrBoxesDir = self.folder_dir
         self.ocrDigitsDir = self.folder_dir
@@ -2265,6 +2260,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.lowerOcrBoxesRight = []
 
         if self.currentVTIindex == 1:  # IOTA-3 w=640 or 720 full screen mode
+
+            self.doStandardVTIsetup()
 
             if width == 640:
                 self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft = setup_for_iota_640_full_screen_mode3()
@@ -2286,6 +2283,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         if self.currentVTIindex == 2:  # IOTA-3 w=640 or 720 safe mode
 
+            self.doStandardVTIsetup()
+
             if width == 640:
                 self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft = setup_for_iota_640_safe_mode3()
             else:
@@ -2305,6 +2304,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             return
 
         if self.currentVTIindex == 3:  # IOTA-2 w=640 and 720  full screen mode
+
+            self.doStandardVTIsetup()
 
             if width == 640:
                 self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft = setup_for_iota_640_full_screen_mode2()
@@ -2326,6 +2327,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         if self.currentVTIindex == 4:  # IOTA-2 w=640 and 720 safe mode
 
+            self.doStandardVTIsetup()
+
             if width == 640:
                 self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft= setup_for_iota_640_safe_mode2()
             else:
@@ -2346,6 +2349,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         if self.currentVTIindex == 5:  # BoxSprite 3 w=640 and 720
 
+            self.doStandardVTIsetup()
+
             if width == 640:
                 self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft= setup_for_boxsprite3_640()
             else:
@@ -2365,6 +2370,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             return
 
         if self.currentVTIindex == 6:  # Kiwi w=720 and 640 (left position)
+
+            self.doStandardVTIsetup()
 
             if width == 640:
                 self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft= setup_for_kiwi_vti_640_left()
@@ -2393,6 +2400,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         if self.currentVTIindex == 7:  # Kiwi w=720 and 640 (right position)
 
+            self.doStandardVTIsetup()
+
             if width == 640:
                 self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft = setup_for_kiwi_vti_640_left()
                 self.upperOcrBoxesRight, self.lowerOcrBoxesRight = setup_for_kiwi_vti_640_right()
@@ -2420,6 +2429,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         if self.currentVTIindex == 8: # Kiwi PAL (left position)
 
+            self.doStandardVTIsetup()
+
             self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft = setup_for_kiwi_PAL_720_left()
             self.upperOcrBoxesRight, self.lowerOcrBoxesRight = setup_for_kiwi_PAL_720_right()
 
@@ -2442,6 +2453,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             return
 
         if self.currentVTIindex == 9: # Kiwi PAL (right position)
+
+            self.doStandardVTIsetup()
 
             self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft = setup_for_kiwi_PAL_720_left()
             self.upperOcrBoxesRight, self.lowerOcrBoxesRight = setup_for_kiwi_PAL_720_right()
@@ -2466,6 +2479,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         if self.currentVTIindex == 10:  # GHS
 
+            self.doStandardVTIsetup()
+
             # Until we get more information, I cannot provide different boxes for different widths
             # if width == 640:
             #     self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft= setup_for_GHS_640()
@@ -2487,9 +2502,35 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.extractTimestamps()
             return
 
+        if self.currentVTIindex == 11:  # SharpCap 8 bit avi
+
+            if not self.avi_in_use or not self.image.dtype == 'uint8':
+                self.showMsg(f'We only extract SharpCap image embedded timestamps from 8 bit avi files.')
+                return
+
+            self.writeFormatTypeFile('SharpCap8')
+            self.formatterCode = 'SharpCap8'
+            self.sharpCapTimestampPresent = True
+            self.showFrame()
+
+            return
+
+
 
         self.showMsg('Not yet implemented')
         return
+
+    def doStandardVTIsetup(self):
+        self.viewFieldsCheckBox.setChecked(True)
+        # There is often something messed up with frame 0, so we protect the user
+        # by automatically moving to frame 1 in that case
+        if self.currentFrameSpinBox.value() == 0:
+            self.currentFrameSpinBox.setValue(1)
+        # Set the flag that we use to automatically detect which field is earliest in time.
+        # We only want to do this test once.
+        self.detectFieldTimeOrder = True
+        self.showFrame()
+        self.clearOcrBoxes()
 
     def loadCustomOcrProfiles(self):
         if not self.avi_wcs_folder_in_use:
@@ -2540,7 +2581,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.writeFormatTypeFile(self.formatterCode)
 
             self.startTimestampReading()
-            # self.showFrame()
 
     def generateKiwiOcrBoxesAtRight(self):
         self.showMsg(f'We are now generating the kiwi specific OcrBoxes')
@@ -5001,6 +5041,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 else:
                     timestamp = ''
 
+            if self.timestampInImageCheckBox.isChecked():
+                timestamp = self.avi_timestamp
+
         return (xc_roi, yc_roi, xc_world, yc_world, signal,
                 appsum, mean, max_area, frame_num, cvxhull, maxpx, std, timestamp)
 
@@ -5316,7 +5359,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self,  # parent
                 "Select avi/ser file",  # title for dialog
                 self.settings.value('avidir', "./"),  # starting directory
-                "avi files (*.avi);;ser files (*.ser);; all files (*.*)",
+                "avi/ser files (*.avi *.ser);;all files (*.*)",
                 options=options
             )
 
@@ -5406,7 +5449,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                         self.frameJumpBig = 250
                         self.changeNavButtonTitles()
 
-
                     self.showMsg(f'frames per second:{fps:0.6f}')
 
                     frame_count = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -5444,6 +5486,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def setTimestampFormatter(self):
         self.kiwiInUse = False
+        self.sharpCapTimestampPresent = False
         if self.formatterCode is None:
             self.showMsg(f'Timestamp formatter code was missing.')
             self.timestampFormatter = None
@@ -5461,6 +5504,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.kiwiPALinUse = True
         elif self.formatterCode == 'GHS':
             self.timestampFormatter = format_ghs_timestamp
+        elif self.formatterCode == 'SharpCap8':
+            self.sharpCapTimestampPresent = True
         else:
             self.showMsg(f'Unknown timestamp formatter code: {self.formatterCode}.  Defaulting to Iota')
             self.timestampFormatter = format_iota_timestamp
@@ -5724,13 +5769,17 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
 
     def startTimestampReading(self):
-        # This is how we starup timestamp extraction.
+        # This is how we startup timestamp extraction.
 
         # We assume that if a valid timestamp formatter selection code is
         # present, then timestamp reading should be attempted
         formatter_code = self.readFormatTypeFile()
         self.formatterCode = formatter_code
         processTimestampProfile = not self.formatterCode is None
+
+        if self.formatterCode == 'SharpCap8':
+            self.sharpCapTimestampPresent = True
+            return
 
         if processTimestampProfile:
             self.loadPickledOcrBoxes()  # if any
@@ -5970,6 +6019,19 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     if self.alwaysEraseHotPixels:
                         self.applyHotPixelErasure()
 
+                    # if self.timestampInImageCheckBox.isChecked():
+                    if self.sharpCapTimestampPresent:
+                        # TODO SharpCap changes
+                        ts, date = self.getSharpCapTimestring()
+                        self.showMsg(f'Timestamp found: {date} @ {ts}')
+
+                        # Only use the date from the first frame
+                        if self.initialFrame:
+                            self.avi_date = date
+
+                        # ...but we need the time from every new frame.
+                        self.avi_timestamp = ts
+
                 except Exception as e1:
                     self.showMsg(f'Problem reading avi file: {e1}')
             elif self.ser_file_in_use:
@@ -6107,10 +6169,35 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(repr(e0))
             self.showMsg(f'There are no frames to display.  Have you read a file?')
 
-        # TODO Remove this test code
-        # self.showMsg(f'{self.image[0,0]} {self.image[0,1]} {self.image[0,2]} {self.image[0,3]} '
-        #              f'{self.image[0,4]} {self.image[0,5]} {self.image[0,6]} {self.image[0,7]}'
+
+
+    def getSharpCapTimestring(self):
+
+        buff = []
+        for i in range(8):
+            buff.append(self.image[0, i])
+
+        # self.showMsg(f'{buff[0]:3d} {buff[1]:3d} {buff[2]:3d} {buff[3]:3d} '
+        #              f'{buff[4]:3d} {buff[5]:3d} {buff[6]:3d} {buff[7]:3d}'
         #              f'  type: {self.image.dtype}')
+
+        # Convert buff list to int64 (assuming little-endian byte ordering)
+        ticks = 0
+        i = len(buff) - 1
+        while i >= 0:
+            new_val = buff[i] * 256 ** i
+            ticks += new_val
+            i -= 1
+
+        usecs = ticks / 10.0
+        ts = (datetime(1, 1, 1) + timedelta(microseconds=usecs))
+
+        timeStampStr = f'[{ts.hour:02d}:{ts.minute:02d}:{ts.second:02d}.{ts.microsecond:06d}]'
+        dateStr = f'{ts.year}-{ts.month}-{ts.day}'
+
+        # self.showMsg(f'{dateStr}  {timeStampStr}')
+
+        return timeStampStr, dateStr
 
 
     def removeAperture(self, aperture):
