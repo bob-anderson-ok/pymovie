@@ -5041,7 +5041,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 else:
                     timestamp = ''
 
-            if self.timestampInImageCheckBox.isChecked():
+            if self.avi_timestamp:
                 timestamp = self.avi_timestamp
 
         return (xc_roi, yc_roi, xc_world, yc_world, signal,
@@ -6019,7 +6019,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     if self.alwaysEraseHotPixels:
                         self.applyHotPixelErasure()
 
-                    # if self.timestampInImageCheckBox.isChecked():
                     if self.sharpCapTimestampPresent:
                         # TODO SharpCap changes
                         ts, date = self.getSharpCapTimestring()
