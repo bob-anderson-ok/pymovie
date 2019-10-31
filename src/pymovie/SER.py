@@ -118,7 +118,7 @@ def getSerImage(f, frameNum, bytes_per_pixel, image_width, image_height, little_
     # height is y axis   width is x axis
     num_pixels_in_frame = image_height * image_width
     frame_size = bytes_per_pixel * num_pixels_in_frame
-    frame_start = frame_size * frameNum + SER_HEADER_SIZE
+    frame_start = int(frame_size) * int(frameNum) + SER_HEADER_SIZE
     f.seek(frame_start)
     if bytes_per_pixel == 1:
         img = np.fromfile(f, dtype='uint8', count=num_pixels_in_frame)

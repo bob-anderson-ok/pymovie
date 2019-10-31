@@ -6206,9 +6206,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # self.showMsg(f'{dateStr}  {timeStampStr}')
 
         # TODO Remove this debug code
-        # datetimeUTC = ticks
-        # DateTimeUTC = self.convertJDtoTimestamp(self.convertNETdatetimeToJD(datetimeUTC))
-        # self.showMsg(DateTimeUTC)
+        datetimeUTC = ticks
+        DateTimeUTC = self.convertJDtoTimestamp(self.convertNETdatetimeToJD(datetimeUTC))
+        self.showMsg(DateTimeUTC)
 
         return timeStampStr, dateStr
 
