@@ -6181,21 +6181,15 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def getSharpCapTimestring(self):
 
-        buff = []
-        for i in range(8):
-            buff.append(self.image[0, i])
+        # buff = []
+        # for i in range(8):
+        #     buff.append(self.image[0, i])
 
         # self.showMsg(f'{buff[0]:3d} {buff[1]:3d} {buff[2]:3d} {buff[3]:3d} '
         #              f'{buff[4]:3d} {buff[5]:3d} {buff[6]:3d} {buff[7]:3d}'
         #              f'  type: {self.image.dtype}')
 
-        # Convert buff list to int64 (assuming little-endian byte ordering)
-        ticks = 0
-        i = len(buff) - 1
-        while i >= 0:
-            new_val = buff[i] * 256 ** i
-            ticks += new_val
-            i -= 1
+        ticks = np.frombuffer(self.image, dtype='int64', count=1)[0]
 
         usecs = ticks / 10.0
         ts = (datetime(1, 1, 1) + timedelta(microseconds=usecs))
@@ -6206,9 +6200,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # self.showMsg(f'{dateStr}  {timeStampStr}')
 
         # TODO Remove this debug code
-        datetimeUTC = ticks
-        DateTimeUTC = self.convertJDtoTimestamp(self.convertNETdatetimeToJD(datetimeUTC))
-        self.showMsg(DateTimeUTC)
+        # datetimeUTC = ticks
+        # DateTimeUTC = self.convertJDtoTimestamp(self.convertNETdatetimeToJD(datetimeUTC))
+        # self.showMsg(DateTimeUTC)
 
         return timeStampStr, dateStr
 
