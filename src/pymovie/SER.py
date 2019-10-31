@@ -1,12 +1,21 @@
 import numpy as np
 import os
 from astropy.time import Time
+from datetime import datetime, timedelta
+
 
 SER_HEADER_SIZE = 178
 
+def sharpCapTimestamp(datetime64):
 
-def convertNETdatetimeToJD(datetime):
-    jd = datetime / 864000000000 + 1721424.5
+    usecs = datetime64 / 10.0
+    ts = (datetime(1, 1, 1) + timedelta(microseconds=usecs))
+
+    timestamp = f'{ts.year}-{ts.month}-{ts.day}T{ts.hour:02d}:{ts.minute:02d}:{ts.second:02d}.{ts.microsecond:06d}'
+    return timestamp
+
+def convertNETdatetimeToJD(datetime64):
+    jd = datetime64 / 864000000000 + 1721424.5
     return jd
 
 
@@ -77,11 +86,14 @@ def getMetaData(fpath):
 
         # '<i8' specifies a little-endian 64 bit integer
         datetimeLocal = np.fromfile(f, dtype='<i8', count=1)[0]
-        DateTimeLocal = convertJDtoTimestamp(convertNETdatetimeToJD(datetimeLocal))
+        # DateTimeLocal = convertJDtoTimestamp(convertNETdatetimeToJD(datetimeLocal))
+        DateTimeLocal = sharpCapTimestamp(datetimeLocal)
         ans.update(DateTimeLocal=DateTimeLocal)
 
         datetimeUTC = np.fromfile(f, dtype='<i8', count=1)[0]
-        DateTimeUTC = convertJDtoTimestamp(convertNETdatetimeToJD(datetimeUTC))
+        # DateTimeUTC = convertJDtoTimestamp(convertNETdatetimeToJD(datetimeUTC))
+        DateTimeUTC = sharpCapTimestamp(datetimeUTC)
+
         ans.update(DateTimeUTC=DateTimeUTC)
 
         if PixelDepthPerPlane > 8:
@@ -109,7 +121,8 @@ def getMetaData(fpath):
             f.seek(PositionOfTimestamps)
             for i in range(int(NumTimestamps)):
                 datetimeUTC = np.fromfile(f, dtype='<i8', count=1)[0]
-                DateTimeUTC = convertJDtoTimestamp(convertNETdatetimeToJD(datetimeUTC))
+                DateTimeUTC = sharpCapTimestamp(datetimeUTC)
+                # DateTimeUTC = convertJDtoTimestamp(convertNETdatetimeToJD(datetimeUTC))
                 timestamps.append(DateTimeUTC)
 
     return ans, timestamps

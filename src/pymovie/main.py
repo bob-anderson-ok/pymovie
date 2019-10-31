@@ -6199,7 +6199,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         # self.showMsg(f'{dateStr}  {timeStampStr}')
 
-        # TODO Remove this debug code
+        # This is how the SER.py package was doin it.  But this always gives dates one day earlier
+        # in time than this routine, which matches the visual display of SharpCap captures
         # datetimeUTC = ticks
         # DateTimeUTC = self.convertJDtoTimestamp(self.convertNETdatetimeToJD(datetimeUTC))
         # self.showMsg(DateTimeUTC)
