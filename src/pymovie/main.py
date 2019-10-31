@@ -68,6 +68,7 @@ except ImportError:
 import site
 import warnings
 from astropy.utils.exceptions import AstropyWarning
+from astropy.time import Time
 import sys
 import os
 import errno
@@ -1023,6 +1024,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.checkForNewerVersion()
 
         self.copy_desktop_icon_file_to_home_directory()
+
+    def convertNETdatetimeToJD(self, datetime):
+        jd = datetime / 864000000000 + 1721424.5
+        return jd
+
+    def convertJDtoTimestamp(self, jd):
+        t = Time(jd, format='jd', precision=4)
+        return t.isot
 
     def showAppSizeToolButtonHelp(self):
         self.showHelp(self.appSizeToolButton)
@@ -6195,6 +6204,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         dateStr = f'{ts.year}-{ts.month}-{ts.day}'
 
         # self.showMsg(f'{dateStr}  {timeStampStr}')
+
+        # TODO Remove this debug code
+        # datetimeUTC = ticks
+        # DateTimeUTC = self.convertJDtoTimestamp(self.convertNETdatetimeToJD(datetimeUTC))
+        # self.showMsg(DateTimeUTC)
 
         return timeStampStr, dateStr
 

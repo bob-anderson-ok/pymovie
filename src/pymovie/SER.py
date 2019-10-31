@@ -90,7 +90,7 @@ def getMetaData(fpath):
             BytesPerPixel = 1
         ans.update(BytesPerPixel=BytesPerPixel)
 
-        ImageDataSize = FrameCount * ImageWidth * ImageHeight * BytesPerPixel
+        ImageDataSize = int(FrameCount) * int(ImageWidth) * int(ImageHeight) * int(BytesPerPixel)
         ans.update(ImageDataSize=ImageDataSize)
 
         # Two ways to get file size

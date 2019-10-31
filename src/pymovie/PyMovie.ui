@@ -305,9 +305,6 @@
          </item>
          <item>
           <widget class="QTabWidget" name="tabWidget">
-           <property name="currentIndex">
-            <number>0</number>
-           </property>
            <property name="usesScrollButtons">
             <bool>true</bool>
            </property>
@@ -374,6 +371,42 @@
              <item row="0" column="1">
               <layout class="QVBoxLayout" name="verticalLayout_9">
                <item>
+                <widget class="QPushButton" name="readAviFileButton">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Note: avi files are read using OpenCV which employs ffmpeg to do the actual file reading. As a result, a wide range of avi codecs are standardly available.&lt;/p&gt;&lt;p&gt;In particular, avi files using Lagarith compression will be read without problem.&lt;/p&gt;&lt;p&gt;There is a remote possibility that an avi was recorded with an unusual codec and so fail to be read by PyMovie. In that case, you will need to use an external file conversion program that can decode the file as recorded and rewrite it using a more common codec.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>Open AVI/SER file</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="createAVIWCSfolderButton">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button will only be active when a 'bare' avi/ser is opened (rather than from an AVI/SER-WCS folder).&lt;/p&gt;&lt;p&gt;This button has been added because of the decision to perform timestamp OCR only on files that live in an AVI/SER-WCS folder. While that is a good way to collect the (many) files that result from OCR, WCS, PyMovie, and PyOTE operations, there are likely to be users that have opted for a flat (or flatter) directory structure. This button will ease (hopefully) the transition to an alternate file organization.&lt;/p&gt;&lt;p&gt;When clicked, a Directory dialog will appear to allow the user to select (or even create) the directory that is to hold the newly created (and filled) AVI/SER-WCS folder. It defaults to the directory that holds the opened video file.&lt;/p&gt;&lt;p&gt;The name of the newly created AVI/SER-WCS folder will always be the name of the video file with its outermost extension removed.&lt;/p&gt;&lt;p&gt;The folder will then be populated with an alias (Mac) to the avi or a Shortcut (Windows) to the avi, so this file structure will be frugal with file space.&lt;/p&gt;&lt;p&gt;Finally, behind-the-scenes, the program simulates the user clicking on &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Select AVI/SER-WCS folder&lt;/span&gt; and then clicking on &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Accept&lt;/span&gt; (possible because after a 'creation of AVI/SER-WCS folder', the default directory/folder is set to that of the newly created folder). We could not imagine a workflow where a user would &lt;span style=&quot; font-weight:600;&quot;&gt;not&lt;/span&gt; want to immediately start processing the video from within an AVI/SER-WCS folder, so the automation seems reasonable and unlikely to get in anyone's way.&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>Create AVI/SER-WCS folder from file</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="Line" name="line_5">
+                 <property name="frameShadow">
+                  <enum>QFrame::Plain</enum>
+                 </property>
+                 <property name="lineWidth">
+                  <number>5</number>
+                 </property>
+                 <property name="midLineWidth">
+                  <number>5</number>
+                 </property>
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                </widget>
+               </item>
+               <item>
                 <widget class="QPushButton" name="selectAviWcsFolderButton">
                  <property name="toolTip">
                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;An AVI/SER-WCS folder is a container for a single observation video and its related files. As such, there must be only a single .avi/.ser file in the folder either explicitly, or by shortcut (Windows) or alias (MacOS). This requirement is enforced.&lt;/p&gt;&lt;p&gt;This folder may also contain a simple text file that contains the Ra and DEC coordinates of the occulted star, filled in by the user through a dialog box that appears when this position information file is found missing during WCS calibration operations.&lt;/p&gt;&lt;p&gt;This folder is also where the WCS calibration data will be placed if the user opts for calibrating frame 0 by making an on-line submission to astrometry.net.&lt;/p&gt;&lt;p&gt;This folder is also the default location for storing csv files and copies of the last lightcurve plots.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Note:&lt;/span&gt; avi files are read using OpenCV which employs ffmpeg to do the actual file reading. As a result, a wide range of avi codecs are standardly available.&lt;/p&gt;&lt;p&gt;In particular, avi files using Lagarith compression will be read without problem.&lt;/p&gt;&lt;p&gt;There is a remote possibility that an avi was recorded with an unusual codec and so fail to be read by PyMovie. In that case, you will need to use an external file conversion program that can decode the file as recorded and rewrite it using a more common codec.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -396,42 +429,6 @@
                  </property>
                  <property name="text">
                   <string>Select FITS folder</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="Line" name="line_5">
-                 <property name="frameShadow">
-                  <enum>QFrame::Plain</enum>
-                 </property>
-                 <property name="lineWidth">
-                  <number>5</number>
-                 </property>
-                 <property name="midLineWidth">
-                  <number>5</number>
-                 </property>
-                 <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="readAviFileButton">
-                 <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Note: avi files are read using OpenCV which employs ffmpeg to do the actual file reading. As a result, a wide range of avi codecs are standardly available.&lt;/p&gt;&lt;p&gt;In particular, avi files using Lagarith compression will be read without problem.&lt;/p&gt;&lt;p&gt;There is a remote possibility that an avi was recorded with an unusual codec and so fail to be read by PyMovie. In that case, you will need to use an external file conversion program that can decode the file as recorded and rewrite it using a more common codec.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                 </property>
-                 <property name="text">
-                  <string>Open AVI/SER file</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="createAVIWCSfolderButton">
-                 <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button will only be active when a 'bare' avi/ser is opened (rather than from an AVI/SER-WCS folder).&lt;/p&gt;&lt;p&gt;This button has been added because of the decision to perform timestamp OCR only on files that live in an AVI/SER-WCS folder. While that is a good way to collect the (many) files that result from OCR, WCS, PyMovie, and PyOTE operations, there are likely to be users that have opted for a flat (or flatter) directory structure. This button will ease (hopefully) the transition to an alternate file organization.&lt;/p&gt;&lt;p&gt;When clicked, a Directory dialog will appear to allow the user to select (or even create) the directory that is to hold the newly created (and filled) AVI/SER-WCS folder. It defaults to the directory that holds the opened video file.&lt;/p&gt;&lt;p&gt;The name of the newly created AVI/SER-WCS folder will always be the name of the video file with its outermost extension removed.&lt;/p&gt;&lt;p&gt;The folder will then be populated with an alias (Mac) to the avi or a Shortcut (Windows) to the avi, so this file structure will be frugal with file space.&lt;/p&gt;&lt;p&gt;Finally, behind-the-scenes, the program simulates the user clicking on &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Select AVI/SER-WCS folder&lt;/span&gt; and then clicking on &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Accept&lt;/span&gt; (possible because after a 'creation of AVI/SER-WCS folder', the default directory/folder is set to that of the newly created folder). We could not imagine a workflow where a user would &lt;span style=&quot; font-weight:600;&quot;&gt;not&lt;/span&gt; want to immediately start processing the video from within an AVI/SER-WCS folder, so the automation seems reasonable and unlikely to get in anyone's way.&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                 </property>
-                 <property name="text">
-                  <string>Create AVI/SER-WCS folder from file</string>
                  </property>
                 </widget>
                </item>
