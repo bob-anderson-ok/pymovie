@@ -420,7 +420,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         tab_name_list = self.settings.value('tablist')
         # self.showMsg(repr(tablist))
-        self.redoTabOrder(tab_name_list)
+        if tab_name_list:
+            self.redoTabOrder(tab_name_list)
 
         # splitterOne is the vertical splitter in the lower panel.
         # splitterTwo is the vertical splitter in the upper panel
