@@ -418,6 +418,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.radius53radioButton.setChecked(self.settings.value('5.3 mask', False) == 'true')
         self.radius68radioButton.setChecked(self.settings.value('6.8 mask', False) == 'true')
 
+        tab_name_list = self.settings.value('tablist')
+        # self.showMsg(repr(tablist))
+        self.redoTabOrder(tab_name_list)
+
         # splitterOne is the vertical splitter in the lower panel.
         # splitterTwo is the vertical splitter in the upper panel
         # splitterThree is the horizontal splitter between the top and bottom panel
@@ -1025,13 +1029,39 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.copy_desktop_icon_file_to_home_directory()
 
-    def convertNETdatetimeToJD(self, datetime):
-        jd = datetime / 864000000000 + 1721424.5
-        return jd
+    # def convertNETdatetimeToJD(self, datetime):
+    #     jd = datetime / 864000000000 + 1721424.5
+    #     return jd
+    #
+    # def convertJDtoTimestamp(self, jd):
+    #     t = Time(jd, format='jd', precision=4)
+    #     return t.isot
 
-    def convertJDtoTimestamp(self, jd):
-        t = Time(jd, format='jd', precision=4)
-        return t.isot
+    def redoTabOrder(self, tabnames):
+
+        def getIndexOfTabFromName(name):
+            for i in range(self.tabWidget.count()):
+                if self.tabWidget.tabText(i) == name:
+                    return i
+            return -1
+
+        if not len(tabnames) == self.tabWidget.count():
+            self.showMsg(f'Mismatch in saved tab list versus current number of tabs.')
+            return
+
+        # Development print-out
+        # for i in range(self.tabWidget.count()):
+        #     index = getIndexOfTabFromName(tabnames[i])
+        #     self.showMsg(f'{tabnames[i]} @ {index}')
+
+        for i in range(len(tabnames)):
+            from_index = getIndexOfTabFromName(tabnames[i])
+            to_index = i
+            if from_index < 0:
+                self.showMsg(f'Could not locate {tabnames[i]} in the existing tabs')
+                return
+            else:
+                self.tabWidget.tabBar().moveTab(from_index, to_index)
 
     def showAppSizeToolButtonHelp(self):
         self.showHelp(self.appSizeToolButton)
@@ -7072,6 +7102,17 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.textOut.ensureCursorVisible()
 
     def closeEvent(self, event):
+
+        tabOrderList = []
+        numTabs = self.tabWidget.count()
+        # print(f'numTabs: {numTabs}')
+        for i in range(numTabs):
+            tabName = self.tabWidget.tabText(i)
+            # print(f'{i}: |{tabName}|')
+            tabOrderList.append(tabName)
+
+        self.settings.setValue('tablist', tabOrderList)
+
         # Capture the close request and update 'sticky' settings
         self.settings.setValue('size', self.size())
         self.settings.setValue('pos', self.pos())
