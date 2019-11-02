@@ -5246,9 +5246,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def readFinderImage(self):
 
-        if not (self.avi_wcs_folder_in_use or self.fits_folder_in_use):
-            self.showMsg(f'"finder" files must reside in a folder')
-            return
+        # if not (self.avi_wcs_folder_in_use or self.fits_folder_in_use):
+        #     self.showMsg(f'"finder" files must reside in a folder')
+        #     return
 
         options = QFileDialog.Options()
         # options |= QFileDialog.DontUseNativeDialog
@@ -5640,15 +5640,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             # We need to know what OS we're running under in order to look for
             # either 'aliases' (MacOs) or 'shortcuts' (Windows) to the avi file
 
-            # if os.name == 'posix':
-            #     # self.showMsg(f'os: MacOS')
-            #     macOS = True
-            #     windows = False
-            # else:
-            #     macOS = False
-            #     windows = True
-            #     # self.showMsg(f'os: Windows')
-
             # use `sys.platform` to distinguish macOS from Linux
             if sys.platform == 'linux':
                 linux, macOS, windows = True, False, False
@@ -5657,44 +5648,104 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             else:
                 linux, macOS, windows = False, False, True
 
-
-            # Find an .avi or .ser file in the given directory.  Enforce that there be only one.
+            # Find an .avi or .ser file or reference to an .avi or .ser
             # Note: this picks up alias (mac) and shortcut (Windows) files too.
             avi_filenames = glob.glob(dir_path + '/*.avi*')
-            self.avi_in_use = True
             if len(avi_filenames) == 0:
+                # If no avi files, look for .ser files
                 avi_filenames = glob.glob(dir_path + '/*.ser*')
                 if avi_filenames:
                     self.loadCustomProfilesButton.setEnabled(False)
                     self.clearOcrDataButton.setEnabled(False)
                 self.ser_file_in_use = True
                 self.avi_in_use = False
+            else:
+                self.avi_in_use = True
+                self.ser_file_in_use = False
 
-            avi_location = ''
-            num_avi_ser_files = len(avi_filenames)
+            if len(avi_filenames) == 0:
+                self.showMsg(f'No avi/ser files or references were found in that folder.')
+                self.avi_in_use = False
+                self.ser_file_in_use = False
+                return
 
-            if num_avi_ser_files == 1:  # one avi or ser (or alias or shortcut) is in the folder)
-                avi_location = avi_filenames[0]
-                if macOS:
-                    avi_location = alias_lnk_resolver.resolve_osx_alias(avi_location)
-                elif linux:
-                    avi_location = os.readlink(avi_location)
-                else:
-                    target = winshell.shortcut(avi_location)
+            file_to_use = None
+
+            if macOS:
+                for filename in avi_filenames:
+                    avi_location = alias_lnk_resolver.resolve_osx_alias(filename)
+                    if not avi_location == filename:
+                        # self.showMsg(f'{filename} is a Mac alias to an avi/ser')
+                        file_to_use = avi_location
+                        break
+                    elif filename.endswith('.lnk'):
+                        # self.showMsg(f'{filename} is a Windows shortcut to an avi/ser')
+                        pass
+                    else:
+                        if filename.endswith('.avi') or filename.endswith('.ser'):
+                            # self.showMsg(f'{filename} is an avi/ser file')
+                            file_to_use = avi_location
+
+            if windows:
+                avi_size = 4000 # To differentiate from a Mac alias
+                for filename in avi_filenames:
+                    target = winshell.shortcut(filename)
                     avi_location = target.path
-                # Save as instance variable for use in stacker
-                self.avi_location = avi_location
-                self.filename = avi_location
-            elif num_avi_ser_files > 1:
-                self.showMsg(f'{num_avi_ser_files} avi/ser files were found.  Only one is allowed in an AVI/SER-WCS folder')
+                    if filename.endswith('.lnk'):
+                            # self.showMsg(f'{filename} is a Windows shortcut to an avi')
+                            file_to_use = avi_location
+                            break
+                    else:
+                        size = os.path.getsize(filename)
+                        if size > avi_size:
+                            avi_size = size
+                            file_to_use = avi_location
+                        # self.showMsg(f'{filename} has size {size}')
+
+            # For linux we assume that there is only a single reference to a video file
+            if linux:
+                file_to_use = avi_filenames[0]
+
+            if file_to_use is None:
+                self.showMsg(f'No avi/ser files or references were found in that folder.')
                 self.avi_in_use = False
                 self.ser_file_in_use = False
                 return
             else:
-                self.showMsg(f'No avi/ser files were found in that folder.')
-                self.avi_in_use = False
-                self.ser_file_in_use = False
-                return
+                # Save as instance variable for use in stacker
+                self.avi_location = file_to_use
+                self.filename = file_to_use
+
+
+            # TODO Validate these changes that allow both a Mac alias and a Windows shortcut to co-exist in folder
+            # if num_avi_ser_files == 1 or num_avi_ser_files == 2:  # one or two avi or ser (or alias or shortcut) is in the folder)
+            #     avi_location = avi_filenames[0]
+            #     if macOS:
+            #         for filename in avi_filenames:
+            #             if not filename.endswith('.lnk'):  # skip Windows shortcuts
+            #                 avi_location = alias_lnk_resolver.resolve_osx_alias(filename)
+            #         # avi_location = alias_lnk_resolver.resolve_osx_alias(avi_location)
+            #     elif linux: # For linux we assume only a single reference (link) to a video file
+            #         avi_location = os.readlink(avi_location)
+            #     else:
+            #         target = winshell.shortcut(avi_location)
+            #         avi_location = target.path
+            #         for filename in avi_filenames:
+            #             if filename.endswith('.lnk'):  # skip Windows shortcuts
+            #                 avi_location = alias_lnk_resolver.resolve_osx_alias(filename)
+            #     # Save as instance variable for use in stacker
+            #     self.avi_location = avi_location
+            #     self.filename = avi_location
+            # elif num_avi_ser_files > 2:
+            #     self.showMsg(f'{num_avi_ser_files} avi/ser files were found.  Only two are allowed in an AVI/SER-WCS folder')
+            #     self.avi_in_use = False
+            #     self.ser_file_in_use = False
+            #     return
+            # else:
+            #     self.showMsg(f'No avi/ser files were found in that folder.')
+            #     self.avi_in_use = False
+            #     self.ser_file_in_use = False
+            #     return
 
 
             # remove the apertures (possibly) left from previous file
@@ -5709,16 +5760,16 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.ser_timestamps = []
 
             if self.avi_in_use:
-                self.showMsg(f'Opened: {avi_location}')
+                self.showMsg(f'Opened: {self.avi_location}')
 
-                _, fn = os.path.split(avi_location)
+                _, fn = os.path.split(self.avi_location)
                 self.fileInUseEdit.setText(fn)
 
                 if self.cap:
                     self.cap.release()
-                self.cap = cv2.VideoCapture(avi_location)
+                self.cap = cv2.VideoCapture(self.avi_location)
                 if not self.cap.isOpened():
-                    self.showMsg(f'  {avi_location} could not be opened!')
+                    self.showMsg(f'  {self.avi_location} could not be opened!')
                 else:
                     self.timestampReadingEnabled = False
                     self.vtiSelectComboBox.setCurrentIndex(0)
@@ -5766,12 +5817,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     self.showFrame()  # So that we get the first frame timestamp (if possible)
 
             else:  # must be a ser file
-                self.ser_meta_data, self.ser_timestamps = SER.getMetaData(self.filename)
-                self.ser_file_handle = open(self.filename, 'rb')
+                self.ser_meta_data, self.ser_timestamps = SER.getMetaData(self.avi_location)
+                self.ser_file_handle = open(self.avi_location, 'rb')
 
-                self.showMsg(f'Opened: {self.filename}')
+                self.showMsg(f'Opened: {self.avi_location}')
 
-                _, fn = os.path.split(self.filename)
+                _, fn = os.path.split(self.avi_location)
                 self.fileInUseEdit.setText(fn)
 
                 self.showSerMetaData()
