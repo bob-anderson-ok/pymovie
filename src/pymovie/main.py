@@ -6197,6 +6197,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.frameView.setImage(self.image)
                 self.createImageFields()
 
+            if self.finderFrameBeingDisplayed:
+                self.showMsg(f'Recalculating thresholds for all snap-to-blob apertures')
+                for app in self.getApertureList():
+                    if not app.thresh == self.big_thresh:
+                        self.computeInitialThreshold(app)
+
             self.finderFrameBeingDisplayed = False
 
             try:
