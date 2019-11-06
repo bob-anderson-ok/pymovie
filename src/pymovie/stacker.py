@@ -289,7 +289,13 @@ def frameStacker(pr, progress_bar, event_process,
     # Convert to uint8 (because FITS is always big-endian and Intel is little-endian and this difference
     unredacted = unredacted.astype('uint8')
 
-    outlist = pyfits.PrimaryHDU(unredacted)
+    # outlist = pyfits.PrimaryHDU(unredacted)
+    # TODO Decide whether to keep this experimental code (with no asinhScale)
+    if not timestamp_image_bottom is None:
+        normed_image = np.append(normed_image, timestamp_image_bottom, axis=0)
+    if not timestamp_image_top is None:
+        normed_image = np.append(timestamp_image_top, normed_image, axis=0)
+    outlist = pyfits.PrimaryHDU(normed_image)
 
     # Provide a new date stamp
 

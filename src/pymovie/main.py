@@ -914,6 +914,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.openBmpPushButton.clicked.connect(self.readFinderImage)
         self.openBmpPushButton.installEventFilter(self)
 
+        self.openFinderPushButton.clicked.connect(self.readFinderImage)
+        self.openFinderPushButton.installEventFilter(self)
+
         self.readAviFileButton.clicked.connect(self.readAviSerFile)
         self.readAviFileButton.installEventFilter(self)
 
@@ -1576,6 +1579,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     self.roiComboBox.setCurrentIndex(2)
                 elif xsize == 21:
                     self.roiComboBox.setCurrentIndex(3)
+                elif xsize == 11:
+                    self.roiComboBox.setCurrentIndex(4)
                 else:
                     self.showMsg(f'Unexpected aperture size of {xsize} in restored aperture group')
 
@@ -1714,11 +1719,15 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.connectAllSlots(aperture)
 
     def moveOneFrameLeft(self):
+        self.finderFrameBeingDisplayed = False
+        self.disableUpdateFrameWithTracking = False
         curFrame = self.currentFrameSpinBox.value()
         curFrame -= 1
         self.currentFrameSpinBox.setValue(curFrame)
 
     def moveOneFrameRight(self):
+        self.finderFrameBeingDisplayed = False
+        self.disableUpdateFrameWithTracking = False
         curFrame = self.currentFrameSpinBox.value()
         curFrame += 1
         self.currentFrameSpinBox.setValue(curFrame)
@@ -3011,6 +3020,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.openFitsImageFile(fullpath)
             self.finderFrameBeingDisplayed = True
             self.restoreSavedState()
+            if self.levels:
+                self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
+                self.thumbOneView.setLevels(min=self.levels[0], max=self.levels[1])
 
     def getSerFrame(self, frameNum):
         bytes_per_pixel = self.ser_meta_data['BytesPerPixel']
@@ -5246,9 +5258,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def readFinderImage(self):
 
-        # if not (self.avi_wcs_folder_in_use or self.fits_folder_in_use):
-        #     self.showMsg(f'"finder" files must reside in a folder')
-        #     return
+        some_video_open = self.ser_file_in_use or self.avi_in_use or \
+                          self.avi_wcs_folder_in_use or self.fits_folder_in_use
+
+        if not some_video_open:
+            self.showMsg(f'A video file must be open before a "finder" file can be loaded.')
+            return
 
         options = QFileDialog.Options()
         # options |= QFileDialog.DontUseNativeDialog
@@ -5276,7 +5291,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             self.apertureId = 0
             self.num_yellow_apertures = 0
-            self.levels = []
+
+            # TODO Verify that this is ok to take out in version 2.5.0
+            # self.levels = []
 
             dirpath, basefn= os.path.split(self.filename)
             rootfn, ext = os.path.splitext(basefn)
@@ -5309,6 +5326,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             # aperture placement so that it stays within the image at all times
             self.roi_max_x = width - self.roi_size
             self.roi_max_y = height - self.roi_size
+
+            if self.levels:
+                self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
+                self.thumbOneView.setLevels(min=self.levels[0], max=self.levels[1])
+
 
     def getFrame(self, fr_num):
 
@@ -7438,15 +7460,16 @@ def newRobustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=
             f'In robustMean(): {outlier_fraction} was given as outlier_fraction. This value must be <= 1.0'
         )
 
-    # The None 'flattens' data automatically so sorted_data will be 1D
+    # The None 'flattens' data automatically so sorted_data will be a 1 dimensional array
     sorted_data = np.sort(data, None)
 
     # TODO Confirm by user feedback that this is good code (lunar)
     if lunar:
         mean = round(np.mean(sorted_data))
         mean_at = np.where(sorted_data >= mean)[0][0]
-        # print(f'mean: {mean} @ {mean_at}')
         lower_mean = np.mean(sorted_data[0:mean_at])
+
+        # print(f'mean: {mean} @ {mean_at}')
         # upper_mean = np.mean(sorted_data[mean_at:])
         # print(f'lower_mean: {lower_mean}  upper_mean: {upper_mean}')
 
@@ -7460,7 +7483,6 @@ def newRobustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=
         last_index = mean_at
 
         return lower_mean, MAD, sorted_data, window, data.size, first_index, last_index
-
 
     if outlier_fraction > 0:
         # window is the number points to be included in the 'mean' calculation
@@ -7488,9 +7510,10 @@ def newRobustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=
 
     # Here we treat 'clipped' backgrounds as a special case.  We calculute the mean
     # from ALL pixels, including any star pixels that may be present.  We do this because
-    # 'clipped' data makes it impossible to remove outliers by the same means that works
+    # 'clipped' data makes it impossible to remove outliers by the same technique that works
     # so well with true gaussian (or at least symmetrical) noise with outliers
-    if first_index == 0:  # This implies 'clipped' data
+
+    if first_index == 0:  # This implies badly 'clipped' data with many values at the same low number
         app_sum = np.sum(sorted_data)
         app_avg = app_sum / data.size
         good_mean = app_avg
@@ -7499,66 +7522,45 @@ def newRobustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=
         # We'll remove those pixels after we get a sigma estimate
 
     upper_indices = np.where(sorted_data >= good_mean)
+
     # MAD means: Median Absolute Deviation
     MAD = np.median(sorted_data[upper_indices[0][0]:])
     MAD = MAD - good_mean
     if assume_gaussian:
-        MAD = MAD * 1.486
-        # sigma(gaussian) can be proved to equal 1.486*MAD for double sided data
-        # MAD = MAD / 1.9075  # but for one-sided data, this vale was found empirically
+        MAD = MAD * 1.486  # sigma(gaussian) can be proved to equal 1.486*MAD for double sided data
 
-    if first_index == 0:
-        # Here we remove bright pixels (if any) from the mean calculation.
-        upper_indices = np.where(sorted_data > good_mean + 3 * MAD)
-        # We have to do the following test because there is always the possibility
-        # that no data point will be above good_mean + 3 * MAD, in which case
-        # there is no need to recompute good_mean
-        try:
+    # The following calculation is included for dealing with assymetric (clipped) background noise.
+    # It has no siginificant effect on the mean of symmetric noise distributions (gaussian) but does
+    # a much better job of baskground mean estimation when the noise is assymetric.
+
+    # Find the indices of all points that exceed 2 sigma of the mean
+    upper_indices = np.where(sorted_data > good_mean + 2 * MAD)
+
+    # Find the indices of all points that are more then 2 sigma below the mean
+    lower_indices = np.where(sorted_data < good_mean - 2 * MAD)
+
+    try:
+        # Here we deal with cases where there are no points more than 2 sigma above the mean
+        # and/or there are no points more than 2 sigma below the mean.
+        upper_len = len(upper_indices[0])
+        lower_len = len(lower_indices[0])
+        if upper_len > 0:
             top = upper_indices[0][0]
-            app_sum = np.sum(sorted_data[0:top])
-            app_avg = app_sum / top
-            # print(good_mean, app_avg)
-            good_mean = app_avg
-        except Exception as e:
-            pass
+        else:
+            top = sorted_data.size
+        if lower_len > 0:
+            bot = lower_indices[0][-1]
+        else:
+            bot = 0
+
+        app_sum = np.sum(sorted_data[bot:top])
+        app_avg = app_sum / (top - bot + 1)
+        good_mean = app_avg
+    except Exception as e:
+        pass
 
     return good_mean, MAD, sorted_data, window, data.size, first_index, last_index
 
-# def newRobustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=True):
-#     # Note:  it is expected that type(data) is numpy.darray
-#
-#     # Protect the user against accidentally running this procedure with an
-#     # excessively large number of data points (which could take too long)
-#     if data.size > max_pts:
-#         raise Exception(
-#             f'In robustMean(): data.size limit of {max_pts} exceeded. (Change max_pts if needed)'
-#         )
-#
-#     if outlier_fraction > 1:
-#         raise Exception(
-#             f'In robustMean(): {outlier_fraction} was given as outlier_fraction. This value must be <= 1.0'
-#         )
-#
-#     # The None 'flattens' data automatically so sorted_data will be 1D
-#     sorted_data = np.sort(data, None)
-#
-#     middle = int(data.size / 2)
-#
-#     med = sorted_data[middle]
-#
-#     win_delta = int(sorted_data.size * (1 - outlier_fraction) / 2)
-#
-#     first_index = middle - win_delta
-#     last_index = middle + win_delta
-#
-#     good_mean = np.mean(sorted_data[first_index:last_index + 1])
-#
-#     # MAD means: Median Absolute Deviation
-#     MAD = np.median(np.abs(sorted_data - good_mean))
-#     if assume_gaussian:
-#         MAD = MAD * 1.486  # sigma(gaussian) can be proved to equal 1.486*MAD
-#
-#     return good_mean, MAD, sorted_data, win_delta, data.size, first_index, last_index
 
 def main():
     if sys.version_info < (3,7):
