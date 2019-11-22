@@ -424,7 +424,7 @@ def extract_timestamp(field, field_boxes, field_digits, formatter, thresh, kiwi=
             ans, score, _ = cv2_score(t_img, field_digits)
 
             if ans == 6 or ans == 8:
-                # Pick a group of test pixels at the right-hand edge (no minimize box position criticality)
+                # Pick a group of test pixels at the right-hand edge (to minimize box position criticality)
                 a1 = int(t_img[2, 15])  # test pixel1
                 a2 = int(t_img[2, 16])  # test pixel2
                 a3 = int(t_img[2, 17])  # test pixel3
@@ -443,7 +443,7 @@ def extract_timestamp(field, field_boxes, field_digits, formatter, thresh, kiwi=
                     ans = 6
 
             if ans == 8 or ans == 9:
-                # Pick a group of test pixels at the left-hand edge (no minimize box position criticality)
+                # Pick a group of test pixels at the left-hand edge (to minimize box position criticality)
                 a1 = int(t_img[5, 2])  # test pixel1
                 a2 = int(t_img[5, 3])  # test pixel2
                 a3 = int(t_img[5, 4])  # test pixel3

@@ -1687,6 +1687,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 pass
             self.showMsg(f'Current aperture group and frame number saved.')
 
+        self.restoreApertureState.setEnabled(True)
+
     def saveCurrentState(self):
         # We need to have the apertures visible before we can save them
         if self.viewFieldsCheckBox.isChecked():
@@ -4391,7 +4393,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         # Create an aperture object (box1) and connect it to us (self)
         # Give it a default name.  The user can change it later with a context menu
-        aperture = MeasurementAperture(f'app{self.apertureId:02d}', bbox, self.roi_max_x, self.roi_max_y)
+        aperture = MeasurementAperture(f'ap{self.apertureId:02d}', bbox, self.roi_max_x, self.roi_max_y)
 
         aperture.order_number = self.apertureId
 
@@ -5862,11 +5864,15 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.viewFieldsCheckBox.setEnabled(False)
 
 
-                self.saveApertureState.setEnabled(False)
+                # self.saveApertureState.setEnabled(False)
                 frame_count = self.ser_meta_data['FrameCount']
                 self.showMsg(f'There are {frame_count} frames in the SER file.')
                 bytes_per_pixel = self.ser_meta_data['BytesPerPixel']
                 self.showMsg(f'Image data is encoded in {bytes_per_pixel} bytes per pixel')
+
+                self.processTargetAperturePlacementFiles()
+
+                self.checkForSavedApertureGroups()
 
                 # This will get our image display initialized with default pan/zoom state
                 self.initialFrame = True
@@ -7530,7 +7536,7 @@ def newRobustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=
         MAD = MAD * 1.486  # sigma(gaussian) can be proved to equal 1.486*MAD for double sided data
 
     # The following calculation is included for dealing with assymetric (clipped) background noise.
-    # It has no siginificant effect on the mean of symmetric noise distributions (gaussian) but does
+    # It has no significant effect on the mean of symmetric noise distributions (gaussian) but does
     # a much better job of baskground mean estimation when the noise is assymetric.
 
     # Find the indices of all points that exceed 2 sigma of the mean
