@@ -3,6 +3,9 @@ opencv-python
 astroquery
 resource
 scikit-image>=0.15.0
+matplotlib
+numpy
+PyQt5
 
 [:platform_system == "Windows"]
 winshell

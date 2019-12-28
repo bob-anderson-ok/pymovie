@@ -33,7 +33,7 @@
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <layout class="QVBoxLayout" name="verticalLayout_22">
          <item>
           <layout class="QVBoxLayout" name="verticalLayout_17">

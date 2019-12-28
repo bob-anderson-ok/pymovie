@@ -1,10 +1,10 @@
-# Create intesified image by registering a set of frames and summing them
+# Create intensified image by registering a set of frames and summing them
 
 import numpy as np
 import astropy.io.fits as pyfits
 from time import gmtime, strftime  # for utc
 import cv2
-from skimage.filters import unsharp_mask
+# from skimage.filters import unsharp_mask
 
 
 def asinhScale(img, limcut = 0):  # img needs to be float32 type
@@ -289,8 +289,6 @@ def frameStacker(pr, progress_bar, event_process,
     # Convert to uint8 (because FITS is always big-endian and Intel is little-endian and this difference
     unredacted = unredacted.astype('uint8')
 
-    # outlist = pyfits.PrimaryHDU(unredacted)
-    # TODO Decide whether to keep this experimental code (with no asinhScale)
     if not timestamp_image_bottom is None:
         normed_image = np.append(normed_image, timestamp_image_bottom, axis=0)
     if not timestamp_image_top is None:
