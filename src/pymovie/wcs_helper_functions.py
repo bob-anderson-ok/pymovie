@@ -59,15 +59,15 @@ def angle_ra_dec(star1, star2):
 
 
 def angle_xy(star1, star2, xflipped, yflipped):
-    delta_x = star2['x'] - star1['x']
-    delta_y = star2['y'] - star1['y']
+    delta_x_local = star2['x'] - star1['x']
+    delta_y_local = star2['y'] - star1['y']
 
     if xflipped:
-        delta_x = -delta_x
+        delta_x_local = -delta_x_local
     if yflipped:
-        delta_y = -delta_y
+        delta_y_local = -delta_y_local
 
-    return calc_theta(delta_x, delta_y)  # result is in degrees
+    return calc_theta(delta_x_local, delta_y_local)  # result is in degrees
 
 
 def calc_theta(dx, dy):
@@ -86,11 +86,11 @@ def calc_theta(dx, dy):
     # fix that up here before returning the angle.
     if dx >= 0 and dy >= 0:
         theta = a
-    elif dx <= 0 and dy >= 0:
+    elif dx <= 0 <= dy:
         theta = pi - a
     elif dx <= 0 and dy <= 0:
         theta = pi - a
-    elif dx >= 0 and dy <= 0:
+    elif dx >= 0 >= dy:
         theta = pi + pi + a
     else:
         return None

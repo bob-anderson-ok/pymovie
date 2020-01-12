@@ -112,6 +112,7 @@ class MeasurementAperture(pg.GraphicsObject):
 
     # All graphics items must have paint() defined.
     def paint(self, p, *args):
+        _ = args  # Just to satisfy PyCharm code inspector (need to use args in some manner)
         p.setPen(self.pen)
         p.drawRect(self.boundingRect())
         p.setPen(pg.mkPen('y'))

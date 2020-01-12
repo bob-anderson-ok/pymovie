@@ -5,7 +5,10 @@ resource
 scikit-image>=0.15.0
 matplotlib
 numpy
-PyQt5
+astropy
+scikit-image
+scipy
+numba
 
 [:platform_system == "Windows"]
 winshell

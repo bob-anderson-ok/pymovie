@@ -3,6 +3,7 @@ import cv2
 import matplotlib.pyplot as plt
 
 
+# noinspection PyTypeChecker
 def setup_for_iota_720_safe_mode3():
     # Do initializations needed for IOTA VTI timestamp extraction
     # Parameters for IOTA VTI timestamp characters when in safe mode
@@ -26,6 +27,7 @@ def setup_for_iota_720_safe_mode3():
     return upper_field_boxes, lower_field_boxes
 
 
+# noinspection PyTypeChecker,PyTypeChecker
 def setup_for_iota_640_safe_mode3():
     # Do initializations needed for IOTA VTI timestamp extraction
     # Parameters for IOTA VTI timestamp characters when in safe mode
@@ -49,6 +51,7 @@ def setup_for_iota_640_safe_mode3():
     return upper_field_boxes, lower_field_boxes
 
 
+# noinspection PyTypeChecker,PyTypeChecker
 def setup_for_iota_720_safe_mode2():
     # Do initializations needed for IOTA VTI timestamp extraction
     # Parameters for IOTA VTI timestamp characters when in safe mode
@@ -72,6 +75,7 @@ def setup_for_iota_720_safe_mode2():
     return upper_field_boxes, lower_field_boxes
 
 
+# noinspection PyTypeChecker,PyTypeChecker
 def setup_for_iota_640_safe_mode2():
     # Do initializations needed for IOTA VTI timestamp extraction
     # Parameters for IOTA VTI timestamp characters when in safe mode
@@ -95,6 +99,7 @@ def setup_for_iota_640_safe_mode2():
     return upper_field_boxes, lower_field_boxes
 
 
+# noinspection PyTypeChecker,PyTypeChecker
 def setup_for_iota_720_full_screen_mode3():
     # Do initializations needed for IOTA VTI timestamp extraction
     # Parameters for IOTA VTI timestamp characters when in full screen mode
@@ -118,6 +123,7 @@ def setup_for_iota_720_full_screen_mode3():
     return upper_field_boxes, lower_field_boxes
 
 
+# noinspection PyTypeChecker
 def setup_for_iota_640_full_screen_mode3():
     # Do initializations needed for IOTA VTI timestamp extraction
     # Parameters for IOTA VTI timestamp characters when in full screen mode
@@ -141,6 +147,7 @@ def setup_for_iota_640_full_screen_mode3():
     return upper_field_boxes, lower_field_boxes
 
 
+# noinspection PyTypeChecker,PyTypeChecker
 def setup_for_iota_720_full_screen_mode2():
     # Do initializations needed for IOTA VTI timestamp extraction
     # Parameters for IOTA VTI timestamp characters when in full screen mode
@@ -163,6 +170,8 @@ def setup_for_iota_720_full_screen_mode2():
 
     return upper_field_boxes, lower_field_boxes
 
+
+# noinspection PyTypeChecker,PyTypeChecker
 def setup_for_iota_640_full_screen_mode2():
     # Do initializations needed for IOTA VTI timestamp extraction
     # Parameters for IOTA VTI timestamp characters when in full screen mode
@@ -185,6 +194,8 @@ def setup_for_iota_640_full_screen_mode2():
 
     return upper_field_boxes, lower_field_boxes
 
+
+# noinspection PyTypeChecker,PyTypeChecker
 def setup_for_GHS_generic():
 
     x0 = 391
@@ -240,6 +251,8 @@ def kiwi_PAL_720_boxes(dx):
 
     return xcU, ycU, xcL, ycL
 
+
+# noinspection DuplicatedCode,PyTypeChecker,PyTypeChecker
 def setup_for_kiwi_PAL_720_left():
 
     xcU, ycU, xcL, ycL = kiwi_PAL_720_boxes(0)
@@ -248,11 +261,13 @@ def setup_for_kiwi_PAL_720_left():
     upper_field_boxes = [None] * len(xcL)
     lower_field_boxes = [None] * len(xcL)
     for i in range(len(xcL)):
-        upper_field_boxes[i] = ((xcU[i], xcU[i] + 23, ycU[i], ycU[i] + 13))
-        lower_field_boxes[i] = ((xcL[i], xcL[i] + 23, ycL[i], ycL[i] + 13))
+        upper_field_boxes[i] = (xcU[i], xcU[i] + 23, ycU[i], ycU[i] + 13)
+        lower_field_boxes[i] = (xcL[i], xcL[i] + 23, ycL[i], ycL[i] + 13)
 
     return upper_field_boxes, lower_field_boxes
 
+
+# noinspection DuplicatedCode,PyTypeChecker,PyTypeChecker
 def setup_for_kiwi_PAL_720_right():
 
     xcU, ycU, xcL, ycL = kiwi_PAL_720_boxes(11)
@@ -261,11 +276,13 @@ def setup_for_kiwi_PAL_720_right():
     upper_field_boxes = [None] * len(xcL)
     lower_field_boxes = [None] * len(xcL)
     for i in range(len(xcL)):
-        upper_field_boxes[i] = ((xcU[i], xcU[i] + 23, ycU[i], ycU[i] + 13))
-        lower_field_boxes[i] = ((xcL[i], xcL[i] + 23, ycL[i], ycL[i] + 13))
+        upper_field_boxes[i] = (xcU[i], xcU[i] + 23, ycU[i], ycU[i] + 13)
+        lower_field_boxes[i] = (xcL[i], xcL[i] + 23, ycL[i], ycL[i] + 13)
 
     return upper_field_boxes, lower_field_boxes
 
+
+# noinspection DuplicatedCode,PyTypeChecker,PyTypeChecker
 def setup_for_kiwi_vti_720_left():
 
     xcU, ycU, xcL, ycL = kiwi_720_boxes(0)
@@ -274,12 +291,13 @@ def setup_for_kiwi_vti_720_left():
     upper_field_boxes = [None] * len(xcL)
     lower_field_boxes = [None] * len(xcL)
     for i in range(len(xcL)):
-        upper_field_boxes[i] = ((xcU[i], xcU[i] + 23, ycU[i], ycU[i] + 13))
-        lower_field_boxes[i] = ((xcL[i], xcL[i] + 23, ycL[i], ycL[i] + 13))
+        upper_field_boxes[i] = (xcU[i], xcU[i] + 23, ycU[i], ycU[i] + 13)
+        lower_field_boxes[i] = (xcL[i], xcL[i] + 23, ycL[i], ycL[i] + 13)
 
     return upper_field_boxes, lower_field_boxes
 
 
+# noinspection DuplicatedCode,PyTypeChecker,PyTypeChecker
 def setup_for_kiwi_vti_720_right():
 
     xcU, ycU, xcL, ycL = kiwi_720_boxes(11)
@@ -288,8 +306,8 @@ def setup_for_kiwi_vti_720_right():
     upper_field_boxes = [None] * len(xcL)
     lower_field_boxes = [None] * len(xcL)
     for i in range(len(xcL)):
-        upper_field_boxes[i] = ((xcU[i], xcU[i] + 23, ycU[i], ycU[i] + 13))
-        lower_field_boxes[i] = ((xcL[i], xcL[i] + 23, ycL[i], ycL[i] + 13))
+        upper_field_boxes[i] = (xcU[i], xcU[i] + 23, ycU[i], ycU[i] + 13)
+        lower_field_boxes[i] = (xcL[i], xcL[i] + 23, ycL[i], ycL[i] + 13)
 
     return upper_field_boxes, lower_field_boxes
 
@@ -309,6 +327,7 @@ def kiwi_640_boxes(dx):
     return xcU, ycU, xcL, ycL
 
 
+# noinspection DuplicatedCode,PyTypeChecker,PyTypeChecker
 def setup_for_kiwi_vti_640_left():
     xcU, ycU, xcL, ycL = kiwi_640_boxes(0)
 
@@ -316,12 +335,13 @@ def setup_for_kiwi_vti_640_left():
     upper_field_boxes = [None] * len(xcL)
     lower_field_boxes = [None] * len(xcL)
     for i in range(len(xcL)):
-        upper_field_boxes[i] = ((xcU[i], xcU[i] + 23, ycU[i], ycU[i] + 13))
-        lower_field_boxes[i] = ((xcL[i], xcL[i] + 23, ycL[i], ycL[i] + 13))
+        upper_field_boxes[i] = (xcU[i], xcU[i] + 23, ycU[i], ycU[i] + 13)
+        lower_field_boxes[i] = (xcL[i], xcL[i] + 23, ycL[i], ycL[i] + 13)
 
     return upper_field_boxes, lower_field_boxes
 
 
+# noinspection DuplicatedCode,PyTypeChecker,PyTypeChecker
 def setup_for_kiwi_vti_640_right():
     xcU, ycU, xcL, ycL = kiwi_640_boxes(11)
 
@@ -329,12 +349,13 @@ def setup_for_kiwi_vti_640_right():
     upper_field_boxes = [None] * len(xcL)
     lower_field_boxes = [None] * len(xcL)
     for i in range(len(xcL)):
-        upper_field_boxes[i] = ((xcU[i], xcU[i] + 23, ycU[i], ycU[i] + 13))
-        lower_field_boxes[i] = ((xcL[i], xcL[i] + 23, ycL[i], ycL[i] + 13))
+        upper_field_boxes[i] = (xcU[i], xcU[i] + 23, ycU[i], ycU[i] + 13)
+        lower_field_boxes[i] = (xcL[i], xcL[i] + 23, ycL[i], ycL[i] + 13)
 
     return upper_field_boxes, lower_field_boxes
 
 
+# noinspection PyTypeChecker,PyTypeChecker
 def setup_for_boxsprite3_640():
     # Parameters for BOXSPRITE3 VTI timestamp characters width = 640
 
@@ -351,12 +372,13 @@ def setup_for_boxsprite3_640():
     lower_field_boxes = [None] * len(xcL)
 
     for i in range(len(xcL)):
-        upper_field_boxes[i] = ((xcU[i], xcU[i] + 9, ycU[i], ycU[i] + 14))
-        lower_field_boxes[i] = ((xcL[i], xcL[i] + 9, ycL[i], ycL[i] + 14))
+        upper_field_boxes[i] = (xcU[i], xcU[i] + 9, ycU[i], ycU[i] + 14)
+        lower_field_boxes[i] = (xcL[i], xcL[i] + 9, ycL[i], ycL[i] + 14)
 
     return upper_field_boxes, lower_field_boxes
 
 
+# noinspection PyTypeChecker,PyTypeChecker
 def setup_for_boxsprite3_720():
     # Parameters for BOXSPRITE3 VTI timestamp characters width = 720
 
@@ -373,8 +395,8 @@ def setup_for_boxsprite3_720():
     lower_field_boxes = [None] * len(xcL)
 
     for i in range(len(xcL)):
-        upper_field_boxes[i] = ((xcU[i], xcU[i] + 10, ycU[i], ycU[i] + 14))
-        lower_field_boxes[i] = ((xcL[i], xcL[i] + 10, ycL[i], ycL[i] + 14))
+        upper_field_boxes[i] = (xcU[i], xcU[i] + 10, ycU[i], ycU[i] + 14)
+        lower_field_boxes[i] = (xcL[i], xcL[i] + 10, ycL[i], ycL[i] + 14)
 
     return upper_field_boxes, lower_field_boxes
 
@@ -402,12 +424,13 @@ def cv2_score(image, field_digits):
         # if min_val < min_found:
         #     min_found = min_val
         #     ans = i
-    return (ans, max_found, max_vals)
+    return ans, max_found, max_vals
     # return (ans, min_found, min_vals)
 
 
 def extract_timestamp(field, field_boxes, field_digits, formatter, thresh, kiwi=False, slant=False, t2fromleft=None):
     ts = ''  # ts 'means' timestamp
+    _ = thresh # unused parameter
 
     blankscore = .5
     corr_scores = []
@@ -512,6 +535,8 @@ def extract_timestamp(field, field_boxes, field_digits, formatter, thresh, kiwi=
 def format_iota_timestamp(ts, t2fromleft):
     assert (len(ts) == 14), "len(ts) not equal to 14 in iota timestamp formatter"
 
+    _ = t2fromleft # unused parameter
+
     try:
         hh = 10 * int(ts[0]) + int(ts[1])
         mm = 10 * int(ts[2]) + int(ts[3])
@@ -540,17 +565,17 @@ def format_iota_timestamp(ts, t2fromleft):
 
 def format_kiwi_timestamp(ts_str, t2fromleft):
 
-    def increment_time(hh, mm, ss):
-        ss += 1
-        if ss == 60:
-            ss = 0
-            mm += 1
-            if mm == 60:
-                mm = 0
-                hh += 1
-                if hh == 24:
-                    hh = mm = ss = 0
-        return hh, mm, ss
+    def increment_time(hh_param, mm_param, ss_param):
+        ss_param += 1
+        if ss_param == 60:
+            ss_param = 0
+            mm_param += 1
+            if mm_param == 60:
+                mm_param = 0
+                hh_param += 1
+                if hh_param == 24:
+                    hh_param = mm_param = ss_param = 0
+        return hh_param, mm_param, ss_param
 
     assert (len(ts_str) == 12), "len(ts_str) not equal to 12 in kiwi timestamp formatter"
     ts = [0] * 12
@@ -572,26 +597,26 @@ def format_kiwi_timestamp(ts_str, t2fromleft):
         seconds_rolled_over = (ff_left < 17 and ff_right > 300) or (ff_right < 17 and ff_left > 300)
         if seconds_rolled_over:
             use_ff_left  = (ff_left  < 17 and ff_right > 300)
-            use_ff_right = (ff_right < 17 and ff_left  > 300)
+            # use_ff_right = (ff_right < 17 and ff_left  > 300)
         else:
             use_ff_left  = ff_left  > ff_right
-            use_ff_right = ff_right > ff_left
+            # use_ff_right = ff_right > ff_left
 
         if ff_left == 0 and not ts_str[6] == ' ':
             use_ff_left = False
-            use_ff_right = True
+            # use_ff_right = True
 
         if ff_right == 0 and not ts_str[9] == ' ' and seconds_rolled_over:
             use_ff_left = False
-            use_ff_right = True
+            # use_ff_right = True
             hh, mm, ss = increment_time(hh, mm, ss)
         elif ff_right == 0 and not ts_str[9] == ' ' and not seconds_rolled_over:
             use_ff_left = True
-            use_ff_right = False
+            # use_ff_right = False
 
         if t2fromleft is not None:
             use_ff_left = t2fromleft
-            use_ff_right = not t2fromleft
+            # use_ff_right = not t2fromleft
 
         if use_ff_left:
             ff = ff_left
@@ -609,6 +634,7 @@ def format_kiwi_timestamp(ts_str, t2fromleft):
 
 def format_boxsprite3_timestamp(ts, t2fromleft):
     assert (len(ts) == 11), "len(ts) not equal to 11 in boxsprite timestamp formatter"
+    _ = t2fromleft # unused parameter
     try:
         hh = 10 * int(ts[0]) + int(ts[1])
         mm = 10 * int(ts[2]) + int(ts[3])
@@ -621,6 +647,7 @@ def format_boxsprite3_timestamp(ts, t2fromleft):
 
 def format_ghs_timestamp(ts, t2fromleft):
     assert (len(ts) == 9), "len(ts) not equal to 9 in GHS timestamp formatter"
+    _ = t2fromleft # unused parameter
     try:
         hh = 10 * int(ts[0]) + int(ts[1])
         mm = 10 * int(ts[2]) + int(ts[3])

@@ -10,6 +10,8 @@ def getMostRecentVersionOfPyMovie():
     # Could not find a version that satisfies the requirement
     #   pymovie==?? (from versions: 1.11, 1.12, 1.13, 1.14, 1.15, 1.16)
 
+    resp = None
+    # noinspection PyBroadException
     try:
         resp = subprocess.run(['python', '-m', 'pip', 'install', 'pymovie==??'],
                           stderr=subprocess.PIPE, stdout=subprocess.PIPE)

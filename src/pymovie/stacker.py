@@ -41,14 +41,14 @@ def frameStacker(pr, progress_bar, event_process,
 
     def read_fits_frame(frame_to_read, trim_top=0, trim_bottom=0):
         try:
-            frame = fitsReader(frame_to_read)
-            if frame is None:
+            frame_local = fitsReader(frame_to_read)
+            if frame_local is None:
                 pr(f'Problem reading FITS file: frame == None returned')
                 return None
 
-            hot_pixel_erase(frame)
+            hot_pixel_erase(frame_local)
 
-            image = frame[:, :].astype('float32')
+            image = frame_local[:, :].astype('float32')
 
             if trim_bottom:
                 image = image[0:-trim_bottom, :]
@@ -68,14 +68,14 @@ def frameStacker(pr, progress_bar, event_process,
 
     def read_ser_frame(frame_to_read, trim_top=0, trim_bottom=0):
         try:
-            frame = serReader(frame_to_read)
-            if frame is None:
+            frame_local = serReader(frame_to_read)
+            if frame_local is None:
                 pr(f'Problem reading SER file: frame == None returned')
                 return None
 
-            hot_pixel_erase(frame)
+            hot_pixel_erase(frame_local)
 
-            image = frame[:, :].astype('float32')
+            image = frame_local[:, :].astype('float32')
 
             if trim_bottom:
                 image = image[0:-trim_bottom, :]
@@ -91,16 +91,18 @@ def frameStacker(pr, progress_bar, event_process,
 
     def read_avi_frame(frame_to_read, trim_top=0, trim_bottom=0):
         # roi = [xleft, xright, ytop, ybottom]
+        status = None
+        image = None
         try:
             cap.set(cv2.CAP_PROP_POS_FRAMES, frame_to_read)
-            status, frame = cap.read()
+            status, frame_local = cap.read()
 
-            if len(frame.shape) == 3:
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            if len(frame_local.shape) == 3:
+                frame_local = cv2.cvtColor(frame_local, cv2.COLOR_BGR2GRAY)
 
-            hot_pixel_erase(frame)
+            hot_pixel_erase(frame_local)
 
-            image = frame[:, :].astype('float32')
+            image = frame_local[:, :].astype('float32')
 
             if trim_bottom:
                 image = image[0:-trim_bottom, :]
@@ -110,20 +112,21 @@ def frameStacker(pr, progress_bar, event_process,
 
         except Exception as e:
             pr(f'Problem reading avi file: {e}')
+
         if status:
             return image
         else:
             return None
 
-    def openAviReader(avi_location):
-        pr(f'Trying to open: {avi_location}')
-        cap = cv2.VideoCapture(avi_location)
-        if not cap.isOpened():
-            pr(f'  {avi_location} could not be opened!')
+    def openAviReader(avi_location_param):
+        pr(f'Trying to open: {avi_location_param}')
+        cap_local = cv2.VideoCapture(avi_location_param)
+        if not cap_local.isOpened():
+            pr(f'  {avi_location_param} could not be opened!')
             return None
         else:
             pr(f'...file opened just fine.')
-            return cap
+            return cap_local
 
     if shift_dict:
         xc = shift_dict['x']
@@ -146,7 +149,7 @@ def frameStacker(pr, progress_bar, event_process,
             return
 
     if fitsReader is None and serReader is None:
-        cap = openAviReader(avi_location=avi_location)
+        cap = openAviReader(avi_location_param=avi_location)
         if cap is None:
             return
 
@@ -161,9 +164,9 @@ def frameStacker(pr, progress_bar, event_process,
     else:
         inimage = read_avi_frame(first_frame)
 
-    if shift_dict:
-        first_frame_row = yc[0]
-        first_frame_col = xc[0]
+    # if shift_dict:
+    #     first_frame_row = yc[0]
+    #     first_frame_col = xc[0]
 
     height, width = inimage.shape
     pr(f'image shape: {width} x {height}')
@@ -196,9 +199,9 @@ def frameStacker(pr, progress_bar, event_process,
 
     # g1 is our reference image transform
     # g1 = np.fft.fftshift(np.fft.fft2(inimage))
-    if not shift_dict:
-        ret, th_inimage = cv2.threshold(inimage, bkg_threshold, 0, cv2.THRESH_TOZERO)
-        g1 = np.fft.fftshift(np.fft.fft2(th_inimage))
+    # if not shift_dict:
+        # ret, th_inimage = cv2.threshold(inimage, bkg_threshold, 0, cv2.THRESH_TOZERO)
+        # g1 = np.fft.fftshift(np.fft.fft2(th_inimage))
 
     k = 0
     while next_frame <= last_frame:
@@ -219,8 +222,12 @@ def frameStacker(pr, progress_bar, event_process,
         progress_bar.setValue(fraction_done * 100)
         event_process()
 
+        rows_to_roll_to_center = None
+        cols_to_roll_to_center = None
+
         if delta_x is None:
             # g2 = np.fft.fftshift(np.fft.fft2(inimage))
+            g1 = None
             if not shift_dict:
                 ret, th_inimage = cv2.threshold(inimage, bkg_threshold, 0, cv2.THRESH_TOZERO)
                 g2 = np.fft.fftshift(np.fft.fft2(th_inimage))
@@ -269,25 +276,25 @@ def frameStacker(pr, progress_bar, event_process,
     normed_image = image_sum / (last_frame - first_frame + 1)
 
     # We do want to keep asinh scaling though
-    unredacted = asinhScale(normed_image)
+    # unredacted = asinhScale(normed_image)
 
-    if not timestamp_image_bottom is None:
-        unredacted = np.append(unredacted, asinhScale(timestamp_image_bottom), axis=0)
-    if not timestamp_image_top is None:
-        unredacted = np.append(asinhScale(timestamp_image_top), unredacted, axis=0)
+    # if not timestamp_image_bottom is None:
+    #     unredacted = np.append(unredacted, asinhScale(timestamp_image_bottom), axis=0)
+    # if not timestamp_image_top is None:
+    #     unredacted = np.append(asinhScale(timestamp_image_top), unredacted, axis=0)
 
     fn = f'/enhanced-image-{first_frame}.fit'
 
     outfile = out_dir_path + fn
 
     # Rescale the asinh-scaled image to 0 to 255
-    min_pixel = unredacted.min()
-    unredacted = unredacted - min_pixel
-    max_pixel = unredacted.max()
-    unredacted = unredacted * 255 / max_pixel
+    # min_pixel = unredacted.min()
+    # unredacted = unredacted - min_pixel
+    # max_pixel = unredacted.max()
+    # unredacted = unredacted * 255 / max_pixel
 
     # Convert to uint8 (because FITS is always big-endian and Intel is little-endian and this difference
-    unredacted = unredacted.astype('uint8')
+    # unredacted = unredacted.astype('uint8')
 
     if not timestamp_image_bottom is None:
         normed_image = np.append(normed_image, timestamp_image_bottom, axis=0)
@@ -324,6 +331,9 @@ def hotPixelStack(pr, progress_bar, event_process,
                  first_frame, last_frame, timestamp_trim_top, timestamp_trim_bottom,
                  fitsReader, serReader,
                  avi_location, out_dir_path, bkg_threshold):
+
+    _ = out_dir_path  # unused parameter
+    _ = bkg_threshold # unused parameter
 
     # fitsReader is self.getFitsFrame()
     # serReader is self.getSerFrame()
@@ -390,6 +400,8 @@ def hotPixelStack(pr, progress_bar, event_process,
         return image
 
     def read_avi_frame(frame_to_read, trim_top=0, trim_bottom=0):
+        status = None
+        image = None
         try:
             cap.set(cv2.CAP_PROP_POS_FRAMES, frame_to_read)
             status, frame = cap.read()
@@ -412,23 +424,24 @@ def hotPixelStack(pr, progress_bar, event_process,
             # plt.imshow(asinhScale(image), cmap='gray')
         except Exception as e:
             pr(f'Problem reading avi file: {e}')
+
         if status:
             return image
         else:
             return None
 
-    def openAviReader(avi_location):
-        pr(f'Trying to open: {avi_location}')
-        cap = cv2.VideoCapture(avi_location)
-        if not cap.isOpened():
-            pr(f'  {avi_location} could not be opened!')
+    def openAviReader(avi_location_param):
+        pr(f'Trying to open: {avi_location_param}')
+        cap_local = cv2.VideoCapture(avi_location_param)
+        if not cap_local.isOpened():
+            pr(f'  {avi_location_param} could not be opened!')
             return None
         else:
             pr(f'...file opened just fine.')
-            return cap
+            return cap_local
 
     if fitsReader is None and serReader is None:
-        cap = openAviReader(avi_location=avi_location)
+        cap = openAviReader(avi_location_param=avi_location)
         if cap is None:
             return
 
@@ -437,24 +450,24 @@ def hotPixelStack(pr, progress_bar, event_process,
     # Read reference frame image without trimming the timestamp portion off
     # so that we can save the timestamp for later replacement.
     if fitsReader:
-        inimage = read_fits_frame(first_frame)
+        read_fits_frame(first_frame)
     elif serReader:
-        inimage = read_ser_frame(first_frame)
+        read_ser_frame(first_frame)
     else:
-        inimage = read_avi_frame(first_frame)
+        read_avi_frame(first_frame)
 
-    if timestamp_trim_top > 0:
+    # if timestamp_trim_top > 0:
         # If redact is from the top, this is assumed to be a FITS or SER file for
         # which there is no timestamp to be preserved, just a few 'corrupted' lines at the top.
-        timestamp_image_top = inimage[0:timestamp_trim_top,:]
+        # timestamp_image_top = inimage[0:timestamp_trim_top,:]
         # timestamp_image = np.zeros_like(timestamp_junk)
-    else:
-        timestamp_image_top = None
+    # else:
+        # timestamp_image_top = None
 
-    if timestamp_trim_bottom > 0:
-        timestamp_image_bottom = inimage[-timestamp_trim_bottom:,:]
-    else:
-        timestamp_image_bottom = None
+    # if timestamp_trim_bottom > 0:
+    #     timestamp_image_bottom = inimage[-timestamp_trim_bottom:,:]
+    # else:
+    #     timestamp_image_bottom = None
 
     # Re-read the reference frame with the timestamp trimmed off and use it
     # to initialize the stack sum
@@ -467,7 +480,7 @@ def hotPixelStack(pr, progress_bar, event_process,
 
     image_sum = inimage[:,:]
 
-    ret, th_inimage = cv2.threshold(inimage, bkg_threshold, 0, cv2.THRESH_TOZERO)
+    # ret, th_inimage = cv2.threshold(inimage, bkg_threshold, 0, cv2.THRESH_TOZERO)
 
     while next_frame <= last_frame:
         if fitsReader:
@@ -484,7 +497,7 @@ def hotPixelStack(pr, progress_bar, event_process,
         progress_bar.setValue(fraction_done * 100)
         event_process()
 
-        ret, th_inimage = cv2.threshold(inimage, bkg_threshold, 0, cv2.THRESH_TOZERO)
+        # ret, th_inimage = cv2.threshold(inimage, bkg_threshold, 0, cv2.THRESH_TOZERO)
         # ... and add it to the image sum
         image_sum += inimage
 
@@ -513,6 +526,7 @@ def find_outlier_pixels(data,tolerance=3,worry_about_edges=True):
     #worry_about_edges to False.
     #
     #The function returns a list of hot pixels and also an image with with hot pixels removed
+    _ = tolerance # unused parameter
 
     from scipy.ndimage import median_filter
     blurred = median_filter(data, size=3)
@@ -527,7 +541,7 @@ def find_outlier_pixels(data,tolerance=3,worry_about_edges=True):
     for y,x in zip(hot_pixels[0],hot_pixels[1]):
         fixed_image[y,x]=blurred[y,x]
 
-    if worry_about_edges == True:
+    if worry_about_edges:
         height,width = np.shape(data)
 
         ###Now get the pixels on the edges (but not the corners)###

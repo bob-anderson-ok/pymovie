@@ -53,6 +53,7 @@ class OcrAperture(pg.GraphicsObject):
 
     # All graphics items must have paint() defined.
     def paint(self, p, *args):
+        _ = args # unused parameter
         p.setPen(self.pen)
         if not self.kiwiStyle:
             p.drawRect(self.boundingRect())

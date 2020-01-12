@@ -41,6 +41,8 @@ The starPositionDialog module was created by typing
 in the IPython console while in src/pymovie directory
 """
 
+# from numba import jit
+
 import matplotlib
 
 matplotlib.use('Qt5Agg')
@@ -94,8 +96,8 @@ from pymovie import wcs_helper_functions
 from pymovie import stacker
 from pymovie import gammaUtils
 from pymovie import SER
-import pyqtgraph.exporters as pex
 from numpy import sqrt, arcsin
+import pyqtgraph.exporters as pex
 from numpy import pi as PI
 import PyQt5
 from PyQt5.QtCore import *
@@ -356,6 +358,7 @@ class Qt5MplCanvas(FigureCanvas):
         self.ax.mouse_init()
 
 
+# noinspection PyBroadException
 class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
     def __init__(self):
         super(PyMovie, self).__init__()
@@ -843,12 +846,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.levels = []
         self.frame_at_level_set = None
-
-        # These are part of an experiment and obsolete now. They are left in place in
-        # case we resurrect the idea of shrinking or expanding a mask by erosion or inflation.
-        # This concept is likely only useful when a 'yellow_mask' is being used
-        # self.erode_mask = False
-        # self.inflate_mask = False
 
         self.apertureEditor = None
 
@@ -1726,6 +1723,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             pickle.dump(tpath_tuple, open(self.folder_dir + f'/trackingPath-{tag}.p', "wb"))
             self.showMsg(f'Current aperture group, frame number, and tracking path saved.')
         else:
+            # noinspection PyBroadException
             try:
                 os.remove(self.folder_dir + f'/trackingPath-{tag}.p')
             except:
@@ -4369,9 +4367,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         spaced_digits = []
         for i, digit in enumerate(digits):
             if digit is None:
+                # noinspection PyTypeChecker
                 digits[i] = blank
                 ok_to_print_confusion_matrix = False
             else:
+                # noinspection PyTypeChecker
                 max_px = np.max(digit)
                 if max_px > max_px_value:
                     max_px_value = max_px
@@ -5299,6 +5299,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.frameView.setImage(self.image)
 
+    # noinspection PyBroadException
     def readFinderImage(self):
 
         some_video_open = self.ser_file_in_use or self.avi_in_use or \
@@ -7471,29 +7472,20 @@ def robustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=Tru
 
     return good_mean, sigma, sorted_data, window, data.size, first_index, last_index
 
+def newRobustMeanStd(
+        data: np.ndarray, outlier_fraction: float = 0.5, max_pts: int = 10000,
+        assume_gaussian: bool = True, lunar: bool = False):
 
-def newRobustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=True, lunar=False):
-    # Note:  it is expected that type(data) is numpy.darray
+    assert(data.size <= max_pts, "data.size > max_pts in newRobustMean()")
+    assert(outlier_fraction < 1.0, "outlier_fraction >= 1.0 in newRobustMean()")
 
-    # Protect the user against accidentally running this procedure with an
-    # excessively large number of data points (which could take too long)
-    if data.size > max_pts:
-        raise Exception(
-            f'In robustMean(): data.size limit of {max_pts} exceeded. (Change max_pts if needed)'
-        )
-
-    if outlier_fraction > 1:
-        raise Exception(
-            f'In robustMean(): {outlier_fraction} was given as outlier_fraction. This value must be <= 1.0'
-        )
-
-    # The None 'flattens' data automatically so sorted_data will be a 1 dimensional array
-    sorted_data = np.sort(data, None)
+    sorted_data = np.sort(data.flatten()) # This form was needed to satisfy Numba
 
     first_index = None
     last_index = None
 
     if lunar:
+        # noinspection PyTypeChecker
         mean = round(np.mean(sorted_data))
         mean_at = np.where(sorted_data >= mean)[0][0]
         lower_mean = np.mean(sorted_data[0:mean_at])
@@ -7558,9 +7550,9 @@ def newRobustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=
     if assume_gaussian:
         MAD = MAD * 1.486  # sigma(gaussian) can be proved to equal 1.486*MAD for double sided data
 
-    # The following calculation is included for dealing with assymetric (clipped) background noise.
+    # The following calculation is included for dealing with asymetric (clipped) background noise.
     # It has no significant effect on the mean of symmetric noise distributions (gaussian) but does
-    # a much better job of baskground mean estimation when the noise is assymetric.
+    # a much better job of baskground mean estimation when the noise is asymetric.
 
     # Find the indices of all points that exceed 2 sigma of the mean
     upper_indices = np.where(sorted_data > good_mean + 2 * MAD)
@@ -7568,25 +7560,26 @@ def newRobustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=
     # Find the indices of all points that are more then 2 sigma below the mean
     lower_indices = np.where(sorted_data < good_mean - 2 * MAD)
 
-    try:
-        # Here we deal with cases where there are no points more than 2 sigma above the mean
-        # and/or there are no points more than 2 sigma below the mean.
-        upper_len = len(upper_indices[0])
-        lower_len = len(lower_indices[0])
-        if upper_len > 0:
-            top = upper_indices[0][0]
-        else:
-            top = sorted_data.size
-        if lower_len > 0:
-            bot = lower_indices[0][-1]
-        else:
-            bot = 0
+    # noinspection PyBroadException
+    # try:
+    # Here we deal with cases where there are no points more than 2 sigma above the mean
+    # and/or there are no points more than 2 sigma below the mean.
+    upper_len = len(upper_indices[0])
+    lower_len = len(lower_indices[0])
+    if upper_len > 0:
+        top = upper_indices[0][0]
+    else:
+        top = sorted_data.size
+    if lower_len > 0:
+        bot = lower_indices[0][-1]
+    else:
+        bot = 0
 
-        app_sum = np.sum(sorted_data[bot:top])
-        app_avg = app_sum / (top - bot + 1)
-        good_mean = app_avg
-    except Exception:
-        pass
+    app_sum = np.sum(sorted_data[bot:top])
+    app_avg = app_sum / (top - bot + 1)
+    good_mean = app_avg
+    # except:
+    #     pass
 
     return good_mean, MAD, sorted_data, window, data.size, first_index, last_index
 

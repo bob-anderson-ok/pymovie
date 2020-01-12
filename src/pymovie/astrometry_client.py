@@ -1,8 +1,3 @@
-# import os
-# import sys
-# import time
-# import base64
-
 from urllib.parse import urlencode, quote  # took out urlparse
 from urllib.request import urlopen, Request
 from urllib.error import HTTPError

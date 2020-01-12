@@ -23,6 +23,9 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
         self.tableWidget.itemSelectionChanged.connect(self.selectionChange)
         self.setThumbnails = setThumbnails
         self.ignoreCellClick = False
+        self.col = None
+        self.row = None
+        self.menu = None
 
     def selectionChange(self):
         row = self.tableWidget.currentRow()
@@ -107,6 +110,7 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
         self.updateAperturesFromTable()
 
     def parseXY(self, xyText):
+        # noinspection PyBroadException
         try:
             parts = xyText.split(",")
             xc = int(parts[0].strip().strip("(").strip())
@@ -281,12 +285,12 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
         self.updateSpinnersFromRow(self.row)
 
     def updateSpinnersFromRow(self, row):
-        try:
-            radius = float(self.tableWidget.item(row, 3).text())
-        except ValueError:
-            radius = 5.3
-        if radius < 2.0:
-            radius = 2.0
+        # try:
+        #     radius = float(self.tableWidget.item(row, 3).text())
+        # except ValueError:
+        #     radius = 5.3
+        # if radius < 2.0:
+        #     radius = 2.0
 
         try:
             thresh = int(self.tableWidget.item(row, 2).text())
