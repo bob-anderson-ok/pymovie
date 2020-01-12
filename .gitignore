@@ -2,6 +2,7 @@ dist/
 build/
 .idea/
 __pycache__/
+.gitignore
 gui.py
 setup.cfg
 src/__pycache__/
@@ -17,3 +18,4 @@ src/pymovie.egg-info/SOURCES.txt
 src/pymovie/vtiList*.p
 src/pymovie/*boxes*.p
 src/pymovie/simple-ote.ini
+src/pymovie/play*
