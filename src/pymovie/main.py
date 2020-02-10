@@ -1528,7 +1528,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         else:
             # Show file select dialog for selection of appropriate saved aperture group
             options = QFileDialog.Options()
-            # options |= QFileDialog.DontUseNativeDialog
+            options |= QFileDialog.DontUseNativeDialog
 
             filename, _ = QFileDialog.getOpenFileName(
                 self,  # parent
@@ -1681,8 +1681,26 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'There are no apertures to save.')
             return
 
+        # Get list of already used aperture group tags
+        # Do a grep/glob lookup on self.folder_dir + f'/savedApertures-*.p' and then
+        # parse out the tag aided by the guarantee that there be only one - and one . in the file name.
+        tags_in_use_files = glob.glob(self.folder_dir + f'/savedApertures-*.p')
+        tags_in_use = []
+        for fn in tags_in_use_files:
+            p = pathlib.PurePath(fn)
+            parts = p.parts
+            file_name = parts[-1]
+            tag_with_ext = file_name.split('-')[-1]
+            tag = tag_with_ext.split('.')[0]
+            tags_in_use.append(tag)
+
         # Ask for the tag to use to identify this aperture group
         tagDialog = AppGroupTagDialog()
+
+        # Show user the tags that he/she has already used
+        for tag in tags_in_use:
+            tagDialog.tagListEdit.append(tag)
+
         result = tagDialog.exec_()
         if not result == QDialog.Accepted:
             self.showMsg(f'Operation cancelled.')
@@ -1694,6 +1712,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             return
 
         tag = tag.replace('-', ' ')
+        tag = tag.replace('.', ' ')
         self.showMsg(f'tag given: {tag}')
 
         savedApertureDicts = []
@@ -3656,12 +3675,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             return val[8]
 
         options = QFileDialog.Options()
-        # options |= QFileDialog.DontUseNativeDialog
+        options |= QFileDialog.DontUseNativeDialog
 
         if self.fits_folder_in_use:
             filename, _ = QFileDialog.getSaveFileName(
                 self,  # parent
-                "Select video file",  # title for dialog
+                "Select/enter csv file name",  # title for dialog
                 self.settings.value('fitsdir', "./"),  # starting directory
                 "csv files (*.csv);; all files (*.*)",
                 options=options
@@ -3669,7 +3688,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         else:
             filename, _ = QFileDialog.getSaveFileName(
                 self,  # parent
-                "Select video file",  # title for dialog
+                "Select/enter csv file name",  # title for dialog
                 self.settings.value('avidir', "./"),  # starting directory
                 "csv files (*.csv);; all files (*.*)",
                 options=options
@@ -3678,6 +3697,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         QtGui.QGuiApplication.processEvents()
 
         if filename:
+            _, ext = os.path.splitext(filename)
+            if not ext == '.csv':
+                filename = filename + '.csv'
             self.showMsg(f'Output file selected: {filename}')
 
             appdata = []  # Will become a list of list of lists
@@ -5377,7 +5399,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         trace = False
         success = None
-        frame = none
+        frame = None
 
         if self.cap is None or not self.cap.isOpened():
             return False, None
@@ -6328,7 +6350,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         # self.showMsg(f'{dateStr}  {timeStampStr}')
 
-        # This is how the SER.py package was doin it.  But this always gives dates one day earlier
+        # This is how the SER.py package was doing it.  But this always gives dates one day earlier
         # in time than this routine, which matches the visual display of SharpCap captures
         # datetimeUTC = ticks
         # DateTimeUTC = self.convertJDtoTimestamp(self.convertNETdatetimeToJD(datetimeUTC))
@@ -7476,8 +7498,8 @@ def newRobustMeanStd(
         data: np.ndarray, outlier_fraction: float = 0.5, max_pts: int = 10000,
         assume_gaussian: bool = True, lunar: bool = False):
 
-    assert(data.size <= max_pts, "data.size > max_pts in newRobustMean()")
-    assert(outlier_fraction < 1.0, "outlier_fraction >= 1.0 in newRobustMean()")
+    assert data.size <= max_pts, "data.size > max_pts in newRobustMean()"
+    assert outlier_fraction < 1.0, "outlier_fraction >= 1.0 in newRobustMean()"
 
     sorted_data = np.sort(data.flatten()) # This form was needed to satisfy Numba
 
