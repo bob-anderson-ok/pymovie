@@ -854,8 +854,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.alignWithStarInfoButton.installEventFilter(self)
         self.alignWithStarInfoButton.clicked.connect(self.showAlignStarHelp)
 
-        self.alignWithFourierCorrInfoButton.installEventFilter(self)
-        self.alignWithFourierCorrInfoButton.clicked.connect(self.showAlignWithFourierCorrHelp)
+        # self.alignWithFourierCorrInfoButton.installEventFilter(self)
+        # self.alignWithFourierCorrInfoButton.clicked.connect(self.showAlignWithFourierCorrHelp)
 
         self.alignWithTwoPointTrackInfoButton.installEventFilter(self)
         self.alignWithTwoPointTrackInfoButton.clicked.connect(self.showAlignWithTwoPointTrackHelp)
@@ -1000,7 +1000,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.wcsRedactBottomLinesLabel.installEventFilter(self)
 
         self.finderNumFramesLabel.installEventFilter(self)
-        self.finderThresholdLabel.installEventFilter(self)
+        # self.finderThresholdLabel.installEventFilter(self)
 
         self.frameToFitsButton.clicked.connect(self.getWCSsolution)
         self.frameToFitsButton.installEventFilter(self)
@@ -2991,7 +2991,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         stack_aperture_present = False
         app_list = self.getApertureList()
         for app in app_list:
-            if app.name.strip().startswith('stack'):
+            if app.name.strip().lower().startswith('stack'):
                 self.stackXtrack = []
                 self.stackYtrack = []
                 self.stackFrame = []
@@ -3035,19 +3035,23 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         else:
             shift_dict = None
 
-        if not (self.stackXtrack or stack_aperture_present):
-            bkg_thresh = self.getBkgThreshold()
-            if bkg_thresh is None:
-                return
-        else:
-            bkg_thresh = None
+        # if not (self.stackXtrack or stack_aperture_present):
+        #     bkg_thresh = self.getBkgThreshold()
+        #     if bkg_thresh is None:
+        #         return
+        # else:
+        #     bkg_thresh = None
 
         if stack_aperture_present:
             self.finderMethodEdit.setText(f'Stack method in use --- Align: star')
-        elif self.stackXtrack:
+        elif dx_dframe is not None:
             self.finderMethodEdit.setText(f'Stack method in use --- Align: 2 point track')
         else:
-            self.finderMethodEdit.setText(f'Stack method in use --- Align: image correlation')
+            # self.finderMethodEdit.setText(f'Stack method in use --- Align: image correlation')
+            self.finderMethodEdit.setText(
+                f'This operation requires a "stack" aperture or a 2 point track')
+            self.showMsg(f'Cannot generate finder without either a "stack" aperture or a 2 point track')
+            return
 
         stacker.frameStacker(
             self.showMsg, self.stackerProgressBar, QtGui.QGuiApplication.processEvents,
@@ -3056,7 +3060,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             timestamp_trim_bottom=num_bottom,
             fitsReader = fitsReader,
             serReader = serReader,
-            avi_location=self.avi_location, out_dir_path=self.folder_dir, bkg_threshold=bkg_thresh,
+            avi_location=self.avi_location, out_dir_path=self.folder_dir, bkg_threshold=None,
             hot_pixel_erase=self.applyHotPixelErasureToImg,
             delta_x=dx_dframe,
             delta_y=dy_dframe,
@@ -3090,18 +3094,18 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         )
         return image
 
-    def getBkgThreshold(self):
-        bkg_thresh_text = self.finderThresholdEdit.text()
-        if not bkg_thresh_text:
-            bkg_thresh = self.calcFinderBkgThreshold()
-            self.finderThresholdEdit.setText(str(bkg_thresh))
-        else:
-            try:
-                bkg_thresh = int(bkg_thresh_text)
-            except ValueError:
-                self.showMsg(f'Invalid entry in :finder" image threshold edit box')
-                return None
-        return bkg_thresh
+    # def getBkgThreshold(self):
+    #     bkg_thresh_text = self.finderThresholdEdit.text()
+    #     if not bkg_thresh_text:
+    #         bkg_thresh = self.calcFinderBkgThreshold()
+    #         self.finderThresholdEdit.setText(str(bkg_thresh))
+    #     else:
+    #         try:
+    #             bkg_thresh = int(bkg_thresh_text)
+    #         except ValueError:
+    #             self.showMsg(f'Invalid entry in :finder" image threshold edit box')
+    #             return None
+    #     return bkg_thresh
 
     def clearCoordinatesEdit(self):
         self.coordinatesEdit.setText('')
@@ -4740,7 +4744,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                             aperture.addData(self.field2_data)
                         else:
                             aperture.addData(data)
-                            if aperture.name.strip().startswith('stack'):
+                            if aperture.name.strip().lower().startswith('stack'):
                                 self.stackXtrack.append(aperture.xc)
                                 self.stackYtrack.append(aperture.yc)
                                 self.stackFrame.append(self.currentFrameSpinBox.value())
@@ -4775,7 +4779,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                         aperture.addData(self.field2_data)
                     else:
                         aperture.addData(data)
-                    if aperture.name.strip().startswith('stack'):
+                    if aperture.name.strip().lower().startswith('stack'):
                         self.stackXtrack.append(int(round(aperture.xc)))
                         self.stackYtrack.append(int(round(aperture.yc)))
                         self.stackFrame.append(self.currentFrameSpinBox.value())
@@ -5204,7 +5208,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             _, fn = os.path.split(dir_path)
             self.fileInUseEdit.setText(fn)
 
-            self.finderThresholdEdit.setText('')
+            # self.finderThresholdEdit.setText('')
             self.clearTrackingPathParameters()
 
             self.lunarCheckBox.setChecked(False)
@@ -5510,7 +5514,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.ser_meta_data = {}
                 self.ser_timestamps = []
 
-            self.finderThresholdEdit.setText('')
+            # self.finderThresholdEdit.setText('')
 
             self.clearTrackingPathParameters()
 
@@ -5684,7 +5688,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             self.timestampReadingEnabled = False
 
-            self.finderThresholdEdit.setText('')
+            # self.finderThresholdEdit.setText('')
 
             self.saveStateNeeded = True
             self.upper_left_count  = 0  # When Kiwi used: accumulate count ot times t2 was at left in upper field

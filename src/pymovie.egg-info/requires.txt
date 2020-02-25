@@ -8,7 +8,7 @@ numpy
 astropy
 scikit-image
 scipy
-numba
+numba>=0.41.0
 
 [:platform_system == "Windows"]
 winshell
