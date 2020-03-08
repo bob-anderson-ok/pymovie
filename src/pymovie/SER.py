@@ -8,7 +8,7 @@ SER_HEADER_SIZE = 178
 
 def sharpCapTimestamp(datetime64):
 
-    usecs = datetime64 / 10.0
+    usecs = int((datetime64 + 5) // 10)
     ts = (datetime(1, 1, 1) + timedelta(microseconds=usecs))
 
     timestamp = f'{ts.year}-{ts.month}-{ts.day}T{ts.hour:02d}:{ts.minute:02d}:{ts.second:02d}.{ts.microsecond:06d}'
