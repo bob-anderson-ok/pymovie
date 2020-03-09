@@ -8,10 +8,12 @@ SER_HEADER_SIZE = 178
 
 def sharpCapTimestamp(datetime64):
 
-    usecs = int((datetime64 + 5) // 10)
+    usecs = int(datetime64 // 10)
+    extra_digit = datetime64 - 10 * usecs
     ts = (datetime(1, 1, 1) + timedelta(microseconds=usecs))
 
-    timestamp = f'{ts.year}-{ts.month}-{ts.day}T{ts.hour:02d}:{ts.minute:02d}:{ts.second:02d}.{ts.microsecond:06d}'
+    timestamp = (f'{ts.year}-{ts.month}-{ts.day}T{ts.hour:02d}:{ts.minute:02d}:{ts.second:02d}.{ts.microsecond:06d}'
+                f'{extra_digit}')
     return timestamp
 
 def convertNETdatetimeToJD(datetime64):
