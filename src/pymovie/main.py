@@ -6336,21 +6336,21 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def getSharpCapTimestring(self):
 
-        # buff = []
-        # for i in range(8):
-        #     buff.append(self.image[0, i])
-
-        # self.showMsg(f'{buff[0]:3d} {buff[1]:3d} {buff[2]:3d} {buff[3]:3d} '
-        #              f'{buff[4]:3d} {buff[5]:3d} {buff[6]:3d} {buff[7]:3d}'
-        #              f'  type: {self.image.dtype}')
-
         ticks = np.frombuffer(self.image, dtype='int64', count=1)[0]
-
-        usecs = ticks / 10.0
+        usecs = int(ticks // 10)
+        extra_digit = ticks - 10 * usecs
         ts = (datetime(1, 1, 1) + timedelta(microseconds=usecs))
 
-        timeStampStr = f'[{ts.hour:02d}:{ts.minute:02d}:{ts.second:02d}.{ts.microsecond:06d}]'
+        timeStampStr = (f'[{ts.hour:02d}:{ts.minute:02d}:{ts.second:02d}.{ts.microsecond:06d}'
+                        f'{extra_digit}]')
+
         dateStr = f'{ts.year}-{ts.month}-{ts.day}'
+
+        # usecs = ticks / 10.0
+        # ts = (datetime(1, 1, 1) + timedelta(microseconds=usecs))
+
+        # timeStampStr = f'[{ts.hour:02d}:{ts.minute:02d}:{ts.second:02d}.{ts.microsecond:06d}]'
+        # dateStr = f'{ts.year}-{ts.month}-{ts.day}'
 
         # self.showMsg(f'{dateStr}  {timeStampStr}')
 
