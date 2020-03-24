@@ -1261,9 +1261,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if self.hotPixelEraseOff.isChecked():
             pass
         elif self.hotPixelErase3x3median.isChecked():
-            self.image = cv2.medianBlur(self.image, 3)
+            # self.image = cv2.medianBlur(self.image, 3)
+            self.image = self.maskedMedianFilter(self.image, 3)
         elif self.hotPixelErase5x5median.isChecked():
-            self.image = cv2.medianBlur(self.image, 5)
+            # self.image = cv2.medianBlur(self.image, 5)
+            self.image = self.maskedMedianFilter(self.image, 5)
         else:
             if not self.hotPixelList:
                 return
@@ -1278,14 +1280,37 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.frameView.setImage(self.image)
         view_box.setState(state)
 
+    def maskedMedianFilter(self, img, ksize=3):
+        # Get redact parameters
+        ok, num_from_top, num_from_bottom = self.getRedactLineParameters(popup_wanted=False)
+        if not ok:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Question)
+            msg.setText(f'It is important to mask any timestamp overlay that may be '
+                        f'present, otherwise the median filter will modify the image '
+                        f'and keep OCR from working properly.'
+                        f'\n\nPlease enter values in the redact lines edit boxes '
+                        f'found in the "finder" tab.'
+                        f'Enter 0 if there is no timestamp in that region.')
+            msg.setWindowTitle('Please fill in redact lines')
+            msg.setStandardButtons(QMessageBox.Ok)
+            msg.exec()
+            return img
+
+        m1, m2, m3 = np.vsplit(img, [num_from_top, img.shape[0] - num_from_bottom])
+        m2 = cv2.medianBlur(m2, ksize=ksize)
+        return np.concatenate((m1, m2, m3))
+
     def applyHotPixelErasureToImg(self, img):
         # This method is only passed to the 'stacker' for its use
         if self.hotPixelEraseOff.isChecked():
             return img
         elif self.hotPixelErase3x3median.isChecked():
-            return cv2.medianBlur(img, 3)
+            # return cv2.medianBlur(img, 3)
+            return self.maskedMedianFilter(img, 3)
         elif self.hotPixelErase5x5median.isChecked():
-            return cv2.medianBlur(img, 5)
+            # return cv2.medianBlur(img, 5)
+            return self.maskedMedianFilter(img, 5)
         else:
             if not self.hotPixelList:
                 return img
@@ -2829,7 +2854,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 with open(icon_src_path) as src, open(icon_dest_path, 'w') as dest:
                     dest.writelines(src.readlines())
 
-    def getRedactLineParameters(self):
+    def getRedactLineParameters(self, popup_wanted=True):
         num_lines_to_redact_from_top = 0
         num_lines_to_redact_from_bottom = 0
         entry_present = False
@@ -2851,16 +2876,17 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 return False, 0, 0
 
         if not entry_present:
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Question)
-            msg.setText(f'It is necessary to remove any timestamp overlay that may be '
-                        f'present as such an overlay will keep the image registration '
-                        f'from working properly.'
-                        f'\n\nPlease enter values in the redact lines edit boxes. '
-                        f'Enter 0 if there is no timestamp in that region.')
-            msg.setWindowTitle('Please fill in redact lines')
-            msg.setStandardButtons(QMessageBox.Ok)
-            msg.exec()
+            if popup_wanted:
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Question)
+                msg.setText(f'It is necessary to remove any timestamp overlay that may be '
+                            f'present as such an overlay will keep the image registration '
+                            f'from working properly.'
+                            f'\n\nPlease enter values in the redact lines edit boxes. '
+                            f'Enter 0 if there is no timestamp in that region.')
+                msg.setWindowTitle('Please fill in redact lines')
+                msg.setStandardButtons(QMessageBox.Ok)
+                msg.exec()
             return False, 0, 0
         else:
             return True, abs(num_lines_to_redact_from_top), abs(num_lines_to_redact_from_bottom)
@@ -5501,9 +5527,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.avi_in_use = not (self.ser_file_in_use or self.adv_file_in_use)
 
             if self.adv_file_in_use:
-                self.adv2_reader = Adv2reader(self.filename)
+                try:
+                    self.adv2_reader = Adv2reader(self.filename)
+                except Exception as ex:
+                    self.showMsg(ex)
+                    return
                 self.adv_meta_data = self.adv2_reader.getAdvFileMetaData()
-                # print(self.adv_meta_data)
             else:
                 self.adv_meta_data = {}
                 self.adv_timestamp = ''
@@ -5929,7 +5958,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.initialFrame = True
                 self.showFrame()
             elif self.adv_file_in_use:
-                self.adv2_reader = Adv2reader(self.filename)
+                try:
+                    self.adv2_reader = Adv2reader(self.filename)
+                except Exception as ex:
+                    self.showMsg(ex)
+                    return
                 self.adv_meta_data = self.adv2_reader.getAdvFileMetaData()
                 frame_count = self.adv2_reader.CountMainFrames
                 self.enableControlsForAviData()
