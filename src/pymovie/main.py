@@ -42,8 +42,12 @@ in the IPython console while in src/pymovie directory
 """
 
 # from numba import jit
+# import sys
+# for entry in sys.path:
+#     print(entry)
 
 import matplotlib
+from Adv2.Adv2File import Adv2reader  # Adds support for reading AstroDigitalVideo Version 2 files (.adv)
 
 matplotlib.use('Qt5Agg')
 
@@ -597,8 +601,20 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.clearOcrDataButton.installEventFilter(self)
         self.clearOcrDataButton.setEnabled(False)
 
-        self.applyHotPixelRemovalCheckBox.clicked.connect(self.handleApplyHotPixelChecked)
-        self.applyHotPixelRemovalCheckBox.installEventFilter(self)
+        self.hotPixelHelpButton.clicked.connect(self.showHotPixelHelpButtonHelp)
+        self.hotPixelHelpButton.installEventFilter(self)
+
+        self.hotPixelEraseOff.installEventFilter(self)
+        self.hotPixelEraseOff.clicked.connect(self.showFrame)
+
+        self.hotPixelEraseFromList.installEventFilter(self)
+        self.hotPixelEraseFromList.clicked.connect(self.showFrame)
+
+        self.hotPixelErase3x3median.installEventFilter(self)
+        self.hotPixelErase3x3median.clicked.connect(self.showFrame)
+
+        self.hotPixelErase5x5median.installEventFilter(self)
+        self.hotPixelErase5x5median.clicked.connect(self.showFrame)
 
         # For now, we will save OCR profiles in the users home directory. If
         # later we find a better place, this is the only line we need to change
@@ -761,6 +777,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.ser_timestamp = ''  # Holds timestamp of current frame
         self.ser_date = ''
         self.ser_file_handle = None
+
+        # If an adv file was selected, these variables come into play
+        self.adv_file_in_use = False
+        self.adv_meta_data = {}
+        self.adv_timestamp = ''
+        self.adv2_reader = None
+        self.adv_file_date = ''
 
         # If a FITS file folder was selected, this variable gets filled with a list
         # of the filenames ending in .fits found within the selected FITS folder.
@@ -930,10 +953,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.openFinderPushButton.clicked.connect(self.readFinderImage)
         self.openFinderPushButton.installEventFilter(self)
 
-        self.readAviFileButton.clicked.connect(self.readAviSerFile)
+        self.readAviFileButton.clicked.connect(self.readAviSerAdvFile)
         self.readAviFileButton.installEventFilter(self)
 
-        self.selectAviWcsFolderButton.clicked.connect(self.selectAviSerFolder)
+        self.selectAviWcsFolderButton.clicked.connect(self.selectAviSerAdvFolder)
         self.selectAviWcsFolderButton.installEventFilter(self)
 
         self.currentFrameSpinBox.valueChanged.connect(self.updateFrameWithTracking)
@@ -960,6 +983,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.metadataButton.clicked.connect(self.showFitsMetadata)
         self.metadataButton.installEventFilter(self)
+
+        self.enableAdvFrameStatusDisplay.installEventFilter(self)
 
         # self.clearAppDataButton.clicked.connect(self.clearApertureData)
         # self.clearAppDataButton.installEventFilter(self)
@@ -1107,6 +1132,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             else:
                 self.tabWidget.tabBar().moveTab(from_index, to_index)
 
+    def showHotPixelHelpButtonHelp(self):
+        self.showHelp(self.hotPixelHelpButton)
+
     def showAppSizeToolButtonHelp(self):
         self.showHelp(self.appSizeToolButton)
 
@@ -1121,19 +1149,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def showAlignWithTwoPointTrackHelp(self):
         self.showHelp(self.alignWithTwoPointTrackInfoButton)
-
-    def handleApplyHotPixelChecked(self):
-        if not self.hotPixelList:
-            self.applyHotPixelRemovalCheckBox.setChecked(False)
-            self.showMsg(f'There is no hot pixel list loaded!')
-        else:
-            self.alwaysEraseHotPixels = self.applyHotPixelRemovalCheckBox.isChecked()
-            if self.alwaysEraseHotPixels:
-                self.applyHotPixelErasure()
-                if not self.initialFrame:
-                    if self.levels:
-                        self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
-                        self.thumbOneView.setLevels(min=self.levels[0], max=self.levels[1])
 
     def loadHotPixelProfile(self):
         self.showMsg(f'loadHotPixelProfile: partially implemented')
@@ -1243,12 +1258,19 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         return avg_bkgnd
 
     def applyHotPixelErasure(self, avg_bkgnd=None):
-        if self.hotPixelList is None:
-            return
-        if avg_bkgnd is None:
-            avg_bkgnd = self.getBackgroundFromImageCenter()
-        for y, x in self.hotPixelList:
-            self.image[y, x] = avg_bkgnd
+        if self.hotPixelEraseOff.isChecked():
+            pass
+        elif self.hotPixelErase3x3median.isChecked():
+            self.image = cv2.medianBlur(self.image, 3)
+        elif self.hotPixelErase5x5median.isChecked():
+            self.image = cv2.medianBlur(self.image, 5)
+        else:
+            if not self.hotPixelList:
+                return
+            if avg_bkgnd is None:
+                avg_bkgnd = self.getBackgroundFromImageCenter()
+            for y, x in self.hotPixelList:
+                self.image[y, x] = avg_bkgnd
 
         # Preserve the current zomm/pan state
         view_box = self.frameView.getView()
@@ -1257,19 +1279,20 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         view_box.setState(state)
 
     def applyHotPixelErasureToImg(self, img):
-        if self.hotPixelList is None:
-            return
-
-        # Get a robust mean from near the center of the current image
-        y0 = int(img.shape[0] / 2)
-        x0 = int(img.shape[1] / 2)
-        ny = 51
-        nx = 51
-        thumbnail = img[y0:y0 + ny, x0:x0 + nx]
-        avg_bkgnd, *_ = newRobustMeanStd(thumbnail, outlier_fraction=.5)
-
-        for y, x in self.hotPixelList:
-            img[y, x] = avg_bkgnd
+        # This method is only passed to the 'stacker' for its use
+        if self.hotPixelEraseOff.isChecked():
+            return img
+        elif self.hotPixelErase3x3median.isChecked():
+            return cv2.medianBlur(img, 3)
+        elif self.hotPixelErase5x5median.isChecked():
+            return cv2.medianBlur(img, 5)
+        else:
+            if not self.hotPixelList:
+                return img
+            avg_bkgnd = self.getBackgroundFromImageCenter()
+            for y, x in self.hotPixelList:
+                img[y, x] = avg_bkgnd
+            return img
 
     def lunarBoxChecked(self):
         if self.lunarCheckBox.isChecked():
@@ -1299,7 +1322,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # Get gamma value from the spinner
         self.currentGamma = self.gammaSettingOfCamera.value()
 
-        if not (self.avi_in_use or self.fits_folder_in_use or self.ser_file_in_use):
+        if not (self.avi_in_use or self.fits_folder_in_use or self.ser_file_in_use or self.adv_file_in_use):
             if self.currentGamma == 1.0:
                 return
             self.showMsg(f'gamma changes are accepted ONLY when an image file has been selected.')
@@ -1327,6 +1350,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     self.gammaLut = np.array(
                         [gammaUtils.gammaDecode16bit(i, gamma=self.currentGamma) for i in range(65536)]).astype('uint16')
                     self.showMsg(f'A 16 bit correction table for gamma={self.currentGamma:0.2f} has been calculated.')
+            elif self.adv_file_in_use:
+                # Compute a 16 bit lookup table
+                self.gammaLut = np.array(
+                    [gammaUtils.gammaDecode16bit(i, gamma=self.currentGamma) for i in range(65536)]).astype('uint16')
+                self.showMsg(f'A 16 bit correction table for gamma={self.currentGamma:0.2f} has been calculated.')
 
             else:
                 self.showMsg(f'In processGammaChange(): Unknown file type in use.')
@@ -1826,7 +1854,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.analysisPaused = False
         self.setTransportButtonsEnableState(False)
         self.transportPause.setEnabled(True)
-        self.applyHotPixelRemovalCheckBox.setChecked(False)
         self.alwaysEraseHotPixels = False
         self.autoRun()
 
@@ -1926,7 +1953,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 shortcut.write()
 
             self.acceptAviFolderDirectoryWithoutUserIntervention = True
-            self.selectAviSerFolder()
+            self.selectAviSerAdvFolder()
         else:
             self.showMsg(f'Operation was cancelled.')
 
@@ -2877,7 +2904,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def generateFinderFrame(self):
         if not (self.avi_wcs_folder_in_use or self.fits_folder_in_use):
-            self.showMsg(f'This function can only be performed in the context of an AVI/SER-WCS or FITS folder.')
+            self.showMsg(f'This function can only be performed in the context of an AVI/SER/ADV-WCS or FITS folder.')
             return
 
         # Deal with timestamp redaction first.
@@ -2917,7 +2944,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'Operation aborted.')
             return
 
-        redacted_image = self.image[:,:].astype('int16')
+        redacted_image = self.image[:,:].astype('uint16')
 
         if num_bottom > 0:
             for i in range(image_height - num_bottom, image_height):
@@ -2987,6 +3014,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             serReader = self.getSerFrame
         else:
             serReader = None
+
+        if self.adv_file_in_use:
+            advReader = self.getAdvFrame
+        else:
+            advReader = None
 
         stack_aperture_present = False
         app_list = self.getApertureList()
@@ -3060,6 +3092,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             timestamp_trim_bottom=num_bottom,
             fitsReader = fitsReader,
             serReader = serReader,
+            advReader = advReader,
             avi_location=self.avi_location, out_dir_path=self.folder_dir, bkg_threshold=None,
             hot_pixel_erase=self.applyHotPixelErasureToImg,
             delta_x=dx_dframe,
@@ -3093,6 +3126,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             bytes_per_pixel, image_width, image_height, little_endian
         )
         return image
+
+    def getAdvFrame(self, frameNum):
+        err, image, _, _ = self.adv2_reader.getMainImageAndStatusData(frameNum)
+        if not err:
+            return image
+        else:
+            return None
 
     # def getBkgThreshold(self):
     #     bkg_thresh_text = self.finderThresholdEdit.text()
@@ -3486,69 +3526,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.showSerMetaData()
             return
 
-        # self.num_yellow_apertures = 0
-        # for app in self.getApertureList():
-        #     if app.color == 'yellow':
-        #         self.num_yellow_apertures += 1
-        #
-        # # self.num_yellow_apertures can only take on values of 0, 1, and 2.  This is enforced
-        # # by self.handleSetYellowSignal()
-        #
-        # # If there are two yellow apertures, we need to record the initial geometries
-        # if self.num_yellow_apertures == 2:
-        #     yellow_count = 0
-        #     for app in self.getApertureList():
-        #         if app.color == 'yellow' and yellow_count == 0:  # This our yellow #1
-        #             yellow_count += 1
-        #             if self.use_yellow_mask:
-        #                 xc_roi, yc_roi, xc_world, yc_world, *_ = \
-        #                     self.getApertureStats(app, show_stats=False, save_yellow_mask=True)
-        #             else:
-        #                 xc_roi, yc_roi, xc_world, yc_world, *_ = \
-        #                     self.getApertureStats(app, show_stats=False)
-        #
-        #             app.xc = xc_world
-        #             app.yc = yc_world
-        #             app.dx = 0
-        #             app.dy = 0
-        #             app.theta = 0.0
-        #
-        #             # Save the coordinates of yellow #1 aperture
-        #             self.yellow_x = xc_world
-        #             self.yellow_y = yc_world
-        #
-        #         elif app.color == 'yellow' and yellow_count == 1:  # This is our yellow #2
-        #             xc_roi, yc_roi, xc_world, yc_world, *_ = \
-        #                 self.getApertureStats(app, show_stats=False)
-        #
-        #             app.xc = xc_world
-        #             app.yc = yc_world
-        #
-        #             # Get the distance and angle measurements back to yellow #1
-        #             dy = yc_world - self.yellow_y
-        #             dx = xc_world - self.yellow_x
-        #
-        #             app.dx = dx
-        #             app.dy = dy
-        #             app.theta, _ = calcTheta(dx, dy)
-        #
-        #             # Set the current field rotation angle
-        #             self.delta_theta = 0.0
-        #
-        #     for app in self.getApertureList():
-        #         if not app.color == 'yellow':
-        #             xc_roi, yc_roi, xc_world, yc_world, *_ = \
-        #                 self.getApertureStats(app, show_stats=False)
-        #             app.xc = xc_world
-        #             app.yc = yc_world
-        #
-        #             # Get the distance measurements back to yellow #1
-        #             dy = yc_world - self.yellow_y
-        #             dx = xc_world - self.yellow_x
-        #
-        #             app.dx = dx
-        #             app.dy = dy
-        #             app.theta = None  # We don't use this value during tracking
+        if self.adv_file_in_use:
+            self.showAdvMetaData()
+
 
     def autoPlayLeft(self):
         self.setTransportButtonsEnableState(False)
@@ -3740,6 +3720,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                         lines = self.formatSerMetaData()
                         for line in lines:
                             f.write(f'{line}\n')
+                    elif self.adv_file_in_use:
+                        f.write(f'# date at frame 0: {self.adv_file_date}\n')
+                        for meta_key in self.adv_meta_data:
+                            f.write(f'{meta_key}: {self.adv_meta_data[meta_key]}')
                     else:
                         f.write(f'# error: unexpected folder type encountered\n')
 
@@ -5088,15 +5072,15 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             ypos = int(round(yc_world))
 
             self.showMsg(f'{name}:{comment}  frame:{frame_num:0.1f}', blankLine=False)
-            self.showMsg(f'signal appsum    bkavg  bkstd  mskth  mskpx  cvxhull  xpos  ypos minpx maxpx',
+            self.showMsg(f'   signal    appsum    bkavg    bkstd  mskth  mskpx  xpos  ypos minpx maxpx',
                          blankLine=False)
 
             if xpos is not None:
-                line = '%6d%7d%9.3f%7.2f%7d%7d%9d%6d%6d%6d%6d' % \
-                       (signal, appsum, mean, std, threshold, max_area, cvxhull, xpos, ypos, minpx, maxpx)
+                line = '%9d%10d%9.2f%9.2f%7d%7d%6d%6d%6d%6d' % \
+                       (signal, appsum, mean, std, threshold, max_area, xpos, ypos, minpx, maxpx)
             else:
-                line = '%6d%7d%9.3f%7.2f%7d%7d%9d%6s%6s%6d%6d' % \
-                       (signal, appsum, mean, std, threshold, max_area, cvxhull, '    NA', '    NA', minpx, maxpx)
+                line = '%9d%10d%9.2f%9.2f%7d%7d%6s%6s%6d%6d' % \
+                       (signal, appsum, mean, std, threshold, max_area, '    NA', '    NA', minpx, maxpx)
             self.showMsg(line)
 
         # xc_roi and yc_roi are used by centerAperture() to recenter the aperture
@@ -5147,6 +5131,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 timestamp = self.fits_timestamp
             elif self.ser_file_in_use:
                 timestamp = self.ser_timestamp
+            elif self.adv_file_in_use:
+                timestamp = self.adv_timestamp
             else:
                 self.showMsg(f'Unexpected folder type in use.')
         else:
@@ -5216,7 +5202,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.hotPixelList = []
             self.alwaysEraseHotPixels = False
             self.hotPixelProfileDict = {}
-            self.applyHotPixelRemovalCheckBox.setChecked(False)
 
 
             self.saveStateNeeded = True
@@ -5475,7 +5460,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(line, blankLine=False)
         self.showMsg('', blankLine=False)
 
-    def readAviSerFile(self, skipDialog=False):
+    def showAdvMetaData(self):
+        for meta_key in self.adv_meta_data:
+            self.showMsg(f'{meta_key}: {self.adv_meta_data[meta_key]}', blankLine=False)
+        self.showMsg('', blankLine=False)
+
+    def readAviSerAdvFile(self, skipDialog=False):
 
         frame_count = None
 
@@ -5485,9 +5475,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             self.filename, _ = QFileDialog.getOpenFileName(
                 self,  # parent
-                "Select avi/ser file",  # title for dialog
+                "Select avi/ser/adv file",  # title for dialog
                 self.settings.value('avidir', "./"),  # starting directory
-                "avi/ser files (*.avi *.ser);;all files (*.*)",
+                "avi/ser/adv files (*.avi *.ser *.adv);;all files (*.*)",
                 options=options
             )
 
@@ -5499,13 +5489,24 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             self.hotPixelList = []
             self.alwaysEraseHotPixels = False
-            self.applyHotPixelRemovalCheckBox.setChecked(False)
             self.hotPixelProfileDict = {}
-
 
             # Test for SER file in use
             self.ser_file_in_use = Path(self.filename).suffix == '.ser'
-            self.avi_in_use = not self.ser_file_in_use
+
+            # Test for ADV file in use
+            self.adv_file_in_use = Path(self.filename).suffix == '.adv'
+
+            # Set avi in use otherwise
+            self.avi_in_use = not (self.ser_file_in_use or self.adv_file_in_use)
+
+            if self.adv_file_in_use:
+                self.adv2_reader = Adv2reader(self.filename)
+                self.adv_meta_data = self.adv2_reader.getAdvFileMetaData()
+                # print(self.adv_meta_data)
+            else:
+                self.adv_meta_data = {}
+                self.adv_timestamp = ''
 
             if self.ser_file_in_use:
                 self.ser_meta_data, self.ser_timestamps = SER.getMetaData(self.filename)
@@ -5555,7 +5556,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     self.showMsg(f'  {self.filename} could not be opened!')
                     self.fourcc = ''
                 else:
-                    # self.avi_in_use = True
                     self.savedApertures = None
                     self.enableControlsForAviData()
                     self.saveApertureState.setEnabled(False)
@@ -5581,7 +5581,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
                     frame_count = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
                     self.showMsg(f'There are {frame_count} frames in the file.')
-            else: # must be SER
+            elif self.ser_file_in_use:
                 self.enableControlsForAviData()
                 self.showMsg(f'Opened: {self.filename}')
                 self.showSerMetaData()
@@ -5590,6 +5590,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.showMsg(f'There are {frame_count} frames in the SER file.')
                 bytes_per_pixel = self.ser_meta_data['BytesPerPixel']
                 self.showMsg(f'Image data is encoded in {bytes_per_pixel} bytes per pixel')
+            elif self.adv_file_in_use:
+                frame_count = self.adv2_reader.CountMainFrames
+                self.enableControlsForAviData()
+                self.showMsg(f'There are {frame_count} frames in the ADV file.')
+            else:
+                raise IOError('Unimplemented file type on readAviSerAdvFile()')
 
             self.currentOcrBox = None
 
@@ -5646,7 +5652,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             code = f.readline()
             return code
 
-    def selectAviSerFolder(self):
+    def selectAviSerAdvFolder(self):
 
         frame_count = None
 
@@ -5684,7 +5690,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.hotPixelList = []
             self.alwaysEraseHotPixels = False
             self.hotPixelProfileDict = {}
-            self.applyHotPixelRemovalCheckBox.setChecked(False)
 
             self.timestampReadingEnabled = False
 
@@ -5747,14 +5752,24 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 if avi_filenames:
                     self.loadCustomProfilesButton.setEnabled(False)
                     self.clearOcrDataButton.setEnabled(False)
-                self.ser_file_in_use = True
-                self.avi_in_use = False
+                    self.ser_file_in_use = True
+                    self.avi_in_use = False
+                    self.adv_file_in_use = False
+                else:
+                    avi_filenames = glob.glob(dir_path + '/*.adv*')
+                    if avi_filenames:
+                        self.loadCustomProfilesButton.setEnabled(False)
+                        self.clearOcrDataButton.setEnabled(False)
+                        self.ser_file_in_use = False
+                        self.avi_in_use = False
+                        self.adv_file_in_use = True
             else:
                 self.avi_in_use = True
                 self.ser_file_in_use = False
+                self.adv_file_in_use = False
 
             if len(avi_filenames) == 0:
-                self.showMsg(f'No avi/ser files or references were found in that folder.')
+                self.showMsg(f'No avi/ser/adv files or references were found in that folder.')
                 self.avi_in_use = False
                 self.ser_file_in_use = False
                 return
@@ -5772,7 +5787,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                         # self.showMsg(f'{filename} is a Windows shortcut to an avi/ser')
                         pass
                     else:
-                        if filename.endswith('.avi') or filename.endswith('.ser'):
+                        if filename.endswith('.avi') or filename.endswith('.ser') or filename.endswith('.adv'):
                             # self.showMsg(f'{filename} is an avi/ser file')
                             file_to_use = avi_location
 
@@ -5797,7 +5812,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 file_to_use = avi_filenames[0]
 
             if file_to_use is None:
-                self.showMsg(f'No avi/ser files or references were found in that folder.')
+                self.showMsg(f'No avi/ser/adv files or references were found in that folder.')
                 self.avi_in_use = False
                 self.ser_file_in_use = False
                 return
@@ -5816,6 +5831,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             self.ser_meta_data = {}
             self.ser_timestamps = []
+
+            self.adv_meta_data = {}
 
             if self.avi_in_use:
                 self.showMsg(f'Opened: {self.avi_location}')
@@ -5874,7 +5891,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     self.startTimestampReading()
                     self.showFrame()  # So that we get the first frame timestamp (if possible)
 
-            else:  # must be a ser file
+            elif self.ser_file_in_use:
                 self.ser_meta_data, self.ser_timestamps = SER.getMetaData(self.avi_location)
                 self.ser_file_handle = open(self.avi_location, 'rb')
 
@@ -5911,6 +5928,32 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 # This will get our image display initialized with default pan/zoom state
                 self.initialFrame = True
                 self.showFrame()
+            elif self.adv_file_in_use:
+                self.adv2_reader = Adv2reader(self.filename)
+                self.adv_meta_data = self.adv2_reader.getAdvFileMetaData()
+                frame_count = self.adv2_reader.CountMainFrames
+                self.enableControlsForAviData()
+                self.disableControlsWhenNoData()
+                self.enableControlsForFitsData()
+                self.showMsg(f'There are {frame_count} frames in the ADV file.')
+                self.showMsg(f'Opened: {self.avi_location}')
+                _, fn = os.path.split(self.avi_location)
+                self.fileInUseEdit.setText(fn)
+                self.timestampReadingEnabled = False
+                self.vtiSelectComboBox.setCurrentIndex(0)
+                self.currentOcrBox = None
+                self.clearOcrBoxes()  # From any previous ocr setup
+                self.viewFieldsCheckBox.setChecked(False)
+                self.viewFieldsCheckBox.setEnabled(False)
+                self.processTargetAperturePlacementFiles()
+
+                self.checkForSavedApertureGroups()
+
+                # This will get our image display initialized with default pan/zoom state
+                self.initialFrame = True
+                self.showFrame()
+            else:
+                raise IOError('Unsupported file type found in selectAviSerAdvFolder()')
 
             self.currentFrameSpinBox.setMaximum(frame_count - 1)
             self.currentFrameSpinBox.setValue(0)
@@ -6174,8 +6217,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                         status, frame = self.cap.read()
                         self.image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                         self.doGammaCorrection()
-                    if self.alwaysEraseHotPixels:
-                        self.applyHotPixelErasure()
+                    # if self.alwaysEraseHotPixels:
+                    self.applyHotPixelErasure()
 
                     if self.sharpCapTimestampPresent:
                         ts, date = self.getSharpCapTimestring()
@@ -6201,6 +6244,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                         bytes_per_pixel, image_width, image_height, little_endian
                     )
                     self.doGammaCorrection()
+                    self.applyHotPixelErasure()
                     raw_ser_timestamp = self.ser_timestamps[frame_to_show]
                     parts = raw_ser_timestamp.split('T')
                     self.showMsg(f'Timestamp found: {parts[0]} @ {parts[1]}')
@@ -6214,7 +6258,24 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 except Exception as e2:
                     self.image = None
                     self.showMsg(f'{e2}')
-
+            elif self.adv_file_in_use:
+                try:
+                    err, self.image, frameInfo, status = self.adv2_reader.getMainImageAndStatusData(frame_to_show)
+                    self.doGammaCorrection()
+                    self.applyHotPixelErasure()
+                    if self.enableAdvFrameStatusDisplay.isChecked():
+                        for status_key in status:
+                            self.showMsg(f'{status_key}: {status[status_key]}', blankLine=False)
+                        self.showMsg('', blankLine=False)
+                    self.adv_timestamp = frameInfo.StartOfExposureTimestampString
+                    if self.adv_timestamp:  # Empty string indicates no timestamp in frame data
+                        self.showMsg(f'Timestamp found: {frameInfo.DateString} @ {self.adv_timestamp}')
+                    else:
+                        self.showMsg(f'Timestamp found: missing')
+                    if frame_to_show == 0:
+                        self.adv_file_date = frameInfo.DateString
+                except Exception as e3:
+                    self.showMsg(f'{e3}')
             else:  # We're dealing with FITS files
                 try:
                     hdr = None
@@ -6227,6 +6288,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                         # self.showMsg(f'image type: {self.image.dtype}')
 
                         self.doGammaCorrection()
+                        self.applyHotPixelErasure()
                     except Exception as e3:
                         self.showMsg(f'While reading image data from FITS file: {e3}')
                         self.image = None
@@ -6331,8 +6393,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         except Exception as e0:
             self.showMsg(repr(e0))
             self.showMsg(f'There are no frames to display.  Have you read a file?')
-
-
 
     def getSharpCapTimestring(self):
 

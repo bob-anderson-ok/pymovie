@@ -28,12 +28,13 @@ print(f'{len(PACKAGES)} packages were found\n')
 KEYWORDS = ["desktop app", "lightcurve extraction from astronomical videos"]
 
 CLASSIFIERS = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
     "Natural Language :: English",
     "License :: OSI Approved :: MIT License",
     "Operating System :: MacOS :: MacOS X",
     "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: Implementation :: CPython",
     "Topic :: Scientific/Engineering",
@@ -47,7 +48,7 @@ INSTALL_REQUIRES = ['pyqtgraph', 'opencv-python', 'astroquery', 'resource',
                     'scikit-image(>=0.15.0)',
                     'winshell;platform_system=="Windows"',
                     'pypiwin32;platform_system=="Windows"', 'matplotlib', 'numpy', 'astropy', 'scikit-image',
-                    'scipy', 'numba>=0.41.0']
+                    'scipy', 'numba>=0.41.0', 'Adv2']
 
 ###################################################################
 

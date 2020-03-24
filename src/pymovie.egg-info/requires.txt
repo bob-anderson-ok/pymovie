@@ -9,6 +9,7 @@ astropy
 scikit-image
 scipy
 numba>=0.41.0
+Adv2
 
 [:platform_system == "Windows"]
 winshell
