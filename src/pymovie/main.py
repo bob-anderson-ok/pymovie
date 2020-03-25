@@ -5530,7 +5530,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 try:
                     self.adv2_reader = Adv2reader(self.filename)
                 except Exception as ex:
-                    self.showMsg(ex)
+                    self.showMsg(repr(ex))
                     return
                 self.adv_meta_data = self.adv2_reader.getAdvFileMetaData()
             else:
@@ -5961,7 +5961,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 try:
                     self.adv2_reader = Adv2reader(self.filename)
                 except Exception as ex:
-                    self.showMsg(ex)
+                    self.showMsg(repr(ex))
                     return
                 self.adv_meta_data = self.adv2_reader.getAdvFileMetaData()
                 frame_count = self.adv2_reader.CountMainFrames
