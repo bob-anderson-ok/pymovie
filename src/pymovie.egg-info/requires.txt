@@ -10,6 +10,8 @@ scikit-image
 scipy
 numba>=0.41.0
 Adv2>=1.1.0
+PyQt5
+more_itertools
 
 [:platform_system == "Windows"]
 winshell

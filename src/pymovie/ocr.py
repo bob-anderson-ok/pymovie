@@ -408,24 +408,19 @@ def cv2_score(image, field_digits):
     # img = cv2.copyMakeBorder(image, 2,2,2,2, cv2.BORDER_CONSTANT, value=0)
     img = cv2.copyMakeBorder(image, 1,1,3,3, cv2.BORDER_REPLICATE, value=0)
     max_found = 0.0
-    # min_found = 1.0
     ans = 0
     max_vals = [None] * 10
-    # min_vals = [None] * 10
     for i in range(10):
-        # Apply template Matching
-        res = cv2.matchTemplate(img, field_digits[i], method)
+        # Apply template Matching matchTemplate needs uin8 or float32
+        # When we were only dealing with uint8 from avi files, we didn't need the type conversion in the cv2 call,.
+        # but aav files are uint16 (needed because they integrate 8 bit files), so we all pay the price
+        res = cv2.matchTemplate(img.astype(np.float32), field_digits[i].astype(np.float32), method)
         min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
         max_vals[i] = max_val
-        # min_vals[i] = min_val
         if max_val > max_found:
             max_found = max_val
             ans = i
-        # if min_val < min_found:
-        #     min_found = min_val
-        #     ans = i
     return ans, max_found, max_vals
-    # return (ans, min_found, min_vals)
 
 
 def extract_timestamp(field, field_boxes, field_digits, formatter, thresh, kiwi=False, slant=False, t2fromleft=None):

@@ -778,8 +778,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.ser_date = ''
         self.ser_file_handle = None
 
-        # If an adv file was selected, these variables come into play
+        # If an adv or aav file was selected, these variables come into play
         self.adv_file_in_use = False
+        self.aav_file_in_use = False
+        self.aav_bad_frames = []
         self.adv_meta_data = {}
         self.adv_timestamp = ''
         self.adv2_reader = None
@@ -855,6 +857,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.delta_theta = 0.0
 
         self.avi_wcs_folder_in_use = False
+        self.aav_num_frames_integrated = None
         self.wcs_solution_available = False
         self.wcs_frame_num = None
         self.wcs = None   # This holds the active WCS solution (if any)
@@ -953,10 +956,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.openFinderPushButton.clicked.connect(self.readFinderImage)
         self.openFinderPushButton.installEventFilter(self)
 
-        self.readAviFileButton.clicked.connect(self.readAviSerAdvFile)
+        self.readAviFileButton.clicked.connect(self.readAviSerAdvAavFile)
         self.readAviFileButton.installEventFilter(self)
 
-        self.selectAviWcsFolderButton.clicked.connect(self.selectAviSerAdvFolder)
+        self.selectAviWcsFolderButton.clicked.connect(self.selectAviSerAdvAavFolder)
         self.selectAviWcsFolderButton.installEventFilter(self)
 
         self.currentFrameSpinBox.valueChanged.connect(self.updateFrameWithTracking)
@@ -1347,7 +1350,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # Get gamma value from the spinner
         self.currentGamma = self.gammaSettingOfCamera.value()
 
-        if not (self.avi_in_use or self.fits_folder_in_use or self.ser_file_in_use or self.adv_file_in_use):
+        if not (self.avi_in_use or self.fits_folder_in_use or
+                self.ser_file_in_use or self.adv_file_in_use or self.aav_file_in_use):
             if self.currentGamma == 1.0:
                 return
             self.showMsg(f'gamma changes are accepted ONLY when an image file has been selected.')
@@ -1375,7 +1379,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     self.gammaLut = np.array(
                         [gammaUtils.gammaDecode16bit(i, gamma=self.currentGamma) for i in range(65536)]).astype('uint16')
                     self.showMsg(f'A 16 bit correction table for gamma={self.currentGamma:0.2f} has been calculated.')
-            elif self.adv_file_in_use:
+            elif self.adv_file_in_use or self.aav_file_in_use:
                 # Compute a 16 bit lookup table
                 self.gammaLut = np.array(
                     [gammaUtils.gammaDecode16bit(i, gamma=self.currentGamma) for i in range(65536)]).astype('uint16')
@@ -1872,6 +1876,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.setTransportButtonsEnableState(True)
 
     def startAnalysis(self):
+        self.aav_bad_frames = []
         if self.saveStateNeeded:
             self.saveStateNeeded = False
             self.saveCurrentState()
@@ -1978,7 +1983,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 shortcut.write()
 
             self.acceptAviFolderDirectoryWithoutUserIntervention = True
-            self.selectAviSerAdvFolder()
+            self.selectAviSerAdvAavFolder()
         else:
             self.showMsg(f'Operation was cancelled.')
 
@@ -2016,12 +2021,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 return dictionary_list
 
     def handleChangeOfDisplayMode(self):
-        # self.showMsg(f'View avi fields: {self.viewFieldsCheckBox.isChecked()}')
         if self.viewFieldsCheckBox.isChecked():
             # preserve all apertures
             self.savedApertures = self.getApertureList()
             # clear all apertures
             self.clearApertures()
+            self.clearOcrBoxes()
             self.placeOcrBoxesOnImage()
             self.showFrame()
         else:
@@ -2289,7 +2294,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.currentUpperBoxPos = 'right'
                 upper_timestamp = alt_upper_timestamp
                 upper_time = alt_upper_time
-                # upper_ts = alt_upper_ts
                 upper_scores = alt_upper_scores
                 upper_cum_score = alt_upper_cum_score
                 upper_left_used = alt_upper_left_used
@@ -2300,7 +2304,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.currentLowerBoxPos = 'left'
                 lower_timestamp = reg_lower_timestamp
                 lower_time = reg_lower_time
-                # lower_ts = reg_lower_ts
                 lower_scores = reg_lower_scores
                 lower_cum_score = reg_lower_cum_score
                 lower_left_used = reg_lower_left_used
@@ -2311,7 +2314,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.currentLowerBoxPos = 'right'
                 lower_timestamp = alt_lower_timestamp
                 lower_time = alt_lower_time
-                # lower_ts = alt_lower_ts
                 lower_scores = alt_lower_scores
                 lower_cum_score = alt_lower_cum_score
                 lower_left_used = alt_lower_left_used
@@ -2386,7 +2388,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.currentVTIindex = self.vtiSelectComboBox.currentIndex()
 
-        if not self.avi_in_use or self.image is None:
+        if not (self.avi_in_use or self.aav_file_in_use) or self.image is None:
             return
 
         if not self.avi_wcs_folder_in_use:
@@ -2930,7 +2932,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def generateFinderFrame(self):
         if not (self.avi_wcs_folder_in_use or self.fits_folder_in_use):
-            self.showMsg(f'This function can only be performed in the context of an AVI/SER/ADV-WCS or FITS folder.')
+            self.showMsg(f'This function can only be performed in the context of an AVI/SER/ADV/AAV-WCS or FITS folder.')
             return
 
         # Deal with timestamp redaction first.
@@ -3041,7 +3043,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         else:
             serReader = None
 
-        if self.adv_file_in_use:
+        if self.adv_file_in_use or self.aav_file_in_use:
             advReader = self.getAdvFrame
         else:
             advReader = None
@@ -3424,7 +3426,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.transportSmallRight.setEnabled(state)
         self.transportBigRight.setEnabled(state)
         self.transportMaxRight.setEnabled(state)
-        # self.transportReturnToMark.setEnabled(state)
         self.transportMark.setEnabled(state)
 
     def enableControlsForAviData(self):
@@ -3552,7 +3553,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.showSerMetaData()
             return
 
-        if self.adv_file_in_use:
+        if self.adv_file_in_use or self.aav_file_in_use:
             self.showAdvMetaData()
 
 
@@ -3606,6 +3607,18 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         mark_available = not self.savedStateFrameNumber is None
         self.transportReturnToMark.setEnabled(mark_available)
 
+
+    def showUserTheBadAavFrameList(self):
+        if len(self.aav_bad_frames) == 0:
+            return
+        bad_frames = ''
+        for frame_num in self.aav_bad_frames:
+            bad_frames += f'{frame_num} '
+        self.showMsgPopup(f'The aav file had incorrect numbers of integrated frames at '
+                      f'frames {bad_frames}\n\n'
+                      f'Note: it is normal for an aav file to have a different number of '
+                      f'integrated frames in the first and last frames.')
+
     def autoRun(self):
         if self.analysisRequested:
 
@@ -3644,6 +3657,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     self.setTransportButtonsEnableState(True)
                     mark_available = not self.savedStateFrameNumber is None
                     self.transportReturnToMark.setEnabled(mark_available)
+                    if self.aav_file_in_use:
+                        self.showUserTheBadAavFrameList()
                     return
                 else:
                     if currentFrame > lastFrame:
@@ -3746,7 +3761,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                         lines = self.formatSerMetaData()
                         for line in lines:
                             f.write(f'{line}\n')
-                    elif self.adv_file_in_use:
+                    elif self.adv_file_in_use or self.aav_file_in_use:
                         f.write(f'# date at frame 0: {self.adv_file_date}\n')
                         for meta_key in self.adv_meta_data:
                             f.write(f'{meta_key}: {self.adv_meta_data[meta_key]}')
@@ -5152,7 +5167,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                                     top_signal, top_appsum, mean, top_mask_pixel_count,
                                     frame_num + 0.5, cvxhull, maxpx, std, timestamp)
 
-        if not self.avi_in_use:
+        if not (self.avi_in_use or self.aav_file_in_use):
             if self.fits_folder_in_use:
                 timestamp = self.fits_timestamp
             elif self.ser_file_in_use:
@@ -5491,7 +5506,20 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'{meta_key}: {self.adv_meta_data[meta_key]}', blankLine=False)
         self.showMsg('', blankLine=False)
 
-    def readAviSerAdvFile(self, skipDialog=False):
+    def showFrameIntegrationInfo(self):
+        self.showMsg(f'AAV-VERSION: {self.adv_meta_data["AAV-VERSION"]}', blankLine=False)
+        effective_frame_rate = float(self.adv_meta_data["EFFECTIVE-FRAME-RATE"])
+        self.showMsg(f'EFFECTIVE-FRAME-RATE: {effective_frame_rate}', blankLine=False)
+        native_frame_rate = float(self.adv_meta_data["NATIVE-FRAME-RATE"])
+        self.showMsg(f'NATIVE-FRAME-RATE: {native_frame_rate}', blankLine=False)
+        self.aav_num_frames_integrated = native_frame_rate / effective_frame_rate
+        self.showMsg(f'aav_num_frames_integrated: {self.aav_num_frames_integrated}')
+        if self.aav_num_frames_integrated > 1:
+            # It makes no sense to treat an integrated aav in field mode
+            self.processAsFieldsCheckBox.setEnabled(False)
+
+
+    def readAviSerAdvAavFile(self, skipDialog=False):
 
         frame_count = None
 
@@ -5503,7 +5531,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self,  # parent
                 "Select avi/ser/adv file",  # title for dialog
                 self.settings.value('avidir', "./"),  # starting directory
-                "avi/ser/adv files (*.avi *.ser *.adv);;all files (*.*)",
+                "avi/ser/adv files (*.avi *.ser *.adv *.aav);;all files (*.*)",
                 options=options
             )
 
@@ -5512,6 +5540,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if self.filename:
 
             self.lunarCheckBox.setChecked(False)
+
+            self.aav_bad_frames = []
 
             self.hotPixelList = []
             self.alwaysEraseHotPixels = False
@@ -5523,10 +5553,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             # Test for ADV file in use
             self.adv_file_in_use = Path(self.filename).suffix == '.adv'
 
-            # Set avi in use otherwise
-            self.avi_in_use = not (self.ser_file_in_use or self.adv_file_in_use)
+            # Test for AAV file in use
+            self.aav_file_in_use = Path(self.filename).suffix == '.aav'
 
-            if self.adv_file_in_use:
+
+            # Set avi in use otherwise
+            self.avi_in_use = not (self.ser_file_in_use or self.adv_file_in_use or self.aav_file_in_use)
+
+            if self.adv_file_in_use or self.aav_file_in_use:
                 try:
                     self.adv2_reader = Adv2reader(self.filename)
                 except Exception as ex:
@@ -5544,8 +5578,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.ser_meta_data = {}
                 self.ser_timestamps = []
 
-            # self.finderThresholdEdit.setText('')
-
             self.clearTrackingPathParameters()
 
             self.saveStateNeeded = True
@@ -5560,7 +5592,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.pixelAspectRatio = None
 
             self.createAVIWCSfolderButton.setEnabled(True)
-            self.vtiSelectComboBox.setEnabled(False)
+            if not self.aav_file_in_use:
+                self.vtiSelectComboBox.setEnabled(False)
 
             dirpath, fn = os.path.split(self.filename)
             self.fileInUseEdit.setText(fn)
@@ -5619,10 +5652,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.showMsg(f'There are {frame_count} frames in the SER file.')
                 bytes_per_pixel = self.ser_meta_data['BytesPerPixel']
                 self.showMsg(f'Image data is encoded in {bytes_per_pixel} bytes per pixel')
-            elif self.adv_file_in_use:
+            elif self.adv_file_in_use or self.aav_file_in_use:
                 frame_count = self.adv2_reader.CountMainFrames
                 self.enableControlsForAviData()
-                self.showMsg(f'There are {frame_count} frames in the ADV file.')
+                self.showMsg(f'There are {frame_count} frames in the ADV/AAV file.')
+                if self.aav_file_in_use:
+                    self.showFrameIntegrationInfo()
             else:
                 raise IOError('Unimplemented file type on readAviSerAdvFile()')
 
@@ -5681,7 +5716,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             code = f.readline()
             return code
 
-    def selectAviSerAdvFolder(self):
+    def selectAviSerAdvAavFolder(self):
 
         frame_count = None
 
@@ -5715,14 +5750,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.clearTrackingPathParameters()
 
             self.lunarCheckBox.setChecked(False)
+            self.aav_bad_frames = []
 
             self.hotPixelList = []
             self.alwaysEraseHotPixels = False
             self.hotPixelProfileDict = {}
 
             self.timestampReadingEnabled = False
-
-            # self.finderThresholdEdit.setText('')
 
             self.saveStateNeeded = True
             self.upper_left_count  = 0  # When Kiwi used: accumulate count ot times t2 was at left in upper field
@@ -5784,6 +5818,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     self.ser_file_in_use = True
                     self.avi_in_use = False
                     self.adv_file_in_use = False
+                    self.aav_file_in_use = False
                 else:
                     avi_filenames = glob.glob(dir_path + '/*.adv*')
                     if avi_filenames:
@@ -5792,10 +5827,21 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                         self.ser_file_in_use = False
                         self.avi_in_use = False
                         self.adv_file_in_use = True
+                        self.aav_file_in_use = False
+                    else:
+                        avi_filenames = glob.glob(dir_path + '/*.aav*')
+                        if avi_filenames:
+                            self.loadCustomProfilesButton.setEnabled(False)
+                            self.clearOcrDataButton.setEnabled(False)
+                            self.ser_file_in_use = False
+                            self.avi_in_use = False
+                            self.adv_file_in_use = False
+                            self.aav_file_in_use = True
             else:
                 self.avi_in_use = True
                 self.ser_file_in_use = False
                 self.adv_file_in_use = False
+                self.aav_file_in_use = False
 
             if len(avi_filenames) == 0:
                 self.showMsg(f'No avi/ser/adv files or references were found in that folder.')
@@ -5816,7 +5862,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                         # self.showMsg(f'{filename} is a Windows shortcut to an avi/ser')
                         pass
                     else:
-                        if filename.endswith('.avi') or filename.endswith('.ser') or filename.endswith('.adv'):
+                        if filename.endswith('.avi') or filename.endswith('.ser') or \
+                                filename.endswith('.adv') or filename.endswith('.aav'):
                             # self.showMsg(f'{filename} is an avi/ser file')
                             file_to_use = avi_location
 
@@ -5841,7 +5888,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 file_to_use = avi_filenames[0]
 
             if file_to_use is None:
-                self.showMsg(f'No avi/ser/adv files or references were found in that folder.')
+                self.showMsg(f'No avi/ser/adv/aav files or references were found in that folder.')
                 self.avi_in_use = False
                 self.ser_file_in_use = False
                 return
@@ -5943,8 +5990,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.viewFieldsCheckBox.setChecked(False)
                 self.viewFieldsCheckBox.setEnabled(False)
 
-
-                # self.saveApertureState.setEnabled(False)
                 frame_count = self.ser_meta_data['FrameCount']
                 self.showMsg(f'There are {frame_count} frames in the SER file.')
                 bytes_per_pixel = self.ser_meta_data['BytesPerPixel']
@@ -5957,27 +6002,47 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 # This will get our image display initialized with default pan/zoom state
                 self.initialFrame = True
                 self.showFrame()
-            elif self.adv_file_in_use:
+            elif self.adv_file_in_use or self.aav_file_in_use:
                 try:
                     self.adv2_reader = Adv2reader(self.filename)
                 except Exception as ex:
                     self.showMsg(repr(ex))
                     return
                 self.adv_meta_data = self.adv2_reader.getAdvFileMetaData()
-                frame_count = self.adv2_reader.CountMainFrames
                 self.enableControlsForAviData()
-                self.disableControlsWhenNoData()
-                self.enableControlsForFitsData()
-                self.showMsg(f'There are {frame_count} frames in the ADV file.')
+                if self.aav_file_in_use:
+                    self.showFrameIntegrationInfo()
+                frame_count = self.adv2_reader.CountMainFrames
+                if self.adv_file_in_use:
+                    self.disableControlsWhenNoData()
+                    self.enableControlsForFitsData()
+                self.showMsg(f'There are {frame_count} frames in the ADV/AAV file.')
                 self.showMsg(f'Opened: {self.avi_location}')
                 _, fn = os.path.split(self.avi_location)
                 self.fileInUseEdit.setText(fn)
-                self.timestampReadingEnabled = False
+                if self.adv_file_in_use:
+                    self.timestampReadingEnabled = False
+                    self.viewFieldsCheckBox.setChecked(False)
+                    self.viewFieldsCheckBox.setEnabled(False)
+                else: # It must be an aav file in use
+
+                    # This will get our image display initialized with default pan/zoom state
+                    self.initialFrame = True
+                    self.showFrame()
+
+                    # Initialize ocr related directories
+                    self.ocrDigitsDir = self.folder_dir
+                    self.ocrBoxesDir = self.folder_dir
+                    self.modelDigitsFilename = 'custom-digits.p'
+                    self.ocrboxBasePath = 'custom-boxes'
+                    self.timestampReadingEnabled = True
+                    self.startTimestampReading()
+                    self.viewFieldsCheckBox.setChecked(True)
+                    self.viewFieldsCheckBox.setEnabled(True)
+                    self.currentOcrBox = None
+
+
                 self.vtiSelectComboBox.setCurrentIndex(0)
-                self.currentOcrBox = None
-                self.clearOcrBoxes()  # From any previous ocr setup
-                self.viewFieldsCheckBox.setChecked(False)
-                self.viewFieldsCheckBox.setEnabled(False)
                 self.processTargetAperturePlacementFiles()
 
                 self.checkForSavedApertureGroups()
@@ -6026,6 +6091,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.currentLowerBoxPos = 'right'
                 self.currentUpperBoxPos = 'right'
             self.viewFieldsCheckBox.setChecked(True)
+            self.clearOcrBoxes()
             self.placeOcrBoxesOnImage()
             self.currentFrameSpinBox.setValue(1)  # This triggers a self.showFrame() call
             self.timestampReadingEnabled = not self.showMissingModelDigits()
@@ -6250,7 +6316,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                         status, frame = self.cap.read()
                         self.image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                         self.doGammaCorrection()
-                    # if self.alwaysEraseHotPixels:
                     self.applyHotPixelErasure()
 
                     if self.sharpCapTimestampPresent:
@@ -6309,6 +6374,26 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                         self.adv_file_date = frameInfo.DateString
                 except Exception as e3:
                     self.showMsg(f'{e3}')
+
+            elif self.aav_file_in_use:
+                try:
+                    err, self.image, frameInfo, status = self.adv2_reader.getMainImageAndStatusData(frame_to_show)
+                    self.doGammaCorrection()
+                    self.applyHotPixelErasure()
+                    num_frames_integrated = int(status['IntegratedFrames'])
+                    if not num_frames_integrated == self.aav_num_frames_integrated:
+                        self.showMsg(f'found IntegratedFrames = {num_frames_integrated} instead of '
+                                     f'{self.aav_num_frames_integrated}')
+                        self.aav_bad_frames.append(frame_to_show)
+                    if self.enableAdvFrameStatusDisplay.isChecked():
+                        for status_key in status:
+                            self.showMsg(f'{status_key}: {status[status_key]}', blankLine=False)
+                        self.showMsg('', blankLine=False)
+                    if frame_to_show == 0:
+                        self.adv_file_date = frameInfo.DateString
+
+                except Exception as e4:
+                    self.showMsg(f'{e4}')
             else:  # We're dealing with FITS files
                 try:
                     hdr = None
