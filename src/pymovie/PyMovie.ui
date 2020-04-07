@@ -470,7 +470,7 @@
                   <string>Display frame metadata for ADV/AAV frames</string>
                  </property>
                  <property name="checked">
-                  <bool>true</bool>
+                  <bool>false</bool>
                  </property>
                 </widget>
                </item>

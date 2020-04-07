@@ -190,7 +190,7 @@ class Ui_MainWindow(object):
         self.metadataButton.setObjectName("metadataButton")
         self.verticalLayout_9.addWidget(self.metadataButton)
         self.enableAdvFrameStatusDisplay = QtWidgets.QCheckBox(self.tab_5)
-        self.enableAdvFrameStatusDisplay.setChecked(True)
+        self.enableAdvFrameStatusDisplay.setChecked(False)
         self.enableAdvFrameStatusDisplay.setObjectName("enableAdvFrameStatusDisplay")
         self.verticalLayout_9.addWidget(self.enableAdvFrameStatusDisplay)
         self.line_7 = QtWidgets.QFrame(self.tab_5)
