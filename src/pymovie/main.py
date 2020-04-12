@@ -7132,13 +7132,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
     def showRobustMeanDemo(self):
 
         dark_gray = (50, 50, 50)
+        black = (0, 0, 0)
 
         if self.thumbOneImage is None:
             self.showMsg(f'No image in Thumbnail One to use for demo')
             return
 
-        # good_mean, sigma, sorted_data, window, data_size, left, right = robustMeanStd(self.thumbOneImage)
-        good_mean, sigma, sorted_data, window, data_size, local_left, local_right = newRobustMeanStd(
+        # good_mean, sigma, hist_data, window, data_size, left, right = robustMeanStd(self.thumbOneImage)
+        good_mean, sigma, hist_data, _, _, _, local_right = newRobustMeanStd(
             self.thumbOneImage, lunar=self.lunarCheckBox.isChecked()
         )
         # self.showMsg(f'{good_mean} {sigma} {window} {data_size} {left}  {right}')
@@ -7172,17 +7173,18 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.plots[-1].nextRow()  # Tell GraphicsWindow that we want another row of plots
 
+        xs = list(range(len(hist_data) + 1)) # The + 1 is needed when stepMode=True in addPlot()
         p2 = self.plots[-1].addPlot(
             row=1, col=0,
-            y=sorted_data,
-            title=f'sorted pixel values  (red lines enclose "non-outliers")',
-            pen=dark_gray
+            x=xs,
+            y=hist_data,
+            stepMode=True,
+            title=f'pixel values histogram  (points to left of red line are used to compute background average)',
+            # pen=dark_gray
+            pen = black
         )
-        vLineLeft = pg.InfiniteLine(angle=90, movable=False, pen='r')
         vLineRight = pg.InfiniteLine(angle=90, movable=False, pen='r')
-        p2.addItem(vLineLeft, ignoreBounds=True)
         p2.addItem(vLineRight, ignoreBounds=True)
-        vLineLeft.setPos(local_left)
         vLineRight.setPos(local_right)
 
         self.plots[-1].show()  # Let everyone see the results
@@ -7621,60 +7623,169 @@ def get_mask(
     return max_area, mask, t_mask, centroid, cvxhull, blob_count, extent
 
 
-def robustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=True):
-    # Note:  it is expected that type(data) is numpy.darray
+# def robustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=True):
+#     # Note:  it is expected that type(data) is numpy.darray
+#
+#     # Protect the user against accidentally running this procedure with an
+#     # excessively large number of data points (which could take too long)
+#     if data.size > max_pts:
+#         raise Exception(
+#             f'In robustMean(): data.size limit of {max_pts} exceeded. (Change max_pts if needed)'
+#         )
+#
+#     if outlier_fraction > 1:
+#         raise Exception(
+#             f'In robustMean(): {outlier_fraction} was given as outlier_fraction. This value must be <= 1.0'
+#         )
+#
+#     # The None 'flattens' data automatically so sorted_data will be 1D
+#     sorted_data = np.sort(data, None)
+#
+#     if outlier_fraction > 0:
+#         # window is the number points to be included in the 'mean' calculation
+#         window = int(sorted_data.size * (1 - outlier_fraction))
+#
+#         # Handle the case of outlier_fraction too close to zero
+#         if window == data.size:
+#             window -= 1
+#
+#         # nout is the number of outliers to exclude
+#         nout = sorted_data.size - window
+#         diffs = sorted_data[window:window + nout] - sorted_data[0:nout]
+#
+#         min_diff_pts = np.where(diffs == min(diffs))
+#
+#         j = min_diff_pts[0][0]
+#         k = min_diff_pts[0][-1]
+#         data_used = sorted_data[j:k + window]
+#         first_index = j
+#         last_index = k + window - 1
+#     else:
+#         first_index = 0
+#         last_index = data.size - 1
+#         data_used = sorted_data
+#         window = data.size
+#
+#     good_mean = np.mean(data_used)
+#
+#     # MAD means: Median Absolute Deviation  This is a robust estimator of 'scale' (measure of data dispersion)
+#     # It can be related to standard deviation by a correction factor if the data can be assumed to be drawn
+#     # from a gaussian distribution.
+#     # med = np.median(sorted_data)
+#     sigma = np.median(np.abs(sorted_data - good_mean))  # This is my MAD estimator; usually good_mean is med
+#     if assume_gaussian:
+#         sigma = sigma * 1.486  # sigma(gaussian) can be proved to equal 1.486*MAD
+#
+#     return good_mean, sigma, sorted_data, window, data.size, first_index, last_index
 
-    # Protect the user against accidentally running this procedure with an
-    # excessively large number of data points (which could take too long)
-    if data.size > max_pts:
-        raise Exception(
-            f'In robustMean(): data.size limit of {max_pts} exceeded. (Change max_pts if needed)'
-        )
-
-    if outlier_fraction > 1:
-        raise Exception(
-            f'In robustMean(): {outlier_fraction} was given as outlier_fraction. This value must be <= 1.0'
-        )
-
-    # The None 'flattens' data automatically so sorted_data will be 1D
-    sorted_data = np.sort(data, None)
-
-    if outlier_fraction > 0:
-        # window is the number points to be included in the 'mean' calculation
-        window = int(sorted_data.size * (1 - outlier_fraction))
-
-        # Handle the case of outlier_fraction too close to zero
-        if window == data.size:
-            window -= 1
-
-        # nout is the number of outliers to exclude
-        nout = sorted_data.size - window
-        diffs = sorted_data[window:window + nout] - sorted_data[0:nout]
-
-        min_diff_pts = np.where(diffs == min(diffs))
-
-        j = min_diff_pts[0][0]
-        k = min_diff_pts[0][-1]
-        data_used = sorted_data[j:k + window]
-        first_index = j
-        last_index = k + window - 1
-    else:
-        first_index = 0
-        last_index = data.size - 1
-        data_used = sorted_data
-        window = data.size
-
-    good_mean = np.mean(data_used)
-
-    # MAD means: Median Absolute Deviation  This is a robust estimator of 'scale' (measure of data dispersion)
-    # It can be related to standard deviation by a correction factor if the data can be assumed to be drawn
-    # from a gaussian distribution.
-    # med = np.median(sorted_data)
-    sigma = np.median(np.abs(sorted_data - good_mean))  # This is my MAD estimator; usually good_mean is med
-    if assume_gaussian:
-        sigma = sigma * 1.486  # sigma(gaussian) can be proved to equal 1.486*MAD
-
-    return good_mean, sigma, sorted_data, window, data.size, first_index, last_index
+# def newRobustMeanStd(
+#         data: np.ndarray, outlier_fraction: float = 0.5, max_pts: int = 10000,
+#         assume_gaussian: bool = True, lunar: bool = False):
+#
+#     assert data.size <= max_pts, "data.size > max_pts in newRobustMean()"
+#     assert outlier_fraction < 1.0, "outlier_fraction >= 1.0 in newRobustMean()"
+#
+#     sorted_data = np.sort(data.flatten()) # This form was needed to satisfy Numba
+#
+#     first_index = None
+#     last_index = None
+#
+#     if lunar:
+#         # noinspection PyTypeChecker
+#         mean = round(np.mean(sorted_data))
+#         mean_at = np.where(sorted_data >= mean)[0][0]
+#         lower_mean = np.mean(sorted_data[0:mean_at])
+#
+#         # print(f'mean: {mean} @ {mean_at}')
+#         # upper_mean = np.mean(sorted_data[mean_at:])
+#         # print(f'lower_mean: {lower_mean}  upper_mean: {upper_mean}')
+#
+#         # MAD means: Median Absolute Deviation
+#         MAD = np.median(np.abs(sorted_data[0:mean_at] - lower_mean))
+#         if assume_gaussian:
+#             MAD = MAD * 1.486  # sigma(gaussian) can be proved to equal 1.486*MAD
+#
+#         window = 0
+#         first_index = 0
+#         last_index = mean_at
+#
+#         return lower_mean, MAD, sorted_data, window, data.size, first_index, last_index
+#
+#     if outlier_fraction > 0:
+#         # window is the number points to be included in the 'mean' calculation
+#         window = int(sorted_data.size * (1 - outlier_fraction))
+#
+#         # Handle the case of outlier_fraction too close to zero
+#         if window == data.size:
+#             window -= 1
+#
+#         # nout is the number of outliers to exclude
+#         nout = sorted_data.size - window
+#         diffs = sorted_data[window:window + nout] - sorted_data[0:nout]
+#
+#         min_diff_pts = np.where(diffs == min(diffs))
+#
+#         j = min_diff_pts[0][0]
+#         k = min_diff_pts[0][-1]
+#         good_mean = np.mean(sorted_data[j:k + window])
+#
+#         first_index = j
+#         last_index = k + window
+#     else:
+#         good_mean = np.mean(sorted_data)
+#         window = data.size
+#
+#     # Here we treat 'clipped' backgrounds as a special case.  We calculute the mean
+#     # from ALL pixels, including any star pixels that may be present.  We do this because
+#     # 'clipped' data makes it impossible to remove outliers by the same technique that works
+#     # so well with true gaussian (or at least symmetrical) noise with outliers
+#
+#     if first_index == 0:  # This implies badly 'clipped' data with many values at the same low number
+#         app_sum = np.sum(sorted_data)
+#         app_avg = app_sum / data.size
+#         good_mean = app_avg
+#
+#         # Now we have a good first approximation for good_mean, but it could contain star pixels.
+#         # We'll remove those pixels after we get a sigma estimate
+#
+#     upper_indices = np.where(sorted_data >= good_mean)
+#
+#     # MAD means: Median Absolute Deviation
+#     MAD = np.median(sorted_data[upper_indices[0][0]:])
+#     MAD = MAD - good_mean
+#     if assume_gaussian:
+#         MAD = MAD * 1.486  # sigma(gaussian) can be proved to equal 1.486*MAD for double sided data
+#
+#     # The following calculation is included for dealing with asymetric (clipped) background noise.
+#     # It has no significant effect on the mean of symmetric noise distributions (gaussian) but does
+#     # a much better job of baskground mean estimation when the noise is asymetric.
+#
+#     # Find the indices of all points that exceed 2 sigma of the mean
+#     upper_indices = np.where(sorted_data > good_mean + 2 * MAD)
+#
+#     # Find the indices of all points that are more then 2 sigma below the mean
+#     lower_indices = np.where(sorted_data < good_mean - 2 * MAD)
+#
+#     # Here we deal with cases where there are no points more than 2 sigma above the mean
+#     # and/or there are no points more than 2 sigma below the mean.
+#     upper_len = len(upper_indices[0])
+#     lower_len = len(lower_indices[0])
+#     if upper_len > 0:
+#         top = upper_indices[0][0]
+#     else:
+#         top = sorted_data.size
+#     if lower_len > 0:
+#         bot = lower_indices[0][-1]
+#     else:
+#         bot = 0
+#
+#     app_sum = np.sum(sorted_data[bot:top])
+#     app_avg = app_sum / (top - bot + 1)
+#     good_mean = app_avg
+#     # except:
+#     #     pass
+#
+#     return good_mean, MAD, sorted_data, window, data.size, first_index, last_index
 
 def newRobustMeanStd(
         data: np.ndarray, outlier_fraction: float = 0.5, max_pts: int = 10000,
@@ -7709,83 +7820,28 @@ def newRobustMeanStd(
 
         return lower_mean, MAD, sorted_data, window, data.size, first_index, last_index
 
-    if outlier_fraction > 0:
-        # window is the number points to be included in the 'mean' calculation
-        window = int(sorted_data.size * (1 - outlier_fraction))
-
-        # Handle the case of outlier_fraction too close to zero
-        if window == data.size:
-            window -= 1
-
-        # nout is the number of outliers to exclude
-        nout = sorted_data.size - window
-        diffs = sorted_data[window:window + nout] - sorted_data[0:nout]
-
-        min_diff_pts = np.where(diffs == min(diffs))
-
-        j = min_diff_pts[0][0]
-        k = min_diff_pts[0][-1]
-        good_mean = np.mean(sorted_data[j:k + window])
-
-        first_index = j
-        last_index = k + window
+    sorted_data = np.sort(data.flatten())
+    if sorted_data.dtype == '>f4':
+        my_hist = np.bincount(sorted_data.astype(np.int, casting='unsafe'))
     else:
-        good_mean = np.mean(sorted_data)
-        window = data.size
+        my_hist = np.bincount(sorted_data)
 
-    # Here we treat 'clipped' backgrounds as a special case.  We calculute the mean
-    # from ALL pixels, including any star pixels that may be present.  We do this because
-    # 'clipped' data makes it impossible to remove outliers by the same technique that works
-    # so well with true gaussian (or at least symmetrical) noise with outliers
+    start_index = np.where(my_hist == max(my_hist))[0][0]
+    for last in range(start_index, len(my_hist)):
+        # We have to test that my_hist[last] > 0 to deal with missing values
+        if 0 < my_hist[last] < 5:
+            break
 
-    if first_index == 0:  # This implies badly 'clipped' data with many values at the same low number
-        app_sum = np.sum(sorted_data)
-        app_avg = app_sum / data.size
-        good_mean = app_avg
+    sum_pts = np.sum(my_hist[:last + 1])
+    wgts = np.arange(last + 1)
+    wgt_pts = wgts * my_hist[:last + 1]
+    calced_mean = np.sum(wgt_pts) / sum_pts  # This is the average background pixel value that we're looking for.
 
-        # Now we have a good first approximation for good_mean, but it could contain star pixels.
-        # We'll remove those pixels after we get a sigma estimate
+    bkgnd_sigma = np.std(sorted_data[:sum_pts])
+    # return calced_mean, bkgnd_sigma, last, my_hist
 
-    upper_indices = np.where(sorted_data >= good_mean)
-
-    # MAD means: Median Absolute Deviation
-    MAD = np.median(sorted_data[upper_indices[0][0]:])
-    MAD = MAD - good_mean
-    if assume_gaussian:
-        MAD = MAD * 1.486  # sigma(gaussian) can be proved to equal 1.486*MAD for double sided data
-
-    # The following calculation is included for dealing with asymetric (clipped) background noise.
-    # It has no significant effect on the mean of symmetric noise distributions (gaussian) but does
-    # a much better job of baskground mean estimation when the noise is asymetric.
-
-    # Find the indices of all points that exceed 2 sigma of the mean
-    upper_indices = np.where(sorted_data > good_mean + 2 * MAD)
-
-    # Find the indices of all points that are more then 2 sigma below the mean
-    lower_indices = np.where(sorted_data < good_mean - 2 * MAD)
-
-    # noinspection PyBroadException
-    # try:
-    # Here we deal with cases where there are no points more than 2 sigma above the mean
-    # and/or there are no points more than 2 sigma below the mean.
-    upper_len = len(upper_indices[0])
-    lower_len = len(lower_indices[0])
-    if upper_len > 0:
-        top = upper_indices[0][0]
-    else:
-        top = sorted_data.size
-    if lower_len > 0:
-        bot = lower_indices[0][-1]
-    else:
-        bot = 0
-
-    app_sum = np.sum(sorted_data[bot:top])
-    app_avg = app_sum / (top - bot + 1)
-    good_mean = app_avg
-    # except:
-    #     pass
-
-    return good_mean, MAD, sorted_data, window, data.size, first_index, last_index
+    # return good_mean, MAD, sorted_data, window, data.size, first_index, last_index
+    return calced_mean, bkgnd_sigma, my_hist, data.size / 2, data.size, 0, last + 1
 
 
 def main():
