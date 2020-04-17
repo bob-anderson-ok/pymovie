@@ -7833,7 +7833,7 @@ def newRobustMeanStd(
             break
 
     sum_pts = np.sum(my_hist[:last + 1])
-    wgts = np.arange(last + 1)
+    wgts = np.arange(last + 1) + 0.5  # Set 'weight' to mid-value of histgram bin
     wgt_pts = wgts * my_hist[:last + 1]
     calced_mean = np.sum(wgt_pts) / sum_pts  # This is the average background pixel value that we're looking for.
 
