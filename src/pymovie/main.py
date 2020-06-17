@@ -735,7 +735,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.avi_location = None
 
-        self.big_thresh = 9999
+        self.big_thresh = 99999
         self.one_time_suppress_stats = False
 
         self.analysisInProgress = False
@@ -7179,7 +7179,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             x=xs,
             y=hist_data,
             stepMode=True,
-            title=f'pixel values histogram  (points to left of red line are used to compute background average)',
+            title=f'pixel values histogram  (points to left of red line are used to compute background mean and std)',
             # pen=dark_gray
             pen = black
         )
@@ -7832,16 +7832,14 @@ def newRobustMeanStd(
         if 0 < my_hist[last] < 5:
             break
 
-    sum_pts = np.sum(my_hist[:last + 1])
-    wgts = np.arange(last + 1) + 0.5  # Set 'weight' to mid-value of histgram bin
-    wgt_pts = wgts * my_hist[:last + 1]
-    calced_mean = np.sum(wgt_pts) / sum_pts  # This is the average background pixel value that we're looking for.
 
-    bkgnd_sigma = np.std(sorted_data[:sum_pts])
-    # return calced_mean, bkgnd_sigma, last, my_hist
-
-    # return good_mean, MAD, sorted_data, window, data.size, first_index, last_index
-    return calced_mean, bkgnd_sigma, my_hist, data.size / 2, data.size, 0, last + 1
+    flat_data = data.flatten()
+    est_mean = np.median(flat_data)
+    MAD = np.median(np.abs(flat_data - est_mean))  # This is my MAD estimator
+    clip_point = est_mean + 4.5 * MAD              # Equivalent to 3 sigma
+    calced_mean = np.mean(flat_data[np.where(flat_data < clip_point)])
+    bkgnd_sigma = np.std(flat_data[np.where(flat_data < clip_point)])
+    return calced_mean, bkgnd_sigma, my_hist, data.size / 2, data.size, 0, clip_point
 
 
 def main():
