@@ -183,12 +183,52 @@
               </spacer>
              </item>
              <item>
+              <widget class="QLabel" name="label_3">
+               <property name="text">
+                <string>Threshold spinner increments:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QRadioButton" name="thresh_inc_1">
+               <property name="layoutDirection">
+                <enum>Qt::RightToLeft</enum>
+               </property>
+               <property name="text">
+                <string>1</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QRadioButton" name="thresh_inc_10">
+               <property name="layoutDirection">
+                <enum>Qt::RightToLeft</enum>
+               </property>
+               <property name="text">
+                <string>10</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QRadioButton" name="thresh_inc_100">
+               <property name="layoutDirection">
+                <enum>Qt::RightToLeft</enum>
+               </property>
+               <property name="text">
+                <string>100</string>
+               </property>
+              </widget>
+             </item>
+             <item>
               <widget class="QLabel" name="setMskthLabel">
                <property name="toolTip">
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If there is a currently 'green' aperture showing, its threshold value will be set to any new value from this spinner and &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Thumbnail Two&lt;/span&gt; in the lower right corner will update dynamically to show the effect of the change on the binary sample mask generation.&lt;/p&gt;&lt;p&gt;The mask threshold is always set as counts above average background. A good starting point for setting this value is to set it equal to the background noise (found in the column labelled &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;bkstd&lt;/span&gt; in the text box) rounded up. The program tries to do this automatically so, in most cases, this value will already be preset. This is sometimes referred to as &lt;span style=&quot; color:#0000ff;&quot;&gt;'setting the threshold to 1 sigma'&lt;/span&gt;.&lt;/p&gt;&lt;p&gt;Note: &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;mskth&lt;/span&gt; (mask threshold) and &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;bkavg&lt;/span&gt; (background average) are column headings in the text box.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="text">
-                <string>set mask threshold (mskth) counts above background (bkavg)</string>
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set mask (mskth) counts above background (bkavg)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>

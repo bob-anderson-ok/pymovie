@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'PyMovie.ui'
+# Form implementation generated from reading ui file 'Pymovie.ui'
 #
 # Created by: PyQt5 UI code generator 5.14.0
 #
@@ -90,6 +90,22 @@ class Ui_MainWindow(object):
         self.horizontalLayout.setObjectName("horizontalLayout")
         spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem)
+        self.label_3 = QtWidgets.QLabel(self.layoutWidget)
+        self.label_3.setObjectName("label_3")
+        self.horizontalLayout.addWidget(self.label_3)
+        self.thresh_inc_1 = QtWidgets.QRadioButton(self.layoutWidget)
+        self.thresh_inc_1.setLayoutDirection(QtCore.Qt.RightToLeft)
+        self.thresh_inc_1.setChecked(True)
+        self.thresh_inc_1.setObjectName("thresh_inc_1")
+        self.horizontalLayout.addWidget(self.thresh_inc_1)
+        self.thresh_inc_10 = QtWidgets.QRadioButton(self.layoutWidget)
+        self.thresh_inc_10.setLayoutDirection(QtCore.Qt.RightToLeft)
+        self.thresh_inc_10.setObjectName("thresh_inc_10")
+        self.horizontalLayout.addWidget(self.thresh_inc_10)
+        self.thresh_inc_100 = QtWidgets.QRadioButton(self.layoutWidget)
+        self.thresh_inc_100.setLayoutDirection(QtCore.Qt.RightToLeft)
+        self.thresh_inc_100.setObjectName("thresh_inc_100")
+        self.horizontalLayout.addWidget(self.thresh_inc_100)
         self.setMskthLabel = QtWidgets.QLabel(self.layoutWidget)
         self.setMskthLabel.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.setMskthLabel.setObjectName("setMskthLabel")
@@ -1080,8 +1096,12 @@ class Ui_MainWindow(object):
         self.roiComboBox.setToolTip(_translate("MainWindow", "<html><head/><body><p>This drop-down selection box changes the measurement aperture size.</p><p><span style=\" font-weight:600; color:#fc0107;\">Note:</span> it is a reqirement that all apertures be the same size during a lightcurve extraction, so changing the aperture size will automatically remove all existing apertures.</p><p>If there is substantial wind shake in the video, you should select an aperture size sufficent to contain the \'wanderings\' of the star you have selected for tracking or, if there is no tracking star, then the target star itself.</p><p>If there is no significant wind shake, use of a smaller aperture (like 31) may be more useful in dealing with dense star fields.</p></body></html>"))
         self.selectApertureSizeLabel.setToolTip(_translate("MainWindow", "<html><head/><body><p>This drop-down selection box changes the measurement aperture size.</p><p><span style=\" font-weight:600; color:#fc0107;\">Note:</span> it is a reqirement that all apertures be the same size during a lightcurve extraction, so changing the aperture size will automatically remove all existing apertures.</p><p>If there is substantial wind shake in the video, you should select an aperture size sufficent to contain the \'wanderings\' of the star you have selected for tracking or, if there is no tracking star, then the target star itself.</p><p>If there is no significant wind shake, use of a smaller aperture (like 31) may be more useful in dealing with dense star fields.</p><p><span style=\" font-weight:600; color:#fc0107;\">Note: </span><span style=\" font-weight:600; color:#0000ff;\">An aperture is never allowed to extend outside the image boundary. As a result, if an aperture is placed on a star that is close to the image edge and that star subsequently moves closer to the edge, tracking will be lost when the aperture bumps up against edge. In this case, use of a smaller aperture will allow tracking closer to the edge.</span></p></body></html>"))
         self.selectApertureSizeLabel.setText(_translate("MainWindow", "Select aperture size"))
+        self.label_3.setText(_translate("MainWindow", "Threshold spinner increments:"))
+        self.thresh_inc_1.setText(_translate("MainWindow", "1"))
+        self.thresh_inc_10.setText(_translate("MainWindow", "10"))
+        self.thresh_inc_100.setText(_translate("MainWindow", "100"))
         self.setMskthLabel.setToolTip(_translate("MainWindow", "<html><head/><body><p>If there is a currently \'green\' aperture showing, its threshold value will be set to any new value from this spinner and <span style=\" font-weight:600; color:#fc0107;\">Thumbnail Two</span> in the lower right corner will update dynamically to show the effect of the change on the binary sample mask generation.</p><p>The mask threshold is always set as counts above average background. A good starting point for setting this value is to set it equal to the background noise (found in the column labelled <span style=\" font-weight:600; color:#fc0107;\">bkstd</span> in the text box) rounded up. The program tries to do this automatically so, in most cases, this value will already be preset. This is sometimes referred to as <span style=\" color:#0000ff;\">\'setting the threshold to 1 sigma\'</span>.</p><p>Note: <span style=\" font-weight:600; color:#fc0107;\">mskth</span> (mask threshold) and <span style=\" font-weight:600; color:#fc0107;\">bkavg</span> (background average) are column headings in the text box.</p></body></html>"))
-        self.setMskthLabel.setText(_translate("MainWindow", "set mask threshold (mskth) counts above background (bkavg)"))
+        self.setMskthLabel.setText(_translate("MainWindow", "<html><head/><body><p>Set mask (mskth) counts above background (bkavg)</p></body></html>"))
         self.viewFieldsCheckBox.setText(_translate("MainWindow", "View avi fields"))
         self.processAsFieldsCheckBox.setText(_translate("MainWindow", "Process avi in field mode"))
         self.topFieldFirstRadioButton.setText(_translate("MainWindow", "top field is first in time"))

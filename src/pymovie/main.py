@@ -509,6 +509,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         else:
             self.showMsg(f'!!! Found no app size radio button checked !!!')
 
+        self.thresh_inc_1.setChecked(True)
+
         self.vtiSelectLabel.installEventFilter(self)
 
         self.gammaLabel.installEventFilter(self)
@@ -586,6 +588,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.restoreApertureState.clicked.connect(self.restoreApertureGroup)
         self.restoreApertureState.installEventFilter(self)
+
+        self.thresh_inc_1.clicked.connect(self.set_thresh_spinner_1)
+        self.thresh_inc_10.clicked.connect(self.set_thresh_spinner_10)
+        self.thresh_inc_100.clicked.connect(self.set_thresh_spinner_100)
 
         # self.expCodeButton.clicked.connect(self.runExperimentalCode)
 
@@ -1108,6 +1114,19 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
     #         print(" ")
     #         summary.print_(summary_one)
     #         print(" ")
+
+
+    def set_thresh_spinner_1(self):
+        if self.thresh_inc_1.isChecked():
+            self.threshValueEdit.setSingleStep(1)
+
+    def set_thresh_spinner_10(self):
+        if self.thresh_inc_10.isChecked():
+            self.threshValueEdit.setSingleStep(10)
+
+    def set_thresh_spinner_100(self):
+        if self.thresh_inc_100.isChecked():
+            self.threshValueEdit.setSingleStep(100)
 
     def redoTabOrder(self, tabnames):
 
