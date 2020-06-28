@@ -7856,8 +7856,8 @@ def newRobustMeanStd(
     est_mean = np.median(flat_data)
     MAD = np.median(np.abs(flat_data - est_mean))  # This is my MAD estimator
     clip_point = est_mean + 4.5 * MAD              # Equivalent to 3 sigma
-    calced_mean = np.mean(flat_data[np.where(flat_data < clip_point)])
-    bkgnd_sigma = np.std(flat_data[np.where(flat_data < clip_point)])
+    calced_mean = np.mean(flat_data[np.where(flat_data <= clip_point)])
+    bkgnd_sigma = np.std(flat_data[np.where(flat_data <= clip_point)])
     return calced_mean, bkgnd_sigma, my_hist, data.size / 2, data.size, 0, clip_point
 
 
