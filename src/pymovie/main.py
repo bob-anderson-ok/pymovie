@@ -7157,6 +7157,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'No image in Thumbnail One to use for demo')
             return
 
+        # TODO Remove for production
+        pickle.dump(self.thumbOneImage, open(self.folder_dir + '/thumbOne.p', "wb"))
+
         # good_mean, sigma, hist_data, window, data_size, left, right = robustMeanStd(self.thumbOneImage)
         good_mean, sigma, hist_data, _, _, _, local_right = newRobustMeanStd(
             self.thumbOneImage, lunar=self.lunarCheckBox.isChecked()
@@ -7813,10 +7816,11 @@ def newRobustMeanStd(
     assert data.size <= max_pts, "data.size > max_pts in newRobustMean()"
     assert outlier_fraction < 1.0, "outlier_fraction >= 1.0 in newRobustMean()"
 
-    sorted_data = np.sort(data.flatten()) # This form was needed to satisfy Numba
+    flat_data = data.flatten()
+    sorted_data = np.sort(flat_data) # This form was needed to satisfy Numba
 
-    first_index = None
-    last_index = None
+    # first_index = None
+    # last_index = None
 
     if lunar:
         # noinspection PyTypeChecker
@@ -7839,7 +7843,6 @@ def newRobustMeanStd(
 
         return lower_mean, MAD, sorted_data, window, data.size, first_index, last_index
 
-    sorted_data = np.sort(data.flatten())
     if sorted_data.dtype == '>f4':
         my_hist = np.bincount(sorted_data.astype(np.int, casting='unsafe'))
     else:
@@ -7851,14 +7854,20 @@ def newRobustMeanStd(
         if 0 < my_hist[last] < 5:
             break
 
+    # New code to estimate standard deviation.  The idea is compute the std of each row in the image
+    # thumbnail. Next, we assume that stars present in the image will affect only a few rows, so
+    # the median of the row-by-row std calculations is a good estimate of std (to be refined in subsequent steps)
+    stds = []
+    for i in range(data.shape[0]):
+        stds.append(np.std(data[i]))
+    MAD = np.median(stds)
 
-    flat_data = data.flatten()
+    # flat_data = data.flatten()
     est_mean = np.median(flat_data)
-    MAD = np.median(np.abs(flat_data - est_mean))  # This is my MAD estimator
     clip_point = est_mean + 4.5 * MAD              # Equivalent to 3 sigma
     calced_mean = np.mean(flat_data[np.where(flat_data <= clip_point)])
     bkgnd_sigma = np.std(flat_data[np.where(flat_data <= clip_point)])
-    return calced_mean, bkgnd_sigma, my_hist, data.size / 2, data.size, 0, clip_point
+    return calced_mean, bkgnd_sigma, my_hist, data.size / 2, data.size, 0, clip_point + 1
 
 
 def main():
