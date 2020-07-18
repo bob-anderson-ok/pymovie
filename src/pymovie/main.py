@@ -490,6 +490,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.thumbTwoView.ui.histogram.hide()
 
         # The initial value must be coordinated with instance variable initiation
+        self.roiComboBox.addItem("91")
+        self.roiComboBox.addItem("71")
         self.roiComboBox.addItem("51")
         self.roiComboBox.addItem("41")
         self.roiComboBox.addItem("31")
@@ -497,15 +499,15 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.roiComboBox.addItem("11")
 
         if self.defAppSize51RadioButton.isChecked():
-            self.roiComboBox.setCurrentIndex(0)
-        elif self.defAppSize41RadioButton.isChecked():
-            self.roiComboBox.setCurrentIndex(1)
-        elif self.defAppSize31RadioButton.isChecked():
             self.roiComboBox.setCurrentIndex(2)
-        elif self.defAppSize21RadioButton.isChecked():
+        elif self.defAppSize41RadioButton.isChecked():
             self.roiComboBox.setCurrentIndex(3)
-        elif self.defAppSize11RadioButton.isChecked():
+        elif self.defAppSize31RadioButton.isChecked():
             self.roiComboBox.setCurrentIndex(4)
+        elif self.defAppSize21RadioButton.isChecked():
+            self.roiComboBox.setCurrentIndex(5)
+        elif self.defAppSize11RadioButton.isChecked():
+            self.roiComboBox.setCurrentIndex(6)
         else:
             self.showMsg(f'!!! Found no app size radio button checked !!!')
 
