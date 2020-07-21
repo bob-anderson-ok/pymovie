@@ -1692,15 +1692,15 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
                 # Set the aperture size selection to match the incoming aperture group.
                 if xsize == 51:
-                    self.roiComboBox.setCurrentIndex(0)
-                elif xsize == 41:
-                    self.roiComboBox.setCurrentIndex(1)
-                elif xsize == 31:
                     self.roiComboBox.setCurrentIndex(2)
-                elif xsize == 21:
+                elif xsize == 41:
                     self.roiComboBox.setCurrentIndex(3)
-                elif xsize == 11:
+                elif xsize == 31:
                     self.roiComboBox.setCurrentIndex(4)
+                elif xsize == 21:
+                    self.roiComboBox.setCurrentIndex(5)
+                elif xsize == 11:
+                    self.roiComboBox.setCurrentIndex(6)
                 else:
                     self.showMsg(f'Unexpected aperture size of {xsize} in restored aperture group')
 
