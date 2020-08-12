@@ -3116,13 +3116,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         else:
             shift_dict = None
 
-        # if not (self.stackXtrack or stack_aperture_present):
-        #     bkg_thresh = self.getBkgThreshold()
-        #     if bkg_thresh is None:
-        #         return
-        # else:
-        #     bkg_thresh = None
-
         if stack_aperture_present:
             self.finderMethodEdit.setText(f'Stack method in use --- Align: star')
         elif dx_dframe is not None:
@@ -3157,6 +3150,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             # And now is time to write the frame number of the corresponding reference frame
             # with open(self.folder_dir + r'/enhanced-image-frame-num.txt', 'w') as f:
             #     f.write(f'{first_frame}')
+            self.clearApertureData()
             self.clearApertures()
             self.openFitsImageFile(fullpath)
             self.finderFrameBeingDisplayed = True
