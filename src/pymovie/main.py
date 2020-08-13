@@ -3756,6 +3756,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 appdata.append(app.data)
                 num_data_pts = len(app.data)
 
+            for i in range(num_data_pts - 1):
+                if appdata[0][i][8] == appdata[0][i+1][8]:
+                    self.showMsgDialog('Duplicate frames detected --- write of csv aborted')
+                    return
+
             num_apps = len(names)  # Number of apertures
 
             # Sort names and appData in user specified order
