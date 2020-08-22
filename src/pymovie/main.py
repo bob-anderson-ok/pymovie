@@ -3467,10 +3467,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.viewFieldsCheckBox.setChecked(False)
         self.viewFieldsCheckBox.setEnabled(False)
 
-    def getStarPositionString(self):
+    def getStarPositionString(self, ini_icrs):
         starPos = StarPositionDialog()
         starPos.RaHours.setFocus()
         starPos.apiKeyEdit.setText(self.settings.value('api_key'))
+        starPos.singleLineEdit.setText(ini_icrs)
 
         result = starPos.exec_()
 
@@ -3504,9 +3505,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 ss += starPos.DecMinutes.text() + 'm'
                 ss += starPos.DecSeconds.text() + 's'
                 self.settings.setValue('api_key', starPos.apiKeyEdit.text())
+                self.api_key = starPos.apiKeyEdit.text()
                 return ss
             else:
                 self.settings.setValue('api_key', starPos.apiKeyEdit.text())
+                self.api_key = starPos.apiKeyEdit.text()
                 return starPos.singleLineEdit.text()
 
         else:
@@ -6675,10 +6678,17 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         # Check for presence of target-location.txt
         matching_name = sorted(glob.glob(dir_path + '/target-location.txt'))
+        if matching_name:
+            with open(dir_path + r'/target-location.txt', 'r') as f:
+                star_icrs = f.read()
+        else:
+            self.showMsg(f'target-location.txt file not found in the folder.')
+            star_icrs = ""
 
         if not matching_name or not self.api_key:
-            self.showMsg(f'No target location and/or api-key file found in the folder.')
-            star_icrs = self.getStarPositionString()
+            if not self.api_key:
+                self.showMsg(f"api-key not found in user's PyMovie.ini file.")
+            star_icrs = self.getStarPositionString(star_icrs)
             self.showMsg(f'star position string provided: "{star_icrs}"')
             if not star_icrs:
                 self.showMsg(f'Cannot proceed without a star/target position entry.')
@@ -6834,13 +6844,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         # These are the parameters/arguments that the 'solver' uses to work a little faster ...
         kwargs = dict()
-        kwargs['center_ra'] = star_loc.ra.value
-        kwargs['center_dec'] = star_loc.dec.value
+        # kwargs['center_ra'] = star_loc.ra.value
+        # kwargs['center_dec'] = star_loc.dec.value
         kwargs['crpix_center'] = True
-        kwargs['radius'] = 1.0
+        # kwargs['radius'] = 1.0
         kwargs['scale_units'] = 'degwidth'
-        kwargs['scale_lower'] = 0.1
-        kwargs['scale_upper'] = 20.0
+        # kwargs['scale_lower'] = 0.1
+        # kwargs['scale_upper'] = 20.0
 
         self.showMsg(f'Submitting image for WCS calibration...')
         QtGui.QGuiApplication.processEvents()
@@ -7139,6 +7149,18 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 y = y * self.pixelAspectRatio
 
         self.showMsg(f'astrometry.net: x={x:0.2f}  y={y:0.2f}')
+
+        # Here we test for a target aperture position that is not in the field-of-view
+        # and abort if that is the case.
+        x0 = round(x) - self.roi_center
+        y0 = round(y) - self.roi_center
+        in_x_range = 0 < x0 < self.roi_max_x
+        in_y_range = 0 < y0 < self.roi_max_y
+        if not in_x_range or not in_y_range:
+            self.showMsg(f'The target star is not in the field-of-view !!')
+            self.showMsgDialog(f'The target star is not in the field-of-view !!')
+            return
+
         target_app = self.addApertureAtPosition(round(x), round(y))
         target_app.thresh = self.big_thresh
         target_app.name = 'target'
