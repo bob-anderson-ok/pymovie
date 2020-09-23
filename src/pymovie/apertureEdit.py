@@ -44,7 +44,6 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
         # The xy position may have changed because of 'snap' when threshold is changed.
         self.ignoreCellClick = True
         xc, yc = aperture.getCenter()
-        # self.msgRoutine(f'({xc},{yc})')
         item = QTableWidgetItem(str(f'({xc},{yc})'))
         self.tableWidget.setItem(row, 1, item)
 
@@ -60,7 +59,6 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
             self.tableWidget.setItem(numRows, 0, item)
 
             item = QTableWidgetItem(str(rowDict['xy']))
-            # item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
             self.tableWidget.setItem(numRows, 1, item)
 
             item = QTableWidgetItem(str(rowDict['threshDelta']))
@@ -69,7 +67,16 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
             item = QTableWidgetItem(str(rowDict['defMskRadius']))
             self.tableWidget.setItem(numRows, 3, item)
 
-            item = QTableWidgetItem(str(rowDict['color']))
+            color_str = str(rowDict['color'])
+            if color_str.startswith('red'):
+                item = QTableWidgetItem('red (standard)')
+            elif color_str.startswith('green'):
+                item = QTableWidgetItem('green (connect to threshold spinner)')
+            elif color_str.startswith('yellow'):
+                item = QTableWidgetItem('yellow (tracking aperture)')
+            elif color_str.startswith('white'):
+                item = QTableWidgetItem('white (special flash tag aperture')
+            # item = QTableWidgetItem(str(rowDict['color']))
             item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
             self.tableWidget.setItem(numRows, 4, item)
 
@@ -165,14 +172,14 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
                 self.createDefaultMask(radius)
 
             aperture.color = self.tableWidget.item(row, 4).text()
-            if aperture.color == 'green':
+            if aperture.color.startswith('green'):
                 aperture.setGreen()
                 self.updateSpinnersFromRow(row)
-            elif aperture.color == 'red':
+            elif aperture.color.startswith('red'):
                 aperture.setRed()
-            elif aperture.color == 'white':
+            elif aperture.color.startswith('white'):
                 aperture.setWhite()
-            elif aperture.color == 'yellow':
+            elif aperture.color.startswith('yellow'):
                 aperture.setYellowNoCheck()
 
             text = self.tableWidget.item(row, 5).text()
@@ -229,19 +236,19 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
         elif self.col == 4:
             self.menu = QtGui.QMenu()
 
-            setRed = QtGui.QAction("Set red", self)
+            setRed = QtGui.QAction("Set red (standard)", self)
             setRed.triggered.connect(self.setRed)
             self.menu.addAction(setRed)
 
-            setGreen = QtGui.QAction("Set green", self)
+            setGreen = QtGui.QAction("Set green (connect to threshold spinner)", self)
             setGreen.triggered.connect(self.setGreen)
             self.menu.addAction(setGreen)
 
-            setYellow = QtGui.QAction("Set yellow", self)
+            setYellow = QtGui.QAction("Set yellow (tracking aperture)", self)
             setYellow.triggered.connect(self.setYellow)
             self.menu.addAction(setYellow)
 
-            setWhite = QtGui.QAction("Set white", self)
+            setWhite = QtGui.QAction("Set white (special flash tag aperture)", self)
             setWhite.triggered.connect(self.setWhite)
             self.menu.addAction(setWhite)
 
@@ -266,7 +273,7 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
         self.tableWidget.setItem(self.row, self.col, item)
 
     def setRed(self):
-        item = QTableWidgetItem('red')
+        item = QTableWidgetItem('red (standard)')
         item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
         self.tableWidget.setItem(self.row, self.col, item)
 
@@ -274,23 +281,17 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
         for row in range(self.tableWidget.rowCount()):
             # To automatically enforce the 'only one green' policy, turn any existing
             # 'green' to 'red'
-            if self.tableWidget.item(row, self.col).text() == 'green':
-                item = QTableWidgetItem('red')
+            if self.tableWidget.item(row, self.col).text().startswith('green'):
+                item = QTableWidgetItem('red (standard)')
                 item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
                 self.tableWidget.setItem(row, self.col, item)
-        item = QTableWidgetItem('green')
+        item = QTableWidgetItem('green (connect to threshold spinner)')
         item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
         self.tableWidget.setItem(self.row, self.col, item)
 
         self.updateSpinnersFromRow(self.row)
 
     def updateSpinnersFromRow(self, row):
-        # try:
-        #     radius = float(self.tableWidget.item(row, 3).text())
-        # except ValueError:
-        #     radius = 5.3
-        # if radius < 2.0:
-        #     radius = 2.0
 
         try:
             thresh = int(self.tableWidget.item(row, 2).text())
@@ -304,20 +305,18 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
     def setYellow(self):
         numYellow = 0
         for row in range(self.tableWidget.rowCount()):
-            if self.tableWidget.item(row, self.col).text() == 'yellow':
+            if self.tableWidget.item(row, self.col).text().startswith('yellow'):
                 numYellow += 1
-
-        # self.msgRoutine(f'{numYellow} yellows found')
 
         if numYellow == 2:
             self.msgRoutine(f'!!! There can only be a max of two yellow apertures !!!')
             return
 
-        item = QTableWidgetItem('yellow')
+        item = QTableWidgetItem('yellow (tracking aperture)')
         item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
         self.tableWidget.setItem(self.row, self.col, item)
 
     def setWhite(self):
-        item = QTableWidgetItem('white')
+        item = QTableWidgetItem('white (special flash tag aperture)')
         item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
         self.tableWidget.setItem(self.row, self.col, item)

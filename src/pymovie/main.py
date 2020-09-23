@@ -518,6 +518,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.gammaLabel.installEventFilter(self)
 
         self.twoPointHelpButton.installEventFilter(self)
+        self.twoPointHelpButton.clicked.connect(self.twoPointHelp)
 
         self.roiComboBox.currentIndexChanged.connect(self.setRoiFromComboBox)
         self.roiComboBox.installEventFilter(self)
@@ -1354,6 +1355,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.helperThing.raise_()
         self.helperThing.show()
 
+    def twoPointHelp(self):
+        msg = self.twoPointHelpButton.toolTip()
+        self.helperThing.textEdit.clear()
+        self.helperThing.textEdit.insertHtml(msg)
+        self.helperThing.raise_()
+        self.helperThing.show()
+
     def addApertureStack(self):
         for i in range(5):
             self.addStaticAperture(askForName=False)
@@ -1897,6 +1905,25 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.setTransportButtonsEnableState(True)
 
     def startAnalysis(self):
+
+        yellow_aperture_present = False
+        for app in self.getApertureList():
+            if app.color == 'yellow':
+                yellow_aperture_present = True
+
+        if not yellow_aperture_present:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Question)
+            msg.setText('You have not designated any yellow (tracking) apertures. A tracking' +
+                        ' aperture must be designated before an analysis (light-curve extraction) operation' +
+                        ' is allowed to proceed. The presence of a tracking (yellow) aperture' +
+                        ' locks all apertures into a constellation so that' +
+                        ' individual apertures cannot jump around.')
+            msg.setWindowTitle('!!! No yellow aperture(s) set !!!')
+            msg.setStandardButtons(QMessageBox.Close)
+            msg.exec_()
+            return
+
         self.aav_bad_frames = []
         if self.saveStateNeeded:
             self.saveStateNeeded = False
@@ -4473,6 +4500,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         img = timestamp_box_image(self.image_fields, ocrbox, kiwi=(self.kiwiInUse or self.kiwiPALinUse), slant=self.kiwiInUse)
         self.thumbOneImage = img
         self.thumbOneView.setImage(img)
+        self.thumbnailOneLabel.setText('timestamp character')
         self.thumbTwoImage = img
         self.thumbTwoView.setImage(img)
         return img
@@ -5061,6 +5089,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     self.thumbnail_one_aperture_name = aperture.name
                     self.thumbOneImage = thumbnail
                     self.thumbOneView.setImage(thumbnail)
+                    self.thumbnailOneLabel.setText(aperture.name)
                     self.thumbTwoView.setImage(mask)
             else:
                 priority_aperture_present = False
@@ -5074,11 +5103,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                         self.thumbnail_one_aperture_name = aperture.name
                         self.thumbOneImage = thumbnail
                         self.thumbOneView.setImage(thumbnail)
+                        self.thumbnailOneLabel.setText(aperture.name)
                         self.thumbTwoView.setImage(mask)
                 else:
                     self.thumbnail_one_aperture_name = aperture.name
                     self.thumbOneImage = thumbnail
                     self.thumbOneView.setImage(thumbnail)
+                    self.thumbnailOneLabel.setText(aperture.name)
                     self.thumbTwoView.setImage(mask)
 
             self.hair1.setPos((0,self.roi_size))
@@ -5326,6 +5357,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.showFrame()
 
             self.thumbOneView.clear()
+            self.thumbnailOneLabel.setText('')
             self.thumbTwoView.clear()
 
             self.processTargetAperturePlacementFiles()
@@ -5702,6 +5734,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.clearOcrBoxes()
 
             self.thumbOneView.clear()
+            self.thumbnailOneLabel.setText('')
             self.thumbTwoView.clear()
 
 
@@ -6082,6 +6115,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.stopAtFrameSpinBox.setValue(frame_count - 1)
 
             self.thumbOneView.clear()
+            self.thumbnailOneLabel.setText('')
             self.thumbTwoView.clear()
 
 
