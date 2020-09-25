@@ -40,10 +40,6 @@ CLASSIFIERS = [
     "Topic :: Scientific/Engineering",
 ]
 
-# We don't put PyQt5 in the INSTALL_REQUIRES because we assume that the Anaconda distribution is
-# in use, and that distribution has PyQt5 already installed.  Adding PyQt5 in this list also works, but adds about
-# 100Mb to the normal install download of about 10Mb
-
 INSTALL_REQUIRES = ['pyqtgraph', 'opencv-python', 'astroquery', 'resource',
                     'scikit-image(>=0.15.0)',
                     'winshell;platform_system=="Windows"',

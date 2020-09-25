@@ -2856,6 +2856,20 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # Fill self.appDictList from apertures --- this will be passed to EditApertureDialog
         self.fillApertureDictionaries()
 
+        # print(f'lunar background: {self.lunarCheckBox.isChecked()}')
+        # print(f'yellow mask = default: {self.useYellowMaskCheckBox.isChecked()}')
+        #
+        # for entry in self.appDictList:
+        #     print(f'\naperture name: {entry["name"]}')
+        #     print(f'    x,y: {entry["xy"]}')
+        #     print(f'    threshold: {entry["threshDelta"]}')
+        #     print(f'    def mask radius: {entry["defMskRadius"]}')
+        #     print(f'    color: {entry["color"]}')
+        #     print(f'    joggable: {entry["joggable"]}')
+        #     print(f'    auto textOut: {entry["autoTextOut"]}')
+        #     print(f'    thumbnail source: {entry["thumbnailSource"]}')
+        #     print(f'    csv output order: {entry["outputOrder"]}')
+
         self.apertureEditor = EditApertureDialog(
             self.showMsg,
             saver=self.settings,
@@ -3798,10 +3812,31 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             names = answer[1]
             appdata = answer[2]
 
+            # The following call fills self.appDictList with the aperture table entries
+            self.fillApertureDictionaries()
+
             with open(filename, 'w') as f:
                 # Standard header
                 f.write(f'# PyMovie Version {version.version()}\n')
                 f.write(f'# source: {self.filename}\n')
+
+                f.write(f'#\n')
+                f.write(f'# lunar background: {self.lunarCheckBox.isChecked()}\n')
+                f.write(f'# yellow mask = default: {self.useYellowMaskCheckBox.isChecked()}\n')
+
+                for entry in self.appDictList:
+                    f.write(f'#\n')
+                    f.write(f'# aperture name: {entry["name"]}\n')
+                    f.write(f'# ____ x,y: {entry["xy"]}\n')
+                    f.write(f'# ____ threshold: {entry["threshDelta"]}\n')
+                    f.write(f'# ____ def mask radius: {entry["defMskRadius"]}\n')
+                    f.write(f'# ____ color: {entry["color"]}\n')
+                    f.write(f'# ____ joggable: {entry["joggable"]}\n')
+                    f.write(f'# ____ auto textOut: {entry["autoTextOut"]}\n')
+                    f.write(f'# ____ thumbnail source: {entry["thumbnailSource"]}\n')
+                    f.write(f'# ____ csv output order: {entry["outputOrder"]}\n')
+
+                f.write(f'#\n')
 
                 if not self.avi_in_use:
                     if self.fits_folder_in_use:
