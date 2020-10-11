@@ -10,12 +10,13 @@ class OcrAperture(pg.GraphicsObject):
 
     # Intialize aperture specified by a field box
     def __init__(self, fieldbox, boxnum, position, msgRoutine, templater,
-                 jogcontroller, showcharacter, showtemplates, neededdigits, kiwi=False, samplemenu=True):
+                 jogcontroller, frameview, showcharacter, showtemplates, neededdigits, kiwi=False, samplemenu=True):
         self.samplemenu = samplemenu
         self.kiwiStyle = kiwi
         self.templateWriter = templater             # self.processOcrTemplate()  in main
         self.displayDigitTemplates = showtemplates  # self.showDigitTemplates()  in main
         self.controlAllJogs = jogcontroller         # self.setAllOcrBoxJogging() in main
+        self.frameViewReference = frameview         # self.frameView             in main
         self.showCharacter = showcharacter          # self.showOcrCharacter()    in main
         self.neededDigits = neededdigits            # self.needDigits()          in main
         self.boxnum = boxnum
@@ -55,10 +56,15 @@ class OcrAperture(pg.GraphicsObject):
     def paint(self, p, *args):
         _ = args # unused parameter
         p.setPen(self.pen)
+        if self.joggable:
+            p.setPen(pg.mkPen('y'))
+        else:
+            p.setPen(pg.mkPen('r'))
         if not self.kiwiStyle:
             p.drawRect(self.boundingRect())
         else:
-            p.setPen(pg.mkPen('y'))
+            # p.setPen(pg.mkPen('y'))
+            # p.setPen(pg.mkPen('r'))
             dx = 5
             x0 = self.x0 + dx
             y0 = self.y0
@@ -115,6 +121,10 @@ class OcrAperture(pg.GraphicsObject):
         setlowerjogs.triggered.connect(self.enableLowerJogging)
         self.menu.addAction(setlowerjogs)
 
+        setalljogs = QtGui.QAction("Enable jogging for all boxes", self.menu)
+        setalljogs.triggered.connect(self.enableAllJogging)
+        self.menu.addAction(setalljogs)
+
         self.menu.addSeparator()
 
         clearupperjogs = QtGui.QAction("Disable jogging for upper boxes", self.menu)
@@ -124,6 +134,10 @@ class OcrAperture(pg.GraphicsObject):
         clearlowerjogs = QtGui.QAction("Disable jogging for lower boxes", self.menu)
         clearlowerjogs.triggered.connect(self.disableLowerJogging)
         self.menu.addAction(clearlowerjogs)
+
+        clearalljogs = QtGui.QAction("Disable jogging for all boxes", self.menu)
+        clearalljogs.triggered.connect(self.disableAllJogging)
+        self.menu.addAction(clearalljogs)
 
 
         self.menu.addSeparator()
@@ -202,15 +216,27 @@ class OcrAperture(pg.GraphicsObject):
 
     def disableUpperJogging(self):
         self.controlAllJogs(enable=False, position='upper')
+        self.frameViewReference.getView().update()
 
     def disableLowerJogging(self):
         self.controlAllJogs(enable=False, position='lower')
+        self.frameViewReference.getView().update()
+
+    def disableAllJogging(self):
+        self.disableLowerJogging()
+        self.disableUpperJogging()
 
     def enableUpperJogging(self):
         self.controlAllJogs(enable=True, position='upper')
+        self.frameViewReference.getView().update()
 
     def enableLowerJogging(self):
         self.controlAllJogs(enable=True, position='lower')
+        self.frameViewReference.getView().update()
+
+    def enableAllJogging(self):
+        self.enableLowerJogging()
+        self.enableUpperJogging()
 
     def write0(self):
         self.templateWriter(0, self.getBox())
@@ -249,16 +275,12 @@ class OcrAperture(pg.GraphicsObject):
         self.msgRoutine(msg=msg)
         self.showCharacter(self.getBox())
 
-    def jogLeft(self):
-        # self.msgRoutine( 'jog left: Given to jogger()')
-        self.jogger(dx = -1, dy = 0, boxnum=self.boxnum, position=self.position)
-
-    def jogRight(self):
-        # self.msgRoutine( 'jog right: Given to jogger()')
-        self.jogger(dx = 1, dy = 0, boxnum=self.boxnum, position=self.position)
-
     def enableJogging(self):
         self.joggable = True
+        self.pen = pg.mkPen('y')
+        self.frameViewReference.getView().update()
 
     def disableJogging(self):
         self.joggable = False
+        self.pen = pg.mkPen('r')
+        self.frameViewReference.getView().update()

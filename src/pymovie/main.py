@@ -666,6 +666,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.stackYtrack = []
         self.stackFrame = []
 
+        self.lastMousePosInFrameView = None
+
         # Start: Tracking path variables ...
         self.tpathEarlyX = None
         self.tpathEarlyY = None
@@ -2126,6 +2128,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.lowerOcrBoxesRight[boxnum] = (xL + dx, xR + dx, yU + dy, yL + dy)
                 ocr.setBox((xL + dx, xR + dx, yU + dy + yadj, yL + dy + yadj))
 
+        # pos = QtGui.QCursor().pos()
+        # newpos = self.frameView.mapFromGlobal(pos)
+        self.mouseMovedInFrameView(self.lastMousePosInFrameView)
+
         self.pickleOcrBoxes()
 
     def placeOcrBoxesOnImage(self):
@@ -3297,6 +3303,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def processKeystroke(self, event):
 
+        def inOcrBox(x_pos, y_pos, box_coords_in):
+            xin = box_coords_in[0] <= x_pos <= box_coords_in[1]
+            yin = box_coords_in[2] <= y_pos <= box_coords_in[3]
+            return xin and yin
+
         key = event.key()
         modifiers = int(event.modifiers())
 
@@ -3310,6 +3321,27 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             elif modifiers == 0:
                 self.printKeyCodes = False
                 self.consecutiveKcount = 0
+
+        # We use the j key to toggle the joggable property of the ocr selection box pointed to by the mouse
+        if key == ord('J'):
+            # Check for ocr character selection boxes showing.  If they are, see if the cursor is
+            if self.viewFieldsCheckBox.isChecked():
+                # self.showMsg('Got a j keystroke while in field view mode')
+                # self.showMsg(repr(self.lastMousePosInFrameView))
+
+                # Get coordinates that the mouse is pointing to.
+                mousePoint = self.frameView.getView().mapSceneToView(self.lastMousePosInFrameView)
+                x = int(mousePoint.x())
+                y = int(mousePoint.y())
+
+                ocr_boxes = self.getOcrBoxList()
+                if ocr_boxes:
+                    # Test for cursor inside one of the selection. If so, toggle its joggable property
+                    for box in ocr_boxes:
+                        box_coords = box.getBox()
+                        if inOcrBox(x, y, box_coords):
+                            box.joggable = not box.joggable
+                            self.frameView.getView().update()
 
         joggable_aperture_available = False
         app_list = self.getApertureList()
@@ -4439,6 +4471,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             msgRoutine=self.showMsg,
             templater=self.processOcrTemplate,
             jogcontroller=self.setAllOcrBoxJogging,
+            frameview=self.frameView,
             showcharacter=self.showOcrCharacter,
             showtemplates=self.showDigitTemplates,
             neededdigits=self.needDigits,
@@ -4933,21 +4966,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             yin = box_coords_in[2] <= y_pos <= box_coords_in[3]
             return xin and yin
 
-        # def statusMsg(aperture):
-        #     msg = f'  For aperture( {aperture.name} ):'
-        #     if aperture.jogging_enabled:
-        #         msg += f' jogging is ON,'
-        #     else:
-        #         msg += f' jogging is OFF,'
-        #     if aperture.auto_display:
-        #         msg += f' auto_display is ON'
-        #     else:
-        #         msg += f' auto_display is OFF'
-        #     if aperture.thumbnail_source:
-        #         msg += f' (default source for Thumbnail One during run)'
-        #     if aperture.color == 'green':
-        #         msg += f'  (responds to threshold spinner)'
-        #     return msg
+        self.lastMousePosInFrameView = pos
 
         mousePoint = self.frameView.getView().mapSceneToView(pos)
         x = int(mousePoint.x())
@@ -5304,6 +5323,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             for ocrbox in ocrboxes:
                 if ocrbox.position == position:
                     ocrbox.joggable = enable
+                    if enable:
+                        ocrbox.pen = pg.mkPen('y')
+                        ocrbox.color = 'yellow'
+                    else:
+                        ocrbox.pen = pg.mkPen('r')
+                        ocrbox.color = 'red'
+            self.frameView.getView().update()
 
     def selectFitsFolder(self):
 

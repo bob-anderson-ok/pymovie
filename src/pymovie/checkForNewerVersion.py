@@ -38,9 +38,6 @@ def upgradePyMovie(pymovieversion):
 
     import subprocess
 
-    # resp = subprocess.run(['python', '-m', 'pip', 'install', '--user', '--upgrade', pymovieversion],
-    #                       stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-
     resp = subprocess.run(['python', '-m', 'pip', 'install', '--user', '--upgrade', pymovieversion],
                           stderr=subprocess.PIPE, stdout=subprocess.PIPE)
 
