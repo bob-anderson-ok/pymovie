@@ -1355,24 +1355,24 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def mainImageHelp(self):
         msg = self.transportHelp.toolTip()
-        self.helperThing.textEdit.clear()
-        self.helperThing.textEdit.insertHtml(msg)
         self.helperThing.raise_()
         self.helperThing.show()
+        self.helperThing.textEdit.clear()
+        self.helperThing.textEdit.insertHtml(msg)
 
     def twoPointHelp(self):
         msg = self.twoPointHelpButton.toolTip()
-        self.helperThing.textEdit.clear()
-        self.helperThing.textEdit.insertHtml(msg)
         self.helperThing.raise_()
         self.helperThing.show()
+        self.helperThing.textEdit.clear()
+        self.helperThing.textEdit.insertHtml(msg)
 
     def vtiHelp(self):
         msg = self.vtiHelpButton.toolTip()
-        self.helperThing.textEdit.clear()
-        self.helperThing.textEdit.insertHtml(msg)
         self.helperThing.raise_()
         self.helperThing.show()
+        self.helperThing.textEdit.clear()
+        self.helperThing.textEdit.insertHtml(msg)
 
     def addApertureStack(self):
         for i in range(5):
@@ -4038,10 +4038,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def showHelp(self, obj):
         if obj.toolTip():
-            self.helperThing.textEdit.clear()
-            self.helperThing.textEdit.insertHtml(obj.toolTip())
             self.helperThing.raise_()
             self.helperThing.show()
+            self.helperThing.textEdit.clear()
+            self.helperThing.textEdit.insertHtml(obj.toolTip())
 
     def eventFilter(self, obj, event):
         if event.type() == QtCore.QEvent.KeyPress:
@@ -4054,10 +4054,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if event.type() == QtCore.QEvent.MouseButtonPress:
             if event.button() == Qt.RightButton:
                 if obj.toolTip():
-                    self.helperThing.textEdit.clear()
-                    self.helperThing.textEdit.insertHtml(obj.toolTip())
                     self.helperThing.raise_()
                     self.helperThing.show()
+                    self.helperThing.textEdit.clear()
+                    self.helperThing.textEdit.insertHtml(obj.toolTip())
                     return True
             return super(PyMovie, self).eventFilter(obj, event)
             # return False
@@ -5460,10 +5460,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.helperThing.textEdit.setText(msg)
         self.helperThing.raise_()
         self.helperThing.show()
-        # msg_box = QMessageBox()
-        # msg_box.setText(msg)
-        # msg_box.exec()
-
 
     def openFitsImageFile(self, fpath):
         self.image = pyfits.getdata(fpath, 0)

@@ -255,6 +255,7 @@ class Ui_MainWindow(object):
         self.clearOcrDataButton.setObjectName("clearOcrDataButton")
         self.verticalLayout_10.addWidget(self.clearOcrDataButton)
         self.vtiHelpButton = QtWidgets.QPushButton(self.tab_6)
+        self.vtiHelpButton.setFocusPolicy(QtCore.Qt.NoFocus)
         self.vtiHelpButton.setObjectName("vtiHelpButton")
         self.verticalLayout_10.addWidget(self.vtiHelpButton)
         self.gridLayout_3.addLayout(self.verticalLayout_10, 0, 1, 2, 3)
