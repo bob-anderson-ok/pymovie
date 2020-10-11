@@ -515,6 +515,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.vtiSelectLabel.installEventFilter(self)
 
+        self.vtiHelpButton.installEventFilter(self)
+        self.vtiHelpButton.clicked.connect(self.vtiHelp)
+
         self.gammaLabel.installEventFilter(self)
 
         self.twoPointHelpButton.installEventFilter(self)
@@ -1359,6 +1362,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def twoPointHelp(self):
         msg = self.twoPointHelpButton.toolTip()
+        self.helperThing.textEdit.clear()
+        self.helperThing.textEdit.insertHtml(msg)
+        self.helperThing.raise_()
+        self.helperThing.show()
+
+    def vtiHelp(self):
+        msg = self.vtiHelpButton.toolTip()
         self.helperThing.textEdit.clear()
         self.helperThing.textEdit.insertHtml(msg)
         self.helperThing.raise_()
@@ -7276,7 +7286,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             return
 
         # TODO Remove for production
-        pickle.dump(self.thumbOneImage, open(self.folder_dir + '/thumbOne.p', "wb"))
+        # pickle.dump(self.thumbOneImage, open(self.folder_dir + '/thumbOne.p', "wb"))
 
         # good_mean, sigma, hist_data, window, data_size, left, right = robustMeanStd(self.thumbOneImage)
         good_mean, sigma, hist_data, _, _, _, local_right = newRobustMeanStd(
