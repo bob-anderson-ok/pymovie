@@ -792,6 +792,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.ser_date = ''
         self.ser_file_handle = None
 
+        self.QHYpartialDataWarningMessageShown = False
+
         # If an adv or aav file was selected, these variables come into play
         self.adv_file_in_use = False
         self.aav_file_in_use = False
@@ -3643,6 +3645,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             file_name = self.fits_filenames[frame]
             hdr = pyfits.getheader(file_name, 0)
             msg = repr(hdr)
+
+            # ts, date = self.getSharpCapTimestring()
+            # self.showMsg(f'\nTimestamp from image: {date} @ {ts}\n')
+
             self.showMsg(f'############### Start frame {frame}:{file_name} data ###############')
             self.showMsg(msg)
             self.showMsg(f'################# End frame {frame}:{file_name} data ###############')
@@ -5355,6 +5361,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         QtGui.QGuiApplication.processEvents()
 
+        self.QHYpartialDataWarningMessageShown = False
+
         if dir_path:
 
             _, fn = os.path.split(dir_path)
@@ -6536,11 +6544,42 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                         self.image = None
 
                     # hdr = pyfits.getheader(self.fits_filenames[frame_to_show], 0)
+                    # Check for QHY in use
+                    try:
+                        QHYinUse = False
+                        instrument = hdr['INSTRUME']
+                        if instrument.startswith('QHY174M'):
+                            QHYinUse = True
+                    except Exception as e4:
+                        pass
 
                     try:
-                        date_time = hdr['DATE-OBS']
-                        # The form of DATE-ObS is '2018-08-21T05:21:02.4561235' so we can simply 'split' at the T
-                        parts = date_time.split('T')
+                        special_handling = False
+                        if QHYinUse:
+                            gpsStatus = hdr['GPS_STAT']
+                            if gpsStatus.startswith('PartialData'):
+                                special_handling = True
+                            if not self.QHYpartialDataWarningMessageShown:
+                                self.QHYpartialDataWarningMessageShown = True
+                                self.showMsgPopup(f'A frame from a QHY174M camera had a GPS status of '
+                                                  f' PartialData\n\n'
+                                                  f'Timestamp information has been computed from GPS_ST and'
+                                                  f'GPS_SU, but is HIGHLY SUSPECT!')
+
+                        if not special_handling:
+                            date_time = hdr['DATE-OBS']
+                            # The form of DATE-OBS is '2018-08-21T05:21:02.4561235' so we can simply 'split' at the T
+                            parts = date_time.split('T')
+                        else:
+                            gps_st = hdr['GPS_ST']
+                            gps_su = int(hdr['GPS_SU'] * 10)
+                            parts = gps_st.split('T')
+                            sub_parts = parts[1].split('.')
+                            parts[1] = f'{sub_parts[0]}.{gps_su:07d}'
+                            self.showMsg(f'The following timestamp used highly suspect partial GPS data',
+                                         blankLine=False)
+
+
                         self.showMsg(f'Timestamp found: {parts[0]} @ {parts[1]}')
                         # We only want to save the date from the first file (to add to the csv file)...
                         if self.initialFrame:
@@ -6557,9 +6596,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 except:
                     self.showMsg(f'Cannot convert image to uint16 safely')
                     return
-                # self.image = (pyfits.getdata(self.fits_filenames[frame_to_show], 0) / 3.0).astype('int16')
-                # self.showMsg(f'image shape: {self.image.shape}  type: {type(self.image[0,0])}')
-                # self.showMsg(f'max:{np.max(self.image)}  min:{np.min(self.image)}')
 
             if self.viewFieldsCheckBox.isChecked():
                 self.createImageFields()

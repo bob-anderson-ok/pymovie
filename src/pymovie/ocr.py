@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
+KiwiJumpAtMinuteChange = 11
 
 # noinspection PyTypeChecker
 def setup_for_iota_720_safe_mode3():
@@ -270,7 +271,7 @@ def setup_for_kiwi_PAL_720_left():
 # noinspection DuplicatedCode,PyTypeChecker,PyTypeChecker
 def setup_for_kiwi_PAL_720_right():
 
-    xcU, ycU, xcL, ycL = kiwi_PAL_720_boxes(11)
+    xcU, ycU, xcL, ycL = kiwi_PAL_720_boxes(KiwiJumpAtMinuteChange)
 
     # Turn box corners into full box coordinate tuples
     upper_field_boxes = [None] * len(xcL)
@@ -300,7 +301,7 @@ def setup_for_kiwi_vti_720_left():
 # noinspection DuplicatedCode,PyTypeChecker,PyTypeChecker
 def setup_for_kiwi_vti_720_right():
 
-    xcU, ycU, xcL, ycL = kiwi_720_boxes(11)
+    xcU, ycU, xcL, ycL = kiwi_720_boxes(KiwiJumpAtMinuteChange)
 
     # Turn box corners into full box coordinate tuples
     upper_field_boxes = [None] * len(xcL)
@@ -343,7 +344,7 @@ def setup_for_kiwi_vti_640_left():
 
 # noinspection DuplicatedCode,PyTypeChecker,PyTypeChecker
 def setup_for_kiwi_vti_640_right():
-    xcU, ycU, xcL, ycL = kiwi_640_boxes(11)
+    xcU, ycU, xcL, ycL = kiwi_640_boxes(KiwiJumpAtMinuteChange)
 
     # Turn box corners into full box coordinate tuples
     upper_field_boxes = [None] * len(xcL)
