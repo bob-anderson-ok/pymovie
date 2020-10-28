@@ -6556,7 +6556,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     try:
                         special_handling = False
                         if QHYinUse:
-                            gpsStatus = hdr['GPS_STAT']
+                            gpsStatus = hdr['GPSSTAT']
                             if gpsStatus.startswith('PartialData'):
                                 special_handling = True
                             if not self.QHYpartialDataWarningMessageShown:
