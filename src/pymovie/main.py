@@ -6559,12 +6559,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                             gpsStatus = hdr['GPSSTAT']
                             if gpsStatus.startswith('PartialData'):
                                 special_handling = True
-                            if not self.QHYpartialDataWarningMessageShown:
-                                self.QHYpartialDataWarningMessageShown = True
-                                self.showMsgPopup(f'A frame from a QHY174M camera had a GPS status of '
-                                                  f' PartialData\n\n'
-                                                  f'Timestamp information has been computed from GPS_ST and'
-                                                  f'GPS_SU, but is HIGHLY SUSPECT!')
+                                if not self.QHYpartialDataWarningMessageShown:
+                                    self.QHYpartialDataWarningMessageShown = True
+                                    self.showMsgPopup(f'A frame from a QHY174M camera had a GPS status of '
+                                                      f' PartialData\n\n'
+                                                      f'Timestamp information has been computed from GPS_ST and'
+                                                      f'GPS_SU, but is HIGHLY SUSPECT!')
 
                         if not special_handling:
                             date_time = hdr['DATE-OBS']
