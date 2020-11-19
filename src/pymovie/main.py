@@ -5661,7 +5661,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self,  # parent
                 "Select avi/ser/adv file",  # title for dialog
                 self.settings.value('avidir', "./"),  # starting directory
-                "avi/ser/adv files (*.avi *.ser *.adv *.aav);;all files (*.*)",
+                "avi/mov/ser/adv files (*.avi *.mov *.ser *.adv *.aav);;all files (*.*)",
                 options=options
             )
 
@@ -5937,11 +5937,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             else:
                 linux, macOS, windows = False, False, True
 
-            # Find an .avi or .ser file or reference to an .avi or .ser
+            # Find an .avi or .mov or .ser file or reference to an .avi or .mov or .ser
             # Note: this picks up alias (mac) and shortcut (Windows) files too.
             avi_filenames = glob.glob(dir_path + '/*.avi*')
             if len(avi_filenames) == 0:
-                # If no avi files, look for .ser files
+                avi_filenames = glob.glob(dir_path + '/*.mov*')
+
+            if len(avi_filenames) == 0:
+                # If no avi or mov files, look for .ser files
                 avi_filenames = glob.glob(dir_path + '/*.ser*')
                 if avi_filenames:
                     self.loadCustomProfilesButton.setEnabled(False)
@@ -5975,7 +5978,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.aav_file_in_use = False
 
             if len(avi_filenames) == 0:
-                self.showMsg(f'No avi/ser/adv files or references were found in that folder.')
+                self.showMsg(f'No avi/mov/ser/adv files or references were found in that folder.')
                 self.avi_in_use = False
                 self.ser_file_in_use = False
                 return
@@ -5994,7 +5997,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                         pass
                     else:
                         if filename.endswith('.avi') or filename.endswith('.ser') or \
-                                filename.endswith('.adv') or filename.endswith('.aav'):
+                                filename.endswith('.adv') or filename.endswith('.aav') or \
+                                filename.endswith('.mov'):
                             # self.showMsg(f'{filename} is an avi/ser file')
                             file_to_use = avi_location
 
