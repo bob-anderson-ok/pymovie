@@ -2847,6 +2847,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 name = app.name,
                 threshDelta = app.thresh,
                 xy = app.getCenter(),
+                frame = self.currentFrameSpinBox.value(),
                 defMskRadius = app.default_mask_radius,
                 color = app.color,
                 joggable = app.jogging_enabled,
@@ -3876,6 +3877,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     f.write(f'#\n')
                     f.write(f'# aperture name: {entry["name"]}\n')
                     f.write(f'# ____ x,y: {entry["xy"]}\n')
+                    f.write(f'# ____ frame: {entry["frame"]}\n')
                     f.write(f'# ____ threshold: {entry["threshDelta"]}\n')
                     f.write(f'# ____ def mask radius: {entry["defMskRadius"]}\n')
                     f.write(f'# ____ color: {entry["color"]}\n')
@@ -6549,12 +6551,13 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
                     # hdr = pyfits.getheader(self.fits_filenames[frame_to_show], 0)
                     # Check for QHY in use
+                    QHYinUse = False
                     try:
-                        QHYinUse = False
+                        # QHYinUse = False
                         instrument = hdr['INSTRUME']
                         if instrument.startswith('QHY174M'):
                             QHYinUse = True
-                    except Exception as e4:
+                    except Exception as _e4:
                         pass
 
                     try:
@@ -8043,6 +8046,8 @@ def main():
     # QtGui.QApplication.setStyle('windows')
     QtGui.QApplication.setStyle('fusion')
     app = QtGui.QApplication(sys.argv)
+
+    os.environ['QT_MAC_WANTS_LAYER'] = '1'  # This line needed when Mac updated to Big Sur
 
     if sys.platform == 'linux':
         print(f'os: Linux')
