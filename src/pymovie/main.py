@@ -424,6 +424,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.radius53radioButton.setChecked(self.settings.value('5.3 mask', False) == 'true')
         self.radius68radioButton.setChecked(self.settings.value('6.8 mask', False) == 'true')
 
+        self.satPixelSpinBox.setValue(int(self.settings.value('satPixelLevel', 156)))
+
         tab_name_list = self.settings.value('tablist')
         # self.showMsg(repr(tablist))
         if tab_name_list:
@@ -514,6 +516,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.thresh_inc_1.setChecked(True)
 
         self.vtiSelectLabel.installEventFilter(self)
+
+        self.satPixelLabel.installEventFilter(self)
 
         self.vtiHelpButton.installEventFilter(self)
         self.vtiHelpButton.clicked.connect(self.vtiHelp)
@@ -5079,13 +5083,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 self.statusbar.showMessage(f'x={x} y={y}')
 
     def mouseMovedInThumbTwo(self, pos):
+        pedestal = 1
         mousePoint = self.thumbTwoView.getView().mapSceneToView(pos)
         x = int(mousePoint.x())
         y = int(mousePoint.y())
         if self.thumbTwoImage is not None:
             ylim, xlim = self.thumbTwoImage.shape
             if 0 <= y < ylim and 0 <= x < xlim:
-                self.statusbar.showMessage(f'x={x} y={y} intensity={self.thumbTwoImage[y, x]}')
+                self.statusbar.showMessage(f'x={x} y={y} intensity={self.thumbTwoImage[y, x] - pedestal}')
             else:
                 self.statusbar.showMessage(f'x={x} y={y}')
 
@@ -5187,17 +5192,56 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.hair1.setPos((0,self.roi_size))
             self.hair2.setPos((0,0))
 
-            if self.levels:
-                self.thumbOneView.setLevels(min=self.levels[0], max=self.levels[1])
+            x0 = np.min(thumbnail).astype('int32')
+            x1 = np.max(thumbnail).astype('int32')
 
-            # Show the mask itself
+            satPixelValue = self.satPixelSpinBox.value() - 1
+
+            thumb1_colors = [
+                (0, 0, 0),
+                (255, 255, 255),
+                (255, 0, 0)
+            ]
+
+            thumb2_colors = [
+                (255, 255, 128),
+                (0, 0, 0),
+                (255, 255, 255),
+                (255, 0, 0)
+            ]
+
+            red_cusp = satPixelValue / x1
+            # self.showMsg(f'cusp: {red_cusp:0.5f}  satPixValue: {satPixelValue:0.1f} x1: {x1:0.0f}  x0: {x0:0.0f}')
+            if red_cusp >= 1.0:
+                red_cusp = 1.0
+                thumb1_colors[2] = (255, 255, 255)
+                thumb2_colors[3] = (255, 255, 255)
+
+            cmap_thumb1 = pg.ColorMap([0.0, red_cusp, 1.0], color=thumb1_colors)
+
+            pedestal = 1  # This value needs to coordinated with the value in mouseMovedInThumbTwo
+            pedestal_cusp = pedestal / (x1 + 0)
+            cmap_thumb2 = pg.ColorMap([0.0, pedestal_cusp, red_cusp, 1.0], color=thumb2_colors)
+
+            thumbOneImage = thumbnail.astype('int32')
+            self.thumbOneView.setImage(thumbOneImage, levels=(0, x1))
+            self.thumbOneView.setColorMap(cmap_thumb1)
+
+            # Show the pixels included by the mask
             if self.use_yellow_mask:
-                self.thumbTwoImage = self.yellow_mask
+                self.thumbTwoImage = self.yellow_mask * thumbnail
             else:
-                self.thumbTwoImage = mask
+                self.thumbTwoImage = mask * thumbnail
 
+            # Add a pedestal (only to masked pixels) so that we can trigger a yellow background
+            # for values of 0
             if self.thumbTwoImage is not None:
-                self.thumbTwoView.setImage(self.thumbTwoImage)
+                if self.use_yellow_mask:
+                    self.thumbTwoImage += pedestal # Put the masked pixels on the pedestal
+                else:
+                    self.thumbTwoImage += pedestal # Put the masked pixels on the pedestal
+                self.thumbTwoView.setImage(self.thumbTwoImage, levels=(pedestal + 1, x1))
+                self.thumbTwoView.setColorMap(cmap_thumb2)
 
         if self.use_yellow_mask and self.yellow_mask is not None:
             default_mask_used = False
@@ -5233,8 +5277,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             max_area = -max_area
 
         if show_stats:
-            minpx = sorted_data[0]
-            maxpx = sorted_data[-1]
+            # minpx = sorted_data[0]
+            # maxpx = sorted_data[-1]
+
+            # In version 2.9.0 we changed the meaning of min and max pixels to be restricted to pixels in the masked
+            # region.
+            maxpx = np.max(thumbnail, where=mask==1, initial=0)
+            minpx = np.min(thumbnail, where=mask==1, initial=maxpx)
+
             xpos = int(round(xc_world))
             ypos = int(round(yc_world))
 
@@ -7327,8 +7377,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # TODO Remove for production
         # pickle.dump(self.thumbOneImage, open(self.folder_dir + '/thumbOne.p', "wb"))
 
-        # good_mean, sigma, hist_data, window, data_size, left, right = robustMeanStd(self.thumbOneImage)
-        good_mean, sigma, hist_data, _, _, _, local_right = newRobustMeanStd(
+        # good_mean, sigma, sorted_data, hist_data, window, data_size, left, right = robustMeanStd(self.thumbOneImage)
+        good_mean, sigma, _, hist_data, _, _, _, local_right = newRobustMeanStd(
             self.thumbOneImage, lunar=self.lunarCheckBox.isChecked()
         )
         # self.showMsg(f'{good_mean} {sigma} {window} {data_size} {left}  {right}')
@@ -7362,19 +7412,26 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         self.plots[-1].nextRow()  # Tell GraphicsWindow that we want another row of plots
 
+        if self.lunarCheckBox.isChecked():
+            values_title = 'sorted pixel values'
+        else:
+            values_title = 'pixel values histogram  (points to left of red line are used to compute background mean and std)'
+
         xs = list(range(len(hist_data) + 1)) # The + 1 is needed when stepMode=True in addPlot()
         p2 = self.plots[-1].addPlot(
             row=1, col=0,
             x=xs,
             y=hist_data,
             stepMode=True,
-            title=f'pixel values histogram  (points to left of red line are used to compute background mean and std)',
+            title=values_title,
             # pen=dark_gray
             pen = black
         )
-        vLineRight = pg.InfiniteLine(angle=90, movable=False, pen='r')
-        p2.addItem(vLineRight, ignoreBounds=True)
-        vLineRight.setPos(local_right)
+
+        if not self.lunarCheckBox.isChecked():
+            vLineRight = pg.InfiniteLine(angle=90, movable=False, pen='r')
+            p2.addItem(vLineRight, ignoreBounds=True)
+            vLineRight.setPos(local_right)
 
         self.plots[-1].show()  # Let everyone see the results
 
@@ -7642,6 +7699,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.settings.setValue('4.5 mask', self.radius45radioButton.isChecked())
         self.settings.setValue('5.3 mask', self.radius53radioButton.isChecked())
         self.settings.setValue('6.8 mask', self.radius68radioButton.isChecked())
+
+        self.settings.setValue('satPixelLevel', self.satPixelSpinBox.value())
 
         if self.apertureEditor:
             self.apertureEditor.close()
@@ -8008,7 +8067,7 @@ def newRobustMeanStd(
         first_index = 0
         last_index = mean_at
 
-        return lower_mean, MAD, sorted_data, window, data.size, first_index, last_index
+        return lower_mean, MAD, sorted_data, sorted_data, window, data.size, first_index, last_index
 
     if sorted_data.dtype == '>f4':
         my_hist = np.bincount(sorted_data.astype(np.int, casting='unsafe'))
@@ -8034,7 +8093,7 @@ def newRobustMeanStd(
     clip_point = est_mean + 4.5 * MAD              # Equivalent to 3 sigma
     calced_mean = np.mean(flat_data[np.where(flat_data <= clip_point)])
     bkgnd_sigma = np.std(flat_data[np.where(flat_data <= clip_point)])
-    return calced_mean, bkgnd_sigma, my_hist, data.size / 2, data.size, 0, clip_point + 1
+    return calced_mean, bkgnd_sigma, sorted_data, my_hist, data.size / 2, data.size, 0, clip_point + 1
 
 
 def main():

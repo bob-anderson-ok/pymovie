@@ -23,8 +23,8 @@
    <number>-1</number>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QHBoxLayout" name="horizontalLayout_28">
-    <item>
+   <layout class="QGridLayout" name="gridLayout_10">
+    <item row="0" column="0">
      <widget class="QSplitter" name="splitterThree">
       <property name="orientation">
        <enum>Qt::Vertical</enum>
@@ -33,311 +33,340 @@
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <widget class="QWidget" name="layoutWidget">
-        <layout class="QVBoxLayout" name="verticalLayout_22">
+       <widget class="QWidget" name="">
+        <layout class="QVBoxLayout" name="verticalLayout_17">
          <item>
-          <layout class="QVBoxLayout" name="verticalLayout_17">
+          <layout class="QHBoxLayout" name="horizontalLayout_4">
+           <property name="spacing">
+            <number>-1</number>
+           </property>
            <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_4">
-             <property name="spacing">
-              <number>-1</number>
+            <widget class="QPushButton" name="infoButton">
+             <property name="minimumSize">
+              <size>
+               <width>40</width>
+               <height>0</height>
+              </size>
              </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking on this button will open a pdf file that provides version history. The most recent version change descriptions will be at the top for easy reference to the historical record.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>Version Info</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>File:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="fileInUseEdit"/>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_6">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QPushButton" name="saveApertureState">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This function is only available for videos contained in an AVI/SER-WCS folder or a FITS folder.&lt;/p&gt;&lt;p&gt;Clicking this button will record all the apertures (and all their properties) for later restoration along with the current frame position.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Note:&lt;/span&gt; You will be prompted to supply a name string that will be appended to the file names that comprise this aperture group. This is to allow for multiple aperture groups to be associated with a video.&lt;/p&gt;&lt;p&gt;To restore a previous configuration, first open the folder, then click the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Restore aperture group&lt;/span&gt; button.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>Save aperture group</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="restoreApertureState">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This function is only available for videos contained in an AVI/SER-WCS folder or a FITS folder.&lt;/p&gt;&lt;p&gt;Clicking this button will bring up a file selector dialog with candidates aperture groups highlighted for selection. Choosing one will restore a previously saved aperture group with all the property values present when the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Save aperture group&lt;/span&gt; button was clicked including the frame position.&lt;/p&gt;&lt;p&gt;Note that this action will first remove all current apertures, including the one that was automatically placed through an available WCS solution. Typically the target aperture would have been included in the saved aperture group anyway.&lt;/p&gt;&lt;p&gt;It will then position the file to the frame that was current when the 'save' was performed and recreate all apertures present at the time of 'saving' on that frame.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>Restore aperture group</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="editAperturesButton">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking this button brings up a table that contains a row for each aperture that has been placed on the image. The columns list the available properties of an aperture. All property values, including (x,y), can be changed from this dialog box.&lt;/p&gt;&lt;p&gt;When a row has been selected, Thumbnail One will show the image enclosed by the aperture and Thumbnail Two will show the computed mask unless the default mask radius cell is active, in which case the default mask will be displayed instead.  This allows for edits of threshold and default mask radius with 'live' updates shown in Thumbnail Two.&lt;/p&gt;&lt;p&gt;Any changes made through this dialog take effect when either the enter key is pressed, the cell is exited (via a tab key or arrow key press for example), or the dialog is closed.&lt;/p&gt;&lt;p&gt;Columns for color, joggable, auto textOut, and thumbnail source have right-click context menus for making changes in those cells.&lt;/p&gt;&lt;p&gt;The columns for name, thresh, def mask radius, and csv output order are edited by highlighting the cell (single or double click) and then typing the new value. &lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;!!! When editing the value in a cell, the edit is NOT complete until you leave that cell or press enter. Make it a practice to 'tab out' of a cell that you have modified. (This procedure is not needed for a cell that has been modified by a right-click context menu) !!!&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Constraints on property values:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;---- name: none&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;---- thresh: positive integer&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;---- def mask radius: minimum value of 2.00 (initial value is 5.3)&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;---- color: only one green allowed and no more than two yellows&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;---- thumbnail source: only a single aperture can be set as the thumbnail source&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;---- csv output order: positive integer (it's up to you to avoid duplicates!)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>Examine/change aperture settings</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_3">
              <item>
-              <widget class="QPushButton" name="infoButton">
+              <widget class="QComboBox" name="roiComboBox">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
                <property name="minimumSize">
                 <size>
-                 <width>40</width>
+                 <width>80</width>
                  <height>0</height>
                 </size>
                </property>
                <property name="maximumSize">
                 <size>
-                 <width>16777215</width>
+                 <width>80</width>
                  <height>16777215</height>
                 </size>
                </property>
                <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking on this button will open a pdf file that provides version history. The most recent version change descriptions will be at the top for easy reference to the historical record.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This drop-down selection box changes the measurement aperture size.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Note:&lt;/span&gt; it is a reqirement that all apertures be the same size during a lightcurve extraction, so changing the aperture size will automatically remove all existing apertures.&lt;/p&gt;&lt;p&gt;If there is substantial wind shake in the video, you should select an aperture size sufficent to contain the 'wanderings' of the star you have selected for tracking or, if there is no tracking star, then the target star itself.&lt;/p&gt;&lt;p&gt;If there is no significant wind shake, use of a smaller aperture (like 31) may be more useful in dealing with dense star fields.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
-               <property name="text">
-                <string>Version Info</string>
+               <property name="currentText">
+                <string/>
+               </property>
+               <property name="currentIndex">
+                <number>-1</number>
+               </property>
+               <property name="maxVisibleItems">
+                <number>3</number>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QLabel" name="label_2">
+              <widget class="QLabel" name="selectApertureSizeLabel">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This drop-down selection box changes the measurement aperture size.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Note:&lt;/span&gt; it is a reqirement that all apertures be the same size during a lightcurve extraction, so changing the aperture size will automatically remove all existing apertures.&lt;/p&gt;&lt;p&gt;If there is substantial wind shake in the video, you should select an aperture size sufficent to contain the 'wanderings' of the star you have selected for tracking or, if there is no tracking star, then the target star itself.&lt;/p&gt;&lt;p&gt;If there is no significant wind shake, use of a smaller aperture (like 31) may be more useful in dealing with dense star fields.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Note: &lt;/span&gt;&lt;span style=&quot; font-weight:600; color:#0000ff;&quot;&gt;An aperture is never allowed to extend outside the image boundary. As a result, if an aperture is placed on a star that is close to the image edge and that star subsequently moves closer to the edge, tracking will be lost when the aperture bumps up against edge. In this case, use of a smaller aperture will allow tracking closer to the edge.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
                <property name="text">
-                <string>File:</string>
+                <string>Select aperture size</string>
                </property>
               </widget>
-             </item>
-             <item>
-              <widget class="QLineEdit" name="fileInUseEdit"/>
              </item>
             </layout>
            </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout">
            <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_6">
+            <widget class="QLabel" name="label_3">
+             <property name="text">
+              <string>Threshold spinner increments:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="thresh_inc_1">
+             <property name="layoutDirection">
+              <enum>Qt::RightToLeft</enum>
+             </property>
+             <property name="text">
+              <string>1</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="thresh_inc_10">
+             <property name="layoutDirection">
+              <enum>Qt::RightToLeft</enum>
+             </property>
+             <property name="text">
+              <string>10</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="thresh_inc_100">
+             <property name="layoutDirection">
+              <enum>Qt::RightToLeft</enum>
+             </property>
+             <property name="text">
+              <string>100</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QLabel" name="setMskthLabel">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If there is a currently 'green' aperture showing, its threshold value will be set to any new value from this spinner and &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Thumbnail Two&lt;/span&gt; in the lower right corner will update dynamically to show the effect of the change on the binary sample mask generation.&lt;/p&gt;&lt;p&gt;The mask threshold is always set as counts above average background. A good starting point for setting this value is to set it equal to the background noise (found in the column labelled &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;bkstd&lt;/span&gt; in the text box) rounded up. The program tries to do this automatically so, in most cases, this value will already be preset. This is sometimes referred to as &lt;span style=&quot; color:#0000ff;&quot;&gt;'setting the threshold to 1 sigma'&lt;/span&gt;.&lt;/p&gt;&lt;p&gt;Note: &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;mskth&lt;/span&gt; (mask threshold) and &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;bkavg&lt;/span&gt; (background average) are column headings in the text box.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set mask (mskth) counts above background (bkavg)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="threshValueEdit">
+             <property name="toolTip">
+              <string/>
+             </property>
+             <property name="maximum">
+              <number>99999</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_28">
+           <item>
+            <layout class="QVBoxLayout" name="verticalLayout_5">
              <property name="spacing">
               <number>0</number>
              </property>
              <item>
-              <widget class="QPushButton" name="saveApertureState">
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This function is only available for videos contained in an AVI/SER-WCS folder or a FITS folder.&lt;/p&gt;&lt;p&gt;Clicking this button will record all the apertures (and all their properties) for later restoration along with the current frame position.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Note:&lt;/span&gt; You will be prompted to supply a name string that will be appended to the file names that comprise this aperture group. This is to allow for multiple aperture groups to be associated with a video.&lt;/p&gt;&lt;p&gt;To restore a previous configuration, first open the folder, then click the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Restore aperture group&lt;/span&gt; button.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <widget class="QCheckBox" name="viewFieldsCheckBox">
+               <property name="enabled">
+                <bool>false</bool>
                </property>
                <property name="text">
-                <string>Save aperture group</string>
+                <string>View avi fields</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QPushButton" name="restoreApertureState">
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This function is only available for videos contained in an AVI/SER-WCS folder or a FITS folder.&lt;/p&gt;&lt;p&gt;Clicking this button will bring up a file selector dialog with candidates aperture groups highlighted for selection. Choosing one will restore a previously saved aperture group with all the property values present when the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Save aperture group&lt;/span&gt; button was clicked including the frame position.&lt;/p&gt;&lt;p&gt;Note that this action will first remove all current apertures, including the one that was automatically placed through an available WCS solution. Typically the target aperture would have been included in the saved aperture group anyway.&lt;/p&gt;&lt;p&gt;It will then position the file to the frame that was current when the 'save' was performed and recreate all apertures present at the time of 'saving' on that frame.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <widget class="QCheckBox" name="processAsFieldsCheckBox">
+               <property name="enabled">
+                <bool>true</bool>
                </property>
                <property name="text">
-                <string>Restore aperture group</string>
+                <string>Process avi in field mode</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QPushButton" name="editAperturesButton">
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking this button brings up a table that contains a row for each aperture that has been placed on the image. The columns list the available properties of an aperture. All property values, including (x,y), can be changed from this dialog box.&lt;/p&gt;&lt;p&gt;When a row has been selected, Thumbnail One will show the image enclosed by the aperture and Thumbnail Two will show the computed mask unless the default mask radius cell is active, in which case the default mask will be displayed instead.  This allows for edits of threshold and default mask radius with 'live' updates shown in Thumbnail Two.&lt;/p&gt;&lt;p&gt;Any changes made through this dialog take effect when either the enter key is pressed, the cell is exited (via a tab key or arrow key press for example), or the dialog is closed.&lt;/p&gt;&lt;p&gt;Columns for color, joggable, auto textOut, and thumbnail source have right-click context menus for making changes in those cells.&lt;/p&gt;&lt;p&gt;The columns for name, thresh, def mask radius, and csv output order are edited by highlighting the cell (single or double click) and then typing the new value. &lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;!!! When editing the value in a cell, the edit is NOT complete until you leave that cell or press enter. Make it a practice to 'tab out' of a cell that you have modified. (This procedure is not needed for a cell that has been modified by a right-click context menu) !!!&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Constraints on property values:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;---- name: none&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;---- thresh: positive integer&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;---- def mask radius: minimum value of 2.00 (initial value is 5.3)&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;---- color: only one green allowed and no more than two yellows&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;---- thumbnail source: only a single aperture can be set as the thumbnail source&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;---- csv output order: positive integer (it's up to you to avoid duplicates!)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <widget class="QRadioButton" name="topFieldFirstRadioButton">
+               <property name="enabled">
+                <bool>true</bool>
                </property>
                <property name="text">
-                <string>Examine/change aperture settings</string>
+                <string>top field is first in time</string>
+               </property>
+               <property name="checked">
+                <bool>false</bool>
                </property>
               </widget>
              </item>
              <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_3">
-               <item>
-                <widget class="QComboBox" name="roiComboBox">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>80</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>80</width>
-                   <height>16777215</height>
-                  </size>
-                 </property>
-                 <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This drop-down selection box changes the measurement aperture size.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Note:&lt;/span&gt; it is a reqirement that all apertures be the same size during a lightcurve extraction, so changing the aperture size will automatically remove all existing apertures.&lt;/p&gt;&lt;p&gt;If there is substantial wind shake in the video, you should select an aperture size sufficent to contain the 'wanderings' of the star you have selected for tracking or, if there is no tracking star, then the target star itself.&lt;/p&gt;&lt;p&gt;If there is no significant wind shake, use of a smaller aperture (like 31) may be more useful in dealing with dense star fields.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                 </property>
-                 <property name="currentText">
-                  <string/>
-                 </property>
-                 <property name="currentIndex">
-                  <number>-1</number>
-                 </property>
-                 <property name="maxVisibleItems">
-                  <number>3</number>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLabel" name="selectApertureSizeLabel">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This drop-down selection box changes the measurement aperture size.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Note:&lt;/span&gt; it is a reqirement that all apertures be the same size during a lightcurve extraction, so changing the aperture size will automatically remove all existing apertures.&lt;/p&gt;&lt;p&gt;If there is substantial wind shake in the video, you should select an aperture size sufficent to contain the 'wanderings' of the star you have selected for tracking or, if there is no tracking star, then the target star itself.&lt;/p&gt;&lt;p&gt;If there is no significant wind shake, use of a smaller aperture (like 31) may be more useful in dealing with dense star fields.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Note: &lt;/span&gt;&lt;span style=&quot; font-weight:600; color:#0000ff;&quot;&gt;An aperture is never allowed to extend outside the image boundary. As a result, if an aperture is placed on a star that is close to the image edge and that star subsequently moves closer to the edge, tracking will be lost when the aperture bumps up against edge. In this case, use of a smaller aperture will allow tracking closer to the edge.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                 </property>
-                 <property name="text">
-                  <string>Select aperture size</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout">
-             <item>
-              <spacer name="horizontalSpacer">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-             <item>
-              <widget class="QLabel" name="label_3">
-               <property name="text">
-                <string>Threshold spinner increments:</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QRadioButton" name="thresh_inc_1">
-               <property name="layoutDirection">
-                <enum>Qt::RightToLeft</enum>
+              <widget class="QRadioButton" name="bottomFieldFirstRadioButton">
+               <property name="enabled">
+                <bool>true</bool>
                </property>
                <property name="text">
-                <string>1</string>
+                <string>bottom field is first in time</string>
                </property>
                <property name="checked">
                 <bool>true</bool>
                </property>
               </widget>
              </item>
-             <item>
-              <widget class="QRadioButton" name="thresh_inc_10">
-               <property name="layoutDirection">
-                <enum>Qt::RightToLeft</enum>
-               </property>
-               <property name="text">
-                <string>10</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QRadioButton" name="thresh_inc_100">
-               <property name="layoutDirection">
-                <enum>Qt::RightToLeft</enum>
-               </property>
-               <property name="text">
-                <string>100</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="setMskthLabel">
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If there is a currently 'green' aperture showing, its threshold value will be set to any new value from this spinner and &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Thumbnail Two&lt;/span&gt; in the lower right corner will update dynamically to show the effect of the change on the binary sample mask generation.&lt;/p&gt;&lt;p&gt;The mask threshold is always set as counts above average background. A good starting point for setting this value is to set it equal to the background noise (found in the column labelled &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;bkstd&lt;/span&gt; in the text box) rounded up. The program tries to do this automatically so, in most cases, this value will already be preset. This is sometimes referred to as &lt;span style=&quot; color:#0000ff;&quot;&gt;'setting the threshold to 1 sigma'&lt;/span&gt;.&lt;/p&gt;&lt;p&gt;Note: &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;mskth&lt;/span&gt; (mask threshold) and &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;bkavg&lt;/span&gt; (background average) are column headings in the text box.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="text">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set mask (mskth) counts above background (bkavg)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QSpinBox" name="threshValueEdit">
-               <property name="toolTip">
-                <string/>
-               </property>
-               <property name="maximum">
-                <number>99999</number>
-               </property>
-              </widget>
-             </item>
             </layout>
            </item>
            <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_26">
+            <spacer name="horizontalSpacer_30">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <layout class="QVBoxLayout" name="verticalLayout_15">
              <item>
-              <layout class="QVBoxLayout" name="verticalLayout_5">
-               <property name="spacing">
-                <number>0</number>
+              <widget class="QCheckBox" name="showImageControlCheckBox">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If this box is checked, an image control widget will appear to the right of the main image.&lt;/p&gt;&lt;p&gt;This widget shows a useful/interesting histogram of the image pixel values and gives you the ability to change how pixel values are mapped to the black-to-white grayscale.&lt;/p&gt;&lt;p&gt;To change the pixel mappings, click and drag the horizontal bars (in the left portion of the widget) that enclose the histogram display and that connect visually to the black-white colorbar.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;NOTE:&lt;/span&gt; changes made via this control do &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;not&lt;/span&gt; affect the data that is used for generating lightcurves. It only changes what you see in the main image display. But when you right click on the main image and select 'export', the display values are what gets exported; this is the &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;only&lt;/span&gt; time that 'display' values are used.&lt;/p&gt;&lt;p&gt;Until this image control is opened, the grayscale mapping of each image changes based on the minimum and maximum pixel values in that image. This automatic rescaling is usually acceptable but can cause apparent 'flashing' of the images during playback. Opening and then closing this image control will freeze the automatic rescaling.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;NOTE:&lt;/span&gt; if you do not close the image control, when you return to the frame that was used to decide the desired settings, the settings are automatically reset --- this is not a useful behavior, so ... Best practice: activate the control; adjust the sliders; close the control.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
+               <property name="text">
+                <string>Show image contrast control</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_26">
                <item>
-                <widget class="QCheckBox" name="viewFieldsCheckBox">
-                 <property name="enabled">
-                  <bool>false</bool>
+                <widget class="QSpinBox" name="satPixelSpinBox">
+                 <property name="maximumSize">
+                  <size>
+                   <width>200</width>
+                   <height>16777215</height>
+                  </size>
                  </property>
-                 <property name="text">
-                  <string>View avi fields</string>
+                 <property name="maximum">
+                  <number>999999</number>
+                 </property>
+                 <property name="singleStep">
+                  <number>10</number>
+                 </property>
+                 <property name="value">
+                  <number>200</number>
                  </property>
                 </widget>
                </item>
                <item>
-                <widget class="QCheckBox" name="processAsFieldsCheckBox">
-                 <property name="enabled">
-                  <bool>true</bool>
+                <widget class="QLabel" name="satPixelLabel">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This value controls the coloring of pixels in ThumbNail One  and Thumbnail Two.&lt;/p&gt;&lt;p&gt;Pixels that are at or above this level will be colored in shades of red to give a visual clue that such pixels are at or near saturation.&lt;/p&gt;&lt;p&gt;Pixels that are below this level are shown in the usual gray scale.&lt;/p&gt;&lt;p&gt;Thumbnail Two shows the parts of the aperture that are 'masked off' in yellow and allows the display of the pixels that are included by the mask to be shown as their actual values.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                  </property>
                  <property name="text">
-                  <string>Process avi in field mode</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QRadioButton" name="topFieldFirstRadioButton">
-                 <property name="enabled">
-                  <bool>true</bool>
-                 </property>
-                 <property name="text">
-                  <string>top field is first in time</string>
-                 </property>
-                 <property name="checked">
-                  <bool>false</bool>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QRadioButton" name="bottomFieldFirstRadioButton">
-                 <property name="enabled">
-                  <bool>true</bool>
-                 </property>
-                 <property name="text">
-                  <string>bottom field is first in time</string>
-                 </property>
-                 <property name="checked">
-                  <bool>true</bool>
+                  <string>sat. pixel value</string>
                  </property>
                 </widget>
                </item>
               </layout>
              </item>
              <item>
-              <spacer name="horizontalSpacer_30">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
+              <widget class="QPushButton" name="demoMeanPushButton">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The 'robust' calculation of the background average and the 'robust' estimation of the dispersion (noise) in the background is an important factor in the calculation of signal intensities.&lt;/p&gt;&lt;p&gt;This button demonstrates with a detailed plot the calculation as it was performed for the current 'thumbnail'.&lt;/p&gt;&lt;p&gt;This is meant primarily for education purposes but may be useful in special cases to confirm (or not) that the 'robust' calculations are reasonable.&lt;/p&gt;&lt;p&gt;The algorithm works by calculating a histogram of the pixels present in an aperture. The 'background' pixels show up in the prominent 'hump' in that histogram at the left (low pixel values). The 'hump' is analyzed to determine where the righthand tail ends.  A red line is drawn on the histogram to show where this demarcation is. Then, all the points to the left of this demarcation are used to calculate the mean and standard deviation of those points in the usual manner.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
+               <property name="text">
+                <string>Plot Robust Mean</string>
                </property>
-              </spacer>
-             </item>
-             <item>
-              <layout class="QVBoxLayout" name="verticalLayout_15">
-               <item>
-                <widget class="QCheckBox" name="showImageControlCheckBox">
-                 <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If this box is checked, an image control widget will appear to the right of the main image.&lt;/p&gt;&lt;p&gt;This widget shows a useful/interesting histogram of the image pixel values and gives you the ability to change how pixel values are mapped to the black-to-white grayscale.&lt;/p&gt;&lt;p&gt;To change the pixel mappings, click and drag the horizontal bars (in the left portion of the widget) that enclose the histogram display and that connect visually to the black-white colorbar.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;NOTE:&lt;/span&gt; changes made via this control do &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;not&lt;/span&gt; affect the data that is used for generating lightcurves. It only changes what you see in the main image display. But when you right click on the main image and select 'export', the display values are what gets exported; this is the &lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;only&lt;/span&gt; time that 'display' values are used.&lt;/p&gt;&lt;p&gt;Until this image control is opened, the grayscale mapping of each image changes based on the minimum and maximum pixel values in that image. This automatic rescaling is usually acceptable but can cause apparent 'flashing' of the images during playback. Opening and then closing this image control will freeze the automatic rescaling.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;NOTE:&lt;/span&gt; if you do not close the image control, when you return to the frame that was used to decide the desired settings, the settings are automatically reset --- this is not a useful behavior, so ... Best practice: activate the control; adjust the sliders; close the control.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                 </property>
-                 <property name="text">
-                  <string>Show image contrast control</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="demoMeanPushButton">
-                 <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The 'robust' calculation of the background average and the 'robust' estimation of the dispersion (noise) in the background is an important factor in the calculation of signal intensities.&lt;/p&gt;&lt;p&gt;This button demonstrates with a detailed plot the calculation as it was performed for the current 'thumbnail'.&lt;/p&gt;&lt;p&gt;This is meant primarily for education purposes but may be useful in special cases to confirm (or not) that the 'robust' calculations are reasonable.&lt;/p&gt;&lt;p&gt;The algorithm works by calculating a histogram of the pixels present in an aperture. The 'background' pixels show up in the prominent 'hump' in that histogram at the left (low pixel values). The 'hump' is analyzed to determine where the righthand tail ends.  A red line is drawn on the histogram to show where this demarcation is. Then, all the points to the left of this demarcation are used to calculate the mean and standard deviation of those points in the usual manner.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                 </property>
-                 <property name="text">
-                  <string>Plot Robust Mean</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
+              </widget>
              </item>
             </layout>
            </item>
@@ -2750,7 +2779,7 @@ aperture placement.</string>
          <item>
           <widget class="QLabel" name="textOutLabel">
            <property name="toolTip">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Here is the 'decoder' for the column headings:&lt;/p&gt;&lt;p&gt;signal = sum of all pixels included in the mask with the background (bkavg) subtracted from each one.&lt;/p&gt;&lt;p&gt;appsum = sum of all pixels included in the mask &lt;/p&gt;&lt;p&gt;bkavg = average background, calculated using a Robust Mean estimator with 50% outlier rejection.&lt;/p&gt;&lt;p&gt;bkstd = standard deviation of the background, calculated using a Robust Scale estimator with 50% outlier rejection (assumes gaussian distribution)&lt;/p&gt;&lt;p&gt;mskth = Thresh used in forming mask. This value is added to bkavg to compute binary mask&lt;/p&gt;&lt;p&gt;mskpx = number of pixels in binary mask - if negative, a default mask was used&lt;/p&gt;&lt;p&gt;cvxhull = convex hull: the area enclosed by a rubber band that surrounds the mask.&lt;/p&gt;&lt;p&gt;xpos = y position of centroid in image coordinates&lt;/p&gt;&lt;p&gt;ypos = x position of centroid in image coordinates&lt;/p&gt;&lt;p&gt;minpx = minimum value pixel contained in the aperture&lt;/p&gt;&lt;p&gt;maxpx = maximum value pixel contained in the aperture&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Here is the 'decoder' for the column headings:&lt;/p&gt;&lt;p&gt;signal = sum of all pixels included in the mask with the background (bkavg) subtracted from each one.&lt;/p&gt;&lt;p&gt;appsum = sum of all pixels included in the mask &lt;/p&gt;&lt;p&gt;bkavg = average background, calculated using a Robust Mean estimator with 50% outlier rejection.&lt;/p&gt;&lt;p&gt;bkstd = standard deviation of the background, calculated using a Robust Scale estimator with 50% outlier rejection (assumes gaussian distribution)&lt;/p&gt;&lt;p&gt;mskth = Thresh used in forming mask. This value is added to bkavg to compute binary mask&lt;/p&gt;&lt;p&gt;mskpx = number of pixels in binary mask - if negative, a default mask was used&lt;/p&gt;&lt;p&gt;cvxhull = convex hull: the area enclosed by a rubber band that surrounds the mask.&lt;/p&gt;&lt;p&gt;xpos = y position of centroid in image coordinates&lt;/p&gt;&lt;p&gt;ypos = x position of centroid in image coordinates&lt;/p&gt;&lt;p&gt;minpx = minimum value pixel contained in the pixels selected by the mask&lt;/p&gt;&lt;p&gt;maxpx = maximum value pixel contained in the pixels selected by the mask&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="text">
             <string>Right-click here for info</string>
