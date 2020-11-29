@@ -1,10 +1,11 @@
 pyqtgraph
 opencv-python
+opencv-python-headless
 astroquery
 resource
 scikit-image>=0.15.0
 matplotlib
-numpy
+numpy>=1.17.0
 astropy
 scikit-image
 scipy
