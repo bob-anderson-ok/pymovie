@@ -2013,6 +2013,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.showMsgPopup(msg)
 
             self.settings.setValue('avidir', full_dir_path)  # Make dir 'sticky'"
+            self.settings.sync()
 
             pathlib.Path(full_dir_path).mkdir(parents=True, exist_ok=True)
             if sys.platform == 'darwin':
@@ -5451,6 +5452,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.avi_in_use = False
             self.showMsg(f'Opened FITS folder: {dir_path}', blankLine=False)
             self.settings.setValue('fitsdir', dir_path)  # Make dir 'sticky'"
+            self.settings.sync()
+
             self.folder_dir = dir_path
             self.fits_filenames = sorted(glob.glob(dir_path + '/*.fits'))
 
@@ -5585,6 +5588,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.currentFrameSpinBox.setValue(frame_num)
 
             self.settings.setValue('bmpdir', dirpath)  # Make dir 'sticky'"
+            self.settings.sync()
+
             self.showMsg(f'Opened: {self.filename}')
 
             # If selected filename ends in .fit we use our FITS reader, otherwise we use cv2 (it handles .bmp)
@@ -5781,6 +5786,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.fileInUseEdit.setText(fn)
             self.folder_dir = dirpath
             self.settings.setValue('avidir', dirpath)  # Make dir 'sticky'"
+            self.settings.sync()
             self.clearTextBox()
 
             # remove the star rectangles (possibly) left from previous file
@@ -5960,6 +5966,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.vtiSelectComboBox.setEnabled(False)
 
             self.settings.setValue('avidir', dir_path)  # Make dir 'sticky'"
+            self.settings.sync()
             self.folder_dir = dir_path
 
             self.clearTextBox()
