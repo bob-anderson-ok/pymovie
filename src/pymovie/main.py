@@ -1451,6 +1451,10 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if os.path.exists(f_path):
             os.remove(f_path)
 
+        f_path = os.path.join(self.homeDir, 'formatter.txt')
+        if os.path.exists(f_path):
+            os.remove(f_path)
+
         self.timestampReadingEnabled = False
         self.vtiSelectComboBox.setEnabled(True)
 
@@ -1459,7 +1463,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.frameView.getView().removeItem(ocrbox)
         self.frameView.getView().update()
 
-        self.showMsg(f'OCR data files deleted from current folder')
+        self.showMsg(f'OCR data files deleted from current folder AND home directory')
 
         self.vtiSelectComboBox.setCurrentIndex(0)
 
@@ -2203,6 +2207,19 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         pickle.dump(self.upperOcrBoxesRight, open(upper_boxes_right, "wb"))
         pickle.dump(self.lowerOcrBoxesRight, open(lower_boxes_right, "wb"))
 
+        # Write a duplicate copy to the home directory
+        upper_boxes = os.path.join(self.homeDir, upper_boxes_fn)
+        lower_boxes = os.path.join(self.homeDir, lower_boxes_fn)
+
+        upper_boxes_right = os.path.join(self.homeDir, upper_boxes_right_fn)
+        lower_boxes_right = os.path.join(self.homeDir, lower_boxes_right_fn)
+
+        pickle.dump(self.upperOcrBoxesLeft, open(upper_boxes, "wb"))
+        pickle.dump(self.lowerOcrBoxesLeft, open(lower_boxes, "wb"))
+
+        pickle.dump(self.upperOcrBoxesRight, open(upper_boxes_right, "wb"))
+        pickle.dump(self.lowerOcrBoxesRight, open(lower_boxes_right, "wb"))
+
         return
 
     def deleteOcrBoxes(self):
@@ -2228,24 +2245,64 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         if os.path.exists(lower_boxes_right):
             os.remove(lower_boxes_right)
 
+        upper_boxes = os.path.join(self.homeDir, upper_boxes_fn)
+        lower_boxes = os.path.join(self.homeDir, lower_boxes_fn)
+
+        upper_boxes_right = os.path.join(self.homeDir, upper_boxes_right_fn)
+        lower_boxes_right = os.path.join(self.homeDir, lower_boxes_right_fn)
+
+        if os.path.exists(upper_boxes):
+            os.remove(upper_boxes)
+        if os.path.exists(lower_boxes):
+            os.remove(lower_boxes)
+        if os.path.exists(upper_boxes_right):
+            os.remove(upper_boxes_right)
+        if os.path.exists(lower_boxes_right):
+            os.remove(lower_boxes_right)
+
         return
 
     def loadPickledOcrBoxes(self):
-        base_path = self.ocrboxBasePath
+        base_path = self.ocrboxBasePath  # this is currently 'custom-boxes'
+        foundOcrBoxesInFolderDir = False
 
         upper_boxes_fn = f'{base_path}-upper.p'
         lower_boxes_fn = f'{base_path}-lower.p'
 
-        # These files are only present for Kiwi
-        upper_boxes_right_fn = f'{base_path}-upper-right.p'
-        lower_boxes_right_fn = f'{base_path}-lower-right.p'
+        upper_boxes_right_fn = f'{base_path}-upper-right.p'  # kiwi only
+        lower_boxes_right_fn = f'{base_path}-lower-right.p'  # kiwi only
 
+        # Try to get ocr boxes from the folder directory. If successful, exit the routine
         upper_boxes = os.path.join(self.ocrBoxesDir, upper_boxes_fn)
         lower_boxes = os.path.join(self.ocrBoxesDir, lower_boxes_fn)
 
-        # These files are only present for Kiwiw
-        upper_boxes_right = os.path.join(self.ocrBoxesDir, upper_boxes_right_fn)
-        lower_boxes_right = os.path.join(self.ocrBoxesDir, lower_boxes_right_fn)
+        upper_boxes_right = os.path.join(self.ocrBoxesDir, upper_boxes_right_fn) # kiwi only
+        lower_boxes_right = os.path.join(self.ocrBoxesDir, lower_boxes_right_fn) # kiwi only
+
+        if os.path.exists(upper_boxes) and os.path.exists(lower_boxes):
+            foundOcrBoxesInFolderDir = True
+            self.upperOcrBoxesLeft = pickle.load(open(upper_boxes, "rb"))
+            # self.showMsg(f'upper OCR boxes loaded from {upper_boxes}')
+            self.lowerOcrBoxesLeft = pickle.load(open(lower_boxes, "rb"))
+            # self.showMsg(f'lower OCR boxes loaded from {lower_boxes}')
+
+        if os.path.exists(upper_boxes_right) and os.path.exists(lower_boxes_right):
+            foundOcrBoxesInFolderDir = True
+            self.upperOcrBoxesRight = pickle.load(open(upper_boxes_right, "rb"))
+            # self.showMsg(f'upper OCR boxes loaded from {upper_boxes}')
+            self.lowerOcrBoxesRight = pickle.load(open(lower_boxes_right, "rb"))
+            # self.showMsg(f'lower OCR boxes loaded from {lower_boxes}')
+
+        if foundOcrBoxesInFolderDir:
+            return
+
+        # If ocr boxes not in folder directory, rry to load ocr boxes from
+        # the home directory.
+        upper_boxes = os.path.join(self.homeDir, upper_boxes_fn)
+        lower_boxes = os.path.join(self.homeDir, lower_boxes_fn)
+
+        upper_boxes_right = os.path.join(self.homeDir, upper_boxes_right_fn)  # kiwi only
+        lower_boxes_right = os.path.join(self.homeDir, lower_boxes_right_fn)  # kiwi only
 
         if os.path.exists(upper_boxes) and os.path.exists(lower_boxes):
             self.upperOcrBoxesLeft = pickle.load(open(upper_boxes, "rb"))
@@ -2283,24 +2340,46 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         pickled_digits_path = os.path.join(self.ocrDigitsDir, pickled_digits_fn)
         pickle.dump(self.modelDigits, open(pickled_digits_path, "wb"))
 
+        # Write a duplicate to the home directory
+        pickled_digits_fn = self.modelDigitsFilename
+        pickled_digits_path = os.path.join(self.homeDir, pickled_digits_fn)
+        pickle.dump(self.modelDigits, open(pickled_digits_path, "wb"))
+
     def deleteModelDigits(self):
-        digits_fn = self.modelDigitsFilename
-        digits_path = os.path.join(self.ocrDigitsDir, digits_fn)
-        if os.path.exists(digits_path):
-            os.remove(digits_path)
         for i in range(10):
             self.modelDigits[i] = None
 
+        digits_fn = self.modelDigitsFilename
+
+        digits_path = os.path.join(self.ocrDigitsDir, digits_fn)  # ocrDigitsDir == folder_dir
+        if os.path.exists(digits_path):
+            os.remove(digits_path)
+
+        # Do the same thing in the home directory
+
+        digits_path = os.path.join(self.homeDir, digits_fn)
+        if os.path.exists(digits_path):
+            os.remove(digits_path)
+
     def loadModelDigits(self):
+        self.modelDigits = [None] * 10
         pickled_digits_fn = self.modelDigitsFilename
-        pickled_digits_path= os.path.join(self.ocrDigitsDir, pickled_digits_fn)
+
+        # Look for model digits in the folder directory.  (ocrDigitsDir == folder_dir
+        pickled_digits_path = os.path.join(self.ocrDigitsDir, pickled_digits_fn)
 
         if os.path.exists(pickled_digits_path):
             self.modelDigits = pickle.load(open(pickled_digits_path, "rb"))
             self.showMissingModelDigits()
-        else:
-            self.modelDigits = [None] * 10
-            self.showMissingModelDigits()
+            return
+
+        # If we failed to find/load model digits in the file_dir, try the home directory
+        pickled_digits_path = os.path.join(self.homeDir, pickled_digits_fn)
+
+        if os.path.exists(pickled_digits_path):
+            self.modelDigits = pickle.load(open(pickled_digits_path, "rb"))
+
+        self.showMissingModelDigits()
 
     def extractTimestamps(self, printresults = True):
         if not self.timestampReadingEnabled:
@@ -2449,6 +2528,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def writeFormatTypeFile(self, format_type):
         f_path = os.path.join(self.folder_dir, 'formatter.txt')
+        with open(f_path, 'w') as f:
+            f.writelines(f'{format_type}')
+
+        # Write a duplicate to the home directory
+        f_path = os.path.join(self.homeDir, 'formatter.txt')
         with open(f_path, 'w') as f:
             f.writelines(f'{format_type}')
 
@@ -5193,9 +5277,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.hair1.setPos((0,self.roi_size))
             self.hair2.setPos((0,0))
 
-            x0 = np.min(thumbnail).astype('int32')
-            x1 = np.max(thumbnail).astype('int32')
-
             satPixelValue = self.satPixelSpinBox.value() - 1
 
             thumb1_colors = [
@@ -5205,24 +5286,20 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             ]
 
             thumb2_colors = [
-                (255, 255, 128),
+                (255, 255, 128),  # yellow for aperture 'surround'
                 (0, 0, 0),
                 (255, 255, 255),
                 (255, 0, 0)
             ]
 
+            x1 = np.max(thumbnail).astype('int32')
             red_cusp = satPixelValue / x1
             # self.showMsg(f'cusp: {red_cusp:0.5f}  satPixValue: {satPixelValue:0.1f} x1: {x1:0.0f}  x0: {x0:0.0f}')
             if red_cusp >= 1.0:
                 red_cusp = 1.0
                 thumb1_colors[2] = (255, 255, 255)
-                thumb2_colors[3] = (255, 255, 255)
 
             cmap_thumb1 = pg.ColorMap([0.0, red_cusp, 1.0], color=thumb1_colors)
-
-            pedestal = 1  # This value needs to coordinated with the value in mouseMovedInThumbTwo
-            pedestal_cusp = pedestal / (x1 + 0)
-            cmap_thumb2 = pg.ColorMap([0.0, pedestal_cusp, red_cusp, 1.0], color=thumb2_colors)
 
             thumbOneImage = thumbnail.astype('int32')
             self.thumbOneView.setImage(thumbOneImage, levels=(0, x1))
@@ -5231,8 +5308,20 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             # Show the pixels included by the mask
             if self.use_yellow_mask:
                 self.thumbTwoImage = self.yellow_mask * thumbnail
+                maskedImage = self.yellow_mask * thumbnail
             else:
                 self.thumbTwoImage = mask * thumbnail
+                maskedImage = mask * thumbnail
+
+            x1 = np.max(maskedImage).astype('int32')
+            red_cusp = satPixelValue / x1
+            if red_cusp >= 1.0:
+                red_cusp = 1.0
+                thumb2_colors[3] = (255, 255, 255)
+
+            pedestal = 1  # This value needs to coordinated with the value in mouseMovedInThumbTwo
+            pedestal_cusp = pedestal / (x1 + 0)
+            cmap_thumb2 = pg.ColorMap([0.0, pedestal_cusp, red_cusp, 1.0], color=thumb2_colors)
 
             # Add a pedestal (only to masked pixels) so that we can trigger a yellow background
             # for values of 0
@@ -5240,9 +5329,11 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 if self.use_yellow_mask:
                     self.thumbTwoImage += pedestal # Put the masked pixels on the pedestal
                 else:
-                    self.thumbTwoImage += pedestal # Put the masked pixels on the pedestal
-                self.thumbTwoView.setImage(self.thumbTwoImage, levels=(pedestal + 1, x1))
+                    # self.thumbTwoImage += pedestal # Put the masked pixels on the pedestal
+                    self.thumbTwoImage += mask # Put the masked pixels on the pedestal
+                self.thumbTwoView.setImage(self.thumbTwoImage, levels=(0, x1))
                 self.thumbTwoView.setColorMap(cmap_thumb2)
+                self.thumbTwoView.setImage(self.thumbTwoImage)
 
         if self.use_yellow_mask and self.yellow_mask is not None:
             default_mask_used = False
@@ -5276,7 +5367,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             # This will appear in the csv file.  In our plots, will use the negative value to
             # add visual annotation that a default mask was employed
             max_area = -max_area
-
         if show_stats:
             # minpx = sorted_data[0]
             # maxpx = sorted_data[-1]
@@ -5300,6 +5390,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                 line = '%9d%10d%9.2f%9.2f%7d%7d%6s%6s%6d%6d' % \
                        (signal, appsum, mean, std, threshold, max_area, '    NA', '    NA', minpx, maxpx)
             self.showMsg(line)
+
 
         # xc_roi and yc_roi are used by centerAperture() to recenter the aperture
         # The remaining outputs are used in writing the lightcurve information
@@ -6261,7 +6352,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         # This is how we startup timestamp extraction.
 
         # We assume that if a valid timestamp formatter selection code is
-        # present, then timestamp reading should be attempted
+        # present, either in the folder directory or the home directory, then timestamp reading should be attempted
         formatter_code = self.readFormatTypeFile()
         self.formatterCode = formatter_code
         processTimestampProfile = not self.formatterCode is None
@@ -6293,8 +6384,6 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             self.vtiSelectComboBox.setEnabled(not self.timestampReadingEnabled)
         else:
             self.vtiSelectComboBox.setEnabled(True)
-
-
 
     def getFrameNumberFromFile(self, filename):
         fullpath = self.folder_dir + r'/' + filename
