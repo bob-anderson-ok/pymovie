@@ -2154,6 +2154,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         self.mouseMovedInFrameView(self.lastMousePosInFrameView)
 
         self.pickleOcrBoxes()
+        self.writeFormatTypeFile(self.formatterCode)
 
     def placeOcrBoxesOnImage(self):
 
@@ -4673,6 +4674,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
     def showOcrboxInThumbnails(self, ocrbox):
         img = timestamp_box_image(self.image_fields, ocrbox, kiwi=(self.kiwiInUse or self.kiwiPALinUse), slant=self.kiwiInUse)
+        black_and_white = pg.ColorMap([0.0, 1.0], color=[(0, 0, 0), (255, 255, 255)])
+        self.thumbOneView.setColorMap(black_and_white)
+        self.thumbTwoView.setColorMap(black_and_white)
         self.thumbOneImage = img
         self.thumbOneView.setImage(img)
         self.thumbnailOneLabel.setText('timestamp character')
@@ -5280,30 +5284,33 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             satPixelValue = self.satPixelSpinBox.value() - 1
 
             thumb1_colors = [
-                (0, 0, 0),
-                (255, 255, 255),
-                (255, 0, 0)
+                (0, 0, 0),        # black
+                (255, 255, 255),  # white
+                (255, 0, 0)       # red
             ]
 
             thumb2_colors = [
                 (255, 255, 128),  # yellow for aperture 'surround'
-                (0, 0, 0),
-                (255, 255, 255),
-                (255, 0, 0)
+                (0, 0, 0),        # black
+                (255, 255, 255),  # white
+                (255, 0, 0)       # red
             ]
 
-            x1 = np.max(thumbnail).astype('int32')
+            x1 = x0 = np.max(thumbnail).astype('int32')
             red_cusp = satPixelValue / x1
             # self.showMsg(f'cusp: {red_cusp:0.5f}  satPixValue: {satPixelValue:0.1f} x1: {x1:0.0f}  x0: {x0:0.0f}')
             if red_cusp >= 1.0:
                 red_cusp = 1.0
-                thumb1_colors[2] = (255, 255, 255)
+                thumb1_colors[2] = (255, 255, 255)  # white (no saturation)
 
             cmap_thumb1 = pg.ColorMap([0.0, red_cusp, 1.0], color=thumb1_colors)
+
+            black_and_white = pg.ColorMap([0.0, 1.0], color=[(0,0,0),(255,255,255)])
 
             thumbOneImage = thumbnail.astype('int32')
             self.thumbOneView.setImage(thumbOneImage, levels=(0, x1))
             self.thumbOneView.setColorMap(cmap_thumb1)
+
 
             # Show the pixels included by the mask
             if self.use_yellow_mask:
@@ -5325,6 +5332,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             # Add a pedestal (only to masked pixels) so that we can trigger a yellow background
             # for values of 0
+            np.clip(self.thumbTwoImage, 0, x0 - 1)  # ... so that we can add 1 without overflow concerns
             if self.thumbTwoImage is not None:
                 if self.use_yellow_mask:
                     self.thumbTwoImage += pedestal # Put the masked pixels on the pedestal
@@ -5333,7 +5341,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     self.thumbTwoImage += mask # Put the masked pixels on the pedestal
                 self.thumbTwoView.setImage(self.thumbTwoImage, levels=(0, x1))
                 self.thumbTwoView.setColorMap(cmap_thumb2)
-                self.thumbTwoView.setImage(self.thumbTwoImage)
+                # self.thumbTwoView.setImage(self.thumbTwoImage)
 
         if self.use_yellow_mask and self.yellow_mask is not None:
             default_mask_used = False
@@ -5991,9 +5999,14 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
     def readFormatTypeFile(self):
         f_path = os.path.join(self.folder_dir, 'formatter.txt')
         if not os.path.exists(f_path):
-            return None
+            f_path = os.path.join(self.homeDir, 'formatter.txt')
+            if not os.path.exists(f_path):
+                return None
         with open(f_path, 'r') as f:
             code = f.readline()
+            f_path = os.path.join(self.folder_dir, 'formatter.txt')
+            with open(f_path, 'w') as g:
+                g.write(code)
             return code
 
     def selectAviSerAdvAavFolder(self):
@@ -6363,7 +6376,9 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         if processTimestampProfile:
             self.loadPickledOcrBoxes()  # if any
-            self.loadModelDigits()  # if any
+            self.pickleOcrBoxes()       # This creates duplicates in folder_dir and homeDir
+            self.loadModelDigits()      # if any
+            self.saveModelDigits()      # This creats duplicates in folder_dir and homeDir
             self.detectFieldTimeOrder = True
             # Reset the Kiwi special counters that record where t2 has been found
             self.upper_left_count = 0
