@@ -5203,6 +5203,12 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         maxpx = sorted_data[-1]
 
+        #TODO test this
+        mean_top, *_ =  newRobustMeanStd(thumbnail[0::2,:], outlier_fraction=.5, lunar=self.lunarCheckBox.isChecked())
+        mean_bot, *_ =  newRobustMeanStd(thumbnail[1::2,:], outlier_fraction=.5, lunar=self.lunarCheckBox.isChecked())
+        if show_stats:
+            self.showMsg(f'mean_top: {mean_top:0.3f}  mean_bot: {mean_bot:0.3f}')
+
         # We computed the initial aperture.thresh as an offset from the background value present
         # in the frame used for the initial threshold determination.  Now we add the current
         # value of the background so that we can respond to a general change in background dynamically.
@@ -5408,7 +5414,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             top_mask_pixel_count = np.sum(top_mask)
             top_thumbnail = thumbnail[0::2,:]
             top_appsum = np.sum(top_mask * top_thumbnail)
-            top_signal = top_appsum - int(round(top_mask_pixel_count * mean))
+            top_signal = top_appsum - int(round(top_mask_pixel_count * mean_top))
             if default_mask_used:
                 top_mask_pixel_count = -top_mask_pixel_count
 
@@ -5416,7 +5422,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             bottom_mask_pixel_count = np.sum(bottom_mask)
             bottom_thumbnail = thumbnail[1::2,:]
             bottom_appsum = np.sum(bottom_mask * bottom_thumbnail)
-            bottom_signal = bottom_appsum - int(round(bottom_mask_pixel_count * mean))
+            bottom_signal = bottom_appsum - int(round(bottom_mask_pixel_count * mean_bot))
             if default_mask_used:
                 bottom_mask_pixel_count = -bottom_mask_pixel_count
 
@@ -5427,20 +5433,20 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             if self.topFieldFirstRadioButton.isChecked():
                 timestamp = self.upperTimestamp
                 self.field1_data = (xc_roi, yc_roi, xc_world, yc_world,
-                                    top_signal, top_appsum, mean, top_mask_pixel_count,
+                                    top_signal, top_appsum, mean_top, top_mask_pixel_count,
                                     frame_num, cvxhull, maxpx, std, timestamp)
                 timestamp = self.lowerTimestamp
                 self.field2_data = (xc_roi, yc_roi, xc_world, yc_world,
-                                   bottom_signal, bottom_appsum, mean, bottom_mask_pixel_count,
+                                   bottom_signal, bottom_appsum, mean_bot, bottom_mask_pixel_count,
                                     frame_num + 0.5, cvxhull, maxpx, std, timestamp)
             else:
                 timestamp = self.lowerTimestamp
                 self.field1_data = (xc_roi, yc_roi, xc_world, yc_world,
-                                    bottom_signal, bottom_appsum, mean, bottom_mask_pixel_count,
+                                    bottom_signal, bottom_appsum, mean_bot, bottom_mask_pixel_count,
                                     frame_num, cvxhull, maxpx, std, timestamp)
                 timestamp = self.upperTimestamp
                 self.field2_data = (xc_roi, yc_roi, xc_world, yc_world,
-                                    top_signal, top_appsum, mean, top_mask_pixel_count,
+                                    top_signal, top_appsum, mean_top, top_mask_pixel_count,
                                     frame_num + 0.5, cvxhull, maxpx, std, timestamp)
 
         if not (self.avi_in_use or self.aav_file_in_use):
