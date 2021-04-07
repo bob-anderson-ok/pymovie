@@ -5341,7 +5341,8 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
             np.clip(self.thumbTwoImage, 0, x0 - 1)  # ... so that we can add 1 without overflow concerns
             if self.thumbTwoImage is not None:
                 if self.use_yellow_mask:
-                    self.thumbTwoImage += pedestal # Put the masked pixels on the pedestal
+                    # self.thumbTwoImage += pedestal # Put the masked pixels on the pedestal
+                    self.thumbTwoImage += mask # Put the masked pixels on the pedestal
                 else:
                     # self.thumbTwoImage += pedestal # Put the masked pixels on the pedestal
                     self.thumbTwoImage += mask # Put the masked pixels on the pedestal
