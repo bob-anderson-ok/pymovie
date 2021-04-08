@@ -4064,7 +4064,22 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
                     self.centerAperture(app, show_stats=True)
 
     def handleYellowMaskClick(self):
+
+        yellow_aperture_present = False
+        for app in self.getApertureList():
+            if app.color == 'yellow':
+                yellow_aperture_present = True
+                break
+
+        if not yellow_aperture_present and self.useYellowMaskCheckBox.isChecked():
+            self.useYellowMaskCheckBox.setChecked(False)
+            self.showMsgPopup('There is no yellow aperture defined yet so this option is not available.')
+            return
+
         self.use_yellow_mask = self.useYellowMaskCheckBox.isChecked()
+        if self.use_yellow_mask:
+            self.moveOneFrameRight()
+            self.moveOneFrameLeft()
 
     def calcFinderBkgThreshold(self):
         height, width = self.image.shape
@@ -5832,6 +5847,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         if self.filename:
 
+            self.useYellowMaskCheckBox.setChecked(False)
             self.lunarCheckBox.setChecked(False)
 
             self.aav_bad_frames = []
@@ -6045,6 +6061,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
         if dir_path:
 
+            self.useYellowMaskCheckBox.setChecked(False)
             self.setGammaToUnity()
 
             self.clearTrackingPathParameters()
