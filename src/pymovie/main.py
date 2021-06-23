@@ -87,7 +87,7 @@ from pathlib import Path
 from urllib.request import urlopen
 from copy import deepcopy
 import numpy as np
-from pymovie.checkForNewerVersion import getMostRecentVersionOfPyMovie
+from pymovie.checkForNewerVersion import getMostRecentVersionOfPyMovieViaJason
 from pymovie.checkForNewerVersion import upgradePyMovie
 from pymovie import starPositionDialog
 from pymovie import aperturesFileTagDialog
@@ -103,6 +103,7 @@ from pymovie import SER
 from numpy import sqrt, arcsin
 import pyqtgraph.exporters as pex
 from numpy import pi as PI
+
 import PyQt5
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import QFileDialog, QGraphicsRectItem, QButtonGroup, QMessageBox, QTableWidgetItem
@@ -1968,7 +1969,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
         return retval
 
     def checkForNewerVersion(self):
-        gotVersion, latestVersion = getMostRecentVersionOfPyMovie()
+        gotVersion, latestVersion = getMostRecentVersionOfPyMovieViaJason()
         if gotVersion:
             if latestVersion <= version.version():
                 self.showMsg(f'Found the latest version is: {latestVersion}')
