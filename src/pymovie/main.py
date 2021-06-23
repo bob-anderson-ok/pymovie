@@ -1,7 +1,7 @@
 """
 The gui module was created by typing
    from PyQt5.uic import pyuic
-   !pyuic5 PyMovie.ui -o gui.py
+   !pyuic5 PyMovie.ui -o gui.py  OR !pyuic5 PyMovieScrollable.ui -o gui.py
 in the IPython console while in src/pymovie directory
 
 The helpDialog module was created by typing
