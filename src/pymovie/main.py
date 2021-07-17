@@ -364,7 +364,7 @@ class Qt5MplCanvas(FigureCanvas):
 
 
 # noinspection PyBroadException
-class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
+class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def __init__(self):
         super(PyMovie, self).__init__()
 
@@ -5327,7 +5327,7 @@ class PyMovie(QtGui.QMainWindow, gui.Ui_MainWindow):
 
             cmap_thumb1 = pg.ColorMap([0.0, red_cusp, 1.0], color=thumb1_colors)
 
-            black_and_white = pg.ColorMap([0.0, 1.0], color=[(0,0,0),(255,255,255)])
+            # black_and_white = pg.ColorMap([0.0, 1.0], color=[(0,0,0),(255,255,255)])
 
             thumbOneImage = thumbnail.astype('int32')
             self.thumbOneView.setImage(thumbOneImage, levels=(0, x1))
@@ -8206,6 +8206,8 @@ def newRobustMeanStd(
         return lower_mean, MAD, sorted_data, sorted_data, window, data.size, first_index, last_index
 
     if sorted_data.dtype == '>f4':
+        my_hist = np.bincount(sorted_data.astype(np.int, casting='unsafe'))
+    elif sorted_data.dtype == '>f8':
         my_hist = np.bincount(sorted_data.astype(np.int, casting='unsafe'))
     else:
         my_hist = np.bincount(sorted_data)
