@@ -2150,8 +2150,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.lowerOcrBoxesRight[boxnum] = (xL + dx, xR + dx, yU + dy, yL + dy)
                 ocr.setBox((xL + dx, xR + dx, yU + dy + yadj, yL + dy + yadj))
 
-        # pos = QtGui.QCursor().pos()
-        # newpos = self.frameView.mapFromGlobal(pos)
         self.mouseMovedInFrameView(self.lastMousePosInFrameView)
 
         self.pickleOcrBoxes()
@@ -3519,22 +3517,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.frameView.getView().update()
 
         return True
-
-        # Diagnostic/debug/exploratory code
-        # MOD_MASK = (Qt.CTRL | Qt.ALT | Qt.SHIFT | Qt.META)
-        #
-        # keyname = ''
-        # key = event.key()
-        # modifiers = int(event.modifiers())
-        # if (modifiers and modifiers & MOD_MASK == modifiers and
-        #         key > 0 and key != Qt.Key_Shift and key != Qt.Key_Alt and
-        #         key != Qt.Key_Control and key != Qt.Key_Meta):
-        #     keyname = PyQt5.QtGui.QKeySequence(modifiers + key).toString()
-        #
-        #     self.showMsg(f'event.text(): {event.text()}')
-        #     self.showMsg(f'event.key(): {keyname}')
-        #
-        # self.showMsg(f'key pressed was: {key}')
 
     def flipImagesTopToBottom(self):
         checked = self.flipImagesTopToBottomCheckBox.isChecked()
@@ -7267,136 +7249,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         else:
             self.showMsg(f'WCS calibration failed.')
 
-    # def runExperimentalCode(self):
-    #
-    #     self.showMsg('Experimental code: hot pixel detection')
-    #
-    #     if not (self.avi_wcs_folder_in_use or self.fits_folder_in_use):
-    #         self.showMsg(f'This function can only be performed in the context of an AVI-WCS or FITS folder.')
-    #         return
-    #
-    #     # Deal with timestamp redaction first.
-    #     # Get a robust mean from near the center of the current image
-    #     y0 = int(self.image.shape[0]/2)
-    #     x0 = int(self.image.shape[1]/2)
-    #     ny = 51
-    #     nx = 51
-    #     thumbnail = self.image[y0:y0 + ny, x0:x0 + nx]
-    #     mean, *_ = newRobustMeanStd(thumbnail, outlier_fraction=.5)
-    #
-    #     image_height = self.image.shape[0]  # number of rows
-    #     image_width = self.image.shape[1]   # number of columns
-    #
-    #     num_lines_to_redact = 0
-    #
-    #     early_exit = False
-    #
-    #     valid_entries, num_top, num_bottom = self.getRedactLineParameters()
-    #
-    #     if not valid_entries:
-    #         early_exit = True
-    #
-    #     if not self.numFramesToStackEdit.text():
-    #         msg = QMessageBox()
-    #         msg.setIcon(QMessageBox.Question)
-    #         msg.setText(f'Please specify the number of frames to stack. '
-    #                     f'\n\nA number in the range of 100 to 400 would be usual.')
-    #         msg.setWindowTitle('Please fill in num frames')
-    #         msg.setStandardButtons(QMessageBox.Ok)
-    #         msg.exec()
-    #         early_exit = True
-    #
-    #     if early_exit:
-    #         return
-    #
-    #     if num_bottom + num_top > image_height - 4:
-    #         self.showMsg(f'{num_bottom + num_top} is an unreasonable number of lines to redact.')
-    #         self.showMsg(f'Operation aborted.')
-    #         return
-    #
-    #     redacted_image = self.image[:,:].astype('int16')
-    #
-    #     if num_bottom > 0:
-    #         for i in range(image_height - num_bottom, image_height):
-    #             for j in range(0, image_width):
-    #                 redacted_image[i, j] = mean
-    #
-    #     if num_top > 0:
-    #         for i in range(0, num_top):
-    #             for j in range(0, image_width):
-    #                 redacted_image[i, j] = mean
-    #
-    #     self.image = redacted_image
-    #     self.frameView.setImage(self.image)
-    #     if self.levels:
-    #         self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
-    #
-    #     msg = QMessageBox()
-    #     msg.setIcon(QMessageBox.Question)
-    #     msg.setText('Is the timestamp data completely removed?')
-    #     msg.setWindowTitle('Is timestamp removed')
-    #     msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-    #     retval = msg.exec_()
-    #     ready_for_submission = retval == QMessageBox.Yes
-    #
-    #     if not ready_for_submission:
-    #         self.showFrame()
-    #         return
-    #
-    #     hot_pixel_list, fixed_image = stacker.find_outlier_pixels(self.image.astype('float64'))
-    #     self.image = fixed_image
-    #     self.frameView.setImage(self.image)
-    #
-    #     return
-    #
-    #     first_frame = self.currentFrameSpinBox.value()
-    #
-    #     try:
-    #         txt = self.numFramesToStackEdit.text()
-    #         num_frames_to_stack = int(txt)
-    #     except ValueError:
-    #         self.showMsg(f'" {txt} " is an invalid specification of number of frames to stack')
-    #         return
-    #
-    #     if num_frames_to_stack > 400:
-    #         msg = QMessageBox()
-    #         msg.setIcon(QMessageBox.Question)
-    #         msg.setText(f'{num_frames_to_stack} is rather large.'
-    #                     f'\n\nDo you wish to proceed anyway?')
-    #         msg.setWindowTitle('Num frames to stack ok')
-    #         msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-    #         retval = msg.exec_()
-    #         if retval == QMessageBox.No:
-    #             return
-    #
-    #     last_frame = first_frame + num_frames_to_stack - 1
-    #     last_frame = min(last_frame, self.stopAtFrameSpinBox.maximum())
-    #
-    #     if self.fits_folder_in_use:
-    #         fitsReader = self.getFitsFrame
-    #     else:
-    #         fitsReader = None
-    #
-    #     if self.ser_file_in_use:
-    #         serReader = self.getSerFrame
-    #     else:
-    #         serReader = None
-    #
-    #     bkg_thresh = self.getBkgThreshold()
-    #     if bkg_thresh is None:
-    #         return
-    #
-    #     hot_pix_image = stacker.hotPixelStack(
-    #         self.showMsg, self.stackerProgressBar, QtGui.QGuiApplication.processEvents,
-    #         first_frame=first_frame, last_frame=last_frame,
-    #         timestamp_trim_top=num_top,
-    #         timestamp_trim_bottom=num_bottom,
-    #         fitsReader = fitsReader,
-    #         serReader = serReader,
-    #         avi_location=self.avi_location, out_dir_path=self.folder_dir, bkg_threshold=bkg_thresh)
-    #
-    #     self.image = hot_pix_image
-    #     self.frameView.setImage(self.image)
 
     def manualWcsCalibration(self):
         if not (self.avi_wcs_folder_in_use or self.fits_folder_in_use):
@@ -7778,6 +7630,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.plots[-1].show()  # Let everyone see the results
 
         QtGui.QGuiApplication.processEvents()
+
     # End add composite plot
 
 
@@ -8243,7 +8096,8 @@ def main():
     # QtGui.QApplication.setStyle('windows')
     PyQt5.QtWidgets.QApplication.setStyle('fusion')
     # QtGui.QApplication.setStyle('fusion')
-    app = QtGui.QApplication(sys.argv)
+    # app = QtGui.QApplication(sys.argv)
+    app = PyQt5.QtWidgets.QApplication(sys.argv)
 
     os.environ['QT_MAC_WANTS_LAYER'] = '1'  # This line needed when Mac updated to Big Sur
 
