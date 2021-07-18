@@ -8241,7 +8241,8 @@ def main():
     import traceback
     import os
     # QtGui.QApplication.setStyle('windows')
-    QtGui.QApplication.setStyle('fusion')
+    PyQt5.QtWidgets.QApplication.setStyle('fusion')
+    # QtGui.QApplication.setStyle('fusion')
     app = QtGui.QApplication(sys.argv)
 
     os.environ['QT_MAC_WANTS_LAYER'] = '1'  # This line needed when Mac updated to Big Sur
