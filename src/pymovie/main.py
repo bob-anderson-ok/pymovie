@@ -1929,6 +1929,18 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def startAnalysis(self):
 
+        if self.checkForDataAlreadyPresent():
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Question)
+            msg.setText(f'There are already data points present from a previous analysis run. '
+                        f'This condition is allowed, but you must make sure that you do not inadvertently '
+                        f'process a frame more than once.\n\n'
+                        f'If you inadvertently process a frame more than once, you will be prohibited from '
+                        f'writing out the csv file and instead recieve a warning about duplicated frames.')
+            msg.setWindowTitle('!!! Data points already present !!!')
+            msg.setStandardButtons(QMessageBox.Close)
+            msg.exec_()
+
         yellow_aperture_present = False
         for app in self.getApertureList():
             if app.color == 'yellow':
@@ -3852,6 +3864,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     QtGui.QGuiApplication.processEvents()
         else:
             self.viewFieldsCheckBox.setEnabled(True)
+
+    def checkForDataAlreadyPresent(self):
+        dataAlreadyPresent = False
+        for app in self.getApertureList():
+            if app.data:
+                dataAlreadyPresent = True
+        return dataAlreadyPresent
 
     def clearApertureData(self):
         self.analysisInProgress = False
