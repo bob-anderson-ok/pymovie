@@ -2023,9 +2023,15 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         f'If you inadvertently process a frame more than once, you will be prohibited from '
                         f'writing out the csv file and instead recieve a warning about duplicated frames.')
             msg.setWindowTitle('!!! Data points already present !!!')
-            # msg.addButton("clear data and run", role=QMessageBox.YesRole)
-            msg.setStandardButtons(QMessageBox.Close)
-            msg.exec_()
+            msg.addButton("clear data and run", QMessageBox.YesRole) # result = 0
+            msg.addButton("it's ok - proceed", QMessageBox.YesRole)  # result = 1
+            msg.addButton("abort analysis", QMessageBox.YesRole)     # result = 2
+            # msg.setStandardButtons(QMessageBox.Close)
+            result = msg.exec_()
+            if result == 2:
+                return
+            if result == 0:
+                self.clearApertureData()
 
         yellow_aperture_present = False
         for app in self.getApertureList():
