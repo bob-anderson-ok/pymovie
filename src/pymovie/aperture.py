@@ -10,6 +10,32 @@ class AppNameDialog(QDialog, apertureNameDialog.Ui_Dialog):
         super(AppNameDialog, self).__init__()
         self.setupUi(self)
 
+class HorizontalLine(pg.GraphicsObject):
+    def __init__(self, rowNumber, height, width, colorStr):  # Intialize aperture specified by a bounding box
+        self.pen = pg.mkPen(colorStr)
+        self.y0 = rowNumber
+        self.x0 = 0
+        self.x1 = width
+        self.h = height
+        self.w = width
+
+        # note that the use of super() is often avoided because Qt does not
+        # allow to inherit from multiple QObject subclasses.
+        pg.GraphicsObject.__init__(self)
+
+    # All graphics items must have paint() defined.
+    def paint(self, p, *args):
+        _ = args  # Just to satisfy PyCharm code inspector (need to use args in some manner)
+        p.setPen(self.pen)
+        p.drawLine(self.x0, self.y0, self.x1, self.y0)
+
+    # All graphics items must have boundingRect() defined.
+    def boundingRect(self):
+        return QtCore.QRectF(0, 0, self.w, self.h)
+
+    def setRow(self, row):
+        self.y0 = row
+        self.update()
 
 class MeasurementAperture(pg.GraphicsObject):
     """

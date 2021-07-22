@@ -122,7 +122,7 @@ from skimage import measure, exposure
 import skimage
 import subprocess
 
-from pymovie.aperture import *
+from pymovie.aperture import *  # This gets MeasurementAperture and Horizontalline classes
 from pymovie.ocrCharacterBox import *
 from pymovie.ocr import *
 from pymovie.apertureEdit import *
@@ -523,6 +523,21 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.vtiHelpButton.installEventFilter(self)
         self.vtiHelpButton.clicked.connect(self.vtiHelp)
 
+        self.showMedianProfileButton.clicked.connect(self.showMedianProfile)
+        self.showMedianProfileButton.installEventFilter(self)
+
+        self.lowerHorizontalLine = None
+        self.upperHorizontalLine = None
+
+        self.upperTimestampMedianSpinBox.valueChanged.connect(self.moveUpperTimestampLine)
+        self.upperTimestampLineLabel.installEventFilter(self)
+
+        self.lowerTimestampMedianSpinBox.valueChanged.connect(self.moveLowerTimestampLine)
+        self.lowerTimestampLineLabel.installEventFilter(self)
+
+        self.lineNoiseFilterCheckBox.clicked.connect(self.startLineFilter)
+        self.lineNoiseFilterCheckBox.installEventFilter(self)
+
         self.gammaLabel.installEventFilter(self)
 
         self.twoPointHelpButton.installEventFilter(self)
@@ -648,6 +663,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         # ########################################################################
 
         self.avi_date = None
+
+        self.medianData = []
+        self.numMedianValues = 0
 
         self.field1_data = None
         self.field2_data = None
@@ -901,9 +919,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.alignWithStarInfoButton.installEventFilter(self)
         self.alignWithStarInfoButton.clicked.connect(self.showAlignStarHelp)
 
-        # self.alignWithFourierCorrInfoButton.installEventFilter(self)
-        # self.alignWithFourierCorrInfoButton.clicked.connect(self.showAlignWithFourierCorrHelp)
-
         self.alignWithTwoPointTrackInfoButton.installEventFilter(self)
         self.alignWithTwoPointTrackInfoButton.clicked.connect(self.showAlignWithTwoPointTrackHelp)
 
@@ -956,12 +971,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.textOutLabel.installEventFilter(self)
 
         self.frameView.installEventFilter(self)
-        # self.mainImageLabel.installEventFilter(self)
 
         self.transportHelp.installEventFilter(self)
         self.transportHelp.clicked.connect(self.mainImageHelp)
 
-        # self.viewFieldsCheckBox.clicked.connect(self.showFrame)
         self.viewFieldsCheckBox.toggled.connect(self.handleChangeOfDisplayMode)
         self.viewFieldsCheckBox.installEventFilter(self)
 
@@ -1010,12 +1023,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.enableAdvFrameStatusDisplay.installEventFilter(self)
 
-        # self.clearAppDataButton.clicked.connect(self.clearApertureData)
-        # self.clearAppDataButton.installEventFilter(self)
-
-        # self.writeCsvButton.clicked.connect(self.writeCsvFile)
-        # self.writeCsvButton.installEventFilter(self)
-
         self.infoButton.clicked.connect(self.showInfo)
         self.infoButton.installEventFilter(self)
 
@@ -1049,7 +1056,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.wcsRedactBottomLinesLabel.installEventFilter(self)
 
         self.finderNumFramesLabel.installEventFilter(self)
-        # self.finderThresholdLabel.installEventFilter(self)
 
         self.frameToFitsButton.clicked.connect(self.getWCSsolution)
         self.frameToFitsButton.installEventFilter(self)
@@ -1130,6 +1136,90 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     #         summary.print_(summary_one)
     #         print(" ")
 
+    def showMedianProfile(self):
+        if len(self.medianData) > 0:
+            self.plotMediansArray()
+            self.lineNoiseFilterCheckBox.setChecked(False)
+            view = self.frameView.getView()
+            view.removeItem(self.upperHorizontalLine)
+            view.removeItem(self.lowerHorizontalLine)
+            h, w = self.image.shape
+            self.medianData = np.zeros(h)
+            self.numMedianValues = 0
+            self.showMedianProfileButton.setEnabled(False)
+            self.upperTimestampMedianSpinBox.setEnabled(False)
+            self.lowerTimestampMedianSpinBox.setEnabled(False)
+        else:
+            self.showMsgDialog('There is no data to plot and display.')
+
+    def startLineFilter(self):
+
+        if self.image is None:
+            self.lineNoiseFilterCheckBox.setChecked(False)
+            self.showMsgDialog('There is no image to process.')
+            return
+
+        if self.lineNoiseFilterCheckBox.isChecked():
+            # self.moveOneFrameRight()
+            # self.showFrame()  # Refresh the image
+            h, w = self.image.shape
+            upperRowOffset = self.upperTimestampMedianSpinBox.value()
+            lowerRowOffset = self.lowerTimestampMedianSpinBox.value()
+            self.upperHorizontalLine = HorizontalLine(upperRowOffset, h, w, 'r')    # Make a red line at very top
+            self.lowerHorizontalLine = HorizontalLine(h-lowerRowOffset, h, w, 'y')  # Make a yellow line at very bottom
+            view = self.frameView.getView()
+            view.addItem(self.upperHorizontalLine)
+            view.addItem(self.lowerHorizontalLine)
+            self.showMedianProfileButton.setEnabled(True)
+            self.upperTimestampMedianSpinBox.setEnabled(True)
+            self.lowerTimestampMedianSpinBox.setEnabled(True)
+            self.medianData = np.zeros(h)
+            self.numMedianValues = 0
+            self.showFrame()
+            self.applyMedianFilterToImage()
+
+    def moveUpperTimestampLine(self):
+        view = self.frameView.getView()
+        view.removeItem(self.upperHorizontalLine)
+        view.removeItem(self.lowerHorizontalLine)
+        self.startLineFilter()
+
+    def moveLowerTimestampLine(self):
+        view = self.frameView.getView()
+        view.removeItem(self.upperHorizontalLine)
+        view.removeItem(self.lowerHorizontalLine)
+        self.startLineFilter()
+
+    def applyMedianFilterToImage(self):
+        if self.image is None:
+            return
+
+        h, w = self.image.shape
+        imageDtype = self.image.dtype
+        if imageDtype == np.dtype('uint16'):
+            maxPixel = 65535
+        elif imageDtype == np.dtype('uint8'):
+            maxPixel = 255
+        else:
+            self.showMsgDialog('Unexpected dtype in applyMedianFilterToImage()')
+            return
+
+        medians =  np.zeros(h, imageDtype)
+        for i in range(self.upperTimestampMedianSpinBox.value(), h - self.lowerTimestampMedianSpinBox.value()):
+            medianValue = int(np.median(self.image[i,:]))
+            medians[i] = medianValue
+            self.medianData[i] += medianValue
+
+        self.numMedianValues += 1
+
+        maxMedian = np.max(medians)
+
+        for i in range(h):
+            self.image[i,:] = np.array(np.clip(self.image[i,:].astype(np.int) + (maxMedian - medians[i]), 0, maxPixel),
+                                       dtype=imageDtype)
+
+        self.frameView.setImage(self.image)
+
 
     def set_thresh_spinner_1(self):
         if self.thresh_inc_1.isChecked():
@@ -1154,11 +1244,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if not len(tabnames) == self.tabWidget.count():
             self.showMsg(f'Mismatch in saved tab list versus current number of tabs.')
             return
-
-        # Development print-out
-        # for i in range(self.tabWidget.count()):
-        #     index = getIndexOfTabFromName(tabnames[i])
-        #     self.showMsg(f'{tabnames[i]} @ {index}')
 
         for i in range(len(tabnames)):
             from_index = getIndexOfTabFromName(tabnames[i])
@@ -1938,6 +2023,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         f'If you inadvertently process a frame more than once, you will be prohibited from '
                         f'writing out the csv file and instead recieve a warning about duplicated frames.')
             msg.setWindowTitle('!!! Data points already present !!!')
+            # msg.addButton("clear data and run", role=QMessageBox.YesRole)
             msg.setStandardButtons(QMessageBox.Close)
             msg.exec_()
 
@@ -5525,6 +5611,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def selectFitsFolder(self):
 
+        self.lineNoiseFilterCheckBox.setChecked(False)
+
         options = QFileDialog.Options()
         options |= QFileDialog.ShowDirsOnly
         # options |= QFileDialog.DontUseNativeDialog
@@ -5828,8 +5916,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             # It makes no sense to treat an integrated aav in field mode
             self.processAsFieldsCheckBox.setEnabled(False)
 
-
     def readAviSerAdvAavFile(self, skipDialog=False):
+
+        self.lineNoiseFilterCheckBox.setChecked(False)
 
         frame_count = None
 
@@ -6035,6 +6124,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             return code
 
     def selectAviSerAdvAavFolder(self):
+
+        self.lineNoiseFilterCheckBox.setChecked(False)
 
         frame_count = None
 
@@ -6643,6 +6734,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         self.doGammaCorrection()
                     self.applyHotPixelErasure()
 
+                    if self.lineNoiseFilterCheckBox.isChecked():
+                        self.applyMedianFilterToImage()
+
                     if self.sharpCapTimestampPresent:
                         ts, date = self.getSharpCapTimestring()
                         self.showMsg(f'Timestamp found: {date} @ {ts}')
@@ -6668,6 +6762,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     )
                     self.doGammaCorrection()
                     self.applyHotPixelErasure()
+
                     raw_ser_timestamp = self.ser_timestamps[frame_to_show]
                     parts = raw_ser_timestamp.split('T')
                     self.showMsg(f'Timestamp found: {parts[0]} @ {parts[1]}')
@@ -6678,6 +6773,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     # ...but we need the time from every new frame.
                     self.ser_timestamp = f'[{parts[1]}]'
 
+                    if self.lineNoiseFilterCheckBox.isChecked():
+                        self.applyMedianFilterToImage()
+
                 except Exception as e2:
                     self.image = None
                     self.showMsg(f'{e2}')
@@ -6686,6 +6784,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     err, self.image, frameInfo, status = self.adv2_reader.getMainImageAndStatusData(frame_to_show)
                     self.doGammaCorrection()
                     self.applyHotPixelErasure()
+
+                    if self.lineNoiseFilterCheckBox.isChecked():
+                        self.applyMedianFilterToImage()
+
                     if self.enableAdvFrameStatusDisplay.isChecked():
                         for status_key in status:
                             self.showMsg(f'{status_key}: {status[status_key]}', blankLine=False)
@@ -6705,6 +6807,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     err, self.image, frameInfo, status = self.adv2_reader.getMainImageAndStatusData(frame_to_show)
                     self.doGammaCorrection()
                     self.applyHotPixelErasure()
+
+                    if self.lineNoiseFilterCheckBox.isChecked():
+                        self.applyMedianFilterToImage()
+
                     num_frames_integrated = int(status['IntegratedFrames'])
                     if not num_frames_integrated == self.aav_num_frames_integrated:
                         self.showMsg(f'found IntegratedFrames = {num_frames_integrated} instead of '
@@ -6732,6 +6838,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
                         self.doGammaCorrection()
                         self.applyHotPixelErasure()
+
+                        if self.lineNoiseFilterCheckBox.isChecked():
+                            self.applyMedianFilterToImage()
                     except Exception as e3:
                         self.showMsg(f'While reading image data from FITS file: {e3}')
                         self.image = None
@@ -6772,7 +6881,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                             parts[1] = f'{sub_parts[0]}.{gps_su:07d}'
                             self.showMsg(f'The following timestamp used highly suspect partial GPS data',
                                          blankLine=False)
-
 
                         self.showMsg(f'Timestamp found: {parts[0]} @ {parts[1]}')
                         # We only want to save the date from the first file (to add to the csv file)...
@@ -7652,6 +7760,46 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     # End add composite plot
 
+    def plotMediansArray(self):
+        self.plots = []
+        self.plots.append(pg.GraphicsWindow(title="PyMovie medians plot"))
+        self.plots[0].resize(1000, 600)
+
+        p1 = self.plots[0].addPlot(title=f'{self.fileInUseEdit.text()}')
+        # p1.addLegend()
+        p1.setMouseEnabled(x=False, y=True)
+        p1.setLabel(axis='bottom',text='Row number')
+        p1.setLabel(axis='left',text='average median')
+
+        my_colors = [
+            (200, 0, 0),    # red
+            (0, 200, 0),    # green
+            (0, 0, 200),    # blue
+            (200, 200, 0),  # red-green  (yellow)
+            (200, 0, 200),  # red-blue   (purple)
+            (0, 200, 200)   # blue-green (teal)
+        ]
+        dark_gray = (50, 50, 50)
+
+        yvalues = self.medianData[:]
+        yvalues /= self.numMedianValues
+        xvalues = list(range(len(yvalues)))
+
+        p1.plot( x = xvalues, y = yvalues, title = "Average medians",
+                 pen = dark_gray, symbolBrush = my_colors[0],
+                 symbolSize = self.plot_symbol_size, pxMode = True, symbolPen = my_colors[0],
+                 name = f'Hello from Bob'
+                )
+
+        # max_max = max(yvalues)
+        # min_min = min(yvalues)
+        # p1.setYRange(min_min - min_min / 2, max_max + max_max)
+
+        p1.showGrid(y=True)
+
+        self.plots[0].show()  # Let everyone see the results
+
+        QtGui.QGuiApplication.processEvents()
 
     def clearTextBox(self):
         self.textOut.clear()
