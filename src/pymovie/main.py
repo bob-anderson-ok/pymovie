@@ -1212,10 +1212,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.numMedianValues += 1
 
-        maxMedian = np.max(medians)
+        midMedian = int(np.median(medians))
 
         for i in range(h):
-            self.image[i,:] = np.array(np.clip(self.image[i,:].astype(np.int) + (maxMedian - medians[i]), 0, maxPixel),
+            self.image[i,:] = np.array(np.clip(self.image[i,:].astype(np.int) + (midMedian - medians[i]), 0, maxPixel),
                                        dtype=imageDtype)
 
         self.frameView.setImage(self.image)

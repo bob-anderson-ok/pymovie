@@ -1683,200 +1683,188 @@
                 <attribute name="title">
                  <string>Misc.</string>
                 </attribute>
-                <widget class="QFrame" name="frame">
-                 <property name="geometry">
-                  <rect>
-                   <x>450</x>
-                   <y>40</y>
-                   <width>181</width>
-                   <height>201</height>
-                  </rect>
-                 </property>
-                 <property name="frameShape">
-                  <enum>QFrame::StyledPanel</enum>
-                 </property>
-                 <property name="frameShadow">
-                  <enum>QFrame::Raised</enum>
-                 </property>
-                 <widget class="QCheckBox" name="lunarCheckBox">
-                  <property name="geometry">
-                   <rect>
-                    <x>10</x>
-                    <y>10</y>
-                    <width>56</width>
-                    <height>20</height>
-                   </rect>
-                  </property>
-                  <property name="toolTip">
-                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Only for use with lunar occultations&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;When an aperture is placed on a sunlit lunar limb, it will contain pixels from the sky, pixels from the lunar limb, and pixels from the about-to-be-occulted star. This is also true for a fixed circular sampling mask positioned on the star. In that situation, what is the 'correct' way to subtract 'background'? Limovie has answered that question by providing a special aperture (Avoid Sunlit Face) that can be positioned so that a semi-circular area can be oriented so that only sky pixels are contained. Those pixels are then used to calculate the background value.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;When this box is checked, PyMovie does effectively the same thing but by a different method: it uses a statistical analysis of all the pixels in an aperture and sorts out which are from the sky and which are not by how their intensities are distributed. You can check what is happening by clicking on the Plot Robust Mean button to see where it placed the green line that shows the calculated mean value.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                  </property>
-                  <property name="text">
-                   <string>lunar</string>
-                  </property>
-                 </widget>
-                 <widget class="QCheckBox" name="useYellowMaskCheckBox">
-                  <property name="geometry">
-                   <rect>
-                    <x>10</x>
-                    <y>40</y>
-                    <width>157</width>
-                    <height>20</height>
-                   </rect>
-                  </property>
-                  <property name="toolTip">
-                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If there is significant wind shake during the occultation, the use of a default circular mask is inappropriate because we know that the star image is not circular but rather more snake-like.&lt;/p&gt;&lt;p&gt;However, it is reasonable to expect that the wanderings of the tracking star are the same as the wanderings of the target star and so a mask computed from the tracking star, while it will probably contain more pixels than one might like, has the correct shape to be used for the target star as well.&lt;/p&gt;&lt;p&gt;Checking this box will cause the 'yellow' mask to be used for measuring all target images.&lt;/p&gt;&lt;p&gt;This is a 'last hope' option: good luck with it.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                  </property>
-                  <property name="text">
-                   <string>yellow mask = default</string>
-                  </property>
-                 </widget>
-                 <widget class="QPushButton" name="view3DButton">
-                  <property name="geometry">
-                   <rect>
-                    <x>10</x>
-                    <y>70</y>
-                    <width>160</width>
-                    <height>32</height>
-                   </rect>
-                  </property>
-                  <property name="toolTip">
-                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button opens a new window that shows a 3D rendering of the Thumbnail One image.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                  </property>
-                  <property name="text">
-                   <string>Show 3D thumbnail</string>
-                  </property>
-                 </widget>
-                </widget>
-                <widget class="QFrame" name="frame_2">
-                 <property name="geometry">
-                  <rect>
-                   <x>120</x>
-                   <y>40</y>
-                   <width>291</width>
-                   <height>201</height>
-                  </rect>
-                 </property>
-                 <property name="frameShape">
-                  <enum>QFrame::StyledPanel</enum>
-                 </property>
-                 <property name="frameShadow">
-                  <enum>QFrame::Raised</enum>
-                 </property>
-                 <widget class="QCheckBox" name="lineNoiseFilterCheckBox">
-                  <property name="enabled">
-                   <bool>true</bool>
-                  </property>
-                  <property name="geometry">
-                   <rect>
-                    <x>40</x>
-                    <y>20</y>
-                    <width>221</width>
-                    <height>20</height>
-                   </rect>
-                  </property>
-                  <property name="toolTip">
-                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;Under some conditions for some cameras,&amp;nbsp;the background will exhibit a 'patterning' where some scan lines are a little brighter than others.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;We refer to this 'patterning' as 'line noise'.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;If you check this box,&amp;nbsp;images will be subjected to a median filter on a line by line basis.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;The filter operates by finding the median value along a scan line and using this value to adust all rows such that they share a common median value.&amp;nbsp;This procedure suppresses/eliminates the 'patterning'.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;It is up to you to decide whether this is a valid procedure,&amp;nbsp;but I have provided one tool that may help: I accumulate the line-by-line median values and calculate the average median value for each row.&amp;nbsp;This plot can be displayed by clicking on the &lt;/span&gt;&lt;span style=&quot; font-size:18pt; font-weight:600; color:#0000ff;&quot;&gt;Show Median Profile&lt;/span&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt; button below.&amp;nbsp;If the 'patterning' is due to chip/camera construction,&amp;nbsp;the median values for a line will be consistent from frame to frame and this plot will show the row to row variation in the background brightness of the rows.&amp;nbsp;If there is a consistent and significant row to row brightness difference,&amp;nbsp;I believe you have good justification in applying this filter as it 'corrects' a systematic/instrumental effect from the chip/camera design.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;If,&amp;nbsp;instead,&amp;nbsp;the row to row brightness differences are random,&amp;nbsp;the average median value from row to row will not differ much.&amp;nbsp;That means that the chip/camera is NOT showing instrumental bias and you should be cautious and conservative in deciding whther to use median line filtering for such a video.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                  </property>
-                  <property name="text">
-                   <string>apply 'line noise' median filter</string>
-                  </property>
-                 </widget>
-                 <widget class="QWidget" name="">
-                  <property name="geometry">
-                   <rect>
-                    <x>40</x>
-                    <y>60</y>
-                    <width>212</width>
-                    <height>26</height>
-                   </rect>
-                  </property>
+                <layout class="QGridLayout" name="gridLayout">
+                 <item row="1" column="1">
+                  <spacer name="verticalSpacer">
+                   <property name="orientation">
+                    <enum>Qt::Vertical</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>20</width>
+                     <height>40</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item row="0" column="0">
+                  <spacer name="horizontalSpacer">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item row="0" column="1">
                   <layout class="QHBoxLayout" name="horizontalLayout">
                    <item>
-                    <widget class="QLabel" name="upperTimestampLineLabel">
-                     <property name="toolTip">
-                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;For OCR and the median filter to work properly,&amp;nbsp;the median filter must avoid processing lines that include timestamp or other overlaid annotation.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;Use this spinner to move the red line from the topmost line down (increasing spinner values) until any timestamp or annotations are above it.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                    <layout class="QVBoxLayout" name="verticalLayout_2">
+                     <item>
+                      <widget class="QCheckBox" name="lineNoiseFilterCheckBox">
+                       <property name="enabled">
+                        <bool>true</bool>
+                       </property>
+                       <property name="toolTip">
+                        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;Under some conditions for some cameras,&amp;nbsp;the background will exhibit a 'patterning' where some scan lines are a little brighter than others.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;We refer to this 'patterning' as 'line noise'.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;If you check this box,&amp;nbsp;images will be subjected to a median filter on a line by line basis.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;The filter operates by finding the median value along a scan line and using this value to adust all rows such that they share a common median value.&amp;nbsp;This procedure suppresses/eliminates the 'patterning'.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;It is up to you to decide whether this is a valid procedure,&amp;nbsp;but I have provided one tool that may help: I accumulate the line-by-line median values and calculate the average median value for each row.&amp;nbsp;This plot can be displayed by clicking on the &lt;/span&gt;&lt;span style=&quot; font-size:18pt; font-weight:600; color:#0000ff;&quot;&gt;Show Median Profile&lt;/span&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt; button below.&amp;nbsp;If the 'patterning' is due to chip/camera construction,&amp;nbsp;the median values for a line will be consistent from frame to frame and this plot will show the row to row variation in the background brightness of the rows.&amp;nbsp;If there is a consistent and significant row to row brightness difference,&amp;nbsp;I believe you have good justification in applying this filter as it 'corrects' a systematic/instrumental effect from the chip/camera design.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;If,&amp;nbsp;instead,&amp;nbsp;the row to row brightness differences are random,&amp;nbsp;the average median value from row to row will not differ much.&amp;nbsp;That means that the chip/camera is NOT showing instrumental bias and you should be cautious and conservative in deciding whther to use median line filtering for such a video.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                       </property>
+                       <property name="text">
+                        <string>apply 'line noise' median filter</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <layout class="QHBoxLayout" name="horizontalLayout_3">
+                       <item>
+                        <widget class="QLabel" name="upperTimestampLineLabel">
+                         <property name="toolTip">
+                          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;For OCR and the median filter to work properly,&amp;nbsp;the median filter must avoid processing lines that include timestamp or other overlaid annotation.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;Use this spinner to move the red line from the topmost line down (increasing spinner values) until any timestamp or annotations are above it.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                         </property>
+                         <property name="text">
+                          <string>upper timestamp limit</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
+                        <widget class="QSpinBox" name="upperTimestampMedianSpinBox">
+                         <property name="enabled">
+                          <bool>false</bool>
+                         </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>70</width>
+                           <height>0</height>
+                          </size>
+                         </property>
+                         <property name="maximum">
+                          <number>99999</number>
+                         </property>
+                        </widget>
+                       </item>
+                      </layout>
+                     </item>
+                     <item>
+                      <layout class="QHBoxLayout" name="horizontalLayout_4">
+                       <item>
+                        <widget class="QLabel" name="lowerTimestampLineLabel">
+                         <property name="toolTip">
+                          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;For OCR and the median filter to work properly, the median filter must avoid processing lines that include timestamp or other overlaid annotation.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;Use this spinner to move the yellow line from the bottom line up (increasing spinner values) until any timestamp or annotations are below it.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                         </property>
+                         <property name="text">
+                          <string>lower timestamp limit</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
+                        <widget class="QSpinBox" name="lowerTimestampMedianSpinBox">
+                         <property name="enabled">
+                          <bool>false</bool>
+                         </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>70</width>
+                           <height>0</height>
+                          </size>
+                         </property>
+                         <property name="maximum">
+                          <number>99999</number>
+                         </property>
+                        </widget>
+                       </item>
+                      </layout>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="showMedianProfileButton">
+                       <property name="enabled">
+                        <bool>false</bool>
+                       </property>
+                       <property name="toolTip">
+                        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;During the median filtering on each processed frame,&amp;nbsp;the line-by-line median values are accumulated so that when this button is clicked,&amp;nbsp;an average median value for each row can be calculated and displayed.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;If the 'line patterning' is due to chip/camera construction,&amp;nbsp;the median values for a line will be consistent from frame to frame and this plot will show a row to row variation in the background brightness of the rows.&amp;nbsp;If there is a consistent and significant row to row brightness difference,&amp;nbsp;then you have good justification in applying this filter and using the resulting light-curve because this filter process has 'corrected' a systematic/instrumental effect from the chip/camera design.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;If,&amp;nbsp;instead,&amp;nbsp;the row to row brightness differences are random,&amp;nbsp;the average median value from row to row will not differ much.&amp;nbsp;That means that the chip/camera is NOT showing instrumental bias and you should be cautious and conservative in deciding whther to use median line filtering for such a video.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                       </property>
+                       <property name="text">
+                        <string>Show Median Profile</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                   <item>
+                    <widget class="Line" name="line">
+                     <property name="frameShadow">
+                      <enum>QFrame::Plain</enum>
                      </property>
-                     <property name="text">
-                      <string>upper timestamp limit</string>
+                     <property name="lineWidth">
+                      <number>5</number>
+                     </property>
+                     <property name="orientation">
+                      <enum>Qt::Vertical</enum>
                      </property>
                     </widget>
                    </item>
                    <item>
-                    <widget class="QSpinBox" name="upperTimestampMedianSpinBox">
-                     <property name="enabled">
-                      <bool>false</bool>
-                     </property>
-                     <property name="minimumSize">
-                      <size>
-                       <width>70</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                     <property name="maximum">
-                      <number>99999</number>
-                     </property>
-                    </widget>
+                    <layout class="QVBoxLayout" name="verticalLayout">
+                     <item>
+                      <widget class="QCheckBox" name="lunarCheckBox">
+                       <property name="toolTip">
+                        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Only for use with lunar occultations&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;When an aperture is placed on a sunlit lunar limb, it will contain pixels from the sky, pixels from the lunar limb, and pixels from the about-to-be-occulted star. This is also true for a fixed circular sampling mask positioned on the star. In that situation, what is the 'correct' way to subtract 'background'? Limovie has answered that question by providing a special aperture (Avoid Sunlit Face) that can be positioned so that a semi-circular area can be oriented so that only sky pixels are contained. Those pixels are then used to calculate the background value.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;When this box is checked, PyMovie does effectively the same thing but by a different method: it uses a statistical analysis of all the pixels in an aperture and sorts out which are from the sky and which are not by how their intensities are distributed. You can check what is happening by clicking on the Plot Robust Mean button to see where it placed the green line that shows the calculated mean value.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                       </property>
+                       <property name="text">
+                        <string>lunar</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QCheckBox" name="useYellowMaskCheckBox">
+                       <property name="toolTip">
+                        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If there is significant wind shake during the occultation, the use of a default circular mask is inappropriate because we know that the star image is not circular but rather more snake-like.&lt;/p&gt;&lt;p&gt;However, it is reasonable to expect that the wanderings of the tracking star are the same as the wanderings of the target star and so a mask computed from the tracking star, while it will probably contain more pixels than one might like, has the correct shape to be used for the target star as well.&lt;/p&gt;&lt;p&gt;Checking this box will cause the 'yellow' mask to be used for measuring all target images.&lt;/p&gt;&lt;p&gt;This is a 'last hope' option: good luck with it.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                       </property>
+                       <property name="text">
+                        <string>yellow mask = default</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="view3DButton">
+                       <property name="toolTip">
+                        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button opens a new window that shows a 3D rendering of the Thumbnail One image.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                       </property>
+                       <property name="text">
+                        <string>Show 3D thumbnail</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
                    </item>
                   </layout>
-                 </widget>
-                 <widget class="QWidget" name="">
-                  <property name="geometry">
-                   <rect>
-                    <x>40</x>
-                    <y>100</y>
-                    <width>210</width>
-                    <height>26</height>
-                   </rect>
-                  </property>
-                  <layout class="QHBoxLayout" name="horizontalLayout_2">
-                   <item>
-                    <widget class="QLabel" name="lowerTimestampLineLabel">
-                     <property name="toolTip">
-                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;For OCR and the median filter to work properly, the median filter must avoid processing lines that include timestamp or other overlaid annotation.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;Use this spinner to move the yellow line from the bottom line up (increasing spinner values) until any timestamp or annotations are below it.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                     </property>
-                     <property name="text">
-                      <string>lower timestamp limit</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QSpinBox" name="lowerTimestampMedianSpinBox">
-                     <property name="enabled">
-                      <bool>false</bool>
-                     </property>
-                     <property name="minimumSize">
-                      <size>
-                       <width>70</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                     <property name="maximum">
-                      <number>99999</number>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </widget>
-                 <widget class="QPushButton" name="showMedianProfileButton">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="geometry">
-                   <rect>
-                    <x>50</x>
-                    <y>140</y>
-                    <width>191</width>
-                    <height>32</height>
-                   </rect>
-                  </property>
-                  <property name="toolTip">
-                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;During the median filtering on each processed frame,&amp;nbsp;the line-by-line median values are accumulated so that when this button is clicked,&amp;nbsp;an average median value for each row can be calculated and displayed.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;If the 'line patterning' is due to chip/camera construction,&amp;nbsp;the median values for a line will be consistent from frame to frame and this plot will show a row to row variation in the background brightness of the rows.&amp;nbsp;If there is a consistent and significant row to row brightness difference,&amp;nbsp;then you have good justification in applying this filter and using the resulting light-curve because this filter process has 'corrected' a systematic/instrumental effect from the chip/camera design.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;If,&amp;nbsp;instead,&amp;nbsp;the row to row brightness differences are random,&amp;nbsp;the average median value from row to row will not differ much.&amp;nbsp;That means that the chip/camera is NOT showing instrumental bias and you should be cautious and conservative in deciding whther to use median line filtering for such a video.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                  </property>
-                  <property name="text">
-                   <string>Show Median Profile</string>
-                  </property>
-                 </widget>
-                </widget>
+                 </item>
+                 <item row="0" column="2">
+                  <spacer name="horizontalSpacer_2">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                </layout>
                </widget>
                <widget class="QWidget" name="tab_26">
                 <attribute name="title">
