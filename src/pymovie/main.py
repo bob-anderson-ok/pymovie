@@ -664,7 +664,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.avi_date = None
 
-        self.medianData = []
+        self.horizontalMedianData = []
+        self.verticalMedianData = []
         self.numMedianValues = 0
 
         self.field1_data = None
@@ -1137,14 +1138,16 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     #         print(" ")
 
     def showMedianProfile(self):
-        if len(self.medianData) > 0:
-            self.plotMediansArray()
+        if len(self.horizontalMedianData) > 0:
+            self.plotHorizontalMediansArray()
+            self.plotVerticalMediansArray()
             self.lineNoiseFilterCheckBox.setChecked(False)
             view = self.frameView.getView()
             view.removeItem(self.upperHorizontalLine)
             view.removeItem(self.lowerHorizontalLine)
             h, w = self.image.shape
-            self.medianData = np.zeros(h)
+            self.horizontalMedianData = np.zeros(h)
+            self.verticalMedianData = np.zeros(w)
             self.numMedianValues = 0
             self.showMedianProfileButton.setEnabled(False)
             self.upperTimestampMedianSpinBox.setEnabled(False)
@@ -1173,7 +1176,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.showMedianProfileButton.setEnabled(True)
             self.upperTimestampMedianSpinBox.setEnabled(True)
             self.lowerTimestampMedianSpinBox.setEnabled(True)
-            self.medianData = np.zeros(h)
+            self.horizontalMedianData = np.zeros(h)
+            self.verticalMedianData = np.zeros(w)
             self.numMedianValues = 0
             self.showFrame()
             self.applyMedianFilterToImage()
@@ -1191,6 +1195,18 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.startLineFilter()
 
     def applyMedianFilterToImage(self):
+        if self.horizontalRadioButton.isChecked():
+            applyHorizontalFilter = True
+            applyVerticalFilter = False
+
+        if self.verticalRadioButton.isChecked():
+            applyHorizontalFilter = False
+            applyVerticalFilter = True
+
+        if self.bothRadioButton.isChecked():
+            applyHorizontalFilter = True
+            applyVerticalFilter = True
+
         if self.image is None:
             return
 
@@ -1204,19 +1220,35 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.showMsgDialog('Unexpected dtype in applyMedianFilterToImage()')
             return
 
-        medians =  np.zeros(h, imageDtype)
-        for i in range(self.upperTimestampMedianSpinBox.value(), h - self.lowerTimestampMedianSpinBox.value()):
+        topRow = self.upperTimestampMedianSpinBox.value()
+        botRow = h - self.lowerTimestampMedianSpinBox.value()
+
+        horMedians =  np.zeros(h, imageDtype)
+        for i in range(topRow, botRow):
             medianValue = int(np.median(self.image[i,:]))
-            medians[i] = medianValue
-            self.medianData[i] += medianValue
+            horMedians[i] = medianValue
+            self.horizontalMedianData[i] += medianValue
+
+        vertMedians = np.zeros(w, imageDtype)
+        for i in range(w):
+            medianValue = int(np.median(self.image[topRow:botRow,i]))
+            vertMedians[i] = medianValue
+            self.verticalMedianData[i] += medianValue
 
         self.numMedianValues += 1
 
-        midMedian = int(np.median(medians))
+        if applyHorizontalFilter:
+            midMedian = int(np.median(horMedians))
+            for i in range(h):
+                self.image[i,:] = np.array(np.clip(self.image[i,:].astype(np.int) + (midMedian - horMedians[i]), 0, maxPixel),
+                                           dtype=imageDtype)
 
-        for i in range(h):
-            self.image[i,:] = np.array(np.clip(self.image[i,:].astype(np.int) + (midMedian - medians[i]), 0, maxPixel),
-                                       dtype=imageDtype)
+        if applyVerticalFilter:
+            midMedian = int(np.median(vertMedians))
+            for i in range(w):
+                self.image[:, i] = np.array(
+                    np.clip(self.image[:, i].astype(np.int) + (midMedian - vertMedians[i]), 0, maxPixel),
+                    dtype=imageDtype)
 
         self.frameView.setImage(self.image)
 
@@ -4060,8 +4092,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 for entry in self.appDictList:
                     f.write(f'#\n')
                     f.write(f'# aperture name: {entry["name"]}\n')
+                    f.write(f'# ____ aperture size: {self.roiComboBox.currentText()}\n')
                     f.write(f'# ____ x,y: {entry["xy"]}\n')
-                    f.write(f'# ____ frame: {entry["frame"]}\n')
+                    # f.write(f'# ____ frame: {entry["frame"]}\n')
                     f.write(f'# ____ threshold: {entry["threshDelta"]}\n')
                     f.write(f'# ____ def mask radius: {entry["defMskRadius"]}\n')
                     f.write(f'# ____ color: {entry["color"]}\n')
@@ -7766,13 +7799,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     # End add composite plot
 
-    def plotMediansArray(self):
-        self.plots = []
+    def plotHorizontalMediansArray(self):
+        # self.plots = []
         self.plots.append(pg.GraphicsWindow(title="PyMovie medians plot"))
         self.plots[0].resize(1000, 600)
 
-        p1 = self.plots[0].addPlot(title=f'{self.fileInUseEdit.text()}')
-        # p1.addLegend()
+        p1 = self.plots[-1].addPlot(title=f'{self.fileInUseEdit.text()}')
         p1.setMouseEnabled(x=False, y=True)
         p1.setLabel(axis='bottom',text='Row number')
         p1.setLabel(axis='left',text='average median')
@@ -7787,7 +7819,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         ]
         dark_gray = (50, 50, 50)
 
-        yvalues = self.medianData[:]
+        yvalues = self.horizontalMedianData[:]
         yvalues /= self.numMedianValues
         xvalues = list(range(len(yvalues)))
 
@@ -7797,13 +7829,45 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                  name = f'Hello from Bob'
                 )
 
-        # max_max = max(yvalues)
-        # min_min = min(yvalues)
-        # p1.setYRange(min_min - min_min / 2, max_max + max_max)
+        p1.showGrid(y=True)
+
+        self.plots[-1].show()  # Let everyone see the results
+
+        QtGui.QGuiApplication.processEvents()
+
+    def plotVerticalMediansArray(self):
+        # self.plots = []
+        self.plots.append(pg.GraphicsWindow(title="PyMovie vertical medians plot"))
+        self.plots[0].resize(1000, 600)
+
+        p1 = self.plots[-1].addPlot(title=f'{self.fileInUseEdit.text()}')
+        p1.setMouseEnabled(x=False, y=True)
+        p1.setLabel(axis='bottom',text='Column number')
+        p1.setLabel(axis='left',text='average median')
+
+        my_colors = [
+            (200, 0, 0),    # red
+            (0, 200, 0),    # green
+            (0, 0, 200),    # blue
+            (200, 200, 0),  # red-green  (yellow)
+            (200, 0, 200),  # red-blue   (purple)
+            (0, 200, 200)   # blue-green (teal)
+        ]
+        dark_gray = (50, 50, 50)
+
+        yvalues = self.verticalMedianData[:]
+        yvalues /= self.numMedianValues
+        xvalues = list(range(len(yvalues)))
+
+        p1.plot( x = xvalues, y = yvalues, title = "Average medians",
+                 pen = dark_gray, symbolBrush = my_colors[0],
+                 symbolSize = self.plot_symbol_size, pxMode = True, symbolPen = my_colors[0],
+                 name = f'Hello from Bob'
+                )
 
         p1.showGrid(y=True)
 
-        self.plots[0].show()  # Let everyone see the results
+        self.plots[-1].show()  # Let everyone see the results
 
         QtGui.QGuiApplication.processEvents()
 

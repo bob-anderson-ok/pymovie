@@ -296,6 +296,7 @@ def frameStacker(pr, progress_bar, event_process,
                 rows_to_roll_to_center = yc[0] - yc[k]
                 cols_to_roll_to_center = xc[0] - xc[k]
 
+
         if not delta_x is None:
             rows_to_roll_to_center = round(-delta_y * delta_frame)
             cols_to_roll_to_center = round(-delta_x * delta_frame)
