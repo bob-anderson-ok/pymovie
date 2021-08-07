@@ -8338,6 +8338,8 @@ def main():
 
     os.environ['QT_MAC_WANTS_LAYER'] = '1'  # This line needed when Mac updated to Big Sur
 
+    print(f'PyMovie  Version: {version.version()}')
+
     if sys.platform == 'linux':
         print(f'os: Linux')
     elif sys.platform == 'darwin':
