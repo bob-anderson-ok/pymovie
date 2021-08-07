@@ -2247,7 +2247,7 @@ aperture placement.</string>
                   </widget>
                  </item>
                  <item>
-                  <widget class="QRadioButton" name="bothRadioButton_2">
+                  <widget class="QRadioButton" name="bothRadioButton">
                    <property name="text">
                     <string>apply horizontally and vertically</string>
                    </property>
