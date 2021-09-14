@@ -5345,7 +5345,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         maxpx = sorted_data[-1]
 
-        #TODO test this
         mean_top, *_ =  newRobustMeanStd(thumbnail[0::2,:], outlier_fraction=.5, lunar=self.lunarCheckBox.isChecked())
         mean_bot, *_ =  newRobustMeanStd(thumbnail[1::2,:], outlier_fraction=.5, lunar=self.lunarCheckBox.isChecked())
         if show_stats:
@@ -6878,6 +6877,15 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         self.doGammaCorrection()
                         self.applyHotPixelErasure()
 
+                        # This code deals with processed FITS files (not from a camera) that contain
+                        # negative values.
+                        if self.image.dtype == '>f8':
+                            minValue = np.min(self.image)
+                            if minValue <= 0.0:
+                                self.image += (-minValue + 1)
+
+                            self.image = self.image.astype('uint16', casting='unsafe')
+
                         if self.lineNoiseFilterCheckBox.isChecked():
                             self.applyMedianFilterToImage()
                     except Exception as e3:
@@ -8027,9 +8035,9 @@ def get_mask(
     byte_order = img.dtype.byteorder  # Posiible returns: '<' '>' '=' '|' (little, big, native, not applicable)
 
     if byte_order == '>':  # We assume our code will be run on Intel silicon
-        blurred_img = cv2.GaussianBlur(img.byteswap(), ksize=ksize, sigmaX=1.1)
+        blurred_img = cv2.GaussianBlur(img.byteswap().astype("uint16"), ksize=ksize, sigmaX=1.1)
     else:
-        blurred_img = cv2.GaussianBlur(img, ksize=ksize, sigmaX=1.1)
+        blurred_img = cv2.GaussianBlur(img.astype("uint16"), ksize=ksize, sigmaX=1.1)
 
     # cut is threshold
     ret, t_mask = cv2.threshold(blurred_img, cut, 1, cv2.THRESH_BINARY)
