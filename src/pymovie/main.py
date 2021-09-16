@@ -5483,7 +5483,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             if self.thumbTwoImage is not None:
                 if self.use_yellow_mask:
                     # self.thumbTwoImage += pedestal # Put the masked pixels on the pedestal
-                    self.thumbTwoImage += mask # Put the masked pixels on the pedestal
+                    # self.thumbTwoImage += mask # Put the masked pixels on the pedestal
+                    # TODO This is an experiment --- to be removed if problems arise - replaces line above
+                    self.thumbTwoImage += self.yellow_mask # Put the masked pixels on the pedestal
                 else:
                     # self.thumbTwoImage += pedestal # Put the masked pixels on the pedestal
                     self.thumbTwoImage += mask # Put the masked pixels on the pedestal
