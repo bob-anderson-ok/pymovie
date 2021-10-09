@@ -578,6 +578,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         for vtiDict in self.VTIlist:
             self.vtiSelectComboBox.addItem(vtiDict['name'])
 
+        self.stateOfView = None   # Holds current Zoom/Pan state of image
+
         self.currentVTIindex = 0
         self.timestampFormatter = None
         self.upperTimestamp = ''
@@ -1195,6 +1197,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.startLineFilter()
 
     def applyMedianFilterToImage(self):
+        applyHorizontalFilter = applyVerticalFilter = False
         if self.horizontalRadioButton.isChecked():
             applyHorizontalFilter = True
             applyVerticalFilter = False
@@ -1250,7 +1253,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     np.clip(self.image[:, i].astype(np.int) + (midMedian - vertMedians[i]), 0, maxPixel),
                     dtype=imageDtype)
 
-        self.frameView.setImage(self.image)
+        self.displayImageAtCurrentZoomPanState()
+        # self.frameView.setImage(self.image)
 
 
     def set_thresh_spinner_1(self):
@@ -1428,6 +1432,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             for y, x in self.hotPixelList:
                 self.image[y, x] = avg_bkgnd
 
+        # Preserve the current zomm/pan state
+        self.displayImageAtCurrentZoomPanState()
+
+    def displayImageAtCurrentZoomPanState(self):
         # Preserve the current zomm/pan state
         view_box = self.frameView.getView()
         state = view_box.getState()
@@ -5364,6 +5372,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     get_mask(thumbnail, ksize=self.gaussian_blur, cut=threshold, outlier_fraction=0.5,
                              apply_centroid_distance_constraint=False, max_centroid_distance=self.allowed_centroid_delta,
                              lunar=self.lunarCheckBox.isChecked())
+            self.displayImageAtCurrentZoomPanState()
+            # self.frameView.setImage(self.image)
+
         elif aperture.color == 'white':
             max_area = self.roi_size * self.roi_size
             centroid = (self.roi_center, self.roi_center)
@@ -5482,9 +5493,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             np.clip(self.thumbTwoImage, 0, x0 - 1)  # ... so that we can add 1 without overflow concerns
             if self.thumbTwoImage is not None:
                 if self.use_yellow_mask:
-                    # self.thumbTwoImage += pedestal # Put the masked pixels on the pedestal
-                    # self.thumbTwoImage += mask # Put the masked pixels on the pedestal
-                    # TODO This is an experiment --- to be removed if problems arise - replaces line above
                     self.thumbTwoImage += self.yellow_mask # Put the masked pixels on the pedestal
                 else:
                     # self.thumbTwoImage += pedestal # Put the masked pixels on the pedestal
@@ -5785,7 +5793,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.showMsg(msg)
         self.showMsg(f'########### End Finder image FITS meta-data ###############')
 
-        self.frameView.setImage(self.image)
+        self.displayImageAtCurrentZoomPanState()
 
     # noinspection PyBroadException
     def readFinderImage(self):
@@ -5849,8 +5857,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             else:
                 img = cv2.imread(self.filename)
                 self.image = img[:, :, 0]
+                self.displayImageAtCurrentZoomPanState()
+                # self.frameView.setImage(self.image)
+                # self.restoreImageZoomPan()
 
-            self.frameView.setImage(self.image)
+            self.frameView.getView().update()
+
             height, width = self.image.shape
 
             # The following variables are used by MeasurementAperture to limit
@@ -6743,19 +6755,17 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             image = None
         return image
 
-    def showFrame(self):
+    def restoreImageZoomPan(self):
+        self.frameView.getView().setState(self.stateOfView)
 
-        # Local variables used to save and restore the pan/zoom state of the main image
-        # state = None
-        view_box = None
-        stateOfView = None
+    def showFrame(self):
 
         try:
             if not self.initialFrame:
                 # We want to maintain whatever pan/zoom is in effect ...
                 view_box = self.frameView.getView()
                 # ... so we read and save the current state of the view box of our frameView
-                stateOfView = view_box.getState()
+                self.stateOfView = deepcopy(view_box.getState())
 
 
             frame_to_show = self.currentFrameSpinBox.value()  # Get the desired frame number from the spinner
@@ -6980,7 +6990,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             if not self.initialFrame:
                 # Displaying the new image resets the pan/zoom to none ..
                 # ... so here we restore the view box to the state extracted above.
-                view_box.setState(stateOfView)
+                self.restoreImageZoomPan()
             else:
                 self.initialFrame = False
                 height, width = self.image.shape
@@ -7538,9 +7548,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'No image in Thumbnail One to use for demo')
             return
 
-        # TODO Remove for production
-        # pickle.dump(self.thumbOneImage, open(self.folder_dir + '/thumbOne.p', "wb"))
-
         # good_mean, sigma, sorted_data, hist_data, window, data_size, left, right = robustMeanStd(self.thumbOneImage)
         good_mean, sigma, _, hist_data, _, _, _, local_right = newRobustMeanStd(
             self.thumbOneImage, lunar=self.lunarCheckBox.isChecked()
@@ -8022,6 +8029,28 @@ def calcTheta(dx, dy):
         return None, None
     return theta, theta * 180 / PI
 
+# TODO Evaluate this experimental code
+def countSand(img, cut, background):
+    # cut is threshold
+    ret, t_mask = cv2.threshold(img, cut, 1, cv2.THRESH_BINARY)
+    labels = measure.label(t_mask, connectivity=2, background=0)
+    blob_count = np.max(labels)
+    sandCount = 0
+    starCount = 0
+
+    if blob_count > 0:
+        props = measure.regionprops(labels)
+        for prop in props:
+            if prop.area < 4:
+                sandCount += 1
+                for point in prop.coords:
+                    img[point[0], point[1]] = background
+                    # TODO Remove this print statement
+                    print(f'x,y: {point[0]},{point[1]} {len(prop.coords)}')
+            else:
+                starCount += 1
+
+    return sandCount, starCount
 
 def get_mask(
         img, ksize=(5, 5), cut=None, min_pixels=9,
@@ -8034,7 +8063,7 @@ def get_mask(
     # byte swap if img is big-endian  NOTE: as long as operations on the image data are kept in the
     # numpy world, there is no problem with big-endian data --- those operations adapt as necessary.
 
-    byte_order = img.dtype.byteorder  # Posiible returns: '<' '>' '=' '|' (little, big, native, not applicable)
+    byte_order = img.dtype.byteorder  # Possible returns: '<' '>' '=' '|' (little, big, native, not applicable)
 
     if byte_order == '>':  # We assume our code will be run on Intel silicon
         blurred_img = cv2.GaussianBlur(img.byteswap().astype("uint16"), ksize=ksize, sigmaX=1.1)

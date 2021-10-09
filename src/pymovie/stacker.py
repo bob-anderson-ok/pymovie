@@ -82,7 +82,6 @@ def frameStacker(pr, progress_bar, event_process,
             else:
                 cleaned = frame_local
 
-            # image = frame_local[:, :].astype('float32')
             image = cleaned[:, :].astype('float32')
 
             if trim_bottom:
@@ -296,10 +295,10 @@ def frameStacker(pr, progress_bar, event_process,
                 rows_to_roll_to_center = yc[0] - yc[k]
                 cols_to_roll_to_center = xc[0] - xc[k]
 
-
         if not delta_x is None:
             rows_to_roll_to_center = round(-delta_y * delta_frame)
             cols_to_roll_to_center = round(-delta_x * delta_frame)
+
 
         pr(f'row-shift:{rows_to_roll_to_center:4d}  col-shift:{cols_to_roll_to_center:4d}  frame: {next_frame-1}',
             blankLine=False)
