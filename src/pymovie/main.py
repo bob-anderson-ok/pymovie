@@ -109,7 +109,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtWidgets import QFileDialog, QGraphicsRectItem, QButtonGroup, QMessageBox, QTableWidgetItem
 from PyQt5.QtCore import QSettings, QSize, QPoint, QRectF, QTimer
 from PyQt5.QtCore import pyqtSlot
-from PyQt5.QtGui import QPainter
+from PyQt5.QtGui import QPainter, QWheelEvent
 from pymovie import gui, helpDialog, version, apertureEditDialog
 import cv2
 import glob
@@ -664,6 +664,17 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         # Initialize all instance variables as a block (to satisfy PEP 8 standard)
         # ########################################################################
 
+        self.mouseWheelEventExample = None
+        self.mouseWheelTarget = None
+
+        self.mouseWheelEventPos = None
+        self.mouseWheelEventGlobalPos = None
+        self.mouseWheelEventPixelDelta = None
+        self.mouseWheelEventAngleDelta = None
+        self.mouseWheelEventButtons = None
+        self.mouseWheelEventPhase = None
+        self.mouseWheelEventInverted = None
+
         self.avi_date = None
 
         self.horizontalMedianData = []
@@ -916,6 +927,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.frame_at_level_set = None
 
         self.apertureEditor = None
+
+        self.toggleSize = 0  # Part of a horrible hack need for windows
 
         # end instance variable declarations
 
@@ -1436,11 +1449,31 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.displayImageAtCurrentZoomPanState()
 
     def displayImageAtCurrentZoomPanState(self):
+
+        if self.stateOfView is None:
+            self.frameView.setImage(self.image)
+            return
+
         # Preserve the current zomm/pan state
-        view_box = self.frameView.getView()
-        state = view_box.getState()
+        # view_box = self.frameView.getView()
+        state = self.frameView.getView().getState()
         self.frameView.setImage(self.image)
-        view_box.setState(state)
+        self.frameView.getView().setState(state)
+
+        self.frameView.getView().update()
+
+        # A horrible hack needed to get the image display to update at
+        # correct zoom/pan state on Windows
+        if not os.name == 'posix':
+            w = self.frameView.width()
+            h = self.frameView.height()
+            if w % 2 == 0:
+                w = w - 1
+            else:
+                w = w + 1
+            self.frameView.resize(w,h)
+
+        QtGui.QGuiApplication.processEvents(QEventLoop.AllEvents)
 
     def maskedMedianFilter(self, img, ksize=3):
         # Get redact parameters
@@ -6755,8 +6788,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             image = None
         return image
 
-    def restoreImageZoomPan(self):
-        self.frameView.getView().setState(self.stateOfView)
+    # def restoreImageZoomPan(self):
+    #     self.frameView.getView().setState(self.stateOfView)
+    #     self.frameView.getView().update()
 
     def showFrame(self):
 
@@ -6766,7 +6800,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 view_box = self.frameView.getView()
                 # ... so we read and save the current state of the view box of our frameView
                 self.stateOfView = deepcopy(view_box.getState())
-
 
             frame_to_show = self.currentFrameSpinBox.value()  # Get the desired frame number from the spinner
 
@@ -6962,7 +6995,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.createImageFields()
                 self.frameView.setImage(self.image_fields)
             else:
-                self.frameView.setImage(self.image)
+                self.displayImageAtCurrentZoomPanState()
+                # self.frameView.setImage(self.image)
                 self.createImageFields()
 
             if self.finderFrameBeingDisplayed:
@@ -6987,11 +7021,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
                 self.thumbOneView.setLevels(min=self.levels[0], max=self.levels[1])
 
-            if not self.initialFrame:
-                # Displaying the new image resets the pan/zoom to none ..
-                # ... so here we restore the view box to the state extracted above.
-                self.restoreImageZoomPan()
-            else:
+            # if not self.initialFrame:
+            #     Displaying the new image resets the pan/zoom to none ..
+            #     ... so here we restore the view box to the state extracted above.
+            #     self.displayImageAtCurrentZoomPanState()
+            # else:
+            if self.initialFrame:
                 self.initialFrame = False
                 height, width = self.image.shape
 
