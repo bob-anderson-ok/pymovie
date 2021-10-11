@@ -1460,6 +1460,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.frameView.setImage(self.image)
         self.frameView.getView().setState(state)
 
+        if self.levels:
+            self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
+
         self.frameView.getView().update()
 
         # A horrible hack needed to get the image display to update at
@@ -5444,8 +5447,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             if self.pointed_at_aperture is not None:
                 if aperture == self.pointed_at_aperture:
                     self.thumbnail_one_aperture_name = aperture.name
-                    self.thumbOneImage = thumbnail
-                    self.thumbOneView.setImage(thumbnail)
+                    # self.thumbOneImage = thumbnail
+                    # self.thumbOneView.setImage(thumbnail)
+                    # if self.levels:
+                    #     self.thumbOneView.setLevels(min=self.levels[0], max=self.levels[1])
                     self.thumbnailOneLabel.setText(aperture.name)
                     self.thumbTwoView.setImage(mask)
             else:
@@ -5458,14 +5463,18 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 if priority_aperture_present:
                     if aperture.thumbnail_source:
                         self.thumbnail_one_aperture_name = aperture.name
-                        self.thumbOneImage = thumbnail
-                        self.thumbOneView.setImage(thumbnail)
+                        # self.thumbOneImage = thumbnail
+                        # self.thumbOneView.setImage(thumbnail)
+                        # if self.levels:
+                        #     self.thumbOneView.setLevels(min=self.levels[0], max=self.levels[1])
                         self.thumbnailOneLabel.setText(aperture.name)
                         self.thumbTwoView.setImage(mask)
                 else:
                     self.thumbnail_one_aperture_name = aperture.name
-                    self.thumbOneImage = thumbnail
-                    self.thumbOneView.setImage(thumbnail)
+                    # self.thumbOneImage = thumbnail
+                    # self.thumbOneView.setImage(thumbnail)
+                    # if self.levels:
+                    #     self.thumbOneView.setLevels(min=self.levels[0], max=self.levels[1])
                     self.thumbnailOneLabel.setText(aperture.name)
                     self.thumbTwoView.setImage(mask)
 
@@ -7019,7 +7028,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             if self.levels:
                 self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
-                self.thumbOneView.setLevels(min=self.levels[0], max=self.levels[1])
+                # self.thumbOneView.setLevels(min=self.levels[0], max=self.levels[1])
+                # self.thumbOneView.getView().update()
 
             # if not self.initialFrame:
             #     Displaying the new image resets the pan/zoom to none ..
