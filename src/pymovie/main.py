@@ -5447,7 +5447,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             if self.pointed_at_aperture is not None:
                 if aperture == self.pointed_at_aperture:
                     self.thumbnail_one_aperture_name = aperture.name
-                    # self.thumbOneImage = thumbnail
+                    # TODO Oct 14
+                    self.thumbOneImage = thumbnail
                     # self.thumbOneView.setImage(thumbnail)
                     # if self.levels:
                     #     self.thumbOneView.setLevels(min=self.levels[0], max=self.levels[1])
@@ -5463,7 +5464,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 if priority_aperture_present:
                     if aperture.thumbnail_source:
                         self.thumbnail_one_aperture_name = aperture.name
-                        # self.thumbOneImage = thumbnail
+                        # TODO Oct 14
+                        self.thumbOneImage = thumbnail
                         # self.thumbOneView.setImage(thumbnail)
                         # if self.levels:
                         #     self.thumbOneView.setLevels(min=self.levels[0], max=self.levels[1])
@@ -5471,7 +5473,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         self.thumbTwoView.setImage(mask)
                 else:
                     self.thumbnail_one_aperture_name = aperture.name
-                    # self.thumbOneImage = thumbnail
+                    # TODO Oct 14
+                    self.thumbOneImage = thumbnail
                     # self.thumbOneView.setImage(thumbnail)
                     # if self.levels:
                     #     self.thumbOneView.setLevels(min=self.levels[0], max=self.levels[1])
