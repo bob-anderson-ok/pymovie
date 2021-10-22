@@ -1476,7 +1476,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 w = w + 1
             self.frameView.resize(w,h)
 
-        QtGui.QGuiApplication.processEvents(QEventLoop.AllEvents)
+        # The line below was apparently causing the text box to jump around - removing it seems to do no harm.
+        # It was an attempt to get Windows to repaint the image display, but a different hack was required for that.
+        # QtGui.QGuiApplication.processEvents(QEventLoop.AllEvents)
 
     def maskedMedianFilter(self, img, ksize=3):
         # Get redact parameters
@@ -5391,8 +5393,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         mean_top, *_ =  newRobustMeanStd(thumbnail[0::2,:], outlier_fraction=.5, lunar=self.lunarCheckBox.isChecked())
         mean_bot, *_ =  newRobustMeanStd(thumbnail[1::2,:], outlier_fraction=.5, lunar=self.lunarCheckBox.isChecked())
-        if show_stats:
-            self.showMsg(f'mean_top: {mean_top:0.3f}  mean_bot: {mean_bot:0.3f}')
+        # if show_stats:
+        #     self.showMsg(f'mean_top: {mean_top:0.3f}  mean_bot: {mean_bot:0.3f}')
 
         # We computed the initial aperture.thresh as an offset from the background value present
         # in the frame used for the initial threshold determination.  Now we add the current
