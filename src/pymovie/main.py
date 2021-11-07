@@ -105,6 +105,8 @@ import pyqtgraph.exporters as pex
 from numpy import pi as PI
 
 import PyQt5
+from pyqtgraph import PlotWidget
+from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import QFileDialog, QGraphicsRectItem, QButtonGroup, QMessageBox, QTableWidgetItem
 from PyQt5.QtCore import QSettings, QSize, QPoint, QRectF, QTimer
@@ -136,6 +138,24 @@ if not os.name == 'posix':
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
+
+class CustomViewBox(pg.ViewBox):
+    def __init__(self, *args, **kwds):
+        pg.ViewBox.__init__(self, *args, **kwds)
+        self.setMouseMode(self.RectMode)
+
+    # re-implement right-click to zoom out
+    def mouseClickEvent(self, ev):
+        if ev.button() == QtCore.Qt.RightButton:
+            self.autoRange()
+            # mouseSignal.emit()
+
+    def mouseDragEvent(self, ev, axis=None):
+        if ev.button() == QtCore.Qt.RightButton:
+            ev.ignore()
+        else:
+            pg.ViewBox.mouseDragEvent(self, ev, axis)
+            # mouseSignal.emit()
 
 def log_gray(x, a=None, b=None):
     if a is None:
@@ -523,17 +543,50 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.vtiHelpButton.installEventFilter(self)
         self.vtiHelpButton.clicked.connect(self.vtiHelp)
 
+        self.plotPixelDistributionButton.clicked.connect(self.plotImagePixelDistibution)
+        self.plotPixelDistributionButton.installEventFilter(self)
+
+        self.activateTimestampRemovalButton.clicked.connect(self.initializePixelTimestampRemoval)
+        self.activateTimestampRemovalButton.installEventFilter(self)
+
+        self.extractBrightAndDarkPixelCoordButton.clicked.connect(self.findBrightAndDarkPixelCoords)
+        self.extractBrightAndDarkPixelCoordButton.installEventFilter(self)
+
+        self.buildDarkAndNoiseFramesButton.clicked.connect(self.buildDarkAndNoiseFrames)
+        self.buildDarkAndNoiseFramesButton.installEventFilter(self)
+
+        self.pixelPanelInfoButton.clicked.connect(self.showPixelPanelHelpButtonHelp)
+        self.pixelPanelInfoButton.installEventFilter(self)
+
+        self.upperTimestampLineLabel.installEventFilter(self)
+        self.lowerTimestampLineLabel.installEventFilter(self)
+        self.startFrameLabel.installEventFilter(self)
+        self.stopFrameLabel.installEventFilter(self)
+
         self.showMedianProfileButton.clicked.connect(self.showMedianProfile)
         self.showMedianProfileButton.installEventFilter(self)
 
         self.lowerHorizontalLine = None
         self.upperHorizontalLine = None
 
+        self.lowerPixelHorizontalLine = None
+        self.upperPixelHorizontalLine = None
+
+        self.hLineLower = None
+        self.hLineUpper = None
+        self.pixelWin = None
+
         self.upperTimestampMedianSpinBox.valueChanged.connect(self.moveUpperTimestampLine)
         self.upperTimestampLineLabel.installEventFilter(self)
 
         self.lowerTimestampMedianSpinBox.valueChanged.connect(self.moveLowerTimestampLine)
         self.lowerTimestampLineLabel.installEventFilter(self)
+
+        self.upperTimestampPixelSpinBox.valueChanged.connect(self.movePixelTimestampLine)
+        self.upperTimestampPixelLabel.installEventFilter(self)
+
+        self.lowerTimestampPixelSpinBox.valueChanged.connect(self.movePixelTimestampLine)
+        self.lowerTimestampPixelLabel.installEventFilter(self)
 
         self.lineNoiseFilterCheckBox.clicked.connect(self.startLineFilter)
         self.lineNoiseFilterCheckBox.installEventFilter(self)
@@ -663,6 +716,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         # ########################################################################
         # Initialize all instance variables as a block (to satisfy PEP 8 standard)
         # ########################################################################
+
+        self.redactedImage = None
+        self.brightPixelCoords = None
+        self.darkPixelCoords = None
 
         self.mouseWheelEventExample = None
         self.mouseWheelTarget = None
@@ -1152,6 +1209,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     #         summary.print_(summary_one)
     #         print(" ")
 
+    def buildDarkAndNoiseFrames(self):
+        self.showMsgDialog(f'Not yet implemented')
+
     def showMedianProfile(self):
         if len(self.horizontalMedianData) > 0:
             self.plotHorizontalMediansArray()
@@ -1196,6 +1256,42 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.numMedianValues = 0
             self.showFrame()
             self.applyMedianFilterToImage()
+
+    def initializePixelTimestampRemoval(self):
+        self.upperTimestampPixelSpinBox.setEnabled(True)
+        self.lowerTimestampPixelSpinBox.setEnabled(True)
+        self.activateTimestampRemovalButton.setEnabled(False)
+        view = self.frameView.getView()
+        h, w = self.image.shape
+        upperRowOffset = self.upperTimestampPixelSpinBox.value()
+        lowerRowOffset = self.lowerTimestampPixelSpinBox.value()
+        if upperRowOffset > h - lowerRowOffset:
+            upperRowOffset -= upperRowOffset - (h - lowerRowOffset)
+            self.upperTimestampPixelSpinBox.setValue(upperRowOffset)
+        self.upperPixelHorizontalLine = HorizontalLine(upperRowOffset, h, w, 'r')  # Make a red line at very top
+        self.lowerPixelHorizontalLine = HorizontalLine(h - lowerRowOffset, h, w,'y')  # Make a yellow line at very bottom
+        view.addItem(self.upperPixelHorizontalLine)
+        view.addItem(self.lowerPixelHorizontalLine)
+
+    def movePixelTimestampLine(self):
+        view = self.frameView.getView()
+
+        try:
+            view.removeItem(self.upperPixelHorizontalLine)
+            view.removeItem(self.lowerPixelHorizontalLine)
+        except Exception:
+            pass
+        h, w = self.image.shape
+        upperRowOffset = self.upperTimestampPixelSpinBox.value()
+        lowerRowOffset = self.lowerTimestampPixelSpinBox.value()
+        if upperRowOffset > h - lowerRowOffset:
+            upperRowOffset = h - lowerRowOffset
+            self.upperTimestampPixelSpinBox.setValue(upperRowOffset)
+            return
+        self.upperPixelHorizontalLine = HorizontalLine(upperRowOffset, h, w, 'r')  # Make a red line at very top
+        self.lowerPixelHorizontalLine = HorizontalLine(h - lowerRowOffset, h, w, 'y')  # Make a yellow line at very bottom
+        view.addItem(self.upperPixelHorizontalLine)
+        view.addItem(self.lowerPixelHorizontalLine)
 
     def moveUpperTimestampLine(self):
         view = self.frameView.getView()
@@ -1305,6 +1401,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def showHotPixelHelpButtonHelp(self):
         self.showHelp(self.hotPixelHelpButton)
+
+    def showPixelPanelHelpButtonHelp(self):
+        self.showHelp(self.pixelPanelInfoButton)
 
     def showAppSizeToolButtonHelp(self):
         self.showHelp(self.appSizeToolButton)
@@ -6931,18 +7030,24 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         self.image = pyfits.getdata(
                             self.fits_filenames[frame_to_show], 0)
 
+                        _, filename = os.path.split(self.fits_filenames[frame_to_show])
+                        _, foldername = os.path.split(self.filename)
+                        self.fileInUseEdit.setText(f'{foldername}/{filename}')
+
                         # self.showMsg(f'image type: {self.image.dtype}')
 
                         self.doGammaCorrection()
                         self.applyHotPixelErasure()
 
                         # This code deals with processed FITS files (not from a camera) that contain
-                        # negative values.
-                        if self.image.dtype == '>f8':
-                            minValue = np.min(self.image)
-                            if minValue <= 0.0:
-                                self.image += (-minValue + 1)
-
+                        # negative values (which a camera cannot produce).
+                        # It takes effect only for little-endian 32 and 64 bit floats.
+                        # Here we as safely as possible convert the data to a standard uint16 image
+                        if self.image.dtype == '>f8' or self.image.dtype == '>f4':
+                            # We clip at 1 and 65535 to guarantee that the conversion to uint16 will work.
+                            # The lower clip of 1 is chosen to satisfy the color scheme that we use in ThumbnailTwo
+                            # where a 0 value is shown as yellow.
+                            np.clip(self.image, 1, 65535)
                             self.image = self.image.astype('uint16', casting='unsafe')
 
                         if self.lineNoiseFilterCheckBox.isChecked():
@@ -7865,6 +7970,68 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         QtGui.QGuiApplication.processEvents()
 
     # End add composite plot
+
+    def testLower(self):
+        self.showMsg(f'lower value: {self.hLineLower.value():0.2f}')
+
+    def testUpper(self):
+        self.showMsg(f'upper value: {self.hLineUpper.value():0.2f}')
+
+    def plotImagePixelDistibution(self):
+        h, w = self.image.shape
+
+
+        self.redactedImage = self.image[self.upperTimestampPixelSpinBox.value(): h - self.lowerTimestampPixelSpinBox.value()]
+        pixels = self.redactedImage.flatten() / 16
+        sortedPixels = np.sort(pixels)
+
+        self.showMsg(f'min pixel: {sortedPixels[0]}  max pixel: {sortedPixels[-1]}')
+
+
+        title = f'Pixel intensity cumulative distribution'
+
+        pw = PlotWidget(viewBox=CustomViewBox(border=(0, 0, 0)),
+                        enableMenu=False,
+                        title=title,
+                        labels={'bottom': 'index in sorted pixel list', 'left': 'pixel intensity'})
+        pw.hideButtons()
+
+        pw.plot(sortedPixels, pen=pg.mkPen('k', width=3))
+        # pw.plot(sortedPixels, pen=None, symbol='o')
+        pw.addLegend()
+        pw.plot(name= f'some info to show in legend')
+        pw.plot(name=f'some more info in legend')
+
+        mid = sortedPixels[sortedPixels.size // 2]
+        lowMax = mid - 5
+        upperMin = mid + 5
+        upperMax = sortedPixels[-1]
+        self.hLineLower = pg.InfiniteLine(pos=lowMax, angle=0, bounds=[0, lowMax],
+                                          movable=True, pen=pg.mkPen([0, 0, 255], width=3))
+        pw.addItem(self.hLineLower)
+        self.hLineLower.sigPositionChangeFinished.connect(self.testLower)
+        self.hLineUpper = pg.InfiniteLine(pos=upperMin, angle=0, bounds=[upperMin, upperMax],
+                                          movable=True, pen=pg.mkPen([0, 255, 0], width=3))
+
+        pw.addItem(self.hLineUpper)
+        self.hLineUpper.sigPositionChangeFinished.connect(self.testUpper)
+
+        self.pixelWin = pg.GraphicsWindow(title='Dark image pixel plot')
+        self.pixelWin.resize(1200, 700)
+        layout = QtWidgets.QGridLayout()
+        self.pixelWin.setLayout(layout)
+        layout.addWidget(pw, 0, 0)
+
+        # pw.getPlotItem().setFixedHeight(700)
+        # pw.getPlotItem().setFixedWidth(1200)
+
+    def findBrightAndDarkPixelCoords(self):
+        brightThreshold = self.hLineUpper.value()
+        darkThreshold = self.hLineLower.value()
+        self.brightPixelCoords = np.argwhere(self.redactedImage > brightThreshold)
+        self.darkPixelCoords = np.argwhere(self.redactedImage < darkThreshold)
+        self.showMsg(f'num bright pixels: {len(self.brightPixelCoords)}')
+        self.showMsg(f'num dark pixels: {len(self.darkPixelCoords)}')
 
     def plotHorizontalMediansArray(self):
         # self.plots = []
