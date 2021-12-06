@@ -14,18 +14,6 @@ def asinhScale(img, limcut = 0):  # img needs to be float32 type
     limg[limg < limcut] = 0.
     return limg
 
-# # in_dir_path = r'/Users/bob/Dropbox/Wind Shake Project/DunhamJena3-20190326/FITS excerpt/'
-# # out_dir_path = r'/Users/bob/Dropbox/Wind Shake Project/DunhamJena3-20190326/'
-# out_dir_path = r'/Users/bob/Dropbox/Wind Shake Project/DunhamJena3-20190326/'
-#
-# avi_location = r'/Users/bob/Dropbox/Wind Shake Project/20190326JenaDunham3compressed.avi'
-# # avi_location = r'/Users/bob/Dropbox/Wind Shake Project/2019_04_01_07_18_45_530 Turandot_UCAC4 441-058175.avi'
-# # avi_location = r'/Users/bob/Dropbox/Wind Shake Project/Antiope-kiwi.avi'
-# # avi_location = r'/Users/bob/Dropbox/Wind Shake Project/Camera comparison RunCam Night Eagle 001.avi'
-# # avi_location = r'/Users/bob/Dropbox/Wind Shake Project/M3 Owl 3 spacers Z004_14_2017_04_04_04.avi'
-# timestamp_trim = 50
-
-
 def frameStacker(pr, progress_bar, event_process,
                  first_frame, last_frame, timestamp_trim_top, timestamp_trim_bottom,
                  fitsReader, serReader, advReader,
@@ -47,10 +35,12 @@ def frameStacker(pr, progress_bar, event_process,
                 pr(f'Problem reading FITS file: frame == None returned')
                 return None
 
-            if not frame_to_read == first_frame:
-                cleaned = hot_pixel_erase(frame_local)
-            else:
-                cleaned = frame_local
+            # if not frame_to_read == first_frame:
+            #     cleaned = hot_pixel_erase(frame_local)
+            # else:
+            #     cleaned = frame_local
+
+            cleaned = hot_pixel_erase(frame_local)
 
             image = cleaned[:, :].astype('float32')
 
@@ -59,10 +49,6 @@ def frameStacker(pr, progress_bar, event_process,
 
             if trim_top:
                 image = image[trim_top:, :]
-            # if trim > 0:
-            #     image = frame[0:-trim, :].astype('float32')
-            # else:
-            #     image = frame[-trim:, :].astype('float32')
 
         except Exception as e:
             pr(f'Problem reading FITS file: {e}')
@@ -77,10 +63,12 @@ def frameStacker(pr, progress_bar, event_process,
                 pr(f'Problem reading SER file: frame == None returned')
                 return None
 
-            if not frame_to_read == first_frame:
-                cleaned = hot_pixel_erase(frame_local)
-            else:
-                cleaned = frame_local
+            # if not frame_to_read == first_frame:
+            #     cleaned = hot_pixel_erase(frame_local)
+            # else:
+            #     cleaned = frame_local
+
+            cleaned = hot_pixel_erase(frame_local)
 
             image = cleaned[:, :].astype('float32')
 
@@ -103,12 +91,13 @@ def frameStacker(pr, progress_bar, event_process,
                 pr(f'Problem reading ADV file: frame == None returned')
                 return None
 
-            if not frame_to_read == first_frame:
-                cleaned = hot_pixel_erase(frame_local)
-            else:
-                cleaned = frame_local
+            # if not frame_to_read == first_frame:
+            #     cleaned = hot_pixel_erase(frame_local)
+            # else:
+            #     cleaned = frame_local
 
-            # image = frame_local[:, :].astype('float32')
+            cleaned = hot_pixel_erase(frame_local)
+
             image = cleaned[:, :].astype('float32')
 
             if trim_bottom:
@@ -134,12 +123,13 @@ def frameStacker(pr, progress_bar, event_process,
             if len(frame_local.shape) == 3:
                 frame_local = cv2.cvtColor(frame_local, cv2.COLOR_BGR2GRAY)
 
-            if not frame_to_read == first_frame:
-                cleaned = hot_pixel_erase(frame_local)
-            else:
-                cleaned = frame_local
+            # if not frame_to_read == first_frame:
+            #     cleaned = hot_pixel_erase(frame_local)
+            # else:
+            #     cleaned = frame_local
 
-            # image = frame_local[:, :].astype('float32')
+            cleaned = hot_pixel_erase(frame_local)
+
             image = cleaned[:, :].astype('float32')
 
             if trim_bottom:
@@ -204,10 +194,6 @@ def frameStacker(pr, progress_bar, event_process,
     else:
         inimage = read_avi_frame(first_frame)
 
-    # if shift_dict:
-    #     first_frame_row = yc[0]
-    #     first_frame_col = xc[0]
-
     height, width = inimage.shape
     pr(f'image shape: {width} x {height}')
 
@@ -215,7 +201,6 @@ def frameStacker(pr, progress_bar, event_process,
         # If redact is from the top, this is assumed to be a FITS or SER file for
         # which there is no timestamp to be preserved, just a few 'corrupted' lines at the top.
         timestamp_image_top = inimage[0:timestamp_trim_top,:]
-        # timestamp_image = np.zeros_like(timestamp_junk)
     else:
         timestamp_image_top = None
 
@@ -312,34 +297,12 @@ def frameStacker(pr, progress_bar, event_process,
 
     progress_bar.setValue(0)
 
-    # We removed sharpening at version 2.3.1 as being unnecessary and often distorting
-    # Sharpen the image 2 and 10 were ok  5 and 2 were smudgy
-    #sharper_image = unsharp_mask(asinhScale(image_sum), radius=2, amount=10.0, preserve_range=True)
-    #unredacted = sharper_image
-
     # Instead of sharpening, we just divide by the number of frames that were summed
     normed_image = image_sum / (last_frame - first_frame + 1)
-
-    # We do want to keep asinh scaling though
-    # unredacted = asinhScale(normed_image)
-
-    # if not timestamp_image_bottom is None:
-    #     unredacted = np.append(unredacted, asinhScale(timestamp_image_bottom), axis=0)
-    # if not timestamp_image_top is None:
-    #     unredacted = np.append(asinhScale(timestamp_image_top), unredacted, axis=0)
 
     fn = f'/enhanced-image-{first_frame}.fit'
 
     outfile = out_dir_path + fn
-
-    # Rescale the asinh-scaled image to 0 to 255
-    # min_pixel = unredacted.min()
-    # unredacted = unredacted - min_pixel
-    # max_pixel = unredacted.max()
-    # unredacted = unredacted * 255 / max_pixel
-
-    # Convert to uint8 (because FITS is always big-endian and Intel is little-endian and this difference
-    # unredacted = unredacted.astype('uint8')
 
     if not timestamp_image_bottom is None:
         normed_image = np.append(normed_image, timestamp_image_bottom, axis=0)
@@ -348,21 +311,13 @@ def frameStacker(pr, progress_bar, event_process,
     outlist = pyfits.PrimaryHDU(normed_image)
 
     # Provide a new date stamp
-
     file_time = strftime("%Y-%m-%d %H:%M:%S", gmtime())
 
     # Compose the FITS header
-
     outhdr = outlist.header
 
     # Add the REQUIRED elements in the REQUIRED order
     outhdr['SIMPLE'] = True
-
-    # if not advReader:
-    #     outhdr['BITPIX'] = 8   # Indicate that the result is uint8
-    # else:
-    #     outhdr['BITPIX'] = 16   # Indicate that the result is uint16
-
     outhdr['NAXIS']  = 2
     outhdr['NAXIS1'] = width
     outhdr['NAXIS2'] = height

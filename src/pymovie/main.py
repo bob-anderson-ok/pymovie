@@ -406,6 +406,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.ocrBoxesDir = self.homeDir
         self.ocrDigitsDir = self.homeDir
 
+        self.upperRedactCount = 0
+
         self.clearTextBox()
         title = f'PyMovie  Version: {version.version()}'
         self.setWindowTitle(title)
@@ -543,20 +545,46 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.vtiHelpButton.installEventFilter(self)
         self.vtiHelpButton.clicked.connect(self.vtiHelp)
 
-        self.plotPixelDistributionButton.clicked.connect(self.plotImagePixelDistibution)
-        self.plotPixelDistributionButton.installEventFilter(self)
+        # self.plotPixelDistributionButton.clicked.connect(self.plotImagePixelDistibution)
+        # self.plotPixelDistributionButton.installEventFilter(self)
 
         self.activateTimestampRemovalButton.clicked.connect(self.initializePixelTimestampRemoval)
         self.activateTimestampRemovalButton.installEventFilter(self)
 
-        self.extractBrightAndDarkPixelCoordButton.clicked.connect(self.findBrightAndDarkPixelCoords)
-        self.extractBrightAndDarkPixelCoordButton.installEventFilter(self)
+        # self.extractBrightAndDarkPixelCoordButton.clicked.connect(self.findBrightAndDarkPixelCoords)
+        # self.extractBrightAndDarkPixelCoordButton.installEventFilter(self)
+
+        # self.extractNoisyAndDeadPixelCoordButton.clicked.connect(self.findNoisyAndDeadPixelCoords)
+        # self.extractNoisyAndDeadPixelCoordButton.installEventFilter(self)
 
         self.buildDarkAndNoiseFramesButton.clicked.connect(self.buildDarkAndNoiseFrames)
         self.buildDarkAndNoiseFramesButton.installEventFilter(self)
 
         self.pixelPanelInfoButton.clicked.connect(self.showPixelPanelHelpButtonHelp)
         self.pixelPanelInfoButton.installEventFilter(self)
+
+        self.showBrightAndDarkPixelsButton.clicked.connect(self.processDarkFrameStack)
+        self.showBrightAndDarkPixelsButton.installEventFilter(self)
+
+        self.showNoisyAndDeadPixelsButton.clicked.connect(self.processNoiseFrameStack)
+        self.showNoisyAndDeadPixelsButton.installEventFilter(self)
+
+        self.buildPixelCorrectionTabelButton.clicked.connect(self.composeOutlawPixels)
+        self.buildPixelCorrectionTabelButton.installEventFilter(self)
+
+        self.savePixelCorrectionTableButton.clicked.connect(self.saveCmosOutlawPixelList)
+        self.savePixelCorrectionTableButton.installEventFilter(self)
+
+        self.loadPixelCorrectionTableButton.clicked.connect(self.loadCmosOutlawPixelList)
+        self.loadPixelCorrectionTableButton.installEventFilter(self)
+
+        self.loadCmosPixelCorrectionTableButton.clicked.connect(self.loadCmosOutlawPixelList)
+        self.loadCmosPixelCorrectionTableButton.installEventFilter(self)
+
+        self.applyPixelCorrectionsCheckBox.installEventFilter(self)
+
+        self.applyPixelCorrectionsToCurrentImageButton.clicked.connect(self.applyOutlawPixelFilter)
+        self.applyPixelCorrectionsToCurrentImageButton.installEventFilter(self)
 
         self.upperTimestampLineLabel.installEventFilter(self)
         self.lowerTimestampLineLabel.installEventFilter(self)
@@ -694,14 +722,17 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.hotPixelEraseOff.installEventFilter(self)
         self.hotPixelEraseOff.clicked.connect(self.showFrame)
 
+        self.enableCmosCorrectionsDuringFrameReadsCheckBox.clicked.connect(self.enableCmosCorrectionsDuringFrameReads)
+        self.enableCmosCorrectionsDuringFrameReadsCheckBox.installEventFilter(self)
+
         self.hotPixelEraseFromList.installEventFilter(self)
         self.hotPixelEraseFromList.clicked.connect(self.showFrame)
 
-        self.hotPixelErase3x3median.installEventFilter(self)
-        self.hotPixelErase3x3median.clicked.connect(self.showFrame)
+        # self.hotPixelErase3x3median.installEventFilter(self)
+        # self.hotPixelErase3x3median.clicked.connect(self.showFrame)
 
-        self.hotPixelErase5x5median.installEventFilter(self)
-        self.hotPixelErase5x5median.clicked.connect(self.showFrame)
+        # self.hotPixelErase5x5median.installEventFilter(self)
+        # self.hotPixelErase5x5median.clicked.connect(self.showFrame)
 
         # For now, we will save OCR profiles in the users home directory. If
         # later we find a better place, this is the only line we need to change
@@ -720,6 +751,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.redactedImage = None
         self.brightPixelCoords = None
         self.darkPixelCoords = None
+        self.noisyPixelCoords = None
+        self.deadPixelCoords = None
+        self.outlawPoints = None
 
         self.mouseWheelEventExample = None
         self.mouseWheelTarget = None
@@ -907,6 +941,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.image_fields = None
         self.thumbOneImage = None
         self.thumbTwoImage = None
+
+        self.noiseFrame = None
+        self.darkFrame = None
 
         # A True/False to indicate when a first frame has been read and displayed.  This
         # is used in self.showFrame() and set in self.readFitsFile() and self.readAviFile()
@@ -1173,6 +1210,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.changePlotSymbolSize()
 
         self.disableControlsWhenNoData()
+        self.disableCmosPixelFilterControls()
 
         QtGui.QGuiApplication.processEvents()
         self.checkForNewerVersion()
@@ -1209,8 +1247,86 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     #         summary.print_(summary_one)
     #         print(" ")
 
+    def enableCmosCorrectionsDuringFrameReads(self):
+        if self.enableCmosCorrectionsDuringFrameReadsCheckBox.isChecked():
+            self.applyPixelCorrectionsCheckBox.setEnabled(True)
+            self.applyPixelCorrectionsCheckBox.setChecked(True)
+        else:
+            self.applyPixelCorrectionsCheckBox.setChecked(False)
+
+    def applyOutlawPixelFilter(self):
+        self.image = self.scrubImage(self.image)
+        self.displayImageAtCurrentZoomPanState()
+
+    def processDarkFrameStack(self):
+        if self.darkFrame is None:
+            self.showMsgDialog(f'There is no dark frame stack to process.')
+            return
+
+        self.image = self.darkFrame
+        self.showMsg(f'The "dark frame" is being displayed.')
+        self.displayImageAtCurrentZoomPanState()
+        self.plotImagePixelDistibution('Dark frame pixel distribution', kind='DarkAndBright')
+
+    def processNoiseFrameStack(self):
+        if self.noiseFrame is None:
+            self.showMsgDialog(f'There is no noise frame stack to process.')
+            return
+
+        self.image = self.noiseFrame
+        self.showMsg(f'The "read noise frame" is being displayed.')
+
+        self.displayImageAtCurrentZoomPanState()
+        self.plotImagePixelDistibution('Read noise frame pixel distribution', kind='NoisyAndDead')
+
+
     def buildDarkAndNoiseFrames(self):
-        self.showMsgDialog(f'Not yet implemented')
+        if self.filename is None:
+            self.showMsgDialog(f'There are no frames to process. No file has been read.')
+            return
+
+        try:
+            startFrame = int(self.startFrameEdit.text())
+        except ValueError:
+            self.showMsgDialog(f'"{self.startFrameEdit.text()}" is not a valid integer.')
+            return
+
+        try:
+            stopFrame = int(self.stopFrameEdit.text())
+        except ValueError:
+            self.showMsgDialog(f'"{self.stopFrameEdit.text()}" is not a valid integer.')
+            return
+
+        if startFrame >= stopFrame:
+            self.showMsgDialog(f'The start-frame number must be less than the stop-fame number')
+            return
+
+        if startFrame < 0 or stopFrame < 0:
+            self.showMsgDialog(f'frame numbers cannot be negative.')
+            return
+
+        maxFrame = self.stopAtFrameSpinBox.maximum()
+        if stopFrame > maxFrame:
+            self.showMsgDialog(f'{stopFrame} is larger than the last frame (which is {maxFrame}).')
+            return
+
+        noiseFrame = np.zeros(self.image.shape, dtype='float')
+        darkFrame = np.zeros(self.image.shape, dtype='float')
+        for frame in range(startFrame, stopFrame+1):
+            self.currentFrameSpinBox.setValue(frame)
+            QtGui.QGuiApplication.processEvents()
+            noiseFrame += np.multiply(self.image, self.image, dtype='float')
+            darkFrame += self.image
+
+        numFrames = stopFrame - startFrame + 1
+        self.darkFrame = darkFrame / numFrames
+        Evalue_darkFrameSquared = np.multiply(self.darkFrame, self.darkFrame, dtype='float')
+        Evalue_noiseFrame = noiseFrame/numFrames
+        self.noiseFrame = np.sqrt(Evalue_noiseFrame - Evalue_darkFrameSquared)
+
+        self.image = self.darkFrame
+        self.showMsg(f'The "dark frame" just built is now being displayed.')
+        self.displayImageAtCurrentZoomPanState()
 
     def showMedianProfile(self):
         if len(self.horizontalMedianData) > 0:
@@ -1257,12 +1373,129 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.showFrame()
             self.applyMedianFilterToImage()
 
+    def scrubImage(self, image):
+        dirtyImage = np.copy(image)
+        cleanImage = np.copy(image)
+
+        for point in self.outlawPoints:
+            colc = point[1]  # column center
+            rowc = point[0]  # row center
+            coll = colc - 1  # left column
+            colr = colc + 2  # right column
+            rowu = rowc - 1  # upper row
+            rowl = rowc + 2  # lower row
+            cleanImage[rowc, colc] = \
+                (np.sum(dirtyImage[rowu:rowl, coll:colr]) - dirtyImage[rowc, colc]) / 8
+
+        # self.showMsgDialog(f'Scrub complete.')
+        # image = cleanImage
+        # self.image = cleanImage
+        return cleanImage
+
+    def composeOutlawPixels(self):
+
+        # details = False
+
+        brightPoints = self.brightPixelCoords
+        darkPoints = self.darkPixelCoords
+        deadPoints = self.deadPixelCoords
+        noisyPoints = self.noisyPixelCoords
+
+        if brightPoints is not None:
+            self.showMsg(f'brightPoints has {len(brightPoints)} entries.', blankLine=False)
+        if darkPoints is not None:
+            self.showMsg(f'  darkPoints has {len(darkPoints)} entries.')
+        if noisyPoints is not None:
+            self.showMsg(f' noisyPoints has {len(noisyPoints)} entries.', blankLine=False)
+        if deadPoints is not None:
+            self.showMsg(f'  deadPoints has {len(deadPoints)} entries.\n')
+
+        # list1in2 = []
+        # list1in3 = []
+        # list1in4 = []
+        # list2in3 = []
+        # list2in4 = []
+        # list3in4 = []
+        #
+        # if details:
+        #     for point in brightPoints:
+        #         for point2 in darkPoints:
+        #             if np.all(point == point2):
+        #                 list1in2.append(point)
+        #                 break
+        #
+        #         for point2 in noisyPoints:
+        #             if np.all(point == point2):
+        #                 list1in3.append(point)
+        #                 break
+        #
+        #         for point2 in deadPoints:
+        #             if np.all(point == point2):
+        #                 list1in4.append(point)
+        #                 break
+        #
+        #     self.showMsg(f'{len(list1in2):6d} brightPoints are also in darkPoints')
+        #     self.showMsg(f'{len(list1in3):6d} brightPoints are also in noisyPoints')
+        #     self.showMsg(f'{len(list1in4):6d} brightPoints are also in deadPoints')
+        #
+        #     for point in darkPoints:
+        #         for point2 in noisyPoints:
+        #             if np.all(point == point2):
+        #                 list2in3.append(point)
+        #                 break
+        #
+        #         for point2 in deadPoints:
+        #             if np.all(point == point2):
+        #                 list2in4.append(point)
+        #                 break
+        #     self.showMsg(f'{len(list2in3):6d} darkPoints are also in noisyPoints')
+        #     self.showMsg(f'{len(list2in4):6d} darkPoints are also in deadPoints')
+        #
+        #     for point in noisyPoints:
+        #         for point2 in deadPoints:
+        #             if np.all(point == point2):
+        #                 list3in4.append(point)
+        #                 break
+        #
+        #     self.showMsg(f'{len(list3in4):6d} noisyPoints are also in deadPoints')
+
+        if brightPoints is not None and noisyPoints is not None:
+            allPoints = [*brightPoints, *darkPoints, *noisyPoints, *deadPoints]
+        elif brightPoints is not None:
+            allPoints = [*brightPoints, *darkPoints]
+        elif noisyPoints is not None:
+            allPoints = [*noisyPoints, *deadPoints]
+        else:
+            self.showMsgDialog(f'No healthy points have been selected.')
+            return
+
+        allTuplePoints = [tuple(entry) for entry in allPoints]
+
+        self.showMsg(f'allPoints has {len(allPoints)} entries.')
+
+        self.outlawPoints = list(set(allTuplePoints))
+
+        self.showMsg(f'outlawPoints has {len(self.outlawPoints)} entries.')
+        self.showMsg(f'{len(allPoints) - len(self.outlawPoints)} duplicate points have been removed.')
+
+        self.applyPixelCorrectionsCheckBox.setEnabled(True)
+        self.applyPixelCorrectionsToCurrentImageButton.setEnabled(True)
+        self.savePixelCorrectionTableButton.setEnabled(True)
+
     def initializePixelTimestampRemoval(self):
-        self.upperTimestampPixelSpinBox.setEnabled(True)
-        self.lowerTimestampPixelSpinBox.setEnabled(True)
-        self.activateTimestampRemovalButton.setEnabled(False)
         view = self.frameView.getView()
-        h, w = self.image.shape
+        if self.image is not None:
+            h, w = self.image.shape
+        else:
+            self.showMsgDialog('There is no image to work on.')
+            return
+
+        self.activateTimestampRemovalButton.setEnabled(False)
+        self.brightPixelCoords = None
+        self.darkPixelCoords = None
+        self.deadPixelCoords = None
+        self.noisyPixelCoords = None
+        self.enableCmosPixelFilterControls()
         upperRowOffset = self.upperTimestampPixelSpinBox.value()
         lowerRowOffset = self.lowerTimestampPixelSpinBox.value()
         if upperRowOffset > h - lowerRowOffset:
@@ -1530,12 +1763,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def applyHotPixelErasure(self, avg_bkgnd=None):
         if self.hotPixelEraseOff.isChecked():
             pass
-        elif self.hotPixelErase3x3median.isChecked():
-            # self.image = cv2.medianBlur(self.image, 3)
-            self.image = self.maskedMedianFilter(self.image, 3)
-        elif self.hotPixelErase5x5median.isChecked():
-            # self.image = cv2.medianBlur(self.image, 5)
-            self.image = self.maskedMedianFilter(self.image, 5)
+        # elif self.hotPixelErase3x3median.isChecked():
+        #     self.image = self.maskedMedianFilter(self.image, 3)
+        # elif self.hotPixelErase5x5median.isChecked():
+        #     self.image = self.maskedMedianFilter(self.image, 5)
         else:
             if not self.hotPixelList:
                 return
@@ -1575,10 +1806,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 w = w + 1
             self.frameView.resize(w,h)
 
-        # The line below was apparently causing the text box to jump around - removing it seems to do no harm.
-        # It was an attempt to get Windows to repaint the image display, but a different hack was required for that.
-        # QtGui.QGuiApplication.processEvents(QEventLoop.AllEvents)
-
     def maskedMedianFilter(self, img, ksize=3):
         # Get redact parameters
         ok, num_from_top, num_from_bottom = self.getRedactLineParameters(popup_wanted=False)
@@ -1602,15 +1829,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def applyHotPixelErasureToImg(self, img):
         # This method is only passed to the 'stacker' for its use
-        if self.hotPixelEraseOff.isChecked():
+        if self.hotPixelEraseOff.isChecked() and not self.applyPixelCorrectionsCheckBox.isChecked():
             return img
-        elif self.hotPixelErase3x3median.isChecked():
-            # return cv2.medianBlur(img, 3)
-            return self.maskedMedianFilter(img, 3)
-        elif self.hotPixelErase5x5median.isChecked():
-            # return cv2.medianBlur(img, 5)
-            return self.maskedMedianFilter(img, 5)
         else:
+            if self.applyPixelCorrectionsCheckBox.isChecked():
+                img = self.scrubImage(img)
             if not self.hotPixelList:
                 return img
             avg_bkgnd = self.getBackgroundFromImageCenter()
@@ -3506,7 +3729,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.stackXtrack = []
                 self.stackYtrack = []
                 self.stackFrame = []
-                self.showMsg(f'Frame stacking will be controlled from the "stack" aperture')
+                self.showMsg(f'Frame stacking will be controlled from the "stack*" aperture')
                 stack_aperture_present = True
 
                 saved_stop_frame = self.stopAtFrameSpinBox.value()
@@ -3606,19 +3829,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             return image
         else:
             return None
-
-    # def getBkgThreshold(self):
-    #     bkg_thresh_text = self.finderThresholdEdit.text()
-    #     if not bkg_thresh_text:
-    #         bkg_thresh = self.calcFinderBkgThreshold()
-    #         self.finderThresholdEdit.setText(str(bkg_thresh))
-    #     else:
-    #         try:
-    #             bkg_thresh = int(bkg_thresh_text)
-    #         except ValueError:
-    #             self.showMsg(f'Invalid entry in :finder" image threshold edit box')
-    #             return None
-    #     return bkg_thresh
 
     def clearCoordinatesEdit(self):
         self.coordinatesEdit.setText('')
@@ -3851,6 +4061,38 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if not self.analysisRequested:
             self.initializeTracking()
         self.showFrame()
+
+    def disableCmosPixelFilterControls(self):
+        self.buildDarkAndNoiseFramesButton.setEnabled(False)
+        self.showBrightAndDarkPixelsButton.setEnabled(False)
+        self.showNoisyAndDeadPixelsButton.setEnabled(False)
+        self.upperTimestampPixelSpinBox.setEnabled(False)
+        self.lowerTimestampPixelSpinBox.setEnabled(False)
+        self.startFrameEdit.setEnabled(False)
+        self.stopFrameEdit.setEnabled(False)
+        self.buildPixelCorrectionTabelButton.setEnabled(False)
+
+        # This next button only gets enabled when there is a new pixel correction table to save
+        self.savePixelCorrectionTableButton.setEnabled(False)
+
+        self.applyPixelCorrectionsCheckBox.setEnabled(False)
+        self.applyPixelCorrectionsToCurrentImageButton.setEnabled(False)
+
+        self.noiseFrame = None
+        self.darkFrame = None
+
+    def enableCmosPixelFilterControls(self):
+        self.buildDarkAndNoiseFramesButton.setEnabled(True)
+        self.showBrightAndDarkPixelsButton.setEnabled(True)
+        self.showNoisyAndDeadPixelsButton.setEnabled(True)
+        self.upperTimestampPixelSpinBox.setEnabled(True)
+        self.lowerTimestampPixelSpinBox.setEnabled(True)
+        self.startFrameEdit.setEnabled(True)
+        self.stopFrameEdit.setEnabled(True)
+        self.buildPixelCorrectionTabelButton.setEnabled(True)
+
+        # This control is enabled only when a pixel correction table is available
+        # self.applyPixelCorrectionsCheckBox.setEnabled(True)
 
     def disableControlsWhenNoData(self):
         self.savedStateFrameNumber = None
@@ -4163,6 +4405,54 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             f.writelines('from pyoteapp import pyote\n')
             f.writelines(f'pyote.main(r"{Path(csv_file)}")\n')
 
+    def saveCmosOutlawPixelList(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+
+        pixelTableDir = self.homeDir + '/' + 'PixelCorrectionTables'
+
+        os.makedirs(pixelTableDir, exist_ok=True)
+
+        filename, _ = QFileDialog.getSaveFileName(
+            self,  # parent
+            "Enter file name to use...",  # title for dialog
+            pixelTableDir,  # starting directory
+            "Python pickle files (*.p)",
+            options=options
+        )
+
+        if filename:
+            _, ext = os.path.splitext(filename)
+            if not ext == '.p':
+                filename = filename + '.p'
+
+            pickle.dump(self.outlawPoints, (open(filename, "wb")))
+            self.showMsg(f'Outlaw pixel list written to: {filename}')
+
+    def loadCmosOutlawPixelList(self):
+
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+
+        pixelTableDir = self.homeDir + '/' + 'PixelCorrectionTables'
+
+        if not os.path.exists(pixelTableDir):
+            os.makedirs(pixelTableDir, exist_ok=True)
+
+        filename, _ = QFileDialog.getOpenFileName(
+            self,  # parent
+            "Select pixel correction table ...",  # title for dialog
+            pixelTableDir,  # starting directory
+            "Python pickle files (*.p)",
+            options=options
+        )
+
+        if filename:
+            self.outlawPoints = pickle.load(open(filename, "rb"))
+            self.showMsg(f'Outlaw pixel list read from: {filename}')
+            self.applyPixelCorrectionsCheckBox.setEnabled(True)
+            self.applyPixelCorrectionsToCurrentImageButton.setEnabled(True)
+
     def writeCsvFile(self):
 
         def sortOnFrame(val):
@@ -4426,7 +4716,25 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.helperThing.raise_()
             self.helperThing.show()
             self.helperThing.textEdit.clear()
-            self.helperThing.textEdit.insertHtml(obj.toolTip())
+            stuffToShow = self.htmlFixup(obj.toolTip())
+            self.helperThing.textEdit.insertHtml(stuffToShow)
+
+    @staticmethod
+    def htmlFixup(html):
+        output = ''
+        endIndex = len(html) - 1
+        for i in range(len(html)):
+            if not (html[i] == '.' or html[i] == ','):
+                output += html[i]
+            else:
+                if i == endIndex:
+                    output += html[i]
+                    return output
+                if html[i+1] == ' ':
+                    output += html[i] + '&nbsp;'
+                else:
+                    output += html[i]
+        return output
 
     def eventFilter(self, obj, event):
         if event.type() == QtCore.QEvent.KeyPress:
@@ -4442,7 +4750,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.helperThing.raise_()
                     self.helperThing.show()
                     self.helperThing.textEdit.clear()
-                    self.helperThing.textEdit.insertHtml(obj.toolTip())
+                    stuffToShow = self.htmlFixup(obj.toolTip())
+                    self.helperThing.textEdit.insertHtml(stuffToShow)
                     return True
             return super(PyMovie, self).eventFilter(obj, event)
             # return False
@@ -5823,6 +6132,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         if dir_path:
 
+            self.disableCmosPixelFilterControls()
+            self.activateTimestampRemovalButton.setEnabled(True)
+
             _, fn = os.path.split(dir_path)
             self.fileInUseEdit.setText(fn)
 
@@ -6136,6 +6448,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         if self.filename:
 
+            self.disableCmosPixelFilterControls()
+            self.activateTimestampRemovalButton.setEnabled(True)
+
             self.useYellowMaskCheckBox.setChecked(False)
             self.lunarCheckBox.setChecked(False)
 
@@ -6351,6 +6666,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.acceptAviFolderDirectoryWithoutUserIntervention = False
 
         if dir_path:
+
+            self.disableCmosPixelFilterControls()
+            self.activateTimestampRemovalButton.setEnabled(True)
 
             self.useYellowMaskCheckBox.setChecked(False)
             self.setGammaToUnity()
@@ -6928,6 +7246,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         status, frame = self.cap.read()
                         self.image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                         self.doGammaCorrection()
+
+                    if self.applyPixelCorrectionsCheckBox.isChecked():
+                        self.image = self.scrubImage(self.image)
                     self.applyHotPixelErasure()
 
                     if self.lineNoiseFilterCheckBox.isChecked():
@@ -6957,6 +7278,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         bytes_per_pixel, image_width, image_height, little_endian
                     )
                     self.doGammaCorrection()
+
+                    if self.applyPixelCorrectionsCheckBox.isChecked():
+                        self.image = self.scrubImage(self.image)
                     self.applyHotPixelErasure()
 
                     raw_ser_timestamp = self.ser_timestamps[frame_to_show]
@@ -6979,6 +7303,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 try:
                     err, self.image, frameInfo, status = self.adv2_reader.getMainImageAndStatusData(frame_to_show)
                     self.doGammaCorrection()
+
+                    if self.applyPixelCorrectionsCheckBox.isChecked():
+                        self.image = self.scrubImage(self.image)
                     self.applyHotPixelErasure()
 
                     if self.lineNoiseFilterCheckBox.isChecked():
@@ -7002,6 +7329,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 try:
                     err, self.image, frameInfo, status = self.adv2_reader.getMainImageAndStatusData(frame_to_show)
                     self.doGammaCorrection()
+
+                    if self.applyPixelCorrectionsCheckBox.isChecked():
+                        self.image = self.scrubImage(self.image)
                     self.applyHotPixelErasure()
 
                     if self.lineNoiseFilterCheckBox.isChecked():
@@ -7037,6 +7367,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         # self.showMsg(f'image type: {self.image.dtype}')
 
                         self.doGammaCorrection()
+
+                        if self.applyPixelCorrectionsCheckBox.isChecked():
+                            self.image = self.scrubImage(self.image)
                         self.applyHotPixelErasure()
 
                         # This code deals with processed FITS files (not from a camera) that contain
@@ -7138,14 +7471,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             if self.levels:
                 self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
-                # self.thumbOneView.setLevels(min=self.levels[0], max=self.levels[1])
-                # self.thumbOneView.getView().update()
 
-            # if not self.initialFrame:
-            #     Displaying the new image resets the pan/zoom to none ..
-            #     ... so here we restore the view box to the state extracted above.
-            #     self.displayImageAtCurrentZoomPanState()
-            # else:
             if self.initialFrame:
                 self.initialFrame = False
                 height, width = self.image.shape
@@ -7977,30 +8303,42 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def testUpper(self):
         self.showMsg(f'upper value: {self.hLineUpper.value():0.2f}')
 
-    def plotImagePixelDistibution(self):
-        h, w = self.image.shape
 
+    def plotImagePixelDistibution(self, title='TBD', kind='DarkAndBright'):
+        if self.image is not None:
+            h, w = self.image.shape
+        else:
+            self.showMsgDialog('There is no image to work on.')
+            return
+
+        self.upperRedactCount = self.upperTimestampPixelSpinBox.value()
 
         self.redactedImage = self.image[self.upperTimestampPixelSpinBox.value(): h - self.lowerTimestampPixelSpinBox.value()]
-        pixels = self.redactedImage.flatten() / 16
+        pixels = self.redactedImage.flatten()
         sortedPixels = np.sort(pixels)
 
-        self.showMsg(f'min pixel: {sortedPixels[0]}  max pixel: {sortedPixels[-1]}')
+        self.showMsg(f'min pixel: {sortedPixels[0]:0.1f}  max pixel: {sortedPixels[-1]:0.1f}')
 
-
-        title = f'Pixel intensity cumulative distribution'
+        # pw = MyPlot().pw
 
         pw = PlotWidget(viewBox=CustomViewBox(border=(0, 0, 0)),
                         enableMenu=False,
                         title=title,
                         labels={'bottom': 'index in sorted pixel list', 'left': 'pixel intensity'})
+
         pw.hideButtons()
 
         pw.plot(sortedPixels, pen=pg.mkPen('k', width=3))
-        # pw.plot(sortedPixels, pen=None, symbol='o')
         pw.addLegend()
-        pw.plot(name= f'some info to show in legend')
-        pw.plot(name=f'some more info in legend')
+        pw.plot(name= f'Use mouse to drag green line up until the curve turns sharply upward.')
+        pw.plot(name=f'Then use mouse to drag blue line down until the curve turns sharply down..')
+        pw.plot(name=f'The aim is to enclose only "healthy" pixels.')
+        if kind == 'DarkAndBright':
+            pw.plot(name=f'If you are satisfied you may click the big yellow button but ...')
+            pw.plot(name=f'... you can close this plot at any time and reopen later.')
+        else:
+            pw.plot(name=f'If you are satisfied you may click the big orange button but ...')
+            pw.plot(name=f'... you can close this plot at any time and reopen later.')
 
         mid = sortedPixels[sortedPixels.size // 2]
         lowMax = mid - 5
@@ -8016,22 +8354,66 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         pw.addItem(self.hLineUpper)
         self.hLineUpper.sigPositionChangeFinished.connect(self.testUpper)
 
-        self.pixelWin = pg.GraphicsWindow(title='Dark image pixel plot')
+        self.pixelWin = pg.GraphicsWindow(title=title)
         self.pixelWin.resize(1200, 700)
         layout = QtWidgets.QGridLayout()
         self.pixelWin.setLayout(layout)
         layout.addWidget(pw, 0, 0)
 
-        # pw.getPlotItem().setFixedHeight(700)
-        # pw.getPlotItem().setFixedWidth(1200)
+        if kind == 'DarkAndBright':
+            button = QtGui.QPushButton('Use line settings to exclude too dark and too bright pixels')
+            button.setStyleSheet("background-color : yellow")
+            button.clicked.connect(self.findBrightAndDarkPixelCoords)
+        else:
+            button = QtGui.QPushButton('Use line settings to exclude dead and too noisy pixels')
+            button.setStyleSheet("background-color : orange")
+            button.clicked.connect(self.findNoisyAndDeadPixelCoords)
+
+        button.setParent(self.pixelWin)
+        button.setGeometry(5,5,400,35)
+        button.show()
 
     def findBrightAndDarkPixelCoords(self):
+        if self.hLineUpper is None:
+            self.showMsgDialog('There are no bright and dark pixel frames to process.')
+            return
         brightThreshold = self.hLineUpper.value()
         darkThreshold = self.hLineLower.value()
+        if brightThreshold - darkThreshold == 10:
+            self.showMsgDialog('It looks like you did not move the selection lines in the pixel distribution.')
+            return
+        self.pixelWin.close()
         self.brightPixelCoords = np.argwhere(self.redactedImage > brightThreshold)
+        # Correct the row values for any upper redaction that was required
+        for i in range(len(self.brightPixelCoords)):
+            self.brightPixelCoords[i][0] += self.upperRedactCount
         self.darkPixelCoords = np.argwhere(self.redactedImage < darkThreshold)
+        # Correct the row values for any upper redaction that was required
+        for i in range(len(self.darkPixelCoords)):
+            self.darkPixelCoords[i][0] += self.upperRedactCount
         self.showMsg(f'num bright pixels: {len(self.brightPixelCoords)}')
         self.showMsg(f'num dark pixels: {len(self.darkPixelCoords)}')
+
+    def findNoisyAndDeadPixelCoords(self):
+        if self.hLineUpper is None:
+            self.showMsgDialog('There are no bright and dark pixel frames to process.')
+            return
+        brightThreshold = self.hLineUpper.value()
+        darkThreshold = self.hLineLower.value()
+        if brightThreshold - darkThreshold == 10:
+            self.showMsgDialog('It looks like you did not move the selection lines in the pixel distribution.')
+            return
+        self.pixelWin.close()
+        self.noisyPixelCoords = np.argwhere(self.redactedImage > brightThreshold)
+        # Correct the row values for any upper redaction that was required
+        for i in range(len(self.noisyPixelCoords)):
+            self.noisyPixelCoords[i][0] += self.upperRedactCount
+        self.deadPixelCoords = np.argwhere(self.redactedImage < darkThreshold)
+        # Correct the row values for any upper redaction that was required
+        for i in range(len(self.deadPixelCoords)):
+            self.deadPixelCoords[i][0] += self.upperRedactCount
+        self.showMsg(f'num noisy pixels: {len(self.noisyPixelCoords)}')
+        self.showMsg(f'num dead pixels: {len(self.deadPixelCoords)}')
 
     def plotHorizontalMediansArray(self):
         # self.plots = []

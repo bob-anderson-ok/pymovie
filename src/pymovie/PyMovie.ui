@@ -705,7 +705,7 @@
            </widget>
            <widget class="QWidget" name="tab_3">
             <attribute name="title">
-             <string>Hot Pixels</string>
+             <string>CCD Hot Pixels</string>
             </attribute>
             <layout class="QGridLayout" name="gridLayout_4">
              <item row="0" column="0">
@@ -739,7 +739,7 @@
                <item>
                 <widget class="QPushButton" name="hotPixelHelpButton">
                  <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;If you are using a cmos camera (which frequently have too many hot-pixels to use individual apertures to locate them),&amp;nbsp;only the median filters from this panel are useful.&amp;nbsp;Use the tools in the CMOS hot pixels tab for more comprehensive treatment of the pixel issues prevalent in CMOS cameras.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;The primary use of hot-pixel removal is to help produce clean videos so that stars in the video can be correlated with finder charts. &amp;nbsp;If there are hot-pixels in frames,&amp;nbsp;they appear on stacked &amp;quot;finder&amp;quot; images as distracting streaks (if the star field is in motion between frames) or false/spurious stars. &amp;nbsp;Either situation makes it more difficult to correlate a star chart with the video or finder image and thus to locate the desired target star.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;The use of hot-pixel removal during analysis should be restricted to those rare occasions where the interaction of the target (or tracking) star with a hot-pixel must be mitigated. &amp;nbsp;In such cases,&amp;nbsp;run the analysis both with and without hot-pixel removal and use the best light curve.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;One aspect of hot pixels that must be dealt with is that they often &amp;quot;flicker&amp;quot;.&amp;nbsp;As a result,&amp;nbsp;the hot-pixel constellation will change to some degree from frame to frame.&amp;nbsp;This may be hard to deal with when generating a custom hot-pixel list.&amp;nbsp;The 3x3 (or 5x5) median filter hot-pixel removal method is provided as a quick and easy (but less accurate) method of hot-pixel removal for comparisons to star charts,&amp;nbsp;rather than a custom hot-pixel list.&amp;nbsp;The 3x3 (or 5x5) median filter is applied to each frame as read without any pre-knowledge being required. &amp;nbsp;The 3x3 (or 5x5) median filter should never be used in a light curve analysis.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;Right-click on each of the hot-pixel removal buttons to learn how to create a custom hot pixel list and remove hot pixels from your videos.&lt;/span&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This panel provides tools for dealing with what are commonly referred to as hot-pixels in the contecxt of CCD image sensors.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;If you are using a CMOS camera (which frequently have too many hot-pixels to use individual apertures to locate them), only the median filters from this panel are useful. Use the tools in the CMOS hot pixels tab for more comprehensive treatment of the pixel issues prevalent in CMOS cameras.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;Sometimes it may be more efficient to use the CMOS tools for locating the highly isolated hot-pixels in a CCD array and then return to this panel for dealing with the hot-pixel clumps that appear in some CCD sensors. Then one can enable 'hot-pixel' treatment using both mechanisms. This works because the CMOS pixel correction treament (which is applied first) will deal easily with the isolated pixels, but does not deal well hpt-pixel clumps. But then the CCD hot-pixel treatment will follow and deal with the hot-pixel clumps in a better manner.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;The primary use of hot-pixel removal is to help produce clean videos so that stars in the video can be correlated with finder charts.  If there are hot-pixels in frames, they appear on stacked &amp;quot;finder&amp;quot; images as distracting streaks (if the star field is in motion between frames) or false/spurious stars.  Either situation makes it more difficult to correlate a star chart with the video or finder image and thus to locate the desired target star.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;The use of hot-pixel removal during analysis should be restricted to those rare occasions where the interaction of the target (or tracking) star with a hot-pixel must be mitigated.  In such cases, run the analysis both with and without hot-pixel removal and use the best light curve.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;One aspect of hot pixels that must be dealt with is that they often &amp;quot;flicker&amp;quot;. As a result, the hot-pixel constellation will change to some degree from frame to frame. This may be hard to deal with when generating a custom hot-pixel list. The 3x3 (or 5x5) median filter hot-pixel removal method is provided as a quick and easy (but less accurate) method of hot-pixel removal for comparisons to star charts, rather than a custom hot-pixel list. The 3x3 (or 5x5) median filter is applied to each frame as read without any pre-knowledge being required.  The 3x3 (or 5x5) median filter should never be used in a light curve analysis.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;Right-click on each of the hot-pixel removal buttons to learn how to create a custom hot pixel list and remove hot pixels from your videos.&lt;/span&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                  </property>
                  <property name="text">
                   <string>Hot-pixel removal explanation/help</string>
@@ -793,22 +793,35 @@
                 </widget>
                </item>
                <item>
-                <widget class="QRadioButton" name="hotPixelErase3x3median">
-                 <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;When this radio button is selected,&amp;nbsp;a 3x3 median filter is applied to all frames as they are read.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;A median filter replaces the pixel value by the median value of all 8 surrounding pixels.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;It can be easier to use a 3x3 median filter to remove single hot-pixels -- there is no need to place apertures on hot-pixels to create a custom list.  &lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;The 3x3 median filter does not work as well on groups of hot pixels,&amp;nbsp;as all the hot pixels will not be removed.  &lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;The 3x3 filter has a minimal (but detectable) effect on a star image that covers many dozens of pixels and so could be allowed to be active during an analysis.&amp;nbsp;It should not be active during analysis when the star is very dim;&amp;nbsp;the median filter may possibly reduce the intensity even more. &lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;If you have a hot-pixel interference problem with a lightcurve,&amp;nbsp;try the analysis both ways:&amp;nbsp;with and without 3x3 median filter hot-pixel removal and use the best resulting light curve.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                <widget class="Line" name="line_10">
+                 <property name="frameShadow">
+                  <enum>QFrame::Plain</enum>
                  </property>
-                 <property name="text">
-                  <string>hot-pixel removal by 3x3 median filtering</string>
+                 <property name="lineWidth">
+                  <number>4</number>
+                 </property>
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
                  </property>
                 </widget>
                </item>
                <item>
-                <widget class="QRadioButton" name="hotPixelErase5x5median">
+                <widget class="QPushButton" name="loadCmosPixelCorrectionTableButton">
                  <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;When this radio button is selected,&amp;nbsp;a 5x5 median filter is applied to all frames as they are read.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;This median filter replaces the pixel value by the median value of the surrounding 24 pixels in the 5x5 region.&amp;nbsp;Choose to use a 5x5 median filter if your hot pixels appear in pairs or very small groups as well as singly but expect a more significant effect on star images.&amp;nbsp;This effect is immaterial for the production of &amp;quot;finder&amp;quot; images (its primary intended use) but you should not allow this to be active during analysis --- it will affect the lightcurve.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;It is usually better to use a 3x3 median filter rather than a 5x5 median filter to remove single hot pixels.&amp;nbsp;The 3x3 median filter has a minimal (but detectable) effect on a star image that covers many dozens of pixels and so could be allowed to be active during an analysis&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;If you have extended clumps of hot-pixels that are not small relative to a 5x5 region,&amp;nbsp;you will be forced to create a custom hot-pixel list generated by placing a snap-to-blob aperture on the offending groups and clicking the extract hot-pixel list button,&amp;nbsp;adding the hot pixels to the custom list.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button opens a file selection dialog in the directory where pixel correction tables built by the CMOS pixel tool are stored. There will be found the *.p files (Python pickled object files) that have been previously saved.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                  </property>
                  <property name="text">
-                  <string>hot-pixel removal by 5x5 median filtering</string>
+                  <string>Load CMOS pixel correction table</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="enableCmosCorrectionsDuringFrameReadsCheckBox">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Check this box if you want pixel corrections from the CMOS pixel tool to be applied during light-curve extraction.&lt;/p&gt;&lt;p&gt;If this option is selected, it is recommended that light-curves be extracted both with and without pixel corrections to provide evidence that using pixel corrections during light-curve extraction is justified.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>Enable CMOS pixel corrections during frame reads</string>
                  </property>
                 </widget>
                </item>
@@ -2436,7 +2449,7 @@ aperture placement.</string>
            </widget>
            <widget class="QWidget" name="tab_8">
             <attribute name="title">
-             <string>CMOS hot pixels</string>
+             <string>CMOS Pixels Tool</string>
             </attribute>
             <layout class="QGridLayout" name="gridLayout_10">
              <item row="0" column="1" rowspan="2">
@@ -2459,7 +2472,7 @@ aperture placement.</string>
                  <item>
                   <widget class="QLabel" name="stopFrameLabel">
                    <property name="toolTip">
-                    <string>stop frame</string>
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use this edit box to set the frame number to the end of a series of 'lens cap on' frames.&lt;/p&gt;&lt;p&gt;This series of frames while be used to identify the coordinates of pixels that are not behaving normally.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
                    <property name="text">
                     <string>stop frame: </string>
@@ -2502,7 +2515,7 @@ aperture placement.</string>
                  <item>
                   <widget class="QLabel" name="startFrameLabel">
                    <property name="toolTip">
-                    <string>start frame</string>
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use this edit box to set the frame number to the beginning of a series of 'lens cap on' frames.&lt;/p&gt;&lt;p&gt;This series of frames while be used to identify the coordinates of pixels that are not behaving normally.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
                    <property name="text">
                     <string>start frame: </string>
@@ -2555,19 +2568,6 @@ aperture placement.</string>
                  </property>
                 </widget>
                </item>
-               <item row="2" column="0">
-                <widget class="QPushButton" name="buildDarkAndNoiseFramesButton">
-                 <property name="enabled">
-                  <bool>false</bool>
-                 </property>
-                 <property name="toolTip">
-                  <string>Bulid frames for outlaw pixel identification</string>
-                 </property>
-                 <property name="text">
-                  <string>Build dark and noise frames</string>
-                 </property>
-                </widget>
-               </item>
                <item row="6" column="0">
                 <spacer name="verticalSpacer_9">
                  <property name="orientation">
@@ -2586,10 +2586,10 @@ aperture placement.</string>
                  <item>
                   <widget class="QPushButton" name="activateTimestampRemovalButton">
                    <property name="enabled">
-                    <bool>false</bool>
+                    <bool>true</bool>
                    </property>
                    <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;If there is a timestamp overlay on the video, it must be removed during the development of the &lt;/span&gt;&lt;span style=&quot; font-size:18pt; font-weight:600; color:#0000ff;&quot;&gt;pixels-to-fix&lt;/span&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt; table.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;Click this button to activate the spinners below and place a red horizontal line at the very top of the image and a yellow horizontal line at the very bottom.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;These lines can then be positioned most easily by hovering the mouse cursor over spinner and rolling the mouse scroll wheel.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;Alternatively, you can click the up/down buttons on the spinner or even type a number directly into the box.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If there is a timestamp overlay on the video, it must be removed during the development of the &lt;span style=&quot; font-weight:600; color:#0000ff;&quot;&gt;pixels-to-fix&lt;/span&gt; table.&lt;/p&gt;&lt;p&gt;Click this button to activate the spinners below and place a red horizontal line at the very top of the image and a yellow horizontal line at the very bottom.&lt;/p&gt;&lt;p&gt;These lines can then be positioned most easily by hovering the mouse cursor over spinner and rolling the mouse scroll wheel.&lt;/p&gt;&lt;p&gt;Alternatively, you can click the up/down buttons on the spinner or even type a number directly into the box.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
                    <property name="text">
                     <string>Activate timestamp removal</string>
@@ -2616,7 +2616,7 @@ aperture placement.</string>
                      <item>
                       <widget class="QLabel" name="upperTimestampPixelLabel">
                        <property name="toolTip">
-                        <string>upper timestamp limit</string>
+                        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This 'spinner' controls the redaction of timestamp information that is at the top of the image.&lt;/p&gt;&lt;p&gt;The redaction zone is indicated by a red line that will appear from the top whenever the spinner value is non-zero.&lt;/p&gt;&lt;p&gt;You can change the spinner value by typing a number in the box, clicking the up/down arrows, or using the scroll wheel when the mouse cursor is in the spinner.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                        </property>
                        <property name="text">
                         <string>upper timestamp limit</string>
@@ -2666,7 +2666,7 @@ aperture placement.</string>
                      <item>
                       <widget class="QLabel" name="lowerTimestampPixelLabel">
                        <property name="toolTip">
-                        <string>lower timestamp limit</string>
+                        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This 'spinner' controls the redaction of timestamp information that is at the bottom of the image.&lt;/p&gt;&lt;p&gt;The redaction zone is indicated by a yellow line that will appear from the bottom of the image whenever the spinner value is non-zero.&lt;/p&gt;&lt;p&gt;You can change the spinner value by typing a number in the box, clicking the up/down arrows, or using the scroll wheel when the mouse cursor is in the spinner.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                        </property>
                        <property name="text">
                         <string>lower timestamp limit</string>
@@ -2701,6 +2701,19 @@ aperture placement.</string>
                   </layout>
                  </item>
                 </layout>
+               </item>
+               <item row="5" column="0">
+                <widget class="QPushButton" name="buildDarkAndNoiseFramesButton">
+                 <property name="enabled">
+                  <bool>true</bool>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use the start and stop frame numbers set in the edit boxes above to create two special frames stacked from those frames.&lt;/p&gt;&lt;p&gt;One special frame is called a 'dark frame'. It is simply the sum of the frame set divided by the number of frames - a simple &amp;quot;finder&amp;quot; frame. This frame will accentuate pixels that are consistently too dark or too bright compared with their more numerous neighbors in the way that &amp;quot;finder&amp;quot; frames do for star fields.&lt;/p&gt;&lt;p&gt;Since we are dealing with lens-cap-on (dark) frames, there is no observation noise exciting pixel responses, only the read noise of the camera. Healthy pixels will have very similar levels of such read noise. But unhealthy pixels will either exhibit noise in excess of expected read noise, or not enough noise, a sign that the pixel is unresponsive - a dead pixel.&lt;/p&gt;&lt;p&gt;In the second special frame we measure the read noise of each pixel (a measure of how much it sparkles computed over the frame set) and put that value in a frame at the coordinates of that pixel. We call this a read noise frame and it shows pixels that are too noisy (sparkling pixels) or with too little noise (dead pixels) compared with their more numerous neighbors.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>Build dark frame and read noise frame</string>
+                 </property>
+                </widget>
                </item>
               </layout>
              </item>
@@ -2760,10 +2773,10 @@ aperture placement.</string>
                <item>
                 <widget class="QPushButton" name="pixelPanelInfoButton">
                  <property name="enabled">
-                  <bool>false</bool>
+                  <bool>true</bool>
                  </property>
                  <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Coming soon.&amp;nbsp;This panel will allow the treatment of the thousands of hot-pixels that frequently appear in CMOS camera videos.&lt;/p&gt;&lt;p&gt;Fortunately these pixels nearly always appear in isolation - they are surrounded by healthy pixels that can then be used to replace the unhealthy pixel value with a reasonable and relevant value.&lt;/p&gt;&lt;p&gt;Such replacement can even be used during analysis (but test it) because one pixel in a star image being replaced by the average value of its neighbors will have a very small effect on the recorded intensity.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This panel provides a way to deal with the thousands of out-of-normal (outlaw pixels that don't follow the 'rules') that frequently appear in CMOS camera videos.&lt;/p&gt;&lt;p&gt;Examples of abnormal pixels in this context are: pixels stuck at some high value (hot-pixel); pixels that 'sparkle' (bright and abnormally noisy); dark pixels (unresponsive).&lt;/p&gt;&lt;p&gt;Fortunately these pixels nearly always appear in isolation - they are surrounded by healthy pixels that can then be used to replace the unhealthy pixel value with a reasonable and relevant value - the average of its neighbors.&lt;/p&gt;&lt;p&gt;Such replacement can even be used during analysis (but test it) because one pixel in a star image being replaced by the average value of its neighbors will have a very small effect on the recorded intensity yet the overall noise in an extracted light-curve is likely to be slightly reduced.&lt;/p&gt;&lt;p&gt;The steps in the procedure are:&lt;/p&gt;&lt;p&gt;1) Click the &lt;span style=&quot; font-weight:600; color:#0000ff;&quot;&gt;Activate timestamp removal&lt;/span&gt; button. This enables most of the other controls in this panel.&lt;/p&gt;&lt;p&gt;2) If there is information at the top and/or bottom of the image that needs to be excluded (redacted), use the spinners provided to position a line near the top (it will be red line that appears when the spinner value is non-zero) to just below any top edge information overlay, and position a line near the bottom (a yellow line will appear) to just above any bottom edge information overlay.&lt;/p&gt;&lt;p&gt;3) Select the starting and ending frame numbers of the lens-cap-on frame sequence to be used to identify unhealthy pixels. A hundred frames is usually adequate.&lt;/p&gt;&lt;p&gt;4) Click the &lt;span style=&quot; font-weight:600; color:#0000ff;&quot;&gt;Build dark frame and read noise frame&lt;/span&gt; button. Watch the current frame edit box to determine the progress&lt;/p&gt;&lt;p&gt;5) Click the &lt;span style=&quot; font-weight:600; color:#0000ff;&quot;&gt;Show dark frame &lt;/span&gt;&lt;span style=&quot; color:#000000;&quot;&gt;button&lt;/span&gt; and follow the instructions provided in the plot legend box to extract the coordinates of too dark or too bright pixels.&lt;/p&gt;&lt;p&gt;6) Click the &lt;span style=&quot; font-weight:600; color:#0000ff;&quot;&gt;Show read noise frame&lt;/span&gt; button and follow the instructions provided in the plot legend box to extract the coordinates of dead or too noisy (sparkly) pixels.&lt;/p&gt;&lt;p&gt;7) Click the &lt;span style=&quot; font-weight:600; color:#0000ff;&quot;&gt;Build pixel correction table&lt;/span&gt; button to compose the composite pixel correction coordinates table with duplicate entries removed.&lt;/p&gt;&lt;p&gt;8) If desired, save the pixel correction table for future use. The name given to the table should reflect the camera, its gain setting, and date.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;NOTE:&lt;/span&gt; You can examine the isolation of outlaw pixels by displaying either the dark frame or the read noise frame and zooming in. The isolation can then be clearly seen and confirmed.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                  </property>
                  <property name="text">
                   <string>Click me for help/info</string>
@@ -2771,28 +2784,72 @@ aperture placement.</string>
                 </widget>
                </item>
                <item>
-                <widget class="QPushButton" name="plotPixelDistributionButton">
-                 <property name="enabled">
-                  <bool>false</bool>
-                 </property>
+                <widget class="QPushButton" name="showBrightAndDarkPixelsButton">
                  <property name="toolTip">
-                  <string>Plot pixel distribution</string>
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Click this button to show the 'dark frame' and simultaneously create a plot showing the distribution of pixel values in that frame.&lt;/p&gt;&lt;p&gt;The pixel distribution plot will have a broad middle section. This is the group of pixels that are behaving similarly to their neighbors and are presumably the 'healthy' pixels.&lt;/p&gt;&lt;p&gt;The plot has two movable horizontal lines, a green one and a blue one. Use your mouse to 'grab' the green line and move it up. Then use your mouse to 'grab' the blue line and drag it down. Position these lines so that they enclose the 'normal' 'healthy' pixels. When satisified, click the yellow button at the upper left to cause the creation of the dark and bright pixel list.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                  </property>
                  <property name="text">
-                  <string>Plot pixel distribution</string>
+                  <string>Show dark frame and pixel distribution</string>
                  </property>
                 </widget>
                </item>
                <item>
-                <widget class="QPushButton" name="extractBrightAndDarkPixelCoordButton">
-                 <property name="enabled">
-                  <bool>false</bool>
-                 </property>
+                <widget class="QPushButton" name="showNoisyAndDeadPixelsButton">
                  <property name="toolTip">
-                  <string>The main thing - builds pixel list</string>
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Click this button to show the 'noise frame' and simultaneously create a plot showing the distribution of pixel values in that frame.&lt;/p&gt;&lt;p&gt;The pixel distribution plot will have a broad middle section. This is the group of pixels that are behaving similarly to their neighbors and are presumably the 'healthy' pixels.&lt;/p&gt;&lt;p&gt;The plot has two movable horizontal lines, a green one and a blue one. Use your mouse to 'grab' the green line and move it up. Then use your mouse to 'grab' the blue line and drag it down. Position these lines so that they enclose the 'normal' 'healthy' pixels. When satisified, click the orange button at the upper left to cause the creation of the dead and too noisy pixel list.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                  </property>
                  <property name="text">
-                  <string>Find bright and dark pixels</string>
+                  <string>Show read noise frame and pixel distribution</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="buildPixelCorrectionTabelButton">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Click this button to create the pixel correction table.&lt;/p&gt;&lt;p&gt;It combines the dark and bright pixels list (if present) with the dead and too noisy pixels list (if present) and eliminates duplicate entries.&lt;/p&gt;&lt;p&gt;There can be duplicates because a dark pixel can also be a dead pixel because it is stuck at a low value. Because it is 'stuck', it will have zero noise and so is also a dead pixel.&lt;/p&gt;&lt;p&gt;Similarly, a bright pixel can also be a too noisy pixel if it is 'sparkling' at a high intensity. Or it can be a dead pixel if it is simply stuck at a high intensity.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>Build pixel correction table</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="savePixelCorrectionTableButton">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clicking this button opens a file save dialog in a predefined default directory.&lt;/p&gt;&lt;p&gt;It is recommended that you accept this default directory unless there is a very good reason to store pixel correction tables in a different manner.&lt;/p&gt;&lt;p&gt;Give the file a useful name (no need for an extension) which includes a date and a camera name at the minimum. Adding settings for the camera like gain is likely to be useful as well.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Example: Flir-16S2M-gain45-5Dec2021&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;The pixel correction table is a Python object and it is stored as a 'pickled' file with extension p.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>Save pixel correction table</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="loadPixelCorrectionTableButton">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button opens a file selection dialog in the directory where pixel correction tables are stored. There will be found the *.p files (Python pickled object files) that have been previously saved.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>Load pixel correction table</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="applyPixelCorrectionsToCurrentImageButton">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Apply the current pixel corrections to the currently displayed image.&lt;/p&gt;&lt;p&gt;When a &amp;quot;finder&amp;quot; image is built and displayed, clicking this button will apply the current pixel corrections to that image.&lt;/p&gt;&lt;p&gt;Note: building a &amp;quot;finder&amp;quot; image with pixel corrections being applied at each frame read should be used for drift-through videos (non-tracking) even though the &amp;quot;drift&amp;quot; effect automatically reduces the effect of outlaw pixels because they appear over time at different locations in the frame stack and so get averaged out/reduced. But not having such pixels in any frame that gets added to the &amp;quot;finder&amp;quot; stack is a more thorough way of reducing their impact.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>Apply corrections to current image</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="applyPixelCorrectionsCheckBox">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Check this box if you want pixel corrections to be applied during light-curve extraction or the generation of a &amp;quot;finder&amp;quot; image.&lt;/p&gt;&lt;p&gt;For most CMOS cameras, this is a safe procedure that will slightly reduce noise in the light-curve.&lt;/p&gt;&lt;p&gt;If this option is selected, it is recommended that light-curves be extracted both with and without pixel corrections to provide evidence that using pixel corrections during light-curve extraction is justified.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>Apply corrections during frame reads</string>
                  </property>
                 </widget>
                </item>
@@ -3406,6 +3463,126 @@ aperture placement.</string>
    <header>pyqtgraph</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>infoButton</tabstop>
+  <tabstop>fileInUseEdit</tabstop>
+  <tabstop>saveApertureState</tabstop>
+  <tabstop>startFrameEdit</tabstop>
+  <tabstop>stopFrameEdit</tabstop>
+  <tabstop>thresh_inc_1</tabstop>
+  <tabstop>thresh_inc_10</tabstop>
+  <tabstop>thresh_inc_100</tabstop>
+  <tabstop>threshValueEdit</tabstop>
+  <tabstop>viewFieldsCheckBox</tabstop>
+  <tabstop>processAsFieldsCheckBox</tabstop>
+  <tabstop>topFieldFirstRadioButton</tabstop>
+  <tabstop>bottomFieldFirstRadioButton</tabstop>
+  <tabstop>showImageControlCheckBox</tabstop>
+  <tabstop>satPixelSpinBox</tabstop>
+  <tabstop>demoMeanPushButton</tabstop>
+  <tabstop>tabWidget</tabstop>
+  <tabstop>readAviFileButton</tabstop>
+  <tabstop>createAVIWCSfolderButton</tabstop>
+  <tabstop>selectAviWcsFolderButton</tabstop>
+  <tabstop>readFitsFolderButton</tabstop>
+  <tabstop>metadataButton</tabstop>
+  <tabstop>enableAdvFrameStatusDisplay</tabstop>
+  <tabstop>openBmpPushButton</tabstop>
+  <tabstop>vtiSelectComboBox</tabstop>
+  <tabstop>loadCustomProfilesButton</tabstop>
+  <tabstop>clearOcrDataButton</tabstop>
+  <tabstop>hotPixelHelpButton</tabstop>
+  <tabstop>createHotPixelListButton</tabstop>
+  <tabstop>loadHotPixelProfileButton</tabstop>
+  <tabstop>hotPixelEraseOff</tabstop>
+  <tabstop>hotPixelEraseFromList</tabstop>
+  <tabstop>alignWithStarInfoButton</tabstop>
+  <tabstop>alignWithTwoPointTrackInfoButton</tabstop>
+  <tabstop>redactLinesTopEdit</tabstop>
+  <tabstop>redactLinesBottomEdit</tabstop>
+  <tabstop>numFramesToStackEdit</tabstop>
+  <tabstop>stackFramesButton</tabstop>
+  <tabstop>openFinderPushButton</tabstop>
+  <tabstop>finderMethodEdit</tabstop>
+  <tabstop>flipImagesLeftToRightCheckBox</tabstop>
+  <tabstop>flipImagesTopToBottomCheckBox</tabstop>
+  <tabstop>cascadeCheckBox</tabstop>
+  <tabstop>plotSymbolSizeSpinBox</tabstop>
+  <tabstop>gammaSettingOfCamera</tabstop>
+  <tabstop>manualWcsButton</tabstop>
+  <tabstop>frameToFitsButton</tabstop>
+  <tabstop>wcsRedactLinesTopEdit</tabstop>
+  <tabstop>wcsRedactLinesBottomEdit</tabstop>
+  <tabstop>pixelHeightEdit</tabstop>
+  <tabstop>pixelWidthEdit</tabstop>
+  <tabstop>starIdEdit</tabstop>
+  <tabstop>queryVizierButton</tabstop>
+  <tabstop>coordinatesEdit</tabstop>
+  <tabstop>saveTargetLocButton</tabstop>
+  <tabstop>toolButton_2</tabstop>
+  <tabstop>twoPointHelpButton</tabstop>
+  <tabstop>transportHelp</tabstop>
+  <tabstop>documentationPushButton</tabstop>
+  <tabstop>appSizeToolButton</tabstop>
+  <tabstop>defAppSize51RadioButton</tabstop>
+  <tabstop>defAppSize41RadioButton</tabstop>
+  <tabstop>defAppSize31RadioButton</tabstop>
+  <tabstop>defAppSize21RadioButton</tabstop>
+  <tabstop>defAppSize11RadioButton</tabstop>
+  <tabstop>sigmaLevelToolButton</tabstop>
+  <tabstop>oneSigmaRadioButton</tabstop>
+  <tabstop>twoSigmaRadioButton</tabstop>
+  <tabstop>threeSigmaRadioButton</tabstop>
+  <tabstop>defaultMaskRadiusToolButton</tabstop>
+  <tabstop>radius20radioButton</tabstop>
+  <tabstop>radius28radioButton</tabstop>
+  <tabstop>radius32radioButton</tabstop>
+  <tabstop>radius40radioButton</tabstop>
+  <tabstop>radius45radioButton</tabstop>
+  <tabstop>radius53radioButton</tabstop>
+  <tabstop>radius68radioButton</tabstop>
+  <tabstop>lineNoiseFilterCheckBox</tabstop>
+  <tabstop>horizontalRadioButton</tabstop>
+  <tabstop>verticalRadioButton</tabstop>
+  <tabstop>bothRadioButton</tabstop>
+  <tabstop>upperTimestampMedianSpinBox</tabstop>
+  <tabstop>lowerTimestampMedianSpinBox</tabstop>
+  <tabstop>showMedianProfileButton</tabstop>
+  <tabstop>lunarCheckBox</tabstop>
+  <tabstop>useYellowMaskCheckBox</tabstop>
+  <tabstop>view3DButton</tabstop>
+  <tabstop>editAperturesButton</tabstop>
+  <tabstop>restoreApertureState</tabstop>
+  <tabstop>roiComboBox</tabstop>
+  <tabstop>activateTimestampRemovalButton</tabstop>
+  <tabstop>upperTimestampPixelSpinBox</tabstop>
+  <tabstop>lowerTimestampPixelSpinBox</tabstop>
+  <tabstop>pixelPanelInfoButton</tabstop>
+  <tabstop>frameView</tabstop>
+  <tabstop>runPyote</tabstop>
+  <tabstop>transportMaxLeft</tabstop>
+  <tabstop>transportBigLeft</tabstop>
+  <tabstop>transportSmallLeft</tabstop>
+  <tabstop>transportMinusOneFrame</tabstop>
+  <tabstop>transportPlayLeft</tabstop>
+  <tabstop>transportPause</tabstop>
+  <tabstop>transportAnalyze</tabstop>
+  <tabstop>transportPlayRight</tabstop>
+  <tabstop>transportPlusOneFrame</tabstop>
+  <tabstop>transportSmallRight</tabstop>
+  <tabstop>transportBigRight</tabstop>
+  <tabstop>transportMaxRight</tabstop>
+  <tabstop>transportCsv</tabstop>
+  <tabstop>transportPlot</tabstop>
+  <tabstop>currentFrameSpinBox</tabstop>
+  <tabstop>stopAtFrameSpinBox</tabstop>
+  <tabstop>transportMark</tabstop>
+  <tabstop>transportReturnToMark</tabstop>
+  <tabstop>transportClearData</tabstop>
+  <tabstop>textOut</tabstop>
+  <tabstop>thumbOneView</tabstop>
+  <tabstop>thumbTwoView</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
