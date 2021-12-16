@@ -4551,7 +4551,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     elif self.adv_file_in_use or self.aav_file_in_use:
                         f.write(f'# date at frame 0: {self.adv_file_date}\n')
                         for meta_key in self.adv_meta_data:
-                            f.write(f'{meta_key}: {self.adv_meta_data[meta_key]}')
+                            f.write(f'#{meta_key}: {self.adv_meta_data[meta_key]}\n')
                     else:
                         f.write(f'# error: unexpected folder type encountered\n')
 
