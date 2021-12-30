@@ -1,5 +1,4 @@
 pyqtgraph
-opencv-python==4.1.2.30
 opencv-python-headless
 astroquery
 resource
