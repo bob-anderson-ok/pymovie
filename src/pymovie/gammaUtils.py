@@ -22,7 +22,7 @@ def gammaLookUpTableUint16(gamma):
 
 # Generate lookup table for uint8 image encoded at gamma
 def gammaLookUpTableUint8(gamma):
-    return np.array([gammaDecode8bit(i, gamma=gamma) for i in range(6256)])
+    return np.array([gammaDecode8bit(i, gamma=gamma) for i in range(256)])
 
 def gammaCorrectImg(img, lut):
     # Use given lookup table to remap img pixels

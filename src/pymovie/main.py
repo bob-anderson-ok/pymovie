@@ -673,12 +673,16 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.hotPixelProfileDict = {}
 
         # self.gammaLut is a lookup table for doing fast gamma correction.
-        # It gets filled in whenver the gamma spinner is changed IF there is an
-        # image file in use (becuase we need to know whether to do a 16 or 8 bit lookup table)
+        # It gets filled in whenever the gamma spinner is changed IF there is an
+        # image file in use (because we need to know whether to do a 16 or 8 bit lookup table).
+        # It also gets filled in if the NightEagle3 correction checkbox is set to checked.
         self.gammaLut = None
         self.currentGamma = self.gammaSettingOfCamera.value()
 
         self.gammaSettingOfCamera.valueChanged.connect(self.processGammaChange)
+
+        self.loadNE3lookupTableCheckBox.clicked.connect(self.loadNE3lookupTable)
+        self.loadNE3lookupTableCheckBox.installEventFilter(self)
 
         self.lunarCheckBox.installEventFilter(self)
         self.lunarCheckBox.clicked.connect(self.lunarBoxChecked)
@@ -754,6 +758,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.noisyPixelCoords = None
         self.deadPixelCoords = None
         self.outlawPoints = None
+
+        # self.rowsToSumList = [0,1,100,101,200,201,300,301,400,401]
+        self.rowsToSumList = []
+        self.rowSums = []
 
         self.mouseWheelEventExample = None
         self.mouseWheelTarget = None
@@ -1876,8 +1884,17 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def doGammaCorrection(self):
         if self.currentGamma == 1.00:
             return
-        # self.showMsg('Gamma correction asked for but not yet implemented')
         self.image = self.gammaLut.take(self.image)
+
+    def loadNE3lookupTable(self):
+        if self.loadNE3lookupTableCheckBox.isChecked():
+            self.gammaSettingOfCamera.setValue(0.75)
+            self.gammaSettingOfCamera.setEnabled(False)
+            self.gammaLut = pickle.load(open('NE3Lut.p', 'rb'))
+        else:
+            self.gammaSettingOfCamera.setValue(1.00)
+            self.gammaSettingOfCamera.setEnabled(True)
+            self.gammaLut = None
 
     def processGammaChange(self):
         # Get gamma value from the spinner
@@ -4453,6 +4470,64 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.applyPixelCorrectionsCheckBox.setEnabled(True)
             self.applyPixelCorrectionsToCurrentImageButton.setEnabled(True)
 
+    def writeSpecialRowSumCsvFile(self,filename, num_data_pts, appdata):
+        with open(filename, 'w') as f:
+            # Standard header
+            f.write(f'# PyMovie Version {version.version()}\n')
+            f.write(f'# source: {self.filename}\n')
+
+            f.write(f'#\n')
+            f.write(f'# Special row sum csv file\n')
+            f.write(f'#\n')
+
+            if not self.avi_in_use:
+                if self.fits_folder_in_use:
+                    f.write(f'# date at frame 0: {self.fits_date}\n')
+                elif self.ser_file_in_use:
+                    f.write(f'# date at frame 0: {self.ser_date}\n')
+                    lines = self.formatSerMetaData()
+                    for line in lines:
+                        f.write(f'{line}\n')
+                elif self.adv_file_in_use or self.aav_file_in_use:
+                    f.write(f'# date at frame 0: {self.adv_file_date}\n')
+                    for meta_key in self.adv_meta_data:
+                        f.write(f'#{meta_key}: {self.adv_meta_data[meta_key]}\n')
+                else:
+                    f.write(f'# error: unexpected folder type encountered\n')
+
+            # csv column headers with aperture names in entry order
+            f.write(f'FrameNum,timeInfo')
+            # Put all signals in the first columns so that R-OTE and PyOTE can read the file
+            for row in self.rowsToSumList:
+                f.write(f',signal-row:{row}')
+            f.write(f'\n')
+
+            # Now we add the data lines
+            for i in range(num_data_pts):
+                frame = appdata[0][i][8]  # [aperture index][data group][data id]
+
+                timestamp = appdata[0][i][12]
+
+                f.write(f'{frame:0.2f},{timestamp}')
+                for k in range(len(self.rowsToSumList)):
+                    signal = self.rowSums[k][i]
+                    f.write(f',{signal:0.2f}')
+
+                f.write('\n')
+                f.flush()
+
+        if self.runPyote.isChecked():
+            # We need to prepare a script that is unique to the user's platform
+            # and to include a path to the csv file to be given to PyOTE
+            self.prepareAutorunPyoteFile(filename)
+
+            # Next, we run that script.
+            # We use Popen so that we don't have to wait for the process to complete (i.e.,
+            # for the user to quit using PyOTE) and so that multiple PyOTE processes
+            # can be running at the same time.
+            subprocess.Popen(f'python "{self.folder_dir + "/auto_run_pyote.py"}" ', shell=True)
+            self.showMsg(f'##### PyOTE is starting up --- this takes a few seconds #####')
+
     def writeCsvFile(self):
 
         def sortOnFrame(val):
@@ -4500,6 +4575,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 appdata.append(app.data)
                 num_data_pts = len(app.data)
 
+            if self.rowSums:
+                self.writeSpecialRowSumCsvFile(filename, num_data_pts, appdata)
+                return
+
             for i in range(num_data_pts - 1):
                 if appdata[0][i][8] == appdata[0][i+1][8]:
                     self.showMsgDialog('Duplicate frames detected --- write of csv aborted')
@@ -4523,6 +4602,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 f.write(f'#\n')
                 f.write(f'# lunar background: {self.lunarCheckBox.isChecked()}\n')
                 f.write(f'# yellow mask = default: {self.useYellowMaskCheckBox.isChecked()}\n')
+
+                if self.loadNE3lookupTableCheckBox.isChecked():
+                    f.write(f'#\n')
+                    f.write(f'# Night Eagle 3 gamma 0.75 has been linearized\n')
 
                 for entry in self.appDictList:
                     f.write(f'#\n')
@@ -7219,10 +7302,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             image = None
         return image
 
-    # def restoreImageZoomPan(self):
-    #     self.frameView.getView().setState(self.stateOfView)
-    #     self.frameView.getView().update()
-
     def showFrame(self):
 
         try:
@@ -7493,6 +7572,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             # that routine will add the data to the aperture when collectDataCheckBox.isChecked()
             # We've changed philosophy: now apertures always 'track'
             try:
+                # self.image contains the new image
+                if self.analysisRequested:
+                    # This routine only does something when the user has enabled the special measurements
+                    # needed to calibrate rolling shutter cameras.
+                    self.processRowSumList()
                 self.centerAllApertures()
             except Exception as e6:
                 self.showMsg(f'during centerAllApertures(): {repr(e6)} ')
@@ -7513,6 +7597,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         except Exception as e0:
             self.showMsg(repr(e0))
             self.showMsg(f'There are no frames to display.  Have you read a file?')
+
+    def processRowSumList(self):
+        if not self.rowSums:
+            self.rowSums = [ [] for _ in range(len(self.rowsToSumList))]
+        for i in range(len(self.rowsToSumList)):
+            row = self.rowsToSumList[i]
+            rowSum = np.sum(self.image[row,:])
+            self.rowSums[i].append(rowSum)
 
     def getSharpCapTimestring(self):
 

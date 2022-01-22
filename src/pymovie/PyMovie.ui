@@ -1264,6 +1264,29 @@
                  </item>
                 </layout>
                </item>
+               <item>
+                <widget class="Line" name="line_14">
+                 <property name="frameShadow">
+                  <enum>QFrame::Plain</enum>
+                 </property>
+                 <property name="lineWidth">
+                  <number>5</number>
+                 </property>
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="loadNE3lookupTableCheckBox">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The Night Eagle 3 has 4 gamma settings: 0.45, 0.55, 0.65, and 0.75. However, the resulting response curves are NOT that of a standard gamma curve. PyMovie is handling this situation by using a custom pixel remapping table that was measured experimentally while the camera was operating at AGC 7, GAMMA 0.75, BRT 20. Testing has shown that there is little reason to operate this camera at any other settings other than DNR which can set to OFF, LOW, MIDDLE, or HIGH at the observer's discretion.&lt;/p&gt;&lt;p&gt;The custom table is loaded when this check box is checked and subsequently used to translate the pixel response curve to something close to linear.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>Enable Night Eagle 3 gamma 0.75</string>
+                 </property>
+                </widget>
+               </item>
               </layout>
              </item>
              <item row="0" column="2">
