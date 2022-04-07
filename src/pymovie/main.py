@@ -7473,7 +7473,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     QHYinUse = False
                     try:
                         # QHYinUse = False
-                        instrument = hdr['INSTRUME']
+                        if 'INSTRUME' in hdr:
+                            instrument = hdr['INSTRUME']
+                        else:
+                            instrument = ''
                         if instrument.startswith('QHY174M'):
                             QHYinUse = True
                     except Exception as _e4:
@@ -7492,8 +7495,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                                                       f'Timestamp information has been computed from GPS_ST and'
                                                       f'GPS_SU, but is HIGHLY SUSPECT!')
 
+                        date_time = 'no timestampT00:00:00.0000000'
                         if not special_handling:
-                            date_time = hdr['DATE-OBS']
+                            if 'DATE-OBS' in hdr:
+                                date_time = hdr['DATE-OBS']
                             # The form of DATE-OBS is '2018-08-21T05:21:02.4561235' so we can simply 'split' at the T
                             parts = date_time.split('T')
                         else:
@@ -7505,7 +7510,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                             self.showMsg(f'The following timestamp used highly suspect partial GPS data',
                                          blankLine=False)
 
-                        self.showMsg(f'Timestamp found: {parts[0]} @ {parts[1]}')
+                        if len(parts) == 2:
+                            self.showMsg(f'Timestamp found: {parts[0]} @ {parts[1]}')
+                        else:
+                            self.showMsg(f'Invalid format for timestamp: {date_time}')
                         # We only want to save the date from the first file (to add to the csv file)...
                         if self.initialFrame:
                             self.fits_date = parts[0]
