@@ -600,9 +600,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.lowerPixelHorizontalLine = None
         self.upperPixelHorizontalLine = None
 
-        self.hLineLower = None
-        self.hLineUpper = None
+        self.vLineLeft = None
+        self.vLineRight = None
         self.pixelWin = None
+        self.decimatedSortedPixels = []
 
         self.upperTimestampMedianSpinBox.valueChanged.connect(self.moveUpperTimestampLine)
         self.upperTimestampLineLabel.installEventFilter(self)
@@ -1324,6 +1325,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.currentFrameSpinBox.setValue(frame)
             QtGui.QGuiApplication.processEvents()
             noiseFrame += np.multiply(self.image, self.image, dtype='float')
+            # noiseFrame = np.maximum(noiseFrame, self.image)
             darkFrame += self.image
 
         numFrames = stopFrame - startFrame + 1
@@ -1331,6 +1333,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         Evalue_darkFrameSquared = np.multiply(self.darkFrame, self.darkFrame, dtype='float')
         Evalue_noiseFrame = noiseFrame/numFrames
         self.noiseFrame = np.sqrt(Evalue_noiseFrame - Evalue_darkFrameSquared)
+        # self.noiseFrame = noiseFrame
 
         self.image = self.darkFrame
         self.showMsg(f'The "dark frame" just built is now being displayed.')
@@ -5940,7 +5943,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             if self.pointed_at_aperture is not None:
                 if aperture == self.pointed_at_aperture:
                     self.thumbnail_one_aperture_name = aperture.name
-                    # TODO Oct 14
                     self.thumbOneImage = thumbnail
                     # self.thumbOneView.setImage(thumbnail)
                     # if self.levels:
@@ -5957,7 +5959,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 if priority_aperture_present:
                     if aperture.thumbnail_source:
                         self.thumbnail_one_aperture_name = aperture.name
-                        # TODO Oct 14
                         self.thumbOneImage = thumbnail
                         # self.thumbOneView.setImage(thumbnail)
                         # if self.levels:
@@ -5966,7 +5967,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         self.thumbTwoView.setImage(mask)
                 else:
                     self.thumbnail_one_aperture_name = aperture.name
-                    # TODO Oct 14
                     self.thumbOneImage = thumbnail
                     # self.thumbOneView.setImage(thumbnail)
                     # if self.levels:
@@ -7462,8 +7462,15 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                             np.clip(self.image, 1, 65535)
                             self.image = self.image.astype('uint16', casting='unsafe')
 
+
                         if self.lineNoiseFilterCheckBox.isChecked():
                             self.applyMedianFilterToImage()
+
+                        # TODO Check that this works
+                        self.image = self.image.astype('uint16', casting='unsafe')
+                        self.image = self.image / 16
+                        self.image = self.image.astype('uint16', casting='unsafe')
+
                     except Exception as e3:
                         self.showMsg(f'While reading image data from FITS file: {e3}')
                         self.image = None
@@ -8397,11 +8404,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     # End add composite plot
 
-    def testLower(self):
-        self.showMsg(f'lower value: {self.hLineLower.value():0.2f}')
+    def showLefthandValue(self):
+        self.showMsg(f'Lefthand value: {self.vLineLeft.value():0.2f}')
 
-    def testUpper(self):
-        self.showMsg(f'upper value: {self.hLineUpper.value():0.2f}')
+    def showRighthandValue(self):
+        self.showMsg(f'Righthand value: {self.vLineRight.value():0.2f}')
 
 
     def plotImagePixelDistibution(self, title='TBD', kind='DarkAndBright'):
@@ -8428,31 +8435,43 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         pw.hideButtons()
 
-        pw.plot(sortedPixels, pen=pg.mkPen('k', width=3))
+        # Decimate sorted pixels to speed up replotting while positioning lines
+        numdataPoints = len(sortedPixels)
+        stride = int(numdataPoints/500)
+
+        self.decimatedSortedPixels = []
+        for i in range(0,len(sortedPixels),stride):
+            self.decimatedSortedPixels.append(sortedPixels[i])
+
+        pw.plot(self.decimatedSortedPixels, pen=pg.mkPen('k', width=3))
         pw.addLegend()
-        pw.plot(name= f'Use mouse to drag green line up until the curve turns sharply upward.')
-        pw.plot(name=f'Then use mouse to drag blue line down until the curve turns sharply down..')
+        pw.plot(name= f'Use mouse to drag green line right until the curve turns sharply upward.')
+        pw.plot(name=f'Then use mouse to drag blue line left until the curve turns sharply down..')
         pw.plot(name=f'The aim is to enclose only "healthy" pixels.')
         if kind == 'DarkAndBright':
             pw.plot(name=f'If you are satisfied you may click the big yellow button but ...')
             pw.plot(name=f'... you can close this plot at any time and reopen later.')
+            pw.plot(name=f'... right-click to restore view to unzoomed.')
         else:
             pw.plot(name=f'If you are satisfied you may click the big orange button but ...')
             pw.plot(name=f'... you can close this plot at any time and reopen later.')
+            pw.plot(name=f'... right-click to restore view to unzoomed.')
 
-        mid = sortedPixels[sortedPixels.size // 2]
-        lowMax = mid - 5
-        upperMin = mid + 5
-        upperMax = sortedPixels[-1]
-        self.hLineLower = pg.InfiniteLine(pos=lowMax, angle=0, bounds=[0, lowMax],
+
+        mid = len(self.decimatedSortedPixels) // 2
+
+        lowMax = int(mid * 0.1)
+        upperMin = int(mid * 1.9)
+        upperMax = mid * 2
+        self.vLineLeft = pg.InfiniteLine(pos=lowMax, angle=90, bounds=[0, upperMax],
                                           movable=True, pen=pg.mkPen([0, 0, 255], width=3))
-        pw.addItem(self.hLineLower)
-        self.hLineLower.sigPositionChangeFinished.connect(self.testLower)
-        self.hLineUpper = pg.InfiniteLine(pos=upperMin, angle=0, bounds=[upperMin, upperMax],
+        pw.addItem(self.vLineLeft)
+        self.vLineLeft.sigPositionChangeFinished.connect(self.showLefthandValue)
+        self.vLineRight = pg.InfiniteLine(pos=upperMin, angle=90, bounds=[0, upperMax],
                                           movable=True, pen=pg.mkPen([0, 255, 0], width=3))
 
-        pw.addItem(self.hLineUpper)
-        self.hLineUpper.sigPositionChangeFinished.connect(self.testUpper)
+        pw.addItem(self.vLineRight)
+        self.vLineRight.sigPositionChangeFinished.connect(self.showRighthandValue)
 
         self.pixelWin = pg.GraphicsWindow(title=title)
         self.pixelWin.resize(1200, 700)
@@ -8461,11 +8480,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         layout.addWidget(pw, 0, 0)
 
         if kind == 'DarkAndBright':
-            button = QtGui.QPushButton('Use line settings to exclude too dark and too bright pixels')
+            button = QtWidgets.QPushButton('Use line settings to exclude too dark and too bright pixels')
             button.setStyleSheet("background-color : yellow")
             button.clicked.connect(self.findBrightAndDarkPixelCoords)
         else:
-            button = QtGui.QPushButton('Use line settings to exclude dead and too noisy pixels')
+            button = QtWidgets.QPushButton('Use line settings to exclude dead and too noisy pixels')
             button.setStyleSheet("background-color : orange")
             button.clicked.connect(self.findNoisyAndDeadPixelCoords)
 
@@ -8474,14 +8493,17 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         button.show()
 
     def findBrightAndDarkPixelCoords(self):
-        if self.hLineUpper is None:
+        if self.vLineRight is None:
             self.showMsgDialog('There are no bright and dark pixel frames to process.')
             return
-        brightThreshold = self.hLineUpper.value()
-        darkThreshold = self.hLineLower.value()
-        if brightThreshold - darkThreshold == 10:
-            self.showMsgDialog('It looks like you did not move the selection lines in the pixel distribution.')
-            return
+        brightThreshold = self.decimatedSortedPixels[round(self.vLineRight.value())]
+        darkThreshold = self.decimatedSortedPixels[round(self.vLineLeft.value())]
+        print(brightThreshold, darkThreshold)
+        # self.showLefthandValue()
+        # self.showRighthandValue()
+        # if brightThreshold - darkThreshold == 10:
+        #     self.showMsgDialog('It looks like you did not move the selection lines in the pixel distribution.')
+        #     return
         self.pixelWin.close()
         self.brightPixelCoords = np.argwhere(self.redactedImage > brightThreshold)
         # Correct the row values for any upper redaction that was required
@@ -8495,14 +8517,17 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.showMsg(f'num dark pixels: {len(self.darkPixelCoords)}')
 
     def findNoisyAndDeadPixelCoords(self):
-        if self.hLineUpper is None:
+        if self.vLineRight is None:
             self.showMsgDialog('There are no bright and dark pixel frames to process.')
             return
-        brightThreshold = self.hLineUpper.value()
-        darkThreshold = self.hLineLower.value()
-        if brightThreshold - darkThreshold == 10:
-            self.showMsgDialog('It looks like you did not move the selection lines in the pixel distribution.')
-            return
+        brightThreshold = self.decimatedSortedPixels[round(self.vLineRight.value())]
+        darkThreshold = self.decimatedSortedPixels[round(self.vLineLeft.value())]
+        print(brightThreshold, darkThreshold)
+        # self.showLefthandValue()
+        # self.showRighthandValue()
+        # if brightThreshold - darkThreshold == 10:
+        #     self.showMsgDialog('It looks like you did not move the selection lines in the pixel distribution.')
+        #     return
         self.pixelWin.close()
         self.noisyPixelCoords = np.argwhere(self.redactedImage > brightThreshold)
         # Correct the row values for any upper redaction that was required
@@ -8728,28 +8753,26 @@ def calcTheta(dx, dy):
         return None, None
     return theta, theta * 180 / PI
 
-# TODO Evaluate this experimental code
-def countSand(img, cut, background):
-    # cut is threshold
-    ret, t_mask = cv2.threshold(img, cut, 1, cv2.THRESH_BINARY)
-    labels = measure.label(t_mask, connectivity=2, background=0)
-    blob_count = np.max(labels)
-    sandCount = 0
-    starCount = 0
-
-    if blob_count > 0:
-        props = measure.regionprops(labels)
-        for prop in props:
-            if prop.area < 4:
-                sandCount += 1
-                for point in prop.coords:
-                    img[point[0], point[1]] = background
-                    # TODO Remove this print statement
-                    print(f'x,y: {point[0]},{point[1]} {len(prop.coords)}')
-            else:
-                starCount += 1
-
-    return sandCount, starCount
+# def countSand(img, cut, background):
+#     # cut is threshold
+#     ret, t_mask = cv2.threshold(img, cut, 1, cv2.THRESH_BINARY)
+#     labels = measure.label(t_mask, connectivity=2, background=0)
+#     blob_count = np.max(labels)
+#     sandCount = 0
+#     starCount = 0
+#
+#     if blob_count > 0:
+#         props = measure.regionprops(labels)
+#         for prop in props:
+#             if prop.area < 4:
+#                 sandCount += 1
+#                 for point in prop.coords:
+#                     img[point[0], point[1]] = background
+#                     print(f'x,y: {point[0]},{point[1]} {len(prop.coords)}')
+#             else:
+#                 starCount += 1
+#
+#     return sandCount, starCount
 
 def get_mask(
         img, ksize=(5, 5), cut=None, min_pixels=9,
