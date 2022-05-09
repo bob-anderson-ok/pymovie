@@ -1324,16 +1324,16 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         for frame in range(startFrame, stopFrame+1):
             self.currentFrameSpinBox.setValue(frame)
             QtGui.QGuiApplication.processEvents()
-            noiseFrame += np.multiply(self.image, self.image, dtype='float')
-            # noiseFrame = np.maximum(noiseFrame, self.image)
+            # noiseFrame += np.multiply(self.image, self.image, dtype='float')
+            noiseFrame = np.maximum(noiseFrame, self.image)
             darkFrame += self.image
 
         numFrames = stopFrame - startFrame + 1
         self.darkFrame = darkFrame / numFrames
-        Evalue_darkFrameSquared = np.multiply(self.darkFrame, self.darkFrame, dtype='float')
-        Evalue_noiseFrame = noiseFrame/numFrames
-        self.noiseFrame = np.sqrt(Evalue_noiseFrame - Evalue_darkFrameSquared)
-        # self.noiseFrame = noiseFrame
+        # Evalue_darkFrameSquared = np.multiply(self.darkFrame, self.darkFrame, dtype='float')
+        # Evalue_noiseFrame = noiseFrame/numFrames
+        # self.noiseFrame = np.sqrt(Evalue_noiseFrame - Evalue_darkFrameSquared)
+        self.noiseFrame = noiseFrame
 
         self.image = self.darkFrame
         self.showMsg(f'The "dark frame" just built is now being displayed.')
@@ -8498,7 +8498,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             return
         brightThreshold = self.decimatedSortedPixels[round(self.vLineRight.value())]
         darkThreshold = self.decimatedSortedPixels[round(self.vLineLeft.value())]
-        print(brightThreshold, darkThreshold)
+        # print(brightThreshold, darkThreshold)
         # self.showLefthandValue()
         # self.showRighthandValue()
         # if brightThreshold - darkThreshold == 10:
@@ -8522,7 +8522,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             return
         brightThreshold = self.decimatedSortedPixels[round(self.vLineRight.value())]
         darkThreshold = self.decimatedSortedPixels[round(self.vLineLeft.value())]
-        print(brightThreshold, darkThreshold)
+        # print(brightThreshold, darkThreshold)
         # self.showLefthandValue()
         # self.showRighthandValue()
         # if brightThreshold - darkThreshold == 10:
