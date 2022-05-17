@@ -75,6 +75,8 @@ except ImportError:
 
 import site
 import warnings
+from numba import njit
+from numba.typed import List
 from astropy.utils.exceptions import AstropyWarning
 from astropy.time import Time
 import sys
@@ -120,7 +122,7 @@ from astropy import wcs
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astroquery.vizier import Vizier
-from skimage import measure, exposure
+from skimage import measure, exposure, transform
 import skimage
 import subprocess
 
@@ -758,7 +760,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.darkPixelCoords = None
         self.noisyPixelCoords = None
         self.deadPixelCoords = None
-        self.outlawPoints = None
+        # self.outlawPoints = None
+        self.outlawPoints = [()]  # outlaw points is a list of coordinate tuples
 
         # self.rowsToSumList = [0,1,100,101,200,201,300,301,400,401]
         self.rowsToSumList = []
@@ -1384,6 +1387,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.showFrame()
             self.applyMedianFilterToImage()
 
+    # @njit
     def scrubImage(self, image):
         dirtyImage = np.copy(image)
         cleanImage = np.copy(image)
@@ -3914,6 +3918,35 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             keyname = PyQt5.QtGui.QKeySequence(modifiers + key).toString()
             self.showMsg(f'key(s) pressed: {keyname}  raw: {key}')
 
+    def showStatusBarWcsInfo(self):
+        statusMsg = self.statusbar.currentMessage()
+        parts = statusMsg.split('W')
+
+        if len(parts) < 2:
+            self.showMsg('There is no WCS information available')
+            self.showMsgDialog('There is no WCS information available')
+            return
+
+        # self.showMsg(self.statusbar.currentMessage())
+        wcsParts = parts[1].split(' ')
+        if len(wcsParts) < 4:
+            self.showMsg(f'Invalid WCS data string. Found: {wcsParts}')
+            return
+
+        if wcsParts[2] == '(only':
+            self.showMsg(f'W{parts[1]}')
+            self.showMsgDialog(f'W{parts[1]}')
+            return
+        raInfo = wcsParts[2].split('.')[0]
+        decInfo = wcsParts[3].split('.')[0]
+        self.showMsg(f'{raInfo}  {decInfo}')
+        raParts1 = raInfo.split('m')
+        raParts2 = raParts1[0].split('h')
+        decParts1 = decInfo.split('m')
+        decParts2 = decParts1[0].split('d')
+        self.showMsgDialog((f' RA:\t{raParts2[0]}\t{raParts2[1]}\t{raParts1[1]}\n\n'
+                            f'DEC:\t{decParts2[0]}\t{decParts2[1]}\t{decParts1[1]}'))
+
     def processKeystroke(self, event):
 
         def inOcrBox(x_pos, y_pos, box_coords_in):
@@ -3925,6 +3958,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         modifiers = int(event.modifiers())
 
         self.displayKeystroke(event)
+
+        if key == ord('W'):
+            self.showStatusBarWcsInfo()
+            return True
 
         if key == ord('K'):  # Could be 'k' or 'K'
             if modifiers & Qt.SHIFT == Qt.SHIFT: # it's 'K'
@@ -4846,7 +4883,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             return True
 
         return super(PyMovie, self).eventFilter(obj, event)
-        # return False
 
     @pyqtSlot('PyQt_PyObject')
     def handleAppSignal(self, aperture):  # aperture is an instance of MeasurementAperture
@@ -7247,6 +7283,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 else:
                     got_frame_number = True
                     got_fits_wcs_calibration = True
+                    self.wcs_solution_available = True
                     self.currentFrameSpinBox.setValue(frame_num_of_wcs)
 
         if not got_fits_wcs_calibration:  # try for manual WCS placement
@@ -7270,6 +7307,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         if got_fits_wcs_calibration and got_star_position and got_frame_number:
             self.wcs_frame_num = frame_num_of_wcs
+            # if not ss == '0h0m0s +0d0m0s':
             self.setApertureFromWcsData(ss, wcs_fits[0])
 
         if got_manual_wcs_calibration and got_star_position and got_frame_number:
@@ -8068,11 +8106,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def setApertureFromWcsData(self, star_location, wcs_fits):
 
-        try:
-            star_loc = SkyCoord(star_location, frame='icrs')
-        except Exception as e:
-            self.showMsg(f'star location string is invalid: {e}')
-            return
+        star_loc = None
+
+        if not star_location == '0h0m0s +0d0m0s':  # If it's not a real star location SkyCoord won't tolerate it.
+            try:
+                star_loc = SkyCoord(star_location, frame='icrs')
+            except Exception as e:
+                self.showMsg(f'star location string is invalid: {e}')
+                return
 
         # This context capture of AstropyWarning is to suppress the innocuous warning
         # FITSFixedWarning: The WCS transformation has more axes(2) than ....
@@ -8083,6 +8124,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         # Make the solution available for the cursor move routine
         self.wcs = w
+        self.wcs_solution_available = True
+
+        if star_loc is None:
+            return
+
         # self.showMsg(f'w.wcs.name={w.wcs.name}')
         # pixcrd = np.array([[200, 200]], dtype='float')
         # world = w.wcs_pix2world(pixcrd, 0)
@@ -8094,7 +8140,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         ycoord = pixcrd2[1].tolist()
         x = xcoord
         y = ycoord
-
 
         # Correct for pixel aspect ratio
         if not self.pixelAspectRatio == 1.0:
@@ -9057,9 +9102,9 @@ def newRobustMeanStd(
         return lower_mean, MAD, sorted_data, sorted_data, window, data.size, first_index, last_index
 
     if sorted_data.dtype == '>f4':
-        my_hist = np.bincount(sorted_data.astype(np.int, casting='unsafe'))
+        my_hist = np.bincount(sorted_data.astype('int', casting='unsafe'))
     elif sorted_data.dtype == '>f8':
-        my_hist = np.bincount(sorted_data.astype(np.int, casting='unsafe'))
+        my_hist = np.bincount(sorted_data.astype('int', casting='unsafe'))
     else:
         my_hist = np.bincount(sorted_data)
 

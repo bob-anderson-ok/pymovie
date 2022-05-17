@@ -1408,10 +1408,17 @@
                   </size>
                  </property>
                  <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button is used to get a WCS calibration for the current image by utilizing the on-line service nova.astrometry.net&lt;/p&gt;&lt;p&gt;If this service fails (see discussion below) then you could try the&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt; Manual WCS calibration&lt;/span&gt; button. It prompts you to put an aperture around two known stars in your image by using a star chart (preferably with UCAC4 star designations). If those stars are sufficiently far apart, we can use the icrs coordinates in conjuction with the xy position of the aperture to 'calibrate' that image.&lt;/p&gt;&lt;p&gt;nova.astrometry.net is designed to do 'blind' identification and WCS calibration on star field images. But it will not be able to identify images that have a too narrow field of view. If your field of view is under 15 arcmin, it is not likely to be able to calibrate that image and it will spend a long time (many minutes) trying. If an image is going to be successfully identified, it will take only a few seconds of cpu time after getting a job assigned (which takes one to two minutes).&lt;/p&gt;&lt;p&gt;Note: another possible reason for a 'failure' is that the camera pixels used for the video were not square and the proper pixel width and height values were not specified properly.&lt;/p&gt;&lt;p&gt;Clicking this button reads the current frame and redacts the timestamp area by replacing all bytes in the timestamp zone with the Robust background (constant value).&lt;/p&gt;&lt;p&gt;The number of lines to be redacted are controlled by the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;redact lines&lt;/span&gt; edit box.&lt;/p&gt;&lt;p&gt;This redacted image is written as a file suitable for submission to nova.astrometry.net together with a user entered target star position (RA and Dec at J2000). The image will have been resized based on the pixel width and height information for non-square pixels in the source camera.&lt;/p&gt;&lt;p&gt;The entries for the star position values are entered into a star position dialog that will appear if no star position has yet been defined.&lt;/p&gt;&lt;p&gt;That same dialog form provides for the entry of the user's nova.astrometry.net api key. This value will be 'sticky' (preserved across runs of PyMovie) and is required for submitting images for WCS calibration. It's easy (and free) to obtain. Simply go to nova.astrometry.net and sign in by clicking on your choice of credential supplier, no need to create a username/password combination. After signing in, click on My Profile and your api key will be displayed there.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button is used to get a WCS calibration for the current image by utilizing the on-line service nova.astrometry.net &lt;/p&gt;&lt;p&gt;If the WCS calibration is successful, while the frame that was submitted for calibration is displayed, hovering the mouse over the image will cause the RA/DEC information to be displayed in the status bar at the bottom left of the window. Additionally, if the w key is pressed while RA/DEC info is available, a box will popup with RA/DEC information formatted for easy entry into C2A.&lt;/p&gt;&lt;p&gt;If this service fails (see discussion below) then you could try the&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt; Manual WCS calibration&lt;/span&gt; button. It prompts you to put an aperture around two known stars in your image by using a star chart (preferably with UCAC4 star designations). If those stars are sufficiently far apart, we can use the icrs coordinates in conjuction with the xy position of the aperture to 'calibrate' that image.&lt;/p&gt;&lt;p&gt;nova.astrometry.net is designed to do 'blind' identification and WCS calibration on star field images. But it will not be able to identify images that have a too narrow field of view. If your field of view is under 15 arcmin, it is not likely to be able to calibrate that image and it will spend a long time (many minutes) trying. If an image is going to be successfully identified, it will take only a few seconds of cpu time after getting a job assigned (which takes one to two minutes).&lt;/p&gt;&lt;p&gt;Note: another possible reason for a 'failure' is that the camera pixels used for the video were not square and the proper pixel width and height values were not specified properly.&lt;/p&gt;&lt;p&gt;Clicking this button reads the current frame and redacts the timestamp area by replacing all bytes in the timestamp zone with the Robust background (constant value).&lt;/p&gt;&lt;p&gt;The number of lines to be redacted are controlled by the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;redact lines&lt;/span&gt; edit box.&lt;/p&gt;&lt;p&gt;This redacted image is written as a file suitable for submission to nova.astrometry.net together with a user entered target star position (RA and Dec at J2000). The image will have been resized based on the pixel width and height information for non-square pixels in the source camera.&lt;/p&gt;&lt;p&gt;The entries for the star position values are entered into a star position dialog that will appear if no star position has yet been defined.&lt;/p&gt;&lt;p&gt;That same dialog form provides for the entry of the user's nova.astrometry.net api key. This value will be 'sticky' (preserved across runs of PyMovie) and is required for submitting images for WCS calibration. It's easy (and free) to obtain. Simply go to nova.astrometry.net and sign in by clicking on your choice of credential supplier, no need to create a username/password combination. After signing in, click on My Profile and your api key will be displayed there.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                  </property>
                  <property name="text">
                   <string>astrometry WCS calib</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="label_4">
+                 <property name="text">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Note: if WCS calibration succeeds, hovering over the&lt;/p&gt;&lt;p&gt;calibrated image will cause RA/DEC information to&lt;/p&gt;&lt;p&gt;be displayed in the status bar (bottom, left) and&lt;/p&gt;&lt;p&gt;pressing the w key will cause a popup box with&lt;/p&gt;&lt;p&gt;RA/DEC information formatted for easy entry into C2A&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                  </property>
                 </widget>
                </item>
@@ -1447,6 +1454,9 @@
                      <height>16777215</height>
                     </size>
                    </property>
+                   <property name="text">
+                    <string>0</string>
+                   </property>
                   </widget>
                  </item>
                  <item>
@@ -1462,6 +1472,9 @@
                      <width>40</width>
                      <height>16777215</height>
                     </size>
+                   </property>
+                   <property name="text">
+                    <string>0</string>
                    </property>
                   </widget>
                  </item>
@@ -1530,6 +1543,9 @@
                      <height>16777215</height>
                     </size>
                    </property>
+                   <property name="text">
+                    <string>4</string>
+                   </property>
                   </widget>
                  </item>
                  <item>
@@ -1545,6 +1561,9 @@
                      <width>40</width>
                      <height>16777215</height>
                     </size>
+                   </property>
+                   <property name="text">
+                    <string>4</string>
                    </property>
                   </widget>
                  </item>
