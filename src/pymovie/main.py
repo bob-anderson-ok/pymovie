@@ -7506,8 +7506,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
                         # TODO Check that this works
                         self.image = self.image.astype('uint16', casting='unsafe')
-                        self.image = self.image / 16
-                        self.image = self.image.astype('uint16', casting='unsafe')
+                        # self.image = self.image / 16
+                        # self.image = self.image.astype('uint16', casting='unsafe')
 
                     except Exception as e3:
                         self.showMsg(f'While reading image data from FITS file: {e3}')
