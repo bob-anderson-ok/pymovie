@@ -3482,8 +3482,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.centerAperture(aperture, show_stats=False)
         if showDefaultMaskInThumbnail2:
             self.getApertureStats(aperture, show_stats=True)
-            mask = aperture.defaultMask
-            self.thumbTwoView.setImage(mask)
+            # Version 3.4.1 commented out next two lines
+            # mask = aperture.defaultMask
+            # self.thumbTwoView.setImage(mask)
         else:
             self.getApertureStats(aperture, show_stats=True)
         QtGui.QGuiApplication.processEvents()
@@ -3835,6 +3836,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             if self.levels:
                 self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
                 self.thumbOneView.setLevels(min=self.levels[0], max=self.levels[1])
+                # Version 3.4.1 added
+                self.thumbTwoView.setLevels(min=self.levels[0], max=self.levels[1])
 
     def getSerFrame(self, frameNum):
         bytes_per_pixel = self.ser_meta_data['BytesPerPixel']
@@ -5975,16 +5978,22 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             centroid = (self.roi_center, self.roi_center)
             comment = f'default mask used'
 
+        # Version 3.4.1
+        thumbnail = thumbnail.astype('int32')
+        maxThumbnailPixel = np.max(thumbnail)
+        minThumbnailPixel = np.min(thumbnail)
+
         if show_stats:
             if self.pointed_at_aperture is not None:
                 if aperture == self.pointed_at_aperture:
                     self.thumbnail_one_aperture_name = aperture.name
                     self.thumbOneImage = thumbnail
-                    # self.thumbOneView.setImage(thumbnail)
-                    # if self.levels:
-                    #     self.thumbOneView.setLevels(min=self.levels[0], max=self.levels[1])
+                    # Version 3.4.1 added following line
+                    self.thumbOneView.setImage(thumbnail,
+                                               levels=(minThumbnailPixel, maxThumbnailPixel))
                     self.thumbnailOneLabel.setText(aperture.name)
-                    self.thumbTwoView.setImage(mask)
+                    # Version 3.4.1 added levels parameter
+                    self.thumbTwoView.setImage(mask, levels=(minThumbnailPixel, maxThumbnailPixel))
             else:
                 priority_aperture_present = False
                 for app in self.getApertureList():
@@ -5996,19 +6005,23 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     if aperture.thumbnail_source:
                         self.thumbnail_one_aperture_name = aperture.name
                         self.thumbOneImage = thumbnail
-                        # self.thumbOneView.setImage(thumbnail)
-                        # if self.levels:
-                        #     self.thumbOneView.setLevels(min=self.levels[0], max=self.levels[1])
+                        # Version 3.4.1 added following line
+                        self.thumbOneView.setImage(thumbnail,
+                                                   levels=(minThumbnailPixel, minThumbnailPixel))
                         self.thumbnailOneLabel.setText(aperture.name)
-                        self.thumbTwoView.setImage(mask)
+                        # Version 3.4.1 added levels parameter
+                        self.thumbTwoView.setImage(mask,
+                                                   levels=(minThumbnailPixel, maxThumbnailPixel))
                 else:
                     self.thumbnail_one_aperture_name = aperture.name
                     self.thumbOneImage = thumbnail
-                    # self.thumbOneView.setImage(thumbnail)
-                    # if self.levels:
-                    #     self.thumbOneView.setLevels(min=self.levels[0], max=self.levels[1])
+                    # Version 3.4.1 added following line
+                    self.thumbOneView.setImage(thumbnail,
+                                               levels=(minThumbnailPixel, maxThumbnailPixel))
                     self.thumbnailOneLabel.setText(aperture.name)
-                    self.thumbTwoView.setImage(mask)
+                    # Version 3.4.1 added levels parameter
+                    self.thumbTwoView.setImage(mask,
+                                               levels=(minThumbnailPixel, maxThumbnailPixel))
 
             self.hair1.setPos((0,self.roi_size))
             self.hair2.setPos((0,0))
@@ -6028,9 +6041,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 (255, 0, 0)       # red
             ]
 
-            x1 = x0 = np.max(thumbnail).astype('int32')
-            red_cusp = satPixelValue / x1
-            # self.showMsg(f'cusp: {red_cusp:0.5f}  satPixValue: {satPixelValue:0.1f} x1: {x1:0.0f}  x0: {x0:0.0f}')
+            red_cusp = satPixelValue / maxThumbnailPixel
             if red_cusp >= 1.0:
                 red_cusp = 1.0
                 thumb1_colors[2] = (255, 255, 255)  # white (no saturation)
@@ -6040,40 +6051,40 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             # black_and_white = pg.ColorMap([0.0, 1.0], color=[(0,0,0),(255,255,255)])
 
             thumbOneImage = thumbnail.astype('int32')
-            self.thumbOneView.setImage(thumbOneImage, levels=(0, x1))
+            self.thumbOneView.setImage(thumbOneImage,
+                                       levels=(minThumbnailPixel, maxThumbnailPixel))
             self.thumbOneView.setColorMap(cmap_thumb1)
 
 
             # Show the pixels included by the mask
             if self.use_yellow_mask:
                 self.thumbTwoImage = self.yellow_mask * thumbnail
-                maskedImage = self.yellow_mask * thumbnail
+                # maskedImage = self.yellow_mask * thumbnail
             else:
                 self.thumbTwoImage = mask * thumbnail
-                maskedImage = mask * thumbnail
+                # maskedImage = mask * thumbnail
 
-            x1 = np.max(maskedImage).astype('int32')
-            red_cusp = satPixelValue / x1
+            red_cusp = satPixelValue / maxThumbnailPixel
             if red_cusp >= 1.0:
                 red_cusp = 1.0
                 thumb2_colors[3] = (255, 255, 255)
 
             pedestal = 1  # This value needs to coordinated with the value in mouseMovedInThumbTwo
-            pedestal_cusp = pedestal / (x1 + 0)
+            pedestal_cusp = pedestal / (maxThumbnailPixel + 0)
             cmap_thumb2 = pg.ColorMap([0.0, pedestal_cusp, red_cusp, 1.0], color=thumb2_colors)
 
             # Add a pedestal (only to masked pixels) so that we can trigger a yellow background
             # for values of 0
-            np.clip(self.thumbTwoImage, 0, x0 - 1)  # ... so that we can add 1 without overflow concerns
+            np.clip(self.thumbTwoImage, 0, minThumbnailPixel - 1)  # ... so that we can add 1 without overflow concerns
             if self.thumbTwoImage is not None:
                 if self.use_yellow_mask:
                     self.thumbTwoImage += self.yellow_mask # Put the masked pixels on the pedestal
                 else:
                     # self.thumbTwoImage += pedestal # Put the masked pixels on the pedestal
                     self.thumbTwoImage += mask # Put the masked pixels on the pedestal
-                self.thumbTwoView.setImage(self.thumbTwoImage, levels=(0, x1))
+                self.thumbTwoView.setImage(self.thumbTwoImage,
+                                           levels=(minThumbnailPixel, maxThumbnailPixel))
                 self.thumbTwoView.setColorMap(cmap_thumb2)
-                # self.thumbTwoView.setImage(self.thumbTwoImage)
 
         if self.use_yellow_mask and self.yellow_mask is not None:
             default_mask_used = False
@@ -6450,6 +6461,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             if self.levels:
                 self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
                 self.thumbOneView.setLevels(min=self.levels[0], max=self.levels[1])
+                # Version 3.4.1 added next line
+                self.thumbTwoView.setLevels(min=self.levels[0], max=self.levels[1])
 
 
     def getFrame(self, fr_num):
@@ -7504,10 +7517,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         if self.lineNoiseFilterCheckBox.isChecked():
                             self.applyMedianFilterToImage()
 
-                        # TODO Check that this works
                         self.image = self.image.astype('uint16', casting='unsafe')
-                        # self.image = self.image / 16
-                        # self.image = self.image.astype('uint16', casting='unsafe')
 
                     except Exception as e3:
                         self.showMsg(f'While reading image data from FITS file: {e3}')
