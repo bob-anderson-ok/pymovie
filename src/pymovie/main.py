@@ -7487,8 +7487,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     try:
                         hdr = pyfits.getheader(self.fits_filenames[frame_to_show], 0)
 
-                        self.image = pyfits.getdata(
-                            self.fits_filenames[frame_to_show], 0)
+                        self.image = pyfits.getdata(self.fits_filenames[frame_to_show], 0)
+
+                        # TODO Remove this test code. It breaks "finder"
+                        # self.image = self.image / 256
 
                         _, filename = os.path.split(self.fits_filenames[frame_to_show])
                         _, foldername = os.path.split(self.filename)

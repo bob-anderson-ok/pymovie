@@ -2,7 +2,7 @@ from pymovie import apertureEditDialog
 from PyQt5.QtWidgets import QDialog
 from PyQt5 import QtGui
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QTableWidgetItem
+from PyQt5.QtWidgets import QTableWidgetItem, QMenu, QAction
 import numpy as np
 
 
@@ -223,32 +223,34 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
         # self.msgRoutine(f'row: {self.row}  column: {self.col} items: {items[0]}')
 
         if 5 <= self.col <= 7:
-            self.menu = QtGui.QMenu()
-            doTrue = QtGui.QAction("Set True", self)
+            self.menu = QMenu()
+            # self.menu = QtGui.QMenu()
+            doTrue = QAction("Set True", self)
             doTrue.triggered.connect(self.setTrue)
             self.menu.addAction(doTrue)
 
-            doFalse = QtGui.QAction("Set False", self)
+            doFalse = QAction("Set False", self)
             doFalse.triggered.connect(self.setFalse)
             self.menu.addAction(doFalse)
 
             self.menu.popup(QtGui.QCursor.pos())
         elif self.col == 4:
-            self.menu = QtGui.QMenu()
+            self.menu = QMenu()
+            # self.menu = QtGui.QMenu()
 
-            setRed = QtGui.QAction("Set red (standard)", self)
+            setRed = QAction("Set red (standard)", self)
             setRed.triggered.connect(self.setRed)
             self.menu.addAction(setRed)
 
-            setGreen = QtGui.QAction("Set green (connect to threshold spinner)", self)
+            setGreen = QAction("Set green (connect to threshold spinner)", self)
             setGreen.triggered.connect(self.setGreen)
             self.menu.addAction(setGreen)
 
-            setYellow = QtGui.QAction("Set yellow (tracking aperture)", self)
+            setYellow = QAction("Set yellow (tracking aperture)", self)
             setYellow.triggered.connect(self.setYellow)
             self.menu.addAction(setYellow)
 
-            setWhite = QtGui.QAction("Set white (special flash tag aperture)", self)
+            setWhite = QAction("Set white (special flash tag aperture)", self)
             setWhite.triggered.connect(self.setWhite)
             self.menu.addAction(setWhite)
 
