@@ -1,3 +1,4 @@
+# sourcery skip: de-morgan
 """
 The gui module was created by typing
    from PyQt5.uic import pyuic
@@ -355,6 +356,7 @@ class AppGroupTagDialog(QDialog, aperturesFileTagDialog.Ui_Dialog):
 
 class Qt5MplCanvas(FigureCanvas):
     def __init__(self, img, title='Bobs plot', invert=False):
+        # sourcery skip: assign-if-exp
         # self.fig = Figure()
         # self.fig = Figure((5.0, 4.0), dpi=100)  # 5x4 inches at 100 dpi
         self.fig = plt.figure()
@@ -371,8 +373,7 @@ class Qt5MplCanvas(FigureCanvas):
         if invert:
             self.y = range(img.shape[1])
         else:
-            self.y = range(img.shape[1]-1, -1, -1)
-
+            self.y = range(img.shape[1] - 1, -1, -1)
         self.x, self.y = np.meshgrid(self.x, self.y)
         self.surf = self.ax.plot_surface(self.x, self.y, img, rstride=1, cstride=1,
                                          cmap='viridis', linewidth=0)
@@ -2500,15 +2501,15 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         gotVersion, latestVersion = getMostRecentVersionOfPyMovieViaJason()
         if gotVersion:
             if latestVersion <= version.version():
-                self.showMsg(f'Found the latest version is: {latestVersion}')
+                # self.showMsg(f'Found the latest version is: {latestVersion}')
                 self.showMsg('You are running the most recent version of PyMovie')
             else:
                 self.showMsg('Version ' + latestVersion + ' is available')
-                if self.queryWhetherNewVersionShouldBeInstalled() == QMessageBox.Yes:
-                    self.showMsg('You have opted to install latest version of PyMovie')
-                    self.installLatestVersion(f'pymovie=={latestVersion}')
-                else:
-                    self.showMsg('You have declined the opportunity to install latest PyMovie')
+                # if self.queryWhetherNewVersionShouldBeInstalled() == QMessageBox.Yes:
+                #     self.showMsg('You have opted to install latest version of PyMovie')
+                #     self.installLatestVersion(f'pymovie=={latestVersion}')
+                # else:
+                #     self.showMsg('You have declined the opportunity to install latest PyMovie')
         else:
             self.showMsg(f'latestVersion found: {latestVersion}')
 
@@ -7488,9 +7489,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         hdr = pyfits.getheader(self.fits_filenames[frame_to_show], 0)
 
                         self.image = pyfits.getdata(self.fits_filenames[frame_to_show], 0)
-
-                        # TODO Remove this test code. It breaks "finder"
-                        # self.image = self.image / 256
 
                         _, filename = os.path.split(self.fits_filenames[frame_to_show])
                         _, foldername = os.path.split(self.filename)
