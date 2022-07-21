@@ -1228,7 +1228,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         QtGui.QGuiApplication.processEvents()
         self.checkForNewerVersion()
 
-        self.copy_desktop_icon_file_to_home_directory()
+        # self.copy_desktop_icon_file_to_home_directory()
 
         # TODO Comment these lines out when not doing memory usage studies
         # self.memTracker = None
