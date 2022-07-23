@@ -50,8 +50,7 @@ def getUrlAsText(url):
             print(f"Fetch of `{url}' failed: Unknown reason")
         return None
     html = response.read()
-    text = html.decode("utf-8")
-    return text
+    return html.decode("utf-8")
 
 def upgradePyMovie(pymovieversion):
 
@@ -60,6 +59,4 @@ def upgradePyMovie(pymovieversion):
     resp = subprocess.run(['python', '-m', 'pip', 'install', '--user', '--upgrade', pymovieversion],
                           stderr=subprocess.PIPE, stdout=subprocess.PIPE)
 
-    ans = resp.stdout.decode("utf-8").split('\n')
-
-    return ans
+    return resp.stdout.decode("utf-8").split('\n')

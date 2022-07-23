@@ -248,7 +248,7 @@ def frameStacker(pr, progress_bar, event_process,
 
         # Calculate progress [1..100]
         fraction_done = (next_frame - first_frame) / (last_frame - first_frame)
-        progress_bar.setValue(fraction_done * 100)
+        progress_bar.setValue(int(fraction_done * 100))
         event_process()
 
         rows_to_roll_to_center = None

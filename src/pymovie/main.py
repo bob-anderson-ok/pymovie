@@ -2499,6 +2499,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def checkForNewerVersion(self):
         gotVersion, latestVersion = getMostRecentVersionOfPyMovieViaJason()
+        # TODO Remove these debug lines
+        self.showMsg(f"latest version: {latestVersion}")
+        self.showMsg(f"version.version(): {version.version()}")
         if gotVersion:
             if latestVersion <= version.version():
                 # self.showMsg(f'Found the latest version is: {latestVersion}')
