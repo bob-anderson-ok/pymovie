@@ -1,8 +1,9 @@
 import pyqtgraph as pg
-from pyqtgraph.Qt import QtCore, QtGui
+# from pyqtgraph.Qt import QtGui
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QDialog
 from pymovie import apertureNameDialog
+import PyQt5
 
 
 class AppNameDialog(QDialog, apertureNameDialog.Ui_Dialog):
@@ -10,8 +11,9 @@ class AppNameDialog(QDialog, apertureNameDialog.Ui_Dialog):
         super(AppNameDialog, self).__init__()
         self.setupUi(self)
 
+
 class HorizontalLine(pg.GraphicsObject):
-    def __init__(self, rowNumber, height, width, colorStr):  # Intialize aperture specified by a bounding box
+    def __init__(self, rowNumber, height, width, colorStr):  # Initialize aperture specified by a bounding box
         self.pen = pg.mkPen(colorStr)
         self.y0 = rowNumber
         self.x0 = 0
@@ -31,11 +33,12 @@ class HorizontalLine(pg.GraphicsObject):
 
     # All graphics items must have boundingRect() defined.
     def boundingRect(self):
-        return QtCore.QRectF(0, 0, self.w, self.h)
+        return PyQt5.QtCore.QRectF(0, 0, self.w, self.h)
 
     def setRow(self, row):
         self.y0 = row
         self.update()
+
 
 class MeasurementAperture(pg.GraphicsObject):
     """
@@ -47,20 +50,20 @@ class MeasurementAperture(pg.GraphicsObject):
     # Define Qt Signal that we will use to send information from this object to the UI
     # We are going sent the aperture object itself to the connected slot so that all
     # the object attributes (position and size) are available to the receiver.
-    sendAperture = pyqtSignal('PyQt_PyObject')
-    sendRecenter = pyqtSignal('PyQt_PyObject')
-    sendSetThresh = pyqtSignal('PyQt_PyObject')
-    sendSetGreen = pyqtSignal('PyQt_PyObject')
-    sendSetYellow = pyqtSignal('PyQt_PyObject')
-    sendDelete = pyqtSignal('PyQt_PyObject')
-    sendThumbnailSource = pyqtSignal('PyQt_PyObject')
-    sendSetRaDec = pyqtSignal('PyQt_PyObject')
-    sendSetEarlyTrackPathPoint = pyqtSignal('PyQt_PyObject')
-    sendSetLateTrackPathPoint = pyqtSignal('PyQt_PyObject')
-    sendHotPixelRecord = pyqtSignal('PyQt_PyObject')
-    sendClearTrackPath = pyqtSignal('PyQt_PyObject')
+    # sendAperture = pyqtSignal('PyQt_PyObject')
+    # sendRecenter = pyqtSignal('PyQt_PyObject')
+    # sendSetThresh = pyqtSignal('PyQt_PyObject')
+    # sendSetGreen = pyqtSignal('PyQt_PyObject')
+    # sendSetYellow = pyqtSignal('PyQt_PyObject')
+    # sendDelete = pyqtSignal('PyQt_PyObject')
+    # sendThumbnailSource = pyqtSignal('PyQt_PyObject')
+    # sendSetRaDec = pyqtSignal('PyQt_PyObject')
+    # sendSetEarlyTrackPathPoint = pyqtSignal('PyQt_PyObject')
+    # sendSetLateTrackPathPoint = pyqtSignal('PyQt_PyObject')
+    # sendHotPixelRecord = pyqtSignal('PyQt_PyObject')
+    # sendClearTrackPath = pyqtSignal('PyQt_PyObject')
 
-    def __init__(self, name, bbox, max_xpos, max_ypos):  # Intialize aperture specified by a bounding box
+    def __init__(self, name, bbox, max_xpos, max_ypos):  # Initialize aperture specified by a bounding box
         self.name = name
         self.thresh = 0
         self.pen = pg.mkPen('r')
@@ -93,7 +96,7 @@ class MeasurementAperture(pg.GraphicsObject):
         # Enforce the restrictions even during creation
         self.enforcePositioningConstraints(bbox)
 
-        # menu creation is deferred because it is expensive and often
+        # menu creation is deferred because it is expensive (not really) and often
         # the user will never see the menu anyway.
         self.menu = None
 
@@ -134,7 +137,7 @@ class MeasurementAperture(pg.GraphicsObject):
 
     # All graphics items must have boundingRect() defined.
     def boundingRect(self):
-        return QtCore.QRectF(self.x0, self.y0, self.xsize, self.ysize)
+        return PyQt5.QtCore.QRectF(self.x0, self.y0, self.xsize, self.ysize)
 
     # All graphics items must have paint() defined.
     def paint(self, p, *args):
@@ -146,166 +149,166 @@ class MeasurementAperture(pg.GraphicsObject):
         p.drawLine(self.x0, self.y0 + self.ysize, self.x0 + self.xsize, self.y0)
 
     # On right-click, raise the context menu
-    def mouseClickEvent(self, ev):
-        if ev.button() == QtCore.Qt.RightButton:
-            if self.raiseContextMenu(ev):
-                ev.accept()
+    # def mouseClickEvent(self, ev):
+    #     if ev.button() == PyQt5.QtCore.Qt.MouseButton.RightButton:
+    #         if self.raiseContextMenu(ev):
+    #             ev.accept()
 
-    def raiseContextMenu(self, ev):
-        menu = self.getContextMenus()
+    # def raiseContextMenu(self, ev):
+    #     self.menu = self.getContextMenus()
+    #
+    #     Let the scene add on to the end of our context menu
+    #     (this is optional)
+    #     menu = self.scene().addParentContextMenus(self, menu, ev)
 
-        # Let the scene add on to the end of our context menu
-        # (this is optional)
-        # menu = self.scene().addParentContextMenus(self, menu, ev)
-
-        pos = ev.screenPos()
-        menu.popup(QtCore.QPoint(pos.x(), pos.y()))
-        return True
+    #     pos = ev.screenPos()
+    #     self.menu.popup(PyQt5.QtCore.QPoint(pos.x(), pos.y()))
+    #     return True
 
     # This method will be called when this item's _children_ want to raise
     # a context menu that possibly includes their parents' menus.
-    def getContextMenus(self, event=None):
-        if self.menu is None:
-            self.menu = QtGui.QMenu()
-            self.menu.setTitle(self.name + " options..")  # This appears to do nothing
-
-            setthresh = QtGui.QAction("Set thresh", self.menu)
-            setthresh.triggered.connect(self.setThresh)
-            self.menu.addAction(setthresh)
-
-            self.menu.addSeparator()
-
-            delete = QtGui.QAction("Delete", self.menu)
-            delete.triggered.connect(self.delete)
-            self.menu.addAction(delete)
-
-            rename = QtGui.QAction("Rename", self.menu)
-            rename.triggered.connect(self.rename)
-            self.menu.addAction(rename)
-
-            self.menu.addSeparator()
-
-            enable_jog = QtGui.QAction("Enable jogging via arrow keys", self.menu)
-            enable_jog.triggered.connect(self.enableJog)
-            self.menu.addAction(enable_jog)
-
-            disable_jog = QtGui.QAction("Disable jogging", self.menu)
-            disable_jog.triggered.connect(self.disableJog)
-            self.menu.addAction(disable_jog)
-
-            self.menu.addSeparator()
-
-            enable_auto_display = QtGui.QAction("Enable auto display", self.menu)
-            enable_auto_display.triggered.connect(self.enableAutoDisplay)
-            self.menu.addAction(enable_auto_display)
-
-            disable_auto_display = QtGui.QAction("Disable auto display", self.menu)
-            disable_auto_display.triggered.connect(self.disableAutoDisplay)
-            self.menu.addAction(disable_auto_display)
-
-            self.menu.addSeparator()
-
-            enable_thumbnail_source = QtGui.QAction("Set as Thumbnail source", self.menu)
-            enable_thumbnail_source.triggered.connect(self.enableThumbnailSource)
-            self.menu.addAction(enable_thumbnail_source)
-
-            disable_thumbnail_source = QtGui.QAction("Unset as Thumbnail source", self.menu)
-            disable_thumbnail_source.triggered.connect(self.disableThumbnailSource)
-            self.menu.addAction(disable_thumbnail_source)
-
-            self.menu.addSeparator()
-
-            green = QtGui.QAction("Turn green (connect to threshold spinner)", self.menu)
-            green.triggered.connect(self.setGreenRequest)
-            self.menu.addAction(green)
-
-            red = QtGui.QAction("Turn red", self.menu)
-            red.triggered.connect(self.setRed)
-            self.menu.addAction(red)
-
-            yellow = QtGui.QAction("Turn yellow (use as tracking aperture)", self.menu)
-            yellow.triggered.connect(self.setYellow)
-            self.menu.addAction(yellow)
-
-            white = QtGui.QAction("Turn white (special 'flash-tag' aperture)", self.menu)
-            white.triggered.connect(self.setWhite)
-            self.menu.addAction(white)
-
-            self.menu.addSeparator()
-
-            early_track_path_point = QtGui.QAction("Use current position as early track path point", self.menu)
-            early_track_path_point.triggered.connect(self.setEarlyTrackPathPoint)
-            self.menu.addAction(early_track_path_point)
-
-            late_track_path_point = QtGui.QAction("Use current position as late track path point", self.menu)
-            late_track_path_point.triggered.connect(self.setLateTrackPathPoint)
-            self.menu.addAction(late_track_path_point)
-
-            clear_track_path = QtGui.QAction("Clear track path", self.menu)
-            clear_track_path.triggered.connect(self.clearTrackPath)
-            self.menu.addAction(clear_track_path)
-
-            self.menu.addSeparator()
-
-            ra_dec = QtGui.QAction("Set RA Dec (from VizieR query results)", self.menu)
-            ra_dec.triggered.connect(self.setRaDec)
-            self.menu.addAction(ra_dec)
-
-            self.menu.addSeparator()
-
-            hot_pixel = QtGui.QAction("Record as hot-pixel", self.menu)
-            hot_pixel.triggered.connect(self.handleHotPixel)
-            self.menu.addAction(hot_pixel)
-
-        return self.menu
+    # def getContextMenus(self, event=None):
+    #     if self.menu is None:
+    #         self.menu = QMenu()
+    #         self.menu.setTitle(self.name + " options..")  # This appears to do nothing
+    #
+    #         setthresh = QAction("Set threshold", self.menu)
+    #         setthresh.triggered.connect(self.setThresh)
+    #         self.menu.addAction(setthresh)
+    #
+    #         self.menu.addSeparator()
+    #
+    #         delete = QAction("Delete", self.menu)
+    #         delete.triggered.connect(self.delete)
+    #         self.menu.addAction(delete)
+    #
+    #         rename = QAction("Rename", self.menu)
+    #         rename.triggered.connect(self.rename)
+    #         self.menu.addAction(rename)
+    #
+    #         self.menu.addSeparator()
+    #
+    #         enable_jog = QAction("Enable jogging via arrow keys", self.menu)
+    #         enable_jog.triggered.connect(self.enableJog)
+    #         self.menu.addAction(enable_jog)
+    #
+    #         disable_jog = QAction("Disable jogging", self.menu)
+    #         disable_jog.triggered.connect(self.disableJog)
+    #         self.menu.addAction(disable_jog)
+    #
+    #         self.menu.addSeparator()
+    #
+    #         enable_auto_display = QAction("Enable auto display", self.menu)
+    #         enable_auto_display.triggered.connect(self.enableAutoDisplay)
+    #         self.menu.addAction(enable_auto_display)
+    #
+    #         disable_auto_display = QAction("Disable auto display", self.menu)
+    #         disable_auto_display.triggered.connect(self.disableAutoDisplay)
+    #         self.menu.addAction(disable_auto_display)
+    #
+    #         self.menu.addSeparator()
+    #
+    #         enable_thumbnail_source = QAction("Set as Thumbnail source", self.menu)
+    #         enable_thumbnail_source.triggered.connect(self.enableThumbnailSource)
+    #         self.menu.addAction(enable_thumbnail_source)
+    #
+    #         disable_thumbnail_source = QAction("Unset as Thumbnail source", self.menu)
+    #         disable_thumbnail_source.triggered.connect(self.disableThumbnailSource)
+    #         self.menu.addAction(disable_thumbnail_source)
+    #
+    #         self.menu.addSeparator()
+    #
+    #         green = QAction("Turn green (connect to threshold spinner)", self.menu)
+    #         green.triggered.connect(self.setGreenRequest)
+    #         self.menu.addAction(green)
+    #
+    #         red = QAction("Turn red", self.menu)
+    #         red.triggered.connect(self.setRed)
+    #         self.menu.addAction(red)
+    #
+    #         yellow = QAction("Turn yellow (use as tracking aperture)", self.menu)
+    #         yellow.triggered.connect(self.setYellow)
+    #         self.menu.addAction(yellow)
+    #
+    #         white = QAction("Turn white (special 'flash-tag' aperture)", self.menu)
+    #         white.triggered.connect(self.setWhite)
+    #         self.menu.addAction(white)
+    #
+    #         self.menu.addSeparator()
+    #
+    #         early_track_path_point = QAction("Use current position as early track path point", self.menu)
+    #         early_track_path_point.triggered.connect(self.setEarlyTrackPathPoint)
+    #         self.menu.addAction(early_track_path_point)
+    #
+    #         late_track_path_point = QAction("Use current position as late track path point", self.menu)
+    #         late_track_path_point.triggered.connect(self.setLateTrackPathPoint)
+    #         self.menu.addAction(late_track_path_point)
+    #
+    #         clear_track_path = QAction("Clear track path", self.menu)
+    #         clear_track_path.triggered.connect(self.clearTrackPath)
+    #         self.menu.addAction(clear_track_path)
+    #
+    #         self.menu.addSeparator()
+    #
+    #         ra_dec = QAction("Set RA Dec (from VizieR query results)", self.menu)
+    #         ra_dec.triggered.connect(self.setRaDec)
+    #         self.menu.addAction(ra_dec)
+    #
+    #         self.menu.addSeparator()
+    #
+    #         hot_pixel = QAction("Record as hot-pixel", self.menu)
+    #         hot_pixel.triggered.connect(self.handleHotPixel)
+    #         self.menu.addAction(hot_pixel)
+    #
+    #     return self.menu
 
     # Define context menu callbacks
 
-    def handleHotPixel(self):
-        self.sendHotPixelRecord.emit(self)
+    # def handleHotPixel(self):
+    #     self.sendHotPixelRecord(self)
 
-    def setEarlyTrackPathPoint(self):
-        self.sendSetEarlyTrackPathPoint.emit(self)
+    # def setEarlyTrackPathPoint(self):
+    #     self.sendSetEarlyTrackPathPoint(self)
 
-    def setLateTrackPathPoint(self):
-        self.sendSetLateTrackPathPoint.emit(self)
+    # def setLateTrackPathPoint(self):
+    #     self.sendSetLateTrackPathPoint(self)
 
-    def clearTrackPath(self):
-        self.sendClearTrackPath.emit(self)
+    # def clearTrackPath(self):
+    #     self.sendClearTrackPath(self)
 
     # We have to emit this as a message so that the main program can look
     # through the list of apertures all clear any other aperture that has thumbnail_source set
-    def enableThumbnailSource(self):
-        self.sendThumbnailSource.emit(self)
+    # def enableThumbnailSource(self):
+    #     self.sendThumbnailSource(self)
 
-    def disableThumbnailSource(self):
-        self.thumbnail_source = False
+    # def disableThumbnailSource(self):
+    #     self.thumbnail_source = False
 
-    def setRaDec(self):
-        self.sendSetRaDec.emit(self)
+    # def setRaDec(self):
+    #     self.sendSetRaDec(self)
 
-    def enableJog(self):
-        self.jogging_enabled = True
+    # def enableJog(self):
+    #     self.jogging_enabled = True
 
-    def disableJog(self):
-        self.jogging_enabled = False
+    # def disableJog(self):
+    #     self.jogging_enabled = False
 
-    def enableAutoDisplay(self):
-        self.auto_display = True
+    # def enableAutoDisplay(self):
+    #     self.auto_display = True
 
-    def disableAutoDisplay(self):
-        self.auto_display = False
+    # def disableAutoDisplay(self):
+    #     self.auto_display = False
 
-    def delete(self):
-        self.sendDelete.emit(self)
+    # def delete(self):
+    #     self.sendDelete(self)
 
     def setGreen(self):
         self.pen = pg.mkPen('g')
         self.color = 'green'
         self.update()
 
-    def setGreenRequest(self):
-        self.sendSetGreen.emit(self)
+    # def setGreenRequest(self):
+    #     self.sendSetGreen(self)
 
     def setRed(self):
         self.pen = pg.mkPen('r')
@@ -322,17 +325,17 @@ class MeasurementAperture(pg.GraphicsObject):
         self.color = 'yellow'
         self.update()
 
-    def setYellow(self):
-        self.sendSetYellow.emit(self)
+    # def setYellow(self):
+    #     self.sendSetYellow(self)
 
-    def setThresh(self):
-        self.sendSetThresh.emit(self)
+    # def setThresh(self):
+    #     self.sendSetThresh(self)
 
-    def rename(self):
-        appNamerThing = AppNameDialog()
-        appNamerThing.apertureNameEdit.setText(self.name)
-        appNamerThing.apertureNameEdit.setFocus()
-        result = appNamerThing.exec_()
-
-        if result == QDialog.Accepted:
-            self.name = appNamerThing.apertureNameEdit.text().strip()
+    # def rename(self):
+    #     appNamerThing = AppNameDialog()
+    #     appNamerThing.apertureNameEdit.setText(self.name)
+    #     appNamerThing.apertureNameEdit.setFocus()
+    #     result = appNamerThing.exec_()
+    #
+    #     if result == QDialog.Accepted:
+    #         self.name = appNamerThing.apertureNameEdit.text().strip()

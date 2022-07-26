@@ -1,8 +1,8 @@
 import codecs
 import os
 
-# To get the wheel build to work in python 3.7 Anaconda3 5.3.1 the follwing changes were made...
-# Commented out the following line..
+# To get the wheel build to work in python 3.7 Anaconda3 5.3.1 the following changes were made...
+# Commented out the following line.
 # from setuptools import setup, find_packages, Extension
 
 # Added the following lines...
@@ -50,9 +50,10 @@ INSTALL_REQUIRES = ['pyqtgraph', 'opencv-python-headless', 'astroquery', 'resour
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 
+
 def read(*parts):
     """
-    Build an absolute path from *parts* and and return the contents of the
+    Build an absolute path from *parts* and return the contents of the
     resulting file.  Assume UTF-8 encoding.
     """
     with codecs.open(os.path.join(HERE, *parts), "rb", "utf-8") as f:

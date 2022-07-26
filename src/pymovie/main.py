@@ -1,4 +1,5 @@
 # sourcery skip: de-morgan
+
 """
 The gui module was created by typing
    from PyQt5.uic import pyuic
@@ -57,9 +58,9 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 # Leave the following import in place, even though PyCharm thinks it is unused. Apparently
 # there is a side effect of this import that is needed to make 3d plots work even though
 # Axes3D is never directly referenced
-from mpl_toolkits.mplot3d import Axes3D  # !!!! Don't take me out
+from mpl_toolkits.mplot3d import Axes3D  # noqa  !!!! Don't take me out
 
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 from more_itertools import sort_together
 
@@ -76,10 +77,10 @@ except ImportError:
 
 import site
 import warnings
-from numba import njit
-from numba.typed import List
+# from numba import njit
+# from numba.typed import List
 from astropy.utils.exceptions import AstropyWarning
-from astropy.time import Time
+# from astropy.time import Time
 import sys
 import os
 import errno
@@ -89,9 +90,7 @@ import pickle
 from pathlib import Path
 from urllib.request import urlopen
 from copy import deepcopy
-import numpy as np
-from pymovie.checkForNewerVersion import getMostRecentVersionOfPyMovieViaJason
-from pymovie.checkForNewerVersion import upgradePyMovie
+from pymovie.checkForNewerVersion import getLatestPackageVersion
 from pymovie import starPositionDialog
 from pymovie import aperturesFileTagDialog
 from pymovie import hotPixelDialog
@@ -107,23 +106,22 @@ from numpy import sqrt, arcsin
 import pyqtgraph.exporters as pex
 from numpy import pi as PI
 
-import PyQt5
 from pyqtgraph import PlotWidget
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import *
-from PyQt5.QtWidgets import QFileDialog, QGraphicsRectItem, QButtonGroup, QMessageBox, QTableWidgetItem
+from PyQt5.QtWidgets import QFileDialog, QGraphicsRectItem, QButtonGroup, QMessageBox
 from PyQt5.QtCore import QSettings, QSize, QPoint, QRectF, QTimer
 from PyQt5.QtCore import pyqtSlot
-from PyQt5.QtGui import QPainter, QWheelEvent
-from pymovie import gui, helpDialog, version, apertureEditDialog
-import cv2
+from PyQt5.QtGui import QPainter
+from pymovie import gui, helpDialog, version
+import cv2  # noqa
 import glob
 import astropy.io.fits as pyfits  # Used for reading/writing FITS files
 from astropy import wcs
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astroquery.vizier import Vizier
-from skimage import measure, exposure, transform
+from skimage import measure, transform
 import skimage
 import subprocess
 
@@ -149,16 +147,17 @@ class CustomViewBox(pg.ViewBox):
 
     # re-implement right-click to zoom out
     def mouseClickEvent(self, ev):
-        if ev.button() == QtCore.Qt.RightButton:
+        if ev.button() == QtCore.Qt.MouseButton.RightButton:
             self.autoRange()
             # mouseSignal.emit()
 
     def mouseDragEvent(self, ev, axis=None):
-        if ev.button() == QtCore.Qt.RightButton:
+        if ev.button() == QtCore.Qt.MouseButton.RightButton:
             ev.ignore()
         else:
             pg.ViewBox.mouseDragEvent(self, ev, axis)
             # mouseSignal.emit()
+
 
 def log_gray(x, a=None, b=None):
     if a is None:
@@ -171,8 +170,8 @@ def log_gray(x, a=None, b=None):
     if float(b) - float(a) > 32767:
         return x
 
-    linval = 10.0 + 990.0 * (x-float(a))/(b-a)
-    return (np.log10(linval)-1.0)*0.5 * 255.0
+    linval = 10.0 + 990.0 * (x - float(a)) / (b - a)
+    return (np.log10(linval) - 1.0) * 0.5 * 255.0
 
 
 class FixedImageExporter(pex.ImageExporter):
@@ -180,7 +179,7 @@ class FixedImageExporter(pex.ImageExporter):
         pex.ImageExporter.__init__(self, item)
 
     def makeWidthHeightInts(self):
-        self.params['height'] = int(self.params['height'] + 1)   # The +1 is needed
+        self.params['height'] = int(self.params['height'] + 1)  # The +1 is needed
         self.params['width'] = int(self.params['width'] + 1)
 
     def widthChanged(self):
@@ -227,7 +226,7 @@ class SelectProfileDialog(QDialog, selectProfile.Ui_Dialog):
 
         self.fillTableFromProfileList()
 
-        # We do this so as to erase the default selection of row 0.  Don't know why
+        # We do this to erase the default selection of row 0.  Don't know why
         # this works, but it seems reliable.
         profile_selected = self.selectionTable.currentIndex()
         self.selectionTable.setCurrentIndex(profile_selected)
@@ -289,7 +288,7 @@ class SelectHotPixelProfileDialog(QDialog, selectHotPixelProfile.Ui_Dialog):
 
         self.fillTableFromProfileList()
 
-        # We do this so as to erase the default selection of row 0.  Don't know why
+        # We do this to erase the default selection of row 0.  Don't know why
         # this works, but it seems reliable.
         profile_selected = self.selectionTable.currentIndex()
         self.selectionTable.setCurrentIndex(profile_selected)
@@ -379,7 +378,7 @@ class Qt5MplCanvas(FigureCanvas):
                                          cmap='viridis', linewidth=0)
 
         # The positioning of the next two lines was found to be super-critical.  If
-        # these are moved, it will break mouse drag of the 3D image for MacOS or
+        # these are moved, it will break mouse drag of the 3D image for macOS or
         # Windows or both.  You've been warned.
         FigureCanvas.__init__(self, self.fig)
         # super(FigureCanvas, self).__init__(self.fig)
@@ -390,6 +389,9 @@ class Qt5MplCanvas(FigureCanvas):
 class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def __init__(self):
         super(PyMovie, self).__init__()
+
+        self.lastRightClickYPosition = None
+        self.lastRightClickXPosition = None
 
         # Change pyqtgraph plots to be black on white
         pg.setConfigOption('background',
@@ -482,15 +484,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.frameView.ui.roiBtn.hide()
         self.frameView.ui.histogram.hide()
 
-        view = self.frameView.getView()
-        # add new actions to the ViewBox context menu:
-        view.menu.addSeparator()
-        addSnapApp = view.menu.addAction("Add snap-to-blob aperture")
-        addFixedApp = view.menu.addAction('Add static aperture (no snap)')
-        addAppStack = view.menu.addAction('Add stack of 5 apertures')
-        addSnapApp.triggered.connect(self.addSnapAperture)
-        addFixedApp.triggered.connect(self.addNamedStaticAperture)
-        addAppStack.triggered.connect(self.addApertureStack)
+        self.buildApertureContextMenu()
 
         # We use mouse movements to dynamically display in the status bar the mouse
         # coordinates and pixel value under the mouse cursor.
@@ -505,7 +499,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.thumbOneView.ui.roiBtn.hide()
         self.thumbOneView.ui.histogram.hide()
 
-        # add cross hairs
+        # add cross-hairs
         self.hair1 = pg.InfiniteLine(angle=-45, movable=False)
         self.hair2 = pg.InfiniteLine(angle=45, movable=False)
         self.thumbOneView.addItem(self.hair1)
@@ -548,17 +542,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.vtiHelpButton.installEventFilter(self)
         self.vtiHelpButton.clicked.connect(self.vtiHelp)
 
-        # self.plotPixelDistributionButton.clicked.connect(self.plotImagePixelDistibution)
-        # self.plotPixelDistributionButton.installEventFilter(self)
-
         self.activateTimestampRemovalButton.clicked.connect(self.initializePixelTimestampRemoval)
         self.activateTimestampRemovalButton.installEventFilter(self)
-
-        # self.extractBrightAndDarkPixelCoordButton.clicked.connect(self.findBrightAndDarkPixelCoords)
-        # self.extractBrightAndDarkPixelCoordButton.installEventFilter(self)
-
-        # self.extractNoisyAndDeadPixelCoordButton.clicked.connect(self.findNoisyAndDeadPixelCoords)
-        # self.extractNoisyAndDeadPixelCoordButton.installEventFilter(self)
 
         self.buildDarkAndNoiseFramesButton.clicked.connect(self.buildDarkAndNoiseFrames)
         self.buildDarkAndNoiseFramesButton.installEventFilter(self)
@@ -658,12 +643,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             ]
 
             pickle.dump(self.VTIlist, open(vtiListFilename, "wb"))
-            # self.showMsg(f'pickled self.VTIlist to {vtiListFilename}')
 
         for vtiDict in self.VTIlist:
             self.vtiSelectComboBox.addItem(vtiDict['name'])
 
-        self.stateOfView = None   # Holds current Zoom/Pan state of image
+        self.stateOfView = None  # Holds current Zoom/Pan state of image
 
         self.currentVTIindex = 0
         self.timestampFormatter = None
@@ -736,17 +720,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.hotPixelEraseFromList.installEventFilter(self)
         self.hotPixelEraseFromList.clicked.connect(self.showFrame)
 
-        # self.hotPixelErase3x3median.installEventFilter(self)
-        # self.hotPixelErase3x3median.clicked.connect(self.showFrame)
-
-        # self.hotPixelErase5x5median.installEventFilter(self)
-        # self.hotPixelErase5x5median.clicked.connect(self.showFrame)
-
         # For now, we will save OCR profiles in the users home directory. If
         # later we find a better place, this is the only line we need to change
         self.profilesDir = os.path.expanduser('~')
 
-        # We will need the user name when we write a pickled list of profile dictionaries.
+        # We will need the username when we write a pickled list of profile dictionaries.
         # We name them: pymovie-ocr-profiles-username.p to facilitate sharing among users.
         # Actually, we have changed our mind and will only use a single dictionary, but we might
         # need the user's name for some other reason.
@@ -761,7 +739,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.darkPixelCoords = None
         self.noisyPixelCoords = None
         self.deadPixelCoords = None
-        # self.outlawPoints = None
         self.outlawPoints = [()]  # outlaw points is a list of coordinate tuples
 
         # self.rowsToSumList = [0,1,100,101,200,201,300,301,400,401]
@@ -844,11 +821,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.pixelAspectRatio = None
 
-        self.upper_left_count = 0    # When Kiwi used: accumulate count ot times t2 was at left in upper field
-        self.upper_right_count = 0   # When Kiwi used: accumulate count ot times t2 was at the right in upper field
+        self.upper_left_count = 0  # When Kiwi used: accumulate count ot times t2 was at left in upper field
+        self.upper_right_count = 0  # When Kiwi used: accumulate count ot times t2 was at the right in upper field
 
-        self.lower_left_count = 0    # When Kiwi used: accumulate count ot times t2 was at left in lower field
-        self.lower_right_count = 0   # When Kiwi used: accumulate count ot times t2 was at the right in lower field
+        self.lower_left_count = 0  # When Kiwi used: accumulate count ot times t2 was at left in lower field
+        self.lower_right_count = 0  # When Kiwi used: accumulate count ot times t2 was at the right in lower field
 
         self.currentUpperBoxPos = ''  # Used by Kiwi timestamp extraction
         self.currentLowerBoxPos = ''  # Used by Kiwi timestamp extraction
@@ -907,7 +884,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.folder_dir = None
 
         self.timer = QTimer(self)
-        self.timer.timeout.connect(self.setDoTestFlag)
+        self.timer.timeout.connect(self.setDoTestFlag)  # noqa
         self.do_test = False
 
         # self.filename is set to the full path of the selected image file (or folder) once
@@ -1000,7 +977,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         # We track mouse movement whenever the cursor is in the main image or
         # either of the thumbnails.  That lets us display x,y coordinates and pixel values
-        # in the staus bar at the bottom of the app window.
+        # in the status bar at the bottom of the app window.
         self.mousex = None
         self.mousey = None
 
@@ -1020,7 +997,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.aav_num_frames_integrated = None
         self.wcs_solution_available = False
         self.wcs_frame_num = None
-        self.wcs = None   # This holds the active WCS solution (if any)
+        self.wcs = None  # This holds the active WCS solution (if any)
 
         # Keeps track of all pyqtgraph plot windows that have been created so that they
         # can be gracefully closed when the user closes this app.
@@ -1260,6 +1237,191 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     #         summary.print_(summary_one)
     #         print(" ")
 
+    def buildApertureContextMenu(self):
+        view = self.frameView.getView()
+        # add new actions to the ViewBox context menu:
+        view.menu.addSeparator()
+
+        addSnapApp = view.menu.addAction("Add snap-to-blob aperture")
+        addSnapApp.triggered.connect(self.addSnapAperture)
+
+        addFixedApp = view.menu.addAction('Add static aperture (no snap)')
+        addFixedApp.triggered.connect(self.addNamedStaticAperture)
+
+        addAppStack = view.menu.addAction('Add stack of 5 apertures')
+        addAppStack.triggered.connect(self.addApertureStack)
+
+        view.menu.addSeparator()
+
+        setthresh = view.menu.addAction("Set threshold")
+        setthresh.triggered.connect(self.apMenuSetThresh)
+
+        delete = view.menu.addAction("Delete")
+        delete.triggered.connect(self.apMenuDelete)
+
+        rename = view.menu.addAction("Rename")
+        rename.triggered.connect(self.apMenuRename)
+
+        view.menu.addSeparator()
+
+        enable_jog = view.menu.addAction("Enable jogging via arrow keys")
+        enable_jog.triggered.connect(self.apMenuEnableJog)
+
+        disable_jog = view.menu.addAction("Disable jogging")
+        disable_jog.triggered.connect(self.apMenuDisableJog)
+
+        view.menu.addSeparator()
+
+        enable_auto_display = view.menu.addAction("Enable auto display")
+        enable_auto_display.triggered.connect(self.apMenuEnableAutoDisplay)
+
+        disable_auto_display = view.menu.addAction("Disable auto display")
+        disable_auto_display.triggered.connect(self.apMenuDisableAutoDisplay)
+
+        view.menu.addSeparator()
+
+        enable_thumbnail_source = view.menu.addAction("Set as Thumbnail source")
+        enable_thumbnail_source.triggered.connect(self.apMenuEnableThumbnailSource)
+
+        disable_thumbnail_source = view.menu.addAction("Unset as Thumbnail source")
+        disable_thumbnail_source.triggered.connect(self.apMenuDisableThumbnailSource)
+
+        view.menu.addSeparator()
+
+        green = view.menu.addAction("Turn green (connect to threshold spinner)")
+        green.triggered.connect(self.apMenuSetApertureGreen)
+
+        red = view.menu.addAction("Turn red")
+        red.triggered.connect(self.apMenuSetApertureRed)
+
+        yellow = view.menu.addAction("Turn yellow (use as tracking aperture)")
+        yellow.triggered.connect(self.apMenuSetApertureYellow)
+
+        white = view.menu.addAction("Turn white (special 'flash-tag' aperture)")
+        white.triggered.connect(self.apMenuSetApertureWhite)
+
+        view.menu.addSeparator()
+
+        early_track_path_point = view.menu.addAction("Use current position as early track path point")
+        early_track_path_point.triggered.connect(self.apMenuSetEarlyTrackPathPoint)
+
+        late_track_path_point = view.menu.addAction("Use current position as late track path point")
+        late_track_path_point.triggered.connect(self.apMenuSetLateTrackPathPoint)
+
+        clear_track_path = view.menu.addAction("Clear track path")
+        clear_track_path.triggered.connect(self.apMenuClearTrackPath)
+
+        view.menu.addSeparator()
+
+        ra_dec = view.menu.addAction("Set RA Dec (from VizieR query results)")
+        ra_dec.triggered.connect(self.apMenuSetRaDec)
+
+        # view.menu.addSeparator()
+        #
+        # hot_pixel = view.menu.addAction("Record as hot-pixel")
+        # hot_pixel.triggered.connect(self.apMenuHandleHotPixel)
+
+    def apMenuSetRaDec(self):
+        apertureFound, aperture = self.isMouseInAperture()
+        if apertureFound:
+            self.handleSetRaDecSignal(aperture)
+
+    # def apMenuHandleHotPixel(self):
+    #     apertureFound, aperture = self.isMouseInAperture()
+    #     if apertureFound:
+    #         self.handleRecordHotPixel()
+
+    def apMenuSetEarlyTrackPathPoint(self):
+        apertureFound, aperture = self.isMouseInAperture()
+        if apertureFound:
+            self.handleEarlyTrackPathPoint(aperture)
+
+    def apMenuSetLateTrackPathPoint(self):
+        apertureFound, aperture = self.isMouseInAperture()
+        if apertureFound:
+            self.handleLateTrackPathPoint(aperture)
+
+    def apMenuClearTrackPath(self):
+        apertureFound, aperture = self.isMouseInAperture()
+        if apertureFound:
+            self.handleClearTrackPath()
+
+    def apMenuSetApertureGreen(self):
+        apertureFound, aperture = self.isMouseInAperture()
+        if apertureFound:
+            aperture.pen = pg.mkPen('g')
+            aperture.color = 'green'
+            self.frameView.getView().update()
+
+    def apMenuSetApertureRed(self):
+        apertureFound, aperture = self.isMouseInAperture()
+        if apertureFound:
+            aperture.pen = pg.mkPen('r')
+            aperture.color = 'red'
+            self.frameView.getView().update()
+
+    def apMenuSetApertureWhite(self):
+        apertureFound, aperture = self.isMouseInAperture()
+        if apertureFound:
+            aperture.pen = pg.mkPen('w')
+            aperture.color = 'white'
+            self.frameView.getView().update()
+
+    def apMenuEnableThumbnailSource(self):
+        apertureFound, aperture = self.isMouseInAperture()
+        if apertureFound:
+            aperture.thumbnail_source = True
+
+    def apMenuDisableThumbnailSource(self):
+        apertureFound, aperture = self.isMouseInAperture()
+        if apertureFound:
+            aperture.thumbnail_source = False
+
+    def apMenuEnableAutoDisplay(self):
+        apertureFound, aperture = self.isMouseInAperture()
+        if apertureFound:
+            aperture.auto_display = True
+
+    def apMenuDisableAutoDisplay(self):
+        apertureFound, aperture = self.isMouseInAperture()
+        if apertureFound:
+            aperture.auto_display = False
+
+    def apMenuEnableJog(self):
+        apertureFound, aperture = self.isMouseInAperture()
+        if apertureFound:
+            aperture.jogging_enabled = True
+
+    def apMenuDisableJog(self):
+        apertureFound, aperture = self.isMouseInAperture()
+        if apertureFound:
+            aperture.jogging_enabled = False
+
+    def apMenuRename(self):
+        apertureFound, aperture = self.isMouseInAperture()
+        if apertureFound:
+            appNamerThing = AppNameDialog()
+            appNamerThing.apertureNameEdit.setText(aperture.name)  # Show current name upon opening dialog
+            appNamerThing.apertureNameEdit.setFocus()
+            result = appNamerThing.exec_()
+            if result == QDialog.Accepted:
+                aperture.name = appNamerThing.apertureNameEdit.text().strip()
+
+    def apMenuDelete(self):
+        apertureFound, aperture = self.isMouseInAperture()
+        if apertureFound:
+            self.handleDeleteSignal(aperture)
+
+    def apMenuSetThresh(self):
+        apertureFound, aperture = self.isMouseInAperture()
+        if apertureFound:
+            self.handleSetThreshSignal(aperture)
+
+    def apMenuSetApertureYellow(self):
+        apertureFound, aperture = self.isMouseInAperture()
+        if apertureFound:
+            self.handleSetYellowSignal(aperture)
+
     def enableCmosCorrectionsDuringFrameReads(self):
         if self.enableCmosCorrectionsDuringFrameReadsCheckBox.isChecked():
             self.applyPixelCorrectionsCheckBox.setEnabled(True)
@@ -1279,7 +1441,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.image = self.darkFrame
         self.showMsg(f'The "dark frame" is being displayed.')
         self.displayImageAtCurrentZoomPanState()
-        self.plotImagePixelDistibution('Dark frame pixel distribution', kind='DarkAndBright')
+        self.plotImagePixelDistribution('Dark frame pixel distribution', kind='DarkAndBright')
 
     def processNoiseFrameStack(self):
         if self.noiseFrame is None:
@@ -1290,8 +1452,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.showMsg(f'The "read noise frame" is being displayed.')
 
         self.displayImageAtCurrentZoomPanState()
-        self.plotImagePixelDistibution('Read noise frame pixel distribution', kind='NoisyAndDead')
-
+        self.plotImagePixelDistribution('Read noise frame pixel distribution', kind='NoisyAndDead')
 
     def buildDarkAndNoiseFrames(self):
         if self.filename is None:
@@ -1325,18 +1486,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         noiseFrame = np.zeros(self.image.shape, dtype='float')
         darkFrame = np.zeros(self.image.shape, dtype='float')
-        for frame in range(startFrame, stopFrame+1):
+        for frame in range(startFrame, stopFrame + 1):
             self.currentFrameSpinBox.setValue(frame)
             QtGui.QGuiApplication.processEvents()
-            # noiseFrame += np.multiply(self.image, self.image, dtype='float')
             noiseFrame = np.maximum(noiseFrame, self.image)
             darkFrame += self.image
 
         numFrames = stopFrame - startFrame + 1
         self.darkFrame = darkFrame / numFrames
-        # Evalue_darkFrameSquared = np.multiply(self.darkFrame, self.darkFrame, dtype='float')
-        # Evalue_noiseFrame = noiseFrame/numFrames
-        # self.noiseFrame = np.sqrt(Evalue_noiseFrame - Evalue_darkFrameSquared)
         self.noiseFrame = noiseFrame
 
         self.image = self.darkFrame
@@ -1374,8 +1531,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             h, w = self.image.shape
             upperRowOffset = self.upperTimestampMedianSpinBox.value()
             lowerRowOffset = self.lowerTimestampMedianSpinBox.value()
-            self.upperHorizontalLine = HorizontalLine(upperRowOffset, h, w, 'r')    # Make a red line at very top
-            self.lowerHorizontalLine = HorizontalLine(h-lowerRowOffset, h, w, 'y')  # Make a yellow line at very bottom
+            self.upperHorizontalLine = HorizontalLine(upperRowOffset, h, w, 'r')  # Make a red line at very top
+            self.lowerHorizontalLine = HorizontalLine(h - lowerRowOffset, h, w,
+                                                      'y')  # Make a yellow line at very bottom
             view = self.frameView.getView()
             view.addItem(self.upperHorizontalLine)
             view.addItem(self.lowerHorizontalLine)
@@ -1518,7 +1676,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             upperRowOffset -= upperRowOffset - (h - lowerRowOffset)
             self.upperTimestampPixelSpinBox.setValue(upperRowOffset)
         self.upperPixelHorizontalLine = HorizontalLine(upperRowOffset, h, w, 'r')  # Make a red line at very top
-        self.lowerPixelHorizontalLine = HorizontalLine(h - lowerRowOffset, h, w,'y')  # Make a yellow line at very bottom
+        self.lowerPixelHorizontalLine = HorizontalLine(h - lowerRowOffset, h, w,
+                                                       'y')  # Make a yellow line at very bottom
         view.addItem(self.upperPixelHorizontalLine)
         view.addItem(self.lowerPixelHorizontalLine)
 
@@ -1538,7 +1697,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.upperTimestampPixelSpinBox.setValue(upperRowOffset)
             return
         self.upperPixelHorizontalLine = HorizontalLine(upperRowOffset, h, w, 'r')  # Make a red line at very top
-        self.lowerPixelHorizontalLine = HorizontalLine(h - lowerRowOffset, h, w, 'y')  # Make a yellow line at very bottom
+        self.lowerPixelHorizontalLine = HorizontalLine(h - lowerRowOffset, h, w,
+                                                       'y')  # Make a yellow line at very bottom
         view.addItem(self.upperPixelHorizontalLine)
         view.addItem(self.lowerPixelHorizontalLine)
 
@@ -1584,15 +1744,15 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         topRow = self.upperTimestampMedianSpinBox.value()
         botRow = h - self.lowerTimestampMedianSpinBox.value()
 
-        horMedians =  np.zeros(h, imageDtype)
+        horMedians = np.zeros(h, imageDtype)
         for i in range(topRow, botRow):
-            medianValue = int(np.median(self.image[i,:]))
+            medianValue = int(np.median(self.image[i, :]))
             horMedians[i] = medianValue
             self.horizontalMedianData[i] += medianValue
 
         vertMedians = np.zeros(w, imageDtype)
         for i in range(w):
-            medianValue = int(np.median(self.image[topRow:botRow,i]))
+            medianValue = int(np.median(self.image[topRow:botRow, i]))
             vertMedians[i] = medianValue
             self.verticalMedianData[i] += medianValue
 
@@ -1601,8 +1761,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if applyHorizontalFilter:
             midMedian = int(np.median(horMedians))
             for i in range(h):
-                self.image[i,:] = np.array(np.clip(self.image[i,:].astype(np.int) + (midMedian - horMedians[i]), 0, maxPixel),
-                                           dtype=imageDtype)
+                self.image[i, :] = np.array(
+                    np.clip(self.image[i, :].astype(np.int) + (midMedian - horMedians[i]), 0, maxPixel),
+                    dtype=imageDtype)
 
         if applyVerticalFilter:
             midMedian = int(np.median(vertMedians))
@@ -1613,7 +1774,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.displayImageAtCurrentZoomPanState()
         # self.frameView.setImage(self.image)
-
 
     def set_thresh_spinner_1(self):
         if self.thresh_inc_1.isChecked():
@@ -1663,8 +1823,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def showAlignStarHelp(self):
         self.showHelp(self.alignWithStarInfoButton)
 
-    def showAlignWithFourierCorrHelp(self):
-        self.showHelp(self.alignWithFourierCorrInfoButton)
+    # def showAlignWithFourierCorrHelp(self):
+    #     self.showHelp(self.alignWithFourierCorrInfoButton)
 
     def showAlignWithTwoPointTrackHelp(self):
         self.showHelp(self.alignWithTwoPointTrackInfoButton)
@@ -1765,7 +1925,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         # self.applyHotPixelErasure(avg_bkgnd)
 
-
     def getBackgroundFromImageCenter(self):
         # Get a robust mean from near the center of the current image
         y0 = int(self.image.shape[0] / 2)
@@ -1791,7 +1950,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             for y, x in self.hotPixelList:
                 self.image[y, x] = avg_bkgnd
 
-        # Preserve the current zomm/pan state
+        # Preserve the current zoom/pan state
         self.displayImageAtCurrentZoomPanState()
 
     def displayImageAtCurrentZoomPanState(self):
@@ -1800,7 +1959,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.frameView.setImage(self.image)
             return
 
-        # Preserve the current zomm/pan state
+        # Preserve the current zoom/pan state
         # view_box = self.frameView.getView()
         state = self.frameView.getView().getState()
         self.frameView.setImage(self.image)
@@ -1820,28 +1979,28 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 w = w - 1
             else:
                 w = w + 1
-            self.frameView.resize(w,h)
+            self.frameView.resize(w, h)
 
-    def maskedMedianFilter(self, img, ksize=3):
-        # Get redact parameters
-        ok, num_from_top, num_from_bottom = self.getRedactLineParameters(popup_wanted=False)
-        if not ok:
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Question)
-            msg.setText(f'It is important to mask any timestamp overlay that may be '
-                        f'present, otherwise the median filter will modify the image '
-                        f'and keep OCR from working properly.'
-                        f'\n\nPlease enter values in the redact lines edit boxes '
-                        f'found in the "finder" tab.'
-                        f'Enter 0 if there is no timestamp in that region.')
-            msg.setWindowTitle('Please fill in redact lines')
-            msg.setStandardButtons(QMessageBox.Ok)
-            msg.exec()
-            return img
-
-        m1, m2, m3 = np.vsplit(img, [num_from_top, img.shape[0] - num_from_bottom])
-        m2 = cv2.medianBlur(m2, ksize=ksize)
-        return np.concatenate((m1, m2, m3))
+    # def maskedMedianFilter(self, img, ksize=3):
+    #     # Get redact parameters
+    #     ok, num_from_top, num_from_bottom = self.getRedactLineParameters(popup_wanted=False)
+    #     if not ok:
+    #         msg = QMessageBox()
+    #         msg.setIcon(QMessageBox.Question)
+    #         msg.setText(f'It is important to mask any timestamp overlay that may be '
+    #                     f'present, otherwise the median filter will modify the image '
+    #                     f'and keep OCR from working properly.'
+    #                     f'\n\nPlease enter values in the redact lines edit boxes '
+    #                     f'found in the "finder" tab.'
+    #                     f'Enter 0 if there is no timestamp in that region.')
+    #         msg.setWindowTitle('Please fill in redact lines')
+    #         msg.setStandardButtons(QMessageBox.Ok)
+    #         msg.exec()
+    #         return img
+    #
+    #     m1, m2, m3 = np.vsplit(img, [num_from_top, img.shape[0] - num_from_bottom])
+    #     m2 = cv2.medianBlur(m2, ksize=ksize)
+    #     return np.concatenate((m1, m2, m3))
 
     def applyHotPixelErasureToImg(self, img):
         # This method is only passed to the 'stacker' for its use
@@ -1935,7 +2094,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 else:
                     # Compute a 16 bit lookup table
                     self.gammaLut = np.array(
-                        [gammaUtils.gammaDecode16bit(i, gamma=self.currentGamma) for i in range(65536)]).astype('uint16')
+                        [gammaUtils.gammaDecode16bit(i, gamma=self.currentGamma) for i in range(65536)]).astype(
+                        'uint16')
                     self.showMsg(f'A 16 bit correction table for gamma={self.currentGamma:0.2f} has been calculated.')
             elif self.adv_file_in_use or self.aav_file_in_use:
                 # Compute a 16 bit lookup table
@@ -2003,7 +2163,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         my_dict.update({'max_xpos': aperture.max_xpos})
         my_dict.update({'max_ypos': aperture.max_ypos})
         return my_dict
-
 
     def restoreHotPixelApertureGroup(self, hot_pixel_profile):
 
@@ -2075,7 +2234,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 aperture.xc = mydict['xc']
                 aperture.yc = mydict['yc']
 
-                self.connectAllSlots(aperture)
+                # TODO remove
+                # self.connectAllSlots(aperture)
 
                 view = self.frameView.getView()
                 view.addItem(aperture)
@@ -2089,7 +2249,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         # Because an average background was not supplied as an argument in the following call,
         # it will automatically extract one from the center of the current image
         # self.applyHotPixelErasure()
-
 
     def restoreApertureGroup(self):
 
@@ -2280,7 +2439,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 aperture.xc = aperture_dict['xc']
                 aperture.yc = aperture_dict['yc']
 
-                self.connectAllSlots(aperture)
+                # TODO remove
+                # self.connectAllSlots(aperture)
 
                 view = self.frameView.getView()
                 view.addItem(aperture)
@@ -2364,7 +2524,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             # noinspection PyBroadException
             try:
                 os.remove(self.folder_dir + f'/trackingPath-{tag}.p')
-            except:
+            except Exception:
                 pass
             self.showMsg(f'Current aperture group and frame number saved.')
 
@@ -2390,7 +2550,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.viewFieldsCheckBox.setChecked(False)
         self.clearOcrBoxes()
 
-        if not self.savedStateFrameNumber is None:
+        if self.savedStateFrameNumber is not None:
             self.currentFrameSpinBox.setValue(self.savedStateFrameNumber)
 
         # restore any saved apertures
@@ -2399,7 +2559,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             for i, aperture in enumerate(self.savedStateApertures):
                 view.addItem(aperture)
                 aperture.setPos(self.savedPositions[i])
-                self.connectAllSlots(aperture)
+                # TODO remove
+                # self.connectAllSlots(aperture)
 
     def moveOneFrameLeft(self):
         self.finderFrameBeingDisplayed = False
@@ -2446,12 +2607,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         f'This condition is allowed, but you must make sure that you do not inadvertently '
                         f'process a frame more than once.\n\n'
                         f'If you inadvertently process a frame more than once, you will be prohibited from '
-                        f'writing out the csv file and instead recieve a warning about duplicated frames.')
+                        f'writing out the csv file and instead receive a warning about duplicated frames.')
             msg.setWindowTitle('!!! Data points already present !!!')
-            msg.addButton("clear data and run", QMessageBox.YesRole) # result = 0
+            msg.addButton("clear data and run", QMessageBox.YesRole)  # result = 0
             msg.addButton("it's ok - proceed", QMessageBox.YesRole)  # result = 1
-            msg.addButton("abort analysis", QMessageBox.YesRole)     # result = 2
-            # msg.setStandardButtons(QMessageBox.Close)
+            msg.addButton("abort analysis", QMessageBox.YesRole)  # result = 2
             result = msg.exec_()
             if result == 2:
                 return
@@ -2498,37 +2658,24 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         return retval
 
     def checkForNewerVersion(self):
-        gotVersion, latestVersion = getMostRecentVersionOfPyMovieViaJason()
-        # TODO Remove these debug lines
-        self.showMsg(f"latest version: {latestVersion}")
-        self.showMsg(f"version.version(): {version.version()}")
+        latestVersion = getLatestPackageVersion('pymovie')
+        gotVersion = True if len(latestVersion) > 2 else False
+        if not gotVersion:
+            self.showMsg(f"Diagnostic: PyPI returned |{latestVersion}| as latest version of PyMovie")
+
         if gotVersion:
             if latestVersion <= version.version():
                 # self.showMsg(f'Found the latest version is: {latestVersion}')
                 self.showMsg('You are running the most recent version of PyMovie')
             else:
                 self.showMsg('Version ' + latestVersion + ' is available.  To get it:', blankLine=True)
-                self.showMsg(f"==== for pip based installations, in a command window type: pip install pymovie=={latestVersion} (note double = symbols)",
+                self.showMsg(f"==== for pip based installations, in a command window type: "
+                             f"pip install pymovie=={latestVersion} (note double = symbols)",
                              blankLine=True)
-                self.showMsg(f"==== for pipenv based installations, double-click the ChangePymovieVersion.bat file.",
+                self.showMsg(f"==== for pipenv based installations, execute the ChangePymovieVersion.bat file.",
                              blankLine=True)
-                # if self.queryWhetherNewVersionShouldBeInstalled() == QMessageBox.Yes:
-                #     self.showMsg('You have opted to install latest version of PyMovie')
-                #     self.installLatestVersion(f'pymovie=={latestVersion}')
-                # else:
-                #     self.showMsg('You have declined the opportunity to install latest PyMovie')
         else:
             self.showMsg(f'latestVersion found: {latestVersion}')
-
-    def installLatestVersion(self, pymovieversion):
-        self.showMsg(f'Asking to upgrade to: {pymovieversion}')
-        pipResult = upgradePyMovie(pymovieversion)
-        for line in pipResult:
-            self.showMsg(line, blankLine=False)
-
-        self.showMsg('', blankLine=False)
-        self.showMsg('The new version is installed but not yet running.')
-        self.showMsg('Close and reopen PyMovie to start the new version running.')
 
     def createAviSerWcsFolder(self):
         options = QFileDialog.Options()
@@ -2544,7 +2691,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if dirname:
 
             self.showMsg(f'AVI/SER-WCS folder will be created in: {dirname}', blankLine=False)
-            base_with_ext  = os.path.basename(self.filename)
+            base_with_ext = os.path.basename(self.filename)
             base, _ = os.path.splitext(base_with_ext)
             self.showMsg(f'and the folder will be named {base}')
             full_dir_path = os.path.join(dirname, base)
@@ -2558,7 +2705,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             pathlib.Path(full_dir_path).mkdir(parents=True, exist_ok=True)
             if sys.platform == 'darwin':
-                ok, file, my_dir, retval, source = alias_lnk_resolver.create_osx_alias_in_dir(self.filename, full_dir_path)
+                ok, file, my_dir, retval, source = alias_lnk_resolver.create_osx_alias_in_dir(
+                    self.filename, full_dir_path)
                 if not ok:
                     self.showMsg('Failed to create and populate AVI/SER-WCS folder')
                 else:
@@ -2569,18 +2717,17 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 src = self.filename
                 dst = os.path.join(dirname, base, base_with_ext)
                 try:
-                    os.symlink(src,dst)
+                    os.symlink(src, dst)
                     self.showMsgPopup('AVI/SER-WCS folder created and populated')
                 except OSError as e:
                     if e.errno == errno.EEXIST:
                         os.remove(dst)
-                        os.symlink(src,dst)
+                        os.symlink(src, dst)
                         self.showMsgPopup('AVI/SER-WCS folder created and old symlink overwritten')
                     else:
                         self.showMsgPopup('Failed to create and populate AVI/SER-WCS folder')
 
             else:
-                # self.showMsg(f'os.name={os.name} not yet fully supported for AVI-WCS folder creation.')
                 # Make sure that there is a directory waiting for the shortcut file
                 os.makedirs(full_dir_path, exist_ok=True)
 
@@ -2608,7 +2755,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 # unpickle the list of profile dictionaries ---
                 # {'id': 'profile info', 'upper-boxes': upperOcrBoxes[], 'lower-boxes': lowerOcrBoxes[],
                 #  'digits': modelDigits}, 'formatter-code': 'iota'}[]
-                # Keep apending until all profile files have been read
+                # Keep appending until all profile files have been read
                 dict_list = pickle.load(open(file, "rb"))
                 for entry in dict_list:
                     dictionary_list.append(entry)
@@ -2616,17 +2763,17 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def readSavedHotPixelProfiles(self):
 
-            available_profiles = glob.glob(self.profilesDir + '/pymovie-hot-pixel-profiles.p')
+        available_profiles = glob.glob(self.profilesDir + '/pymovie-hot-pixel-profiles.p')
 
-            dictionary_list = []
-            if len(available_profiles) == 0:
-                return dictionary_list
-            else:
-                for file in available_profiles:
-                    dict_list = pickle.load(open(file, "rb"))
-                    for entry in dict_list:
-                        dictionary_list.append(entry)
-                return dictionary_list
+        dictionary_list = []
+        if len(available_profiles) == 0:
+            return dictionary_list
+        else:
+            for file in available_profiles:
+                dict_list = pickle.load(open(file, "rb"))
+                for entry in dict_list:
+                    dictionary_list.append(entry)
+            return dictionary_list
 
     def handleChangeOfDisplayMode(self):
         if self.viewFieldsCheckBox.isChecked():
@@ -2646,11 +2793,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 view = self.frameView.getView()
                 for aperture in self.savedApertures:
                     view.addItem(aperture)
-                    self.connectAllSlots(aperture)
+                    # TODO remove
+                    # self.connectAllSlots(aperture)
             self.showFrame()
 
     def fieldTimeOrderChanged(self):
-        self.showMsg(f'top field earlist is {self.topFieldFirstRadioButton.isChecked()}')
+        self.showMsg(f'top field earliest is {self.topFieldFirstRadioButton.isChecked()}')
         self.vtiSelected()
 
     def jogSingleOcrBox(self, dx, dy, boxnum, position, ocr):
@@ -2661,7 +2809,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'!!!! Move past frame 0 first.  It is not representative. !!!!')
             return
 
-        assert(position == 'upper' or position == 'lower')
+        assert (position == 'upper' or position == 'lower')
         if position == 'upper':
             if self.currentUpperBoxPos == 'left':
                 selected_box = self.upperOcrBoxesLeft[boxnum]
@@ -2812,22 +2960,18 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         upper_boxes = os.path.join(self.ocrBoxesDir, upper_boxes_fn)
         lower_boxes = os.path.join(self.ocrBoxesDir, lower_boxes_fn)
 
-        upper_boxes_right = os.path.join(self.ocrBoxesDir, upper_boxes_right_fn) # kiwi only
-        lower_boxes_right = os.path.join(self.ocrBoxesDir, lower_boxes_right_fn) # kiwi only
+        upper_boxes_right = os.path.join(self.ocrBoxesDir, upper_boxes_right_fn)  # kiwi only
+        lower_boxes_right = os.path.join(self.ocrBoxesDir, lower_boxes_right_fn)  # kiwi only
 
         if os.path.exists(upper_boxes) and os.path.exists(lower_boxes):
             foundOcrBoxesInFolderDir = True
             self.upperOcrBoxesLeft = pickle.load(open(upper_boxes, "rb"))
-            # self.showMsg(f'upper OCR boxes loaded from {upper_boxes}')
             self.lowerOcrBoxesLeft = pickle.load(open(lower_boxes, "rb"))
-            # self.showMsg(f'lower OCR boxes loaded from {lower_boxes}')
 
         if os.path.exists(upper_boxes_right) and os.path.exists(lower_boxes_right):
             foundOcrBoxesInFolderDir = True
             self.upperOcrBoxesRight = pickle.load(open(upper_boxes_right, "rb"))
-            # self.showMsg(f'upper OCR boxes loaded from {upper_boxes}')
             self.lowerOcrBoxesRight = pickle.load(open(lower_boxes_right, "rb"))
-            # self.showMsg(f'lower OCR boxes loaded from {lower_boxes}')
 
         if foundOcrBoxesInFolderDir:
             return
@@ -2842,18 +2986,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         if os.path.exists(upper_boxes) and os.path.exists(lower_boxes):
             self.upperOcrBoxesLeft = pickle.load(open(upper_boxes, "rb"))
-            # self.showMsg(f'upper OCR boxes loaded from {upper_boxes}')
             self.lowerOcrBoxesLeft = pickle.load(open(lower_boxes, "rb"))
-            # self.showMsg(f'lower OCR boxes loaded from {lower_boxes}')
         else:
             self.upperOcrBoxesLeft = None
             self.lowerOcrBoxesLeft = None
 
         if os.path.exists(upper_boxes_right) and os.path.exists(lower_boxes_right):
             self.upperOcrBoxesRight = pickle.load(open(upper_boxes_right, "rb"))
-            # self.showMsg(f'upper OCR boxes loaded from {upper_boxes}')
             self.lowerOcrBoxesRight = pickle.load(open(lower_boxes_right, "rb"))
-            # self.showMsg(f'lower OCR boxes loaded from {lower_boxes}')
         else:
             self.upperOcrBoxesRight = []
             self.lowerOcrBoxesRight = []
@@ -2917,7 +3057,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.showMissingModelDigits()
 
-    def extractTimestamps(self, printresults = True):
+    def extractTimestamps(self, printresults=True):
         if not self.timestampReadingEnabled:
             return None, None, None, None, None, None, None, None, None, None
 
@@ -2941,12 +3081,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 reg_upper_ts, reg_upper_scores, reg_upper_cum_score, reg_upper_left_used = \
                 extract_timestamp(
                     self.upper_field, self.upperOcrBoxesLeft, self.modelDigits, self.timestampFormatter,
-                    thresh, kiwi=True, slant=self.kiwiInUse, t2fromleft=use_left)
+                    thresh, kiwi=True, slant=self.kiwiInUse, t2fromleft=use_left
+                )
             alt_upper_timestamp, alt_upper_time, \
                 alt_upper_ts, alt_upper_scores, alt_upper_cum_score, alt_upper_left_used = \
                 extract_timestamp(
                     self.upper_field, self.upperOcrBoxesRight, self.modelDigits, self.timestampFormatter,
-                    thresh, kiwi=True, slant=self.kiwiInUse, t2fromleft=use_left)
+                    thresh, kiwi=True, slant=self.kiwiInUse, t2fromleft=use_left
+                )
 
             if self.lower_left_count + self.lower_right_count > 3:
                 use_left = self.lower_left_count > self.lower_right_count
@@ -2957,20 +3099,21 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 reg_lower_ts, reg_lower_scores, reg_lower_cum_score, reg_lower_left_used = \
                 extract_timestamp(
                     self.lower_field, self.lowerOcrBoxesLeft, self.modelDigits, self.timestampFormatter,
-                    thresh, kiwi=True, slant=self.kiwiInUse, t2fromleft=use_left)
+                    thresh, kiwi=True, slant=self.kiwiInUse, t2fromleft=use_left
+                )
             alt_lower_timestamp, alt_lower_time, \
                 alt_lower_ts, alt_lower_scores, alt_lower_cum_score, alt_lower_left_used = \
                 extract_timestamp(
                     self.lower_field, self.lowerOcrBoxesRight, self.modelDigits, self.timestampFormatter,
-                    thresh, kiwi=True, slant=self.kiwiInUse, t2fromleft=use_left)
+                    thresh, kiwi=True, slant=self.kiwiInUse, t2fromleft=use_left
+                )
             need_to_redisplay_ocr_boxes = False
-            if reg_upper_cum_score > alt_upper_cum_score: # lefthand boxes score better than righthand boxes
+            if reg_upper_cum_score > alt_upper_cum_score:  # left-hand boxes score better than right-hand boxes
                 if self.currentUpperBoxPos == 'right':
                     need_to_redisplay_ocr_boxes = True
                 self.currentUpperBoxPos = 'left'
                 upper_timestamp = reg_upper_timestamp
                 upper_time = reg_upper_time
-                # upper_ts = reg_upper_ts
                 upper_scores = reg_upper_scores
                 upper_cum_score = reg_upper_cum_score
                 upper_left_used = reg_upper_left_used
@@ -3017,10 +3160,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             # Note: left_used is only useful when kiwi=TRUE
             upper_timestamp, upper_time, \
                 upper_ts, upper_scores, upper_cum_score, upper_left_used = extract_timestamp(
-                    self.upper_field, self.upperOcrBoxesLeft, self.modelDigits, self.timestampFormatter, thresh)
-            lower_timestamp, lower_time,\
+                    self.upper_field, self.upperOcrBoxesLeft, self.modelDigits, self.timestampFormatter, thresh
+                )
+            lower_timestamp, lower_time, \
                 lower_ts, lower_scores, lower_cum_score, lower_left_used = extract_timestamp(
-                    self.lower_field, self.lowerOcrBoxesLeft, self.modelDigits, self.timestampFormatter, thresh)
+                    self.lower_field, self.lowerOcrBoxesLeft, self.modelDigits, self.timestampFormatter, thresh
+                )
 
         if upper_left_used is not None and upper_left_used:
             self.upper_left_count += 1
@@ -3048,7 +3193,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.showMsg(f'lower field timestamp:{lower_timestamp}  '
                              f'time:{lower_time:0.4f}  scores:{lower_scores} ')
 
-
         if self.detectFieldTimeOrder:
             if lower_time >= 0 and upper_time >= 0:
                 if lower_time < upper_time:
@@ -3060,7 +3204,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.detectFieldTimeOrder = False
 
         return upper_timestamp, upper_time, upper_scores, upper_cum_score, \
-               lower_timestamp, lower_time, lower_scores, lower_cum_score
+            lower_timestamp, lower_time, lower_scores, lower_cum_score
 
     def writeFormatTypeFile(self, format_type):
         f_path = os.path.join(self.folder_dir, 'formatter.txt')
@@ -3182,7 +3326,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.doStandardVTIsetup()
 
             if width == 640:
-                self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft= setup_for_iota_640_safe_mode2()
+                self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft = setup_for_iota_640_safe_mode2()
             else:
                 self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft = setup_for_iota_720_safe_mode2()
 
@@ -3204,7 +3348,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.doStandardVTIsetup()
 
             if width == 640:
-                self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft= setup_for_boxsprite3_640()
+                self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft = setup_for_boxsprite3_640()
             else:
                 self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft = setup_for_boxsprite3_720()
 
@@ -3226,8 +3370,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.doStandardVTIsetup()
 
             if width == 640:
-                self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft= setup_for_kiwi_vti_640_left()
-                self.upperOcrBoxesRight, self.lowerOcrBoxesRight= setup_for_kiwi_vti_640_right()
+                self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft = setup_for_kiwi_vti_640_left()
+                self.upperOcrBoxesRight, self.lowerOcrBoxesRight = setup_for_kiwi_vti_640_right()
             else:
                 self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft = setup_for_kiwi_vti_720_left()
                 self.upperOcrBoxesRight, self.lowerOcrBoxesRight = setup_for_kiwi_vti_720_right()
@@ -3279,7 +3423,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.extractTimestamps()
             return
 
-        if self.currentVTIindex == 8: # Kiwi PAL (left position)
+        if self.currentVTIindex == 8:  # Kiwi PAL (left position)
 
             self.doStandardVTIsetup()
 
@@ -3304,7 +3448,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.extractTimestamps()
             return
 
-        if self.currentVTIindex == 9: # Kiwi PAL (right position)
+        if self.currentVTIindex == 9:  # Kiwi PAL (right position)
 
             self.doStandardVTIsetup()
 
@@ -3339,7 +3483,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             # else:
             #     self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft = setup_for_GHS_720()
 
-            self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft= setup_for_GHS_generic()
+            self.upperOcrBoxesLeft, self.lowerOcrBoxesLeft = setup_for_GHS_generic()
 
             self.ocrboxBasePath = 'custom-boxes'
             self.pickleOcrBoxes()
@@ -3366,8 +3510,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.showFrame()
 
             return
-
-
 
         self.showMsg('Not yet implemented')
         return
@@ -3468,17 +3610,17 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.appDictList = []
         for app in self.getApertureList():
             appDict = dict(
-                appRef = app,
-                name = app.name,
-                threshDelta = app.thresh,
-                xy = app.getCenter(),
-                frame = self.currentFrameSpinBox.value(),
-                defMskRadius = app.default_mask_radius,
-                color = app.color,
-                joggable = app.jogging_enabled,
-                autoTextOut = app.auto_display,
-                thumbnailSource = app.thumbnail_source,
-                outputOrder = app.order_number,
+                appRef=app,
+                name=app.name,
+                threshDelta=app.thresh,
+                xy=app.getCenter(),
+                frame=self.currentFrameSpinBox.value(),
+                defMskRadius=app.default_mask_radius,
+                color=app.color,
+                joggable=app.jogging_enabled,
+                autoTextOut=app.auto_display,
+                thumbnailSource=app.thumbnail_source,
+                outputOrder=app.order_number,
             )
             self.appDictList.append(appDict)
 
@@ -3636,23 +3778,23 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         else:
             return True, abs(num_lines_to_redact_from_top), abs(num_lines_to_redact_from_bottom)
 
-
     def generateFinderFrame(self):
         if not (self.avi_wcs_folder_in_use or self.fits_folder_in_use):
-            self.showMsg(f'This function can only be performed in the context of an AVI/SER/ADV/AAV-WCS or FITS folder.')
+            self.showMsg(
+                f'This function can only be performed in the context of an AVI/SER/ADV/AAV-WCS or FITS folder.')
             return
 
         # Deal with timestamp redaction first.
         # Get a robust mean from near the center of the current image
-        y0 = int(self.image.shape[0]/2)
-        x0 = int(self.image.shape[1]/2)
+        y0 = int(self.image.shape[0] / 2)
+        x0 = int(self.image.shape[1] / 2)
         ny = 51
         nx = 51
         thumbnail = self.image[y0:y0 + ny, x0:x0 + nx]
         mean, *_ = newRobustMeanStd(thumbnail, outlier_fraction=.5)
 
         image_height = self.image.shape[0]  # number of rows
-        image_width = self.image.shape[1]   # number of columns
+        image_width = self.image.shape[1]  # number of columns
 
         early_exit = False
 
@@ -3679,7 +3821,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'Operation aborted.')
             return
 
-        redacted_image = self.image[:,:].astype('uint16')
+        redacted_image = self.image[:, :].astype('uint16')
 
         if num_bottom > 0:
             for i in range(image_height - num_bottom, image_height):
@@ -3818,9 +3960,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             first_frame=first_frame, last_frame=last_frame,
             timestamp_trim_top=num_top,
             timestamp_trim_bottom=num_bottom,
-            fitsReader = fitsReader,
-            serReader = serReader,
-            advReader = advReader,
+            fitsReader=fitsReader,
+            serReader=serReader,
+            advReader=advReader,
             avi_location=self.avi_location, out_dir_path=self.folder_dir, bkg_threshold=None,
             hot_pixel_erase=self.applyHotPixelErasureToImg,
             delta_x=dx_dframe,
@@ -3911,7 +4053,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def show3DThumbnail(self):
         if self.thumbOneImage is not None:
             title = f'Frame={self.currentFrameSpinBox.value()} Aperture( {self.thumbnail_one_aperture_name} ) '
-            # mpl = Qt5MplCanvas(self.thumbOneImage, title=title, invert=self.invertImagesCheckBox.isChecked())
             mpl = Qt5MplCanvas(self.thumbOneImage, title=title)
             self.plots.append(mpl)
             mpl.show()
@@ -3924,8 +4065,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         key = event.key()
         modifiers = int(event.modifiers())
-        if (key != Qt.Key_Shift and key != Qt.Key_Alt and
-                key != Qt.Key_Control and key != Qt.Key_Meta):
+        if (key != Qt.Key.Key_Shift and key != Qt.Key.Key_Alt and
+                key != Qt.Key.Key_Control and key != Qt.Key.Key_Meta):
             keyname = PyQt5.QtGui.QKeySequence(modifiers + key).toString()
             self.showMsg(f'key(s) pressed: {keyname}  raw: {key}')
 
@@ -3975,7 +4116,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             return True
 
         if key == ord('K'):  # Could be 'k' or 'K'
-            if modifiers & Qt.SHIFT == Qt.SHIFT: # it's 'K'
+            if modifiers & Qt.Key.Key_Shift == Qt.Key.Key_Shift:  # it's 'K'
                 self.consecutiveKcount += 1
                 if self.consecutiveKcount >= 2:
                     self.printKeyCodes = True
@@ -4026,24 +4167,24 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         got_arrow_key = False
         dx = 0
         dy = 0
-        if key == Qt.Key_Up:
+        if key == Qt.Key.Key_Up:
             if self.printKeyCodes:
                 self.showMsg(f'Jogging up')
             dy = -1
             got_arrow_key = True
-        elif key == Qt.Key_Down:
+        elif key == Qt.Key.Key_Down:
             if self.printKeyCodes:
                 self.showMsg(f'Jogging down')
             dy = 1
             got_arrow_key = True
-        elif key == Qt.Key_Left:
+        elif key == Qt.Key.Key_Left:
             if self.printKeyCodes:
                 self.showMsg(f'Jogging left')
             dx = -1
             got_arrow_key = True
-        elif key == Qt.Key_Right:
+        elif key == Qt.Key.Key_Right:
             if self.printKeyCodes:
-              self.showMsg(f'Jogging right')
+                self.showMsg(f'Jogging right')
             dx = 1
             got_arrow_key = True
 
@@ -4079,7 +4220,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def flipImagesTopToBottom(self):
         checked = self.flipImagesTopToBottomCheckBox.isChecked()
-        # The 'inversion' of checked is because the intial state of frameView is with invertedY because
+        # The 'inversion' of checked is because the initial state of frameView is with invertedY because
         self.frameView.view.invertY(not checked)
         self.thumbOneView.view.invertY(not checked)
         self.thumbTwoView.view.invertY(not checked)
@@ -4292,9 +4433,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         r = int(np.ceil(radius))
         for i in range(c - r - 1, c + r + 2):
             for j in range(c - r - 1, c + r + 2):
-                if (i - c)**2 + (j - c)**2 <= radius**2:
+                if (i - c) ** 2 + (j - c) ** 2 <= radius ** 2:
                     self.defaultMaskPixelCount += 1
-                    self.defaultMask[i,j] = 1
+                    self.defaultMask[i, j] = 1
         # self.showMsg(f'The current default mask contains {self.defaultMaskPixelCount} pixels')
 
     def resetMaxStopAtFrameValue(self):
@@ -4328,7 +4469,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if self.adv_file_in_use or self.aav_file_in_use:
             self.showAdvMetaData()
 
-
     def autoPlayLeft(self):
         self.setTransportButtonsEnableState(False)
         self.transportPause.setEnabled(True)
@@ -4342,7 +4482,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             if currentFrame == 0:
                 self.playPaused = True
                 self.setTransportButtonsEnableState(True)
-                mark_available = not self.savedStateFrameNumber is None
+                mark_available = self.savedStateFrameNumber is not None
                 self.transportReturnToMark.setEnabled(mark_available)
                 return
             else:
@@ -4351,7 +4491,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 QtGui.QGuiApplication.processEvents()
 
         self.setTransportButtonsEnableState(True)
-        mark_available = not self.savedStateFrameNumber is None
+        mark_available = self.savedStateFrameNumber is not None
         self.transportReturnToMark.setEnabled(mark_available)
 
     def autoPlayRight(self):
@@ -4367,7 +4507,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             if currentFrame == lastFrame:
                 self.playPaused = True
                 self.setTransportButtonsEnableState(True)
-                mark_available = not self.savedStateFrameNumber is None
+                mark_available = self.savedStateFrameNumber is not None
                 self.transportReturnToMark.setEnabled(mark_available)
                 return
             else:
@@ -4376,9 +4516,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 QtGui.QGuiApplication.processEvents()
 
         self.setTransportButtonsEnableState(True)
-        mark_available = not self.savedStateFrameNumber is None
+        mark_available = self.savedStateFrameNumber is not None
         self.transportReturnToMark.setEnabled(mark_available)
-
 
     def showUserTheBadAavFrameList(self):
         if len(self.aav_bad_frames) == 0:
@@ -4387,9 +4526,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         for frame_num in self.aav_bad_frames:
             bad_frames += f'{frame_num} '
         self.showMsgPopup(f'The aav file had incorrect numbers of integrated frames at '
-                      f'frames {bad_frames}\n\n'
-                      f'Note: it is normal for an aav file to have a different number of '
-                      f'integrated frames in the first and last frames.')
+                          f'frames {bad_frames}\n\n'
+                          f'Note: it is normal for an aav file to have a different number of '
+                          f'integrated frames in the first and last frames.')
 
     def autoRun(self):
         if self.analysisRequested:
@@ -4427,7 +4566,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.analysisPaused = True
                     self.analysisRequested = False
                     self.setTransportButtonsEnableState(True)
-                    mark_available = not self.savedStateFrameNumber is None
+                    mark_available = self.savedStateFrameNumber is not None
                     self.transportReturnToMark.setEnabled(mark_available)
                     if self.aav_file_in_use:
                         self.showUserTheBadAavFrameList()
@@ -4521,7 +4660,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.applyPixelCorrectionsCheckBox.setEnabled(True)
             self.applyPixelCorrectionsToCurrentImageButton.setEnabled(True)
 
-    def writeSpecialRowSumCsvFile(self,filename, num_data_pts, appdata):
+    def writeSpecialRowSumCsvFile(self, filename, num_data_pts, appdata):
         with open(filename, 'w') as f:
             # Standard header
             f.write(f'# PyMovie Version {version.version()}\n')
@@ -4612,8 +4751,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 filename = filename + '.csv'
             self.showMsg(f'Output file selected: {filename}')
 
-            appdata = []  # Will become a list of list of lists
-            names = []    # A simple list of aperture names
+            appdata = []  # Will become a list of lists
+            names = []  # A simple list of aperture names
             order = []
             num_data_pts = None
 
@@ -4622,7 +4761,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 order.append(app.order_number)
                 # Sort the data points into frame order (to support running backwards)
                 app.data.sort(key=sortOnFrame)
-                # app.data is a list of  lists, so appdata will become a list of list of lists
+                # app.data is a list of lists, so appdata will become a list of lists
                 appdata.append(app.data)
                 num_data_pts = len(app.data)
 
@@ -4631,7 +4770,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 return
 
             for i in range(num_data_pts - 1):
-                if appdata[0][i][8] == appdata[0][i+1][8]:
+                if appdata[0][i][8] == appdata[0][i + 1][8]:
                     self.showMsgDialog('Duplicate frames detected --- write of csv aborted')
                     return
 
@@ -4704,7 +4843,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
                 # Now we add the data lines
                 for i in range(num_data_pts):
-                    frame = appdata[0][i][8]   # [aperture index][data group][data id]
+                    frame = appdata[0][i][8]  # [aperture index][data group][data id]
 
                     timestamp = appdata[0][i][12]
 
@@ -4825,7 +4964,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         # Calling .processEvents() gives the GUI an opportunity to close that menu.
         QtGui.QGuiApplication.processEvents()
 
-        # Grap the properties that we need from the aperture object
+        # Grab the properties that we need from the aperture object
         bbox = aperture.getBbox()
         x0, y0, nx, ny = bbox
 
@@ -4864,22 +5003,26 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 if i == endIndex:
                     output += html[i]
                     return output
-                if html[i+1] == ' ':
+                if html[i + 1] == ' ':
                     output += html[i] + '&nbsp;'
                 else:
                     output += html[i]
         return output
 
     def eventFilter(self, obj, event):
-        if event.type() == QtCore.QEvent.KeyPress:
+        if event.type() == QtCore.QEvent.Type.KeyPress:
             handled = self.processKeystroke(event)
             if handled:
                 return True
             else:
                 return super(PyMovie, self).eventFilter(obj, event)
 
-        if event.type() == QtCore.QEvent.MouseButtonPress:
-            if event.button() == Qt.RightButton:
+        if event.type() == QtCore.QEvent.Type.MouseButtonPress:
+            if event.button() == Qt.MouseButton.RightButton:
+                # We capture and save the mouse position x and y of this right-click event
+                # self.mousex and self.mousey are updated every time the mouse cursor is moved
+                self.lastRightClickXPosition = self.mousex
+                self.lastRightClickYPosition = self.mousex
                 if obj.toolTip():
                     self.helperThing.raise_()
                     self.helperThing.show()
@@ -4888,9 +5031,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.helperThing.textEdit.insertHtml(stuffToShow)
                     return True
             return super(PyMovie, self).eventFilter(obj, event)
-            # return False
 
-        if event.type() == QtCore.QEvent.ToolTip:
+        if event.type() == QtCore.QEvent.Type.ToolTip:
             return True
 
         return super(PyMovie, self).eventFilter(obj, event)
@@ -4954,77 +5096,78 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             app.thumbnail_source = False
         aperture.thumbnail_source = True
 
-    def makeApertureSignalToSlotConnection(self, app_object):
-        app_object.sendAperture.connect(self.handleAppSignal)
+    # TODO remove
+    # def makeApertureSignalToSlotConnection(self, app_object):
+    #     app_object.sendAperture.connect(self.handleAppSignal)
+    #
+    # def disconnectApertureSignalToSlot(self, app_object):
+    #     app_object.sendAperture.disconnect(self.handleAppSignal)
+    #
+    # def makeRecenterSignalToSlotConnection(self, app_object):
+    #     app_object.sendRecenter.connect(self.handleRecenterSignal)
+    #
+    # def disconnectRecenterSignalToSlot(self, app_object):
+    #     app_object.sendRecenter.disconnect(self.handleRecenterSignal)
+    #
+    # def makeSetGreenSignalToSlotConnection(self, app_object):
+    #     app_object.sendSetGreen.connect(self.handleSetGreenSignal)
+    #
+    # def disconnectSetGreenSignalToSlot(self, app_object):
+    #     app_object.sendSetGreen.disconnect(self.handleSetGreenSignal)
+    #
+    # def makeSetYellowSignalToSlotConnection(self, app_object):
+    #     app_object.sendSetYellow.connect(self.handleSetYellowSignal)
+    #
+    # def disconnectSetYellowSignalToSlot(self, app_object):
+    #     app_object.sendSetYellow.disconnect(self.handleSetYellowSignal)
+    #
+    # def makeDeleteSignalToSlotConnection(self, app_object):
+    #     app_object.sendDelete.connect(self.handleDeleteSignal)
+    #
+    # def disconnectDeleteSignalToSlot(self, app_object):
+    #     app_object.sendDelete.disconnect(self.handleDeleteSignal)
+    #
+    # def makeSetThreshSignalToSlotConnection(self, app_object):
+    #     app_object.sendSetThresh.connect(self.handleSetThreshSignal)
+    #
+    # def disconnectSetThreshSignalToSlot(self, app_object):
+    #     app_object.sendSetThresh.disconnect(self.handleSetThreshSignal)
+    #
+    # def makeSetThumbnailSourceSignalToSlotConnection(self, app_object):
+    #     app_object.sendThumbnailSource.connect(self.handleSetThumbnailSourceSignal)
+    #
+    # def disconnectSetThumbnailSourceSignalToSlot(self, app_object):
+    #     app_object.sendThumbnailSource.disconnect(self.handleSetThumbnailSourceSignal)
+    #
+    # def makeSetRaDecSignalToSlotConnection(self, app_object):
+    #     app_object.sendSetRaDec.connect(self.handleSetRaDecSignal)
+    #
+    # def disconnectSetRaDecSignalToSlot(self, app_object):
+    #     app_object.sendSetRaDec.disconnect(self.handleSetRaDecSignal)
+    #
+    # def makeSetEarlyPathPointToSlotConnection(self, app_object):
+    #     app_object.sendSetEarlyTrackPathPoint.connect(self.handleEarlyTrackPathPoint)
+    #
+    # def disconnectSetEarlyPathPointToSlotConnection(self, app_object):
+    #     app_object.sendSetEarlyTrackPathPoint.disconnect(self.handleEarlyTrackPathPoint)
+    #
+    # def makeSetLatePathPointToSlotConnection(self, app_object):
+    #     app_object.sendSetLateTrackPathPoint.connect(self.handleLateTrackPathPoint)
+    #
+    # def disconnectSetLatePathPointToSlotConnection(self, app_object):
+    #     app_object.sendSetLateTrackPathPoint.disconnect(self.handleLateTrackPathPoint)
+    #
+    # def makeClearTrackPathToSlotConnection(self, app_object):
+    #     app_object.sendClearTrackPath.connect(self.handleClearTrackPath)
+    #
+    # def disconnectClearTrackPathToSlotConnection(self, app_object):
+    #     app_object.sendClearTrackPath.disconnect(self.handleClearTrackPath)
 
-    def disconnectApertureSignalToSlot(self, app_object):
-        app_object.sendAperture.disconnect(self.handleAppSignal)
+    # def makeRecordHotPixelToSlotConnection(self, app_object):
+    #     app_object.sendHotPixelRecord.connect(self.handleRecordHotPixel)
 
-    def makeRecenterSignalToSlotConnection(self, app_object):
-        app_object.sendRecenter.connect(self.handleRecenterSignal)
-
-    def disconnectRecenterSignalToSlot(self, app_object):
-        app_object.sendRecenter.disconnect(self.handleRecenterSignal)
-
-    def makeSetGreenSignalToSlotConnection(self, app_object):
-        app_object.sendSetGreen.connect(self.handleSetGreenSignal)
-
-    def disconnectSetGreenSignalToSlot(self, app_object):
-        app_object.sendSetGreen.disconnect(self.handleSetGreenSignal)
-
-    def makeSetYellowSignalToSlotConnection(self, app_object):
-        app_object.sendSetYellow.connect(self.handleSetYellowSignal)
-
-    def disconnectSetYellowSignalToSlot(self, app_object):
-        app_object.sendSetYellow.disconnect(self.handleSetYellowSignal)
-
-    def makeDeleteSignalToSlotConnection(self, app_object):
-        app_object.sendDelete.connect(self.handleDeleteSignal)
-
-    def disconnectDeleteSignalToSlot(self, app_object):
-        app_object.sendDelete.disconnect(self.handleDeleteSignal)
-
-    def makeSetThreshSignalToSlotConnection(self, app_object):
-        app_object.sendSetThresh.connect(self.handleSetThreshSignal)
-
-    def disconnectSetThreshSignalToSlot(self, app_object):
-        app_object.sendSetThresh.disconnect(self.handleSetThreshSignal)
-
-    def makeSetThumbnailSourceSignalToSlotConnection(self, app_object):
-        app_object.sendThumbnailSource.connect(self.handleSetThumbnailSourceSignal)
-
-    def disconnectSetThumbnailSourceSignalToSlot(self, app_object):
-        app_object.sendThumbnailSource.disconnect(self.handleSetThumbnailSourceSignal)
-
-    def makeSetRaDecSignalToSlotConnection(self, app_object):
-        app_object.sendSetRaDec.connect(self.handleSetRaDecSignal)
-
-    def disconnectSetRaDecSignalToSlot(self, app_object):
-        app_object.sendSetRaDec.disconnect(self.handleSetRaDecSignal)
-
-    def makeSetEarlyPathPointToSlotConnection(self, app_object):
-        app_object.sendSetEarlyTrackPathPoint.connect(self.handleEarlyTrackPathPoint)
-
-    def disconnectSetEarlyPathPointToSlotConnection(self, app_object):
-        app_object.sendSetEarlyTrackPathPoint.disconnect(self.handleEarlyTrackPathPoint)
-
-    def makeSetLatePathPointToSlotConnection(self, app_object):
-        app_object.sendSetLateTrackPathPoint.connect(self.handleLateTrackPathPoint)
-
-    def disconnectSetLatePathPointToSlotConnection(self, app_object):
-        app_object.sendSetLateTrackPathPoint.disconnect(self.handleLateTrackPathPoint)
-
-    def makeClearTrackPathToSlotConnection(self, app_object):
-        app_object.sendClearTrackPath.connect(self.handleClearTrackPath)
-
-    def disconnectClearTrackPathToSlotConnection(self, app_object):
-        app_object.sendClearTrackPath.disconnect(self.handleClearTrackPath)
-
-    def makeRecordHotPixelToSlotConnection(self, app_object):
-        app_object.sendHotPixelRecord.connect(self.handleRecordHotPixel)
-
-    def disconnectRecordHotPixelToSlotConnection(self, app_object):
-        app_object.sendHotPixelRecord.disconnect(self.handleRecordHotPixel)
+    # def disconnectRecordHotPixelToSlotConnection(self, app_object):
+    #     app_object.sendHotPixelRecord.disconnect(self.handleRecordHotPixel)
 
     @pyqtSlot('PyQt_PyObject')
     def handleClearTrackPath(self):
@@ -5032,9 +5175,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.clearTrackingPathParameters()
             self.showMsg(f'The tracking path parameters have been cleared.')
 
-    @pyqtSlot('PyQt_PyObject')
-    def handleRecordHotPixel(self):
-        self.showMsg(f'Hot pixel recording requested')
+    # @pyqtSlot('PyQt_PyObject')
+    # def handleRecordHotPixel(self):
+    #     self.showMsg(f'Hot pixel recording requested')
 
     def clearTrackingPathParameters(self):
         self.tpathEarlyX = None
@@ -5060,7 +5203,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.showMsg("", blankLine=False)
         if self.tpathEarlyX is not None:
             self.showMsg(
-                f'Early tracking path point: x={self.tpathEarlyX:4d}  y={self.tpathEarlyY:4d}  frame={self.tpathEarlyFrame}',
+                f'Early tracking path point: x={self.tpathEarlyX:4d}  y={self.tpathEarlyY:4d}  '
+                f'frame={self.tpathEarlyFrame}',
                 blankLine=False
             )
             early_point_defined = True
@@ -5068,10 +5212,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'Early tracking path point: Not yet specified', blankLine=False)
             early_point_defined = False
 
-
         if self.tpathLateX is not None:
             self.showMsg(
-                f'Late  tracking path point: x={self.tpathLateX:4d}  y={self.tpathLateY:4d}  frame={self.tpathLateFrame}',
+                f'Late  tracking path point: x={self.tpathLateX:4d}  y={self.tpathLateY:4d}  '
+                f'frame={self.tpathLateFrame}',
                 blankLine=False
             )
             late_point_defined = True
@@ -5110,10 +5254,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         xc = round(self.tpathXa * frame + self.tpathXb)
         yc = round(self.tpathYa * frame + self.tpathYb)
         return int(xc), int(yc)
-
-    @pyqtSlot('PyQt_PyObject')
-    def handleRecordHotPixel(self):
-        self.showMsg(f'Hot pixel record requested')
 
     @pyqtSlot('PyQt_PyObject')
     def handleEarlyTrackPathPoint(self, aperture):
@@ -5159,7 +5299,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 f.write(str(x) + '\n')
                 f.write(str(y) + '\n')
             self.showMsg(f'Reference star 1 data recorded: waiting for aperture 2 to be placed and RA DEC assigned.')
-            self.manual_wcs_state +=1
+            self.manual_wcs_state += 1
             return
 
         if self.manual_wcs_state == 2:
@@ -5286,7 +5426,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def addNamedStaticAperture(self):
         self.addStaticAperture(askForName=True)
 
-    def addStaticAperture(self, askForName = True):
+    def addStaticAperture(self, askForName=True):
         if self.image is None:  # Don't add an aperture if there is no image showing yet.
             return
 
@@ -5313,7 +5453,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             showtemplates=self.showDigitTemplates,
             neededdigits=self.needDigits,
             kiwi=self.kiwiInUse,
-            # samplemenu=self.enableOcrTemplateSampling
             samplemenu=True
         )
         view = self.frameView.getView()
@@ -5348,8 +5487,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             return
 
         for img in self.modelDigits:
-            if not img is None:
+            if img is not None:
+                # noinspection PyUnresolvedReferences
                 y_size, x_size = img.shape
+                # noinspection PyUnresolvedReferences
                 max_pixel = img.max()
                 break
 
@@ -5402,7 +5543,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.showOcrboxInThumbnails(ocrbox)
 
     def showOcrboxInThumbnails(self, ocrbox):
-        img = timestamp_box_image(self.image_fields, ocrbox, kiwi=(self.kiwiInUse or self.kiwiPALinUse), slant=self.kiwiInUse)
+        img = timestamp_box_image(self.image_fields, ocrbox, kiwi=(self.kiwiInUse or self.kiwiPALinUse),
+                                  slant=self.kiwiInUse)
         black_and_white = pg.ColorMap([0.0, 1.0], color=[(0, 0, 0), (255, 255, 255)])
         self.thumbOneView.setColorMap(black_and_white)
         self.thumbTwoView.setColorMap(black_and_white)
@@ -5431,7 +5573,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'Training completed.')
             self.showFrame()
 
-
     def addApertureAtPosition(self, x, y):
         x0 = x - self.roi_center
         y0 = y - self.roi_center
@@ -5447,7 +5588,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         aperture.default_mask_radius = self.getDefaultMaskRadius()
 
-        self.connectAllSlots(aperture)
+        # TODO Remove this code
+        # self.connectAllSlots(aperture)
 
         self.apertureId += 1
         view = self.frameView.getView()
@@ -5483,33 +5625,35 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         return aperture
 
-    def connectAllSlots(self, aperture):
-        self.makeApertureSignalToSlotConnection(aperture)
-        self.makeRecenterSignalToSlotConnection(aperture)
-        self.makeSetThreshSignalToSlotConnection(aperture)
-        self.makeSetGreenSignalToSlotConnection(aperture)
-        self.makeSetYellowSignalToSlotConnection(aperture)
-        self.makeDeleteSignalToSlotConnection(aperture)
-        self.makeSetThumbnailSourceSignalToSlotConnection(aperture)
-        self.makeSetRaDecSignalToSlotConnection(aperture)
-        self.makeSetEarlyPathPointToSlotConnection(aperture)
-        self.makeSetLatePathPointToSlotConnection(aperture)
-        self.makeRecordHotPixelToSlotConnection(aperture)
-        self.makeClearTrackPathToSlotConnection(aperture)
+    # TODO Remove this code
+    # def connectAllSlots(self, aperture):
+    #     self.makeApertureSignalToSlotConnection(aperture)
+    #     self.makeRecenterSignalToSlotConnection(aperture)
+    #     self.makeSetThreshSignalToSlotConnection(aperture)
+    #     self.makeSetGreenSignalToSlotConnection(aperture)
+    #     self.makeSetYellowSignalToSlotConnection(aperture)
+    #     self.makeDeleteSignalToSlotConnection(aperture)
+    #     self.makeSetThumbnailSourceSignalToSlotConnection(aperture)
+    #     self.makeSetRaDecSignalToSlotConnection(aperture)
+    #     self.makeSetEarlyPathPointToSlotConnection(aperture)
+    #     self.makeSetLatePathPointToSlotConnection(aperture)
+    #     self.makeRecordHotPixelToSlotConnection(aperture)
+    #     self.makeClearTrackPathToSlotConnection(aperture)
 
-    def disconnectAllSlots(self, aperture):
-        self.disconnectApertureSignalToSlot(aperture)
-        self.disconnectRecenterSignalToSlot(aperture)
-        self.disconnectSetThreshSignalToSlot(aperture)
-        self.disconnectSetGreenSignalToSlot(aperture)
-        self.disconnectSetYellowSignalToSlot(aperture)
-        self.disconnectDeleteSignalToSlot(aperture)
-        self.disconnectSetThumbnailSourceSignalToSlot(aperture)
-        self.disconnectSetRaDecSignalToSlot(aperture)
-        self.disconnectSetEarlyPathPointToSlotConnection(aperture)
-        self.disconnectSetLatePathPointToSlotConnection(aperture)
-        self.disconnectRecordHotPixelToSlotConnection(aperture)
-        self.disconnectClearTrackPathToSlotConnection(aperture)
+    # TODO remove
+    # def disconnectAllSlots(self, aperture):
+    #     self.disconnectApertureSignalToSlot(aperture)
+    #     self.disconnectRecenterSignalToSlot(aperture)
+    #     self.disconnectSetThreshSignalToSlot(aperture)
+    #     self.disconnectSetGreenSignalToSlot(aperture)
+    #     self.disconnectSetYellowSignalToSlot(aperture)
+    #     self.disconnectDeleteSignalToSlot(aperture)
+    #     self.disconnectSetThumbnailSourceSignalToSlot(aperture)
+    #     self.disconnectSetRaDecSignalToSlot(aperture)
+    #     self.disconnectSetEarlyPathPointToSlotConnection(aperture)
+    #     self.disconnectSetLatePathPointToSlotConnection(aperture)
+    #     self.disconnectRecordHotPixelToSlotConnection(aperture)
+    #     self.disconnectClearTrackPathToSlotConnection(aperture)
 
     def addGenericAperture(self):
         # self.mousex and self.mousey are continuously updated by mouseMovedInFrameView()
@@ -5562,7 +5706,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if self.num_yellow_apertures == 2:
             yellow_count = 0
             for app in self.getApertureList():
-                if app.color == 'yellow' and yellow_count == 0:  # This our yellow #1
+                if app.color == 'yellow' and yellow_count == 0:  # This is our yellow #1
                     yellow_count += 1
                     if self.use_yellow_mask:
                         xc_roi, yc_roi, xc_world, yc_world, *_ = \
@@ -5633,10 +5777,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 if app.color == 'yellow':
                     num_yellow_apertures += 1
                     if num_yellow_apertures == 1:
-                        # if self.use_yellow_mask:
-                        #     xc_roi, yc_roi, xc_world, yc_world, *_ = \
-                        #         self.getApertureStats(app, show_stats=False, save_yellow_mask=True)
-                        # else:
                         # Find out where the centroid of this yellow aperture is located
                         if self.tpathSpecified:
                             # Get current center so that we can calculate change.
@@ -5652,9 +5792,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                             app.yc = yc_world
                         else:
                             xc_roi, yc_roi, xc_world, yc_world, *_ = \
-                            self.getApertureStats(app, show_stats=False)
+                                self.getApertureStats(app, show_stats=False)
 
-                            app.xc = xc_world # Set new center
+                            app.xc = xc_world  # Set new center
                             app.yc = yc_world
                             app.dx = 0
                             app.dy = 0
@@ -5667,7 +5807,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         # Save the current coordinates of the number 1 yellow aperture
                         self.yellow_x = xc_world
                         self.yellow_y = yc_world
-
 
                         # If we're referencing everything off of yellow #1, we need to jog it
                         # so that translations are followed by the aperture when we are in field
@@ -5684,7 +5823,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         # We've found a second yellow aperture
 
                         # We're referencing everything off of yellow #1, we need to jog yellow #2
-                        # so that translations are followed and we can get a good angle calculation
+                        # so that translations are followed, and we can get a good angle calculation
                         jogAperture(app, delta_xc, delta_yc)
 
                         # Note that if we're in 'use yellow mask mode', the mask computed from
@@ -5701,7 +5840,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         # Compute new angular position of yellow #2
                         new_theta, _ = calcTheta(dx, dy)
 
-                        # Compute the field rotation that has ocurred since this run started
+                        # Compute the field rotation that has occurred since this run started
                         self.delta_theta = new_theta - app.theta
 
                         self.positionApertureAtCentroid(app, app.xc, app.yc)
@@ -5793,7 +5932,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def mouseMovedInFrameView(self, pos):
 
-        # inBbox determines whether or not the point x, y is in
+        # inBbox determines whether the point x, y is in
         # the bounding box bbox.  Used to determine if the cursor is inside an aperture
         def inBbox(x_pos, y_pos, bbox):
             x0, y0, w, h = bbox
@@ -5881,13 +6020,47 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     # status = statusMsg(app)
                     # self.statusbar.showMessage(f'x={x} y={y} intensity={self.image[y,x]} {status} {add_on}')
                     self.statusbar.showMessage(
-                        f'x={x} y={y} intensity={self.image[y,x]}   Apertures under cursor: {appsStacked} {add_on}')
+                        f'x={x} y={y} intensity={self.image[y, x]}   Apertures under cursor: {appsStacked} {add_on}')
                 else:
                     self.pointed_at_aperture = None
-                    self.statusbar.showMessage(f'x={x} y={y} intensity={self.image[y,x]} {add_on}')
+                    self.statusbar.showMessage(f'x={x} y={y} intensity={self.image[y, x]} {add_on}')
 
             else:
                 self.statusbar.showMessage(f'')
+
+    def isMouseInAperture(self):
+
+        # inBbox determines whether the point x, y is in
+        # the bounding box bbox.  Used to determine if the cursor is inside an aperture
+        def inBbox(x_pos, y_pos, bbox):
+            x0, y0, w, h = bbox
+            xin = x0 < x_pos < x0 + w
+            yin = y0 < y_pos < y0 + h
+            return xin and yin
+
+        # Convert scene coordinates to image coordinates
+        # mousePoint = self.frameView.getView().mapSceneToView(mousePos)
+        x = self.mousex
+        y = self.mousey
+
+        if self.image is not None:
+            ylim, xlim = self.image.shape
+            if 0 <= y < ylim and 0 <= x < xlim:
+                # Compose a list of all apertures at the current cursor position
+                appsStacked = ""
+                aperture_at_cursor = None
+
+                for app in self.getApertureList():
+                    if inBbox(x, y, app.getBbox()):
+                        appsStacked += f'"{app.name}"  '
+                        aperture_at_cursor = app
+
+                if appsStacked:
+                    return True, aperture_at_cursor
+                else:
+                    return False, None
+        else:  # no image displayed yet
+            return False, None
 
     def mouseMovedInThumbOne(self, pos):
         mousePoint = self.thumbOneView.getView().mapSceneToView(pos)
@@ -5896,7 +6069,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if self.thumbOneImage is not None:
             ylim, xlim = self.thumbOneImage.shape
             if 0 <= y < ylim and 0 <= x < xlim:
-                self.statusbar.showMessage(f'x={x} y={y} intensity={self.thumbOneImage[y,x]}')
+                self.statusbar.showMessage(f'x={x} y={y} intensity={self.thumbOneImage[y, x]}')
             else:
                 self.statusbar.showMessage(f'x={x} y={y}')
 
@@ -5912,10 +6085,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             else:
                 self.statusbar.showMessage(f'x={x} y={y}')
 
-    def  getApertureStats(self, aperture, show_stats=True, save_yellow_mask=False):
+    def getApertureStats(self, aperture, show_stats=True, save_yellow_mask=False):
         # This routine is dual purpose.  When self.show_stats is True, there is output to
-        # the information text box, and to the the two thumbnail ImageViews.
-        # But sometime we use this routine just to get the measurements that it returns.
+        # the information text box, and to the two thumbnail ImageViews.
+        # But sometimes we use this routine just to get the measurements that it returns.
 
         if self.one_time_suppress_stats:
             self.one_time_suppress_stats = False
@@ -5927,13 +6100,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         name = aperture.name
 
         # thumbnail is the portion of the main image that is covered by the aperture bounding box
-        thumbnail = self.image[y0:y0+ny, x0:x0+nx]
-        mean, std, sorted_data, *_ = newRobustMeanStd(thumbnail, outlier_fraction=.5, lunar=self.lunarCheckBox.isChecked())
+        thumbnail = self.image[y0:y0 + ny, x0:x0 + nx]
+        mean, std, sorted_data, *_ = newRobustMeanStd(thumbnail, outlier_fraction=.5,
+                                                      lunar=self.lunarCheckBox.isChecked())
 
         maxpx = sorted_data[-1]
 
-        mean_top, *_ =  newRobustMeanStd(thumbnail[0::2,:], outlier_fraction=.5, lunar=self.lunarCheckBox.isChecked())
-        mean_bot, *_ =  newRobustMeanStd(thumbnail[1::2,:], outlier_fraction=.5, lunar=self.lunarCheckBox.isChecked())
+        mean_top, *_ = newRobustMeanStd(thumbnail[0::2, :], outlier_fraction=.5, lunar=self.lunarCheckBox.isChecked())
+        mean_bot, *_ = newRobustMeanStd(thumbnail[1::2, :], outlier_fraction=.5, lunar=self.lunarCheckBox.isChecked())
         # if show_stats:
         #     self.showMsg(f'mean_top: {mean_top:0.3f}  mean_bot: {mean_bot:0.3f}')
 
@@ -5948,11 +6122,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         if aperture.color == 'yellow':
             max_area, mask, t_mask, centroid, cvxhull, nblobs, extent = \
-                    get_mask(thumbnail, ksize=self.gaussian_blur, cut=threshold, outlier_fraction=0.5,
-                             apply_centroid_distance_constraint=False, max_centroid_distance=self.allowed_centroid_delta,
-                             lunar=self.lunarCheckBox.isChecked())
+                get_mask(thumbnail, ksize=self.gaussian_blur, cut=threshold, outlier_fraction=0.5,
+                         apply_centroid_distance_constraint=False, max_centroid_distance=self.allowed_centroid_delta,
+                         lunar=self.lunarCheckBox.isChecked())
             self.displayImageAtCurrentZoomPanState()
-            # self.frameView.setImage(self.image)
 
         elif aperture.color == 'white':
             max_area = self.roi_size * self.roi_size
@@ -5963,8 +6136,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 # Create a black border one pixel wide around the edges
                 mask[0, i] = 0
                 mask[i, 0] = 0
-                mask[self.roi_size-1, i] = 0
-                mask[i, self.roi_size-1] = 0
+                mask[self.roi_size - 1, i] = 0
+                mask[i, self.roi_size - 1] = 0
             max_area = np.sum(mask)
         else:
             # This handles 'red' and 'green' apertures
@@ -6031,22 +6204,22 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.thumbTwoView.setImage(mask,
                                                levels=(minThumbnailPixel, maxThumbnailPixel))
 
-            self.hair1.setPos((0,self.roi_size))
-            self.hair2.setPos((0,0))
+            self.hair1.setPos((0, self.roi_size))
+            self.hair2.setPos((0, 0))
 
             satPixelValue = self.satPixelSpinBox.value() - 1
 
             thumb1_colors = [
-                (0, 0, 0),        # black
+                (0, 0, 0),  # black
                 (255, 255, 255),  # white
-                (255, 0, 0)       # red
+                (255, 0, 0)  # red
             ]
 
             thumb2_colors = [
                 (255, 255, 128),  # yellow for aperture 'surround'
-                (0, 0, 0),        # black
+                (0, 0, 0),  # black
                 (255, 255, 255),  # white
-                (255, 0, 0)       # red
+                (255, 0, 0)  # red
             ]
 
             red_cusp = satPixelValue / maxThumbnailPixel
@@ -6062,7 +6235,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.thumbOneView.setImage(thumbOneImage,
                                        levels=(minThumbnailPixel, maxThumbnailPixel))
             self.thumbOneView.setColorMap(cmap_thumb1)
-
 
             # Show the pixels included by the mask
             if self.use_yellow_mask:
@@ -6086,10 +6258,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             np.clip(self.thumbTwoImage, 0, minThumbnailPixel - 1)  # ... so that we can add 1 without overflow concerns
             if self.thumbTwoImage is not None:
                 if self.use_yellow_mask:
-                    self.thumbTwoImage += self.yellow_mask # Put the masked pixels on the pedestal
+                    self.thumbTwoImage += self.yellow_mask  # Put the masked pixels on the pedestal
                 else:
                     # self.thumbTwoImage += pedestal # Put the masked pixels on the pedestal
-                    self.thumbTwoImage += mask # Put the masked pixels on the pedestal
+                    self.thumbTwoImage += mask  # Put the masked pixels on the pedestal
                 self.thumbTwoView.setImage(self.thumbTwoImage,
                                            levels=(minThumbnailPixel, maxThumbnailPixel))
                 self.thumbTwoView.setColorMap(cmap_thumb2)
@@ -6132,8 +6304,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             # In version 2.9.0 we changed the meaning of min and max pixels to be restricted to pixels in the masked
             # region.
-            maxpx = np.max(thumbnail, where=mask==1, initial=0)
-            minpx = np.min(thumbnail, where=mask==1, initial=maxpx)
+            maxpx = np.max(thumbnail, where=mask == 1, initial=0)
+            minpx = np.min(thumbnail, where=mask == 1, initial=maxpx)
 
             xpos = int(round(xc_world))
             ypos = int(round(yc_world))
@@ -6150,22 +6322,21 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                        (signal, appsum, mean, std, threshold, max_area, '    NA', '    NA', minpx, maxpx)
             self.showMsg(line)
 
-
         # xc_roi and yc_roi are used by centerAperture() to recenter the aperture
         # The remaining outputs are used in writing the lightcurve information
         # !!! ANY CHANGE TO THE TYPE OR ORDERING OF THIS OUTPUT MUST BE REFLECTED IN writeCsvFile() !!!
         if self.processAsFieldsCheckBox.isChecked():
-            top_mask = mask[0::2,:]
+            top_mask = mask[0::2, :]
             top_mask_pixel_count = np.sum(top_mask)
-            top_thumbnail = thumbnail[0::2,:]
+            top_thumbnail = thumbnail[0::2, :]
             top_appsum = np.sum(top_mask * top_thumbnail)
             top_signal = top_appsum - int(round(top_mask_pixel_count * mean_top))
             if default_mask_used:
                 top_mask_pixel_count = -top_mask_pixel_count
 
-            bottom_mask = mask[1::2,:]
+            bottom_mask = mask[1::2, :]
             bottom_mask_pixel_count = np.sum(bottom_mask)
-            bottom_thumbnail = thumbnail[1::2,:]
+            bottom_thumbnail = thumbnail[1::2, :]
             bottom_appsum = np.sum(bottom_mask * bottom_thumbnail)
             bottom_signal = bottom_appsum - int(round(bottom_mask_pixel_count * mean_bot))
             if default_mask_used:
@@ -6182,7 +6353,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                                     frame_num, cvxhull, maxpx, std, timestamp)
                 timestamp = self.lowerTimestamp
                 self.field2_data = (xc_roi, yc_roi, xc_world, yc_world,
-                                   bottom_signal, bottom_appsum, mean_bot, bottom_mask_pixel_count,
+                                    bottom_signal, bottom_appsum, mean_bot, bottom_mask_pixel_count,
                                     frame_num + 0.5, cvxhull, maxpx, std, timestamp)
             else:
                 timestamp = self.lowerTimestamp
@@ -6285,7 +6456,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.alwaysEraseHotPixels = False
             self.hotPixelProfileDict = {}
 
-
             self.saveStateNeeded = True
             self.avi_wcs_folder_in_use = False
             self.fits_folder_in_use = True
@@ -6293,7 +6463,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.saveTargetLocButton.setEnabled(True)
             self.loadCustomProfilesButton.setEnabled(False)
             self.clearOcrDataButton.setEnabled(False)
-
 
             self.createAVIWCSfolderButton.setEnabled(False)
             self.vtiSelectComboBox.setEnabled(False)
@@ -6407,7 +6576,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.filename, _ = QFileDialog.getOpenFileName(
             self,  # parent
             "Select enhanced image",  # title for dialog
-            self.folder_dir, #starting directory
+            self.folder_dir,  # starting directory
             "finder images (*.bmp enhanced*.fit);; all files (*.*)",
             options=options
         )
@@ -6423,12 +6592,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             # remove the apertures (possibly) left from previous file
             # self.clearApertures()  Removed in version 2.2.6
 
-            self.finderFrameBeingDisplayed = True # Added in version 2.2.6
+            self.finderFrameBeingDisplayed = True  # Added in version 2.2.6
 
             self.apertureId = 0
             self.num_yellow_apertures = 0
 
-            dirpath, basefn= os.path.split(self.filename)
+            dirpath, basefn = os.path.split(self.filename)
             rootfn, ext = os.path.splitext(basefn)
 
             # Now we extract the frame number from the filename
@@ -6436,7 +6605,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             frame_num_text = rootfn_parts[-1]
             try:
                 frame_num = int(frame_num_text)
-            except:
+            except Exception:
                 frame_num = 0
 
             self.disableUpdateFrameWithTracking = True  # skip all the things that usually happen on a frame change
@@ -6454,8 +6623,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 img = cv2.imread(self.filename)
                 self.image = img[:, :, 0]
                 self.displayImageAtCurrentZoomPanState()
-                # self.frameView.setImage(self.image)
-                # self.restoreImageZoomPan()
 
             self.frameView.getView().update()
 
@@ -6471,7 +6638,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.thumbOneView.setLevels(min=self.levels[0], max=self.levels[1])
                 # Version 3.4.1 added next line
                 self.thumbTwoView.setLevels(min=self.levels[0], max=self.levels[1])
-
 
     def getFrame(self, fr_num):
 
@@ -6609,7 +6775,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             # Test for AAV file in use
             self.aav_file_in_use = Path(self.filename).suffix == '.aav'
 
-
             # Set avi in use otherwise
             self.avi_in_use = not (self.ser_file_in_use or self.adv_file_in_use or self.aav_file_in_use)
 
@@ -6677,7 +6842,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.saveApertureState.setEnabled(False)
                     # Let's get the FOURCC code
                     fourcc = int(self.cap.get(cv2.CAP_PROP_FOURCC))
-                    fourcc_str = f'{fourcc & 0xff:c}{fourcc >> 8 & 0xff:c}{fourcc >> 16 & 0xff:c}{fourcc >> 24 & 0xff:c}'
+                    fourcc_str = f'{fourcc & 0xff:c}{fourcc >> 8 & 0xff:c}' \
+                                 f'{fourcc >> 16 & 0xff:c}{fourcc >> 24 & 0xff:c}'
                     self.fourcc = fourcc_str
                     self.showMsg(f'FOURCC codec ID: {fourcc_str}')
 
@@ -6720,7 +6886,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.vtiSelectComboBox.setCurrentIndex(0)
             self.vtiSelected()
 
-            self.currentFrameSpinBox.setMaximum(frame_count-1)
+            self.currentFrameSpinBox.setMaximum(frame_count - 1)
             self.currentFrameSpinBox.setValue(0)
             self.stopAtFrameSpinBox.setMaximum(frame_count - 1)
             self.stopAtFrameSpinBox.setValue(frame_count - 1)
@@ -6735,7 +6901,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.thumbOneView.clear()
             self.thumbnailOneLabel.setText('')
             self.thumbTwoView.clear()
-
 
     def setTimestampFormatter(self):
         self.kiwiInUse = False
@@ -6825,10 +6990,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.timestampReadingEnabled = False
 
             self.saveStateNeeded = True
-            self.upper_left_count  = 0  # When Kiwi used: accumulate count ot times t2 was at left in upper field
+            self.upper_left_count = 0  # When Kiwi used: accumulate count ot times t2 was at left in upper field
             self.upper_right_count = 0  # When Kiwi used: accumulate count ot times t2 was at the right in upper field
 
-            self.lower_left_count  = 0  # When Kiwi used: accumulate count ot times t2 was at left in lower field
+            self.lower_left_count = 0  # When Kiwi used: accumulate count ot times t2 was at left in lower field
             self.lower_right_count = 0  # When Kiwi used: accumulate count ot times t2 was at the right in lower field
 
             self.wcs_solution_available = False
@@ -6939,14 +7104,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                             file_to_use = avi_location
 
             if windows:
-                avi_size = 4000 # To differentiate from a Mac alias
+                avi_size = 4000  # To differentiate from a Mac alias
                 for filename in avi_filenames:
                     target = winshell.shortcut(filename)
                     avi_location = target.path
                     if filename.endswith('.lnk'):
-                            # self.showMsg(f'{filename} is a Windows shortcut to an avi')
-                            file_to_use = avi_location
-                            break
+                        # self.showMsg(f'{filename} is a Windows shortcut to an avi')
+                        file_to_use = avi_location
+                        break
                     else:
                         size = os.path.getsize(filename)
                         if size > avi_size:
@@ -7000,7 +7165,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.enableControlsForAviData()
                     # Let's get the FOURCC code
                     fourcc = int(self.cap.get(cv2.CAP_PROP_FOURCC))
-                    fourcc_str = f'{fourcc & 0xff:c}{fourcc >> 8 & 0xff:c}{fourcc >> 16 & 0xff:c}{fourcc >> 24 & 0xff:c}'
+                    fourcc_str = f'{fourcc & 0xff:c}{fourcc >> 8 & 0xff:c}' \
+                                 f'{fourcc >> 16 & 0xff:c}{fourcc >> 24 & 0xff:c}'
                     self.showMsg(f'FOURCC codec ID: {fourcc_str}')
                     self.showMsg(f'frames per second:{self.cap.get(cv2.CAP_PROP_FPS):0.6f}')
 
@@ -7016,7 +7182,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         self.frameJumpSmall = 25
                         self.frameJumpBig = 250
                         self.changeNavButtonTitles()
-
 
                     # This will get our image display initialized with default pan/zoom state
                     self.initialFrame = True
@@ -7095,7 +7260,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.timestampReadingEnabled = False
                     self.viewFieldsCheckBox.setChecked(False)
                     self.viewFieldsCheckBox.setEnabled(False)
-                else: # It must be an aav file in use
+                else:  # It must be an aav file in use
 
                     # This will get our image display initialized with default pan/zoom state
                     self.initialFrame = True
@@ -7111,7 +7276,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.viewFieldsCheckBox.setChecked(True)
                     self.viewFieldsCheckBox.setEnabled(True)
                     self.currentOcrBox = None
-
 
                 self.vtiSelectComboBox.setCurrentIndex(0)
                 self.processTargetAperturePlacementFiles()
@@ -7133,15 +7297,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.thumbnailOneLabel.setText('')
             self.thumbTwoView.clear()
 
-
     def startTimestampReading(self):
-        # This is how we startup timestamp extraction.
+        # This is how we start up timestamp extraction.
 
         # We assume that if a valid timestamp formatter selection code is
         # present, either in the folder directory or the home directory, then timestamp reading should be attempted
         formatter_code = self.readFormatTypeFile()
         self.formatterCode = formatter_code
-        processTimestampProfile = not self.formatterCode is None
+        processTimestampProfile = self.formatterCode is not None
 
         if self.formatterCode == 'SharpCap8':
             self.sharpCapTimestampPresent = True
@@ -7149,9 +7312,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         if processTimestampProfile:
             self.loadPickledOcrBoxes()  # if any
-            self.pickleOcrBoxes()       # This creates duplicates in folder_dir and homeDir
-            self.loadModelDigits()      # if any
-            self.saveModelDigits()      # This creats duplicates in folder_dir and homeDir
+            self.pickleOcrBoxes()  # This creates duplicates in folder_dir and homeDir
+            self.loadModelDigits()  # if any
+            self.saveModelDigits()  # This creates duplicates in folder_dir and homeDir
             self.detectFieldTimeOrder = True
             # Reset the Kiwi special counters that record where t2 has been found
             self.upper_left_count = 0
@@ -7205,7 +7368,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         # method for automatically placing the target aperture.  It came from stacking
         # frames from the video to get an enhanced video from which the user selected
         # the target star from a star chart. It is given first priority because it
-        # is so directly connected to the pobservation data.
+        # is so directly connected to the observation data.
 
         got_frame_number = False
         frame_num_of_wcs = None
@@ -7336,10 +7499,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.doManualWcsCalibration()
 
     def extractUpperFieldFromImage(self):
-        self.upper_field = self.image[0::2,:]
+        self.upper_field = self.image[0::2, :]
 
     def extractLowerFieldFromImage(self):
-        self.lower_field = self.image[1::2,:]
+        self.lower_field = self.image[1::2, :]
 
     def createImageFields(self):
         self.extractLowerFieldFromImage()
@@ -7357,7 +7520,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             image = pyfits.getdata(
                 self.fits_filenames[frame_to_read], 0).astype('float32', casting='unsafe')
             # self.showMsg(f'image shape: {self.image.shape}')
-        except:
+        except Exception:
             image = None
         return image
 
@@ -7511,7 +7674,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
                         # This code deals with processed FITS files (not from a camera) that contain
                         # negative values (which a camera cannot produce).
-                        # It takes effect only for little-endian 32 and 64 bit floats.
+                        # It takes effect only for little-endian 32 and 64-bit floats.
                         # Here we as safely as possible convert the data to a standard uint16 image
                         if self.image.dtype == '>f8' or self.image.dtype == '>f4':
                             # We clip at 1 and 65535 to guarantee that the conversion to uint16 will work.
@@ -7519,7 +7682,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                             # where a 0 value is shown as yellow.
                             np.clip(self.image, 1, 65535)
                             self.image = self.image.astype('uint16', casting='unsafe')
-
 
                         if self.lineNoiseFilterCheckBox.isChecked():
                             self.applyMedianFilterToImage()
@@ -7585,10 +7747,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     except Exception as e4:
                         self.showMsg(f'{e4}')
                         pass
-                    # This scaling was used to be able to read a file from Joel --- not generally useful
-                    # except as an example
-                    # self.image = (pyfits.getdata(self.fits_filenames[frame_to_show], 0) / 3.0).astype('int16', casting='safe')
-                except:
+                except Exception:
                     self.showMsg(f'Cannot convert image to uint16 safely')
                     return
 
@@ -7670,10 +7829,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def processRowSumList(self):
         if not self.rowSums:
-            self.rowSums = [ [] for _ in range(len(self.rowsToSumList))]
+            self.rowSums = [[] for _ in range(len(self.rowsToSumList))]
         for i in range(len(self.rowsToSumList)):
             row = self.rowsToSumList[i]
-            rowSum = np.sum(self.image[row,:])
+            rowSum = np.sum(self.image[row, :])
             self.rowSums[i].append(rowSum)
 
     def getSharpCapTimestring(self):
@@ -7704,9 +7863,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         return timeStampStr, dateStr
 
-
     def removeAperture(self, aperture):
-        self.disconnectAllSlots(aperture)
+        # TODO remove
+        # self.disconnectAllSlots(aperture)
         self.frameView.getView().removeItem(aperture)
 
     def removeOcrBox(self, ocrbox):
@@ -7714,7 +7873,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def getApertureList(self):
         """
-        Returns all of the aperture objects that have been added
+        Returns all the aperture objects that have been added
         to frameView
         """
 
@@ -7789,8 +7948,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         try:
             image_resized = skimage.transform.resize(image, (height, width), mode='edge',
-                                  anti_aliasing=False, anti_aliasing_sigma=None,
-                                  preserve_range=True, order=0)
+                                                     anti_aliasing=False, anti_aliasing_sigma=None,
+                                                     preserve_range=True, order=0)
             status = True
             self.showMsg(f'image_resized shape: {image_resized.shape}')
         except Exception as e:
@@ -7867,15 +8026,15 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.showFrame()
 
         # Get a robust mean from near the center of the current image
-        y0 = int(self.image.shape[0]/2)
-        x0 = int(self.image.shape[1]/2)
+        y0 = int(self.image.shape[0] / 2)
+        x0 = int(self.image.shape[1] / 2)
         ny = 51
         nx = 51
         thumbnail = self.image[y0:y0 + ny, x0:x0 + nx]
         mean, *_ = newRobustMeanStd(thumbnail, outlier_fraction=.5)
 
         image_height = self.image.shape[0]  # number of rows
-        image_width = self.image.shape[1]   # number of columns
+        image_width = self.image.shape[1]  # number of columns
 
         # num_lines_to_redact = 0
         valid_entries, num_top, num_bottom = self.getWcsRedactLineParameters()
@@ -7888,8 +8047,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'Operation aborted.')
             return
 
-        # redacted_image = self.image[:,:].astype('uint16')
-        redacted_image = self.image[:,:]
+        redacted_image = self.image[:, :]
 
         if num_bottom > 0:
             for i in range(image_height - num_bottom, image_height):
@@ -7901,17 +8059,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 for j in range(0, image_width):
                     redacted_image[i, j] = mean
 
-        # Experimental code to reduce background and 'blobs' sent to nova.astrometry.net
-        # bkg_thresh = self.getBkgThreshold()
-        # if not bkg_thresh is None:
-        #     _, redacted_image = cv2.threshold(redacted_image, bkg_thresh, 0, cv2.THRESH_TOZERO)
-
         self.image = redacted_image
         self.frameView.setImage(self.image)
         if self.levels:
             self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
 
-        # Tests with nova.astrometry.net show that you should always give them the the original
+        # Tests with nova.astrometry.net show that you should always give them the original
         # (possibly redacted) image.  DO NOT CLIP AND SCALE.  It confuses their star
         # extractor which is extremely robust. So we comment out that little 'fiddle'
         # if self.levels:
@@ -7959,7 +8112,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         pyfits.writeto(cal_image_path, resized_image.astype('int16'), hdr, overwrite=True)
 
-        # Login in to nova.astrometry.net usingthe supplied api key.  We will need
+        # Login in to nova.astrometry.net using the supplied api key.  We will need
         # each user to apply for his own.
 
         self.showMsg(f'Attempting to login to nova.astrometry.net using supplied api key.')
@@ -8078,7 +8231,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         else:
             self.showMsg(f'WCS calibration failed.')
 
-
     def manualWcsCalibration(self):
         if not (self.avi_wcs_folder_in_use or self.fits_folder_in_use):
             self.showMsg(f'There is no WCS folder open.')
@@ -8118,7 +8270,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         with open(self.folder_dir + r'/manual-wcs-frame-num.txt', 'w') as f:
             f.writelines(f'{frame_num}')
 
-        self.showMsg(f'Manual WCS calibration process activated. Waiting for aperture 1 to be placed and RA DEC assigned.')
+        self.showMsg(
+            f'Manual WCS calibration process activated. Waiting for aperture 1 to be placed and RA DEC assigned.')
         self.manual_wcs_state = 1
 
     def setApertureFromWcsData(self, star_location, wcs_fits):
@@ -8211,7 +8364,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         p1 = self.plots[-1].addPlot(
             row=0, col=0,
-            y= self.thumbOneImage.flatten(),
+            y=self.thumbOneImage.flatten(),
             title=f'pixel values in thumbnail image (mean: green line; +/- sigma: red lines  3 sigma: blue)',
             pen=dark_gray
         )
@@ -8236,9 +8389,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if self.lunarCheckBox.isChecked():
             values_title = 'sorted pixel values'
         else:
-            values_title = 'pixel values histogram  (points to left of red line are used to compute background mean and std)'
+            values_title = 'pixel values histogram  (points to left of red line are used to compute background mean ' \
+                           'and std) '
 
-        xs = list(range(len(hist_data) + 1)) # The + 1 is needed when stepMode=True in addPlot()
+        xs = list(range(len(hist_data) + 1))  # The + 1 is needed when stepMode=True in addPlot()
         p2 = self.plots[-1].addPlot(
             row=1, col=0,
             x=xs,
@@ -8246,7 +8400,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             stepMode=True,
             title=values_title,
             # pen=dark_gray
-            pen = black
+            pen=black
         )
 
         if not self.lunarCheckBox.isChecked():
@@ -8283,11 +8437,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                                 k = int((mousePoint.x() - xvalues_param[0]) * 2 + 0.5)
 
                             p1_param.setTitle(f'{label} at frame {xvalues_param[k]}:  intensity={yvalues_param[k]}  '
-                                        f'mask_pixels={pvalues_param[k]}  timestamp={tvalues_param[k]}')
+                                              f'mask_pixels={pvalues_param[k]}  timestamp={tvalues_param[k]}')
                         except Exception:
                             pass
                     vLine_p1_param.setPos(mousePoint.x())
                     vLine_p2_param.setPos(mousePoint.x())
+
             return mouseMoved2
 
         def sortOnFrame(val):
@@ -8295,12 +8450,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         # Create a color list (we use it circularly --- i.e., after teal we return to red)
         my_colors = [
-            (200, 0, 0),    # red
-            (0, 200, 0),    # green
-            (0, 0, 200),    # blue
+            (200, 0, 0),  # red
+            (0, 200, 0),  # green
+            (0, 0, 200),  # blue
             (200, 200, 0),  # red-green  (yellow)
             (200, 0, 200),  # red-blue   (purple)
-            (0, 200, 200)   # blue-green (teal)
+            (0, 200, 200)  # blue-green (teal)
         ]
 
         reorderedAppList = []
@@ -8338,7 +8493,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.showMsg(f'There is no data available to plot.')
                 return
 
-            app.data.sort(key = sortOnFrame)
+            app.data.sort(key=sortOnFrame)
 
             # Start a new plot for each aperture
             self.plots.append(pg.GraphicsWindow(title="PyMovie lightcurve plot"))
@@ -8351,8 +8506,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             yvalues = []
             xvalues = []
             for entry in app.data:
-                yvalues.append(entry[4])   # signal==4  appsum==5  frame_num == 8
-                xvalues.append(entry[8])   # signal==4  appsum==5  frame_num == 8  timestamp == 12
+                yvalues.append(entry[4])  # signal==4  appsum==5  frame_num == 8
+                xvalues.append(entry[8])  # signal==4  appsum==5  frame_num == 8  timestamp == 12
 
             # Here's how to add filtering if that ever becomes a desired feature
             # self.p3 = self.win.addPlot(values, pen=(200, 200, 200), symbolBrush=(255, 0, 0), symbolPen='w')
@@ -8391,14 +8546,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 row=1, col=0,
                 title="Number of pixels in aperture ",
                 y=pvalues, x=xvalues,
-                pen=dark_gray  #, symbol='o', symbolSize=self.plot_symbol_size, symbolBrush='k', symbolPen='k'
+                pen=dark_gray  # , symbol='o', symbolSize=self.plot_symbol_size, symbolBrush='k', symbolPen='k'
             )
-            p2.setYRange(min(min(pvalues),0), max(pvalues))
+            p2.setYRange(min(min(pvalues), 0), max(pvalues))
             p2.setXRange(xvalues[0] - 1, xvalues[-1] + 1)
             p2.setXLink('plot1')
             p2.showGrid(y=True, alpha=1.0)
             p2.setMouseEnabled(x=True, y=False)
-
 
             vLine_p1 = pg.InfiniteLine(angle=90, movable=False)
             vLine_p2 = pg.InfiniteLine(angle=90, movable=False)
@@ -8472,8 +8626,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def showRighthandValue(self):
         self.showMsg(f'Righthand value: {self.vLineRight.value():0.2f}')
 
-
-    def plotImagePixelDistibution(self, title='TBD', kind='DarkAndBright'):
+    def plotImagePixelDistribution(self, title='TBD', kind='DarkAndBright'):
         if self.image is not None:
             h, w = self.image.shape
         else:
@@ -8482,13 +8635,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.upperRedactCount = self.upperTimestampPixelSpinBox.value()
 
-        self.redactedImage = self.image[self.upperTimestampPixelSpinBox.value(): h - self.lowerTimestampPixelSpinBox.value()]
+        self.redactedImage = self.image[
+                             self.upperTimestampPixelSpinBox.value(): h - self.lowerTimestampPixelSpinBox.value()]
         pixels = self.redactedImage.flatten()
         sortedPixels = np.sort(pixels)
 
         self.showMsg(f'min pixel: {sortedPixels[0]:0.1f}  max pixel: {sortedPixels[-1]:0.1f}')
-
-        # pw = MyPlot().pw
 
         pw = PlotWidget(viewBox=CustomViewBox(border=(0, 0, 0)),
                         enableMenu=False,
@@ -8497,17 +8649,17 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         pw.hideButtons()
 
-        # Decimate sorted pixels to speed up replotting while positioning lines
+        # Decimate sorted pixels to speed up plotting while positioning lines
         numdataPoints = len(sortedPixels)
-        stride = int(numdataPoints/500)
+        stride = int(numdataPoints / 500)
 
         self.decimatedSortedPixels = []
-        for i in range(0,len(sortedPixels),stride):
+        for i in range(0, len(sortedPixels), stride):
             self.decimatedSortedPixels.append(sortedPixels[i])
 
         pw.plot(self.decimatedSortedPixels, pen=pg.mkPen('k', width=3))
         pw.addLegend()
-        pw.plot(name= f'Use mouse to drag green line right until the curve turns sharply upward.')
+        pw.plot(name=f'Use mouse to drag green line right until the curve turns sharply upward.')
         pw.plot(name=f'Then use mouse to drag blue line left until the curve turns sharply down..')
         pw.plot(name=f'The aim is to enclose only "healthy" pixels.')
         if kind == 'DarkAndBright':
@@ -8519,14 +8671,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             pw.plot(name=f'... you can close this plot at any time and reopen later.')
             pw.plot(name=f'... right-click to restore view to unzoomed.')
 
-
         mid = len(self.decimatedSortedPixels) // 2
 
         lowMax = int(mid * 0.1)
         upperMin = int(mid * 1.9)
         upperMax = mid * 2
         self.vLineLeft = pg.InfiniteLine(pos=lowMax, angle=90, bounds=[0, upperMax],
-                                          movable=True, pen=pg.mkPen([0, 0, 255], width=3))
+                                         movable=True, pen=pg.mkPen([0, 0, 255], width=3))
         pw.addItem(self.vLineLeft)
         self.vLineLeft.sigPositionChangeFinished.connect(self.showLefthandValue)
         self.vLineRight = pg.InfiniteLine(pos=upperMin, angle=90, bounds=[0, upperMax],
@@ -8544,14 +8695,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if kind == 'DarkAndBright':
             button = QtWidgets.QPushButton('Use line settings to exclude too dark and too bright pixels')
             button.setStyleSheet("background-color : yellow")
-            button.clicked.connect(self.findBrightAndDarkPixelCoords)
+            button.clicked.connect(self.findBrightAndDarkPixelCoords)  # noqa
         else:
             button = QtWidgets.QPushButton('Use line settings to exclude dead and too noisy pixels')
             button.setStyleSheet("background-color : orange")
-            button.clicked.connect(self.findNoisyAndDeadPixelCoords)
+            button.clicked.connect(self.findNoisyAndDeadPixelCoords)  # noqa
 
         button.setParent(self.pixelWin)
-        button.setGeometry(5,5,400,35)
+        button.setGeometry(5, 5, 400, 35)
         button.show()
 
     def findBrightAndDarkPixelCoords(self):
@@ -8609,16 +8760,16 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         p1 = self.plots[-1].addPlot(title=f'{self.fileInUseEdit.text()}')
         p1.setMouseEnabled(x=False, y=True)
-        p1.setLabel(axis='bottom',text='Row number')
-        p1.setLabel(axis='left',text='average median')
+        p1.setLabel(axis='bottom', text='Row number')
+        p1.setLabel(axis='left', text='average median')
 
         my_colors = [
-            (200, 0, 0),    # red
-            (0, 200, 0),    # green
-            (0, 0, 200),    # blue
+            (200, 0, 0),  # red
+            (0, 200, 0),  # green
+            (0, 0, 200),  # blue
             (200, 200, 0),  # red-green  (yellow)
             (200, 0, 200),  # red-blue   (purple)
-            (0, 200, 200)   # blue-green (teal)
+            (0, 200, 200)  # blue-green (teal)
         ]
         dark_gray = (50, 50, 50)
 
@@ -8626,10 +8777,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         yvalues /= self.numMedianValues
         xvalues = list(range(len(yvalues)))
 
-        p1.plot( x = xvalues, y = yvalues, title = "Average medians",
-                 pen = dark_gray, symbolBrush = my_colors[0],
-                 symbolSize = self.plot_symbol_size, pxMode = True, symbolPen = my_colors[0],
-                 name = f'Hello from Bob'
+        p1.plot(x=xvalues, y=yvalues, title="Average medians",
+                pen=dark_gray, symbolBrush=my_colors[0],
+                symbolSize=self.plot_symbol_size, pxMode=True, symbolPen=my_colors[0],
+                name=f'Hello from Bob'
                 )
 
         p1.showGrid(y=True)
@@ -8645,16 +8796,16 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         p1 = self.plots[-1].addPlot(title=f'{self.fileInUseEdit.text()}')
         p1.setMouseEnabled(x=False, y=True)
-        p1.setLabel(axis='bottom',text='Column number')
-        p1.setLabel(axis='left',text='average median')
+        p1.setLabel(axis='bottom', text='Column number')
+        p1.setLabel(axis='left', text='average median')
 
         my_colors = [
-            (200, 0, 0),    # red
-            (0, 200, 0),    # green
-            (0, 0, 200),    # blue
+            (200, 0, 0),  # red
+            (0, 200, 0),  # green
+            (0, 0, 200),  # blue
             (200, 200, 0),  # red-green  (yellow)
             (200, 0, 200),  # red-blue   (purple)
-            (0, 200, 200)   # blue-green (teal)
+            (0, 200, 200)  # blue-green (teal)
         ]
         dark_gray = (50, 50, 50)
 
@@ -8662,10 +8813,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         yvalues /= self.numMedianValues
         xvalues = list(range(len(yvalues)))
 
-        p1.plot( x = xvalues, y = yvalues, title = "Average medians",
-                 pen = dark_gray, symbolBrush = my_colors[0],
-                 symbolSize = self.plot_symbol_size, pxMode = True, symbolPen = my_colors[0],
-                 name = f'Hello from Bob'
+        p1.plot(x=xvalues, y=yvalues, title="Average medians",
+                pen=dark_gray, symbolBrush=my_colors[0],
+                symbolSize=self.plot_symbol_size, pxMode=True, symbolPen=my_colors[0],
+                name=f'Hello from Bob'
                 )
 
         p1.showGrid(y=True)
@@ -8682,11 +8833,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def showMsg(self, msg, blankLine=True):
         self.textOut.append(msg)
-        self.textOut.moveCursor(QtGui.QTextCursor.End)
+        self.textOut.moveCursor(QtGui.QTextCursor.End)  # noqa
 
         if blankLine:
             self.textOut.append("")
-            self.textOut.moveCursor(QtGui.QTextCursor.End)
+            self.textOut.moveCursor(QtGui.QTextCursor.End)  # noqa
 
         self.textOut.ensureCursorVisible()
 
@@ -8769,9 +8920,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         if not fileOpened:
             self.showMsg('Failed to open PyMovie documentation file', blankLine=False)
-            self.showMsg('Location of PyMovie documentaion file: ' + docFilePath)
+            self.showMsg('Location of PyMovie documentation file: ' + docFilePath)
 
-    def showBbox(self, bbox, border=0, color=PyQt5.QtCore.Qt.darkYellow):
+    def showBbox(self, bbox, border=0, color=PyQt5.QtCore.Qt.GlobalColor.darkYellow):
         ymin, xmin, ymax, xmax = bbox
         ymin -= border
         ymax += border
@@ -8783,7 +8934,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         rect_item = QGraphicsRectItem(QRectF(xmin, ymin, xmax - xmin + 1, ymax - ymin + 1))
         rect_item.setPen(pen)
         view_box.addItem(rect_item)
-        self.rect_list.append(rect_item)
+        # self.rect_list.append(rect_item)
 
 
 def jogAperture(aperture, delta_xc, delta_yc):
@@ -8815,6 +8966,7 @@ def calcTheta(dx, dy):
         return None, None
     return theta, theta * 180 / PI
 
+
 # def countSand(img, cut, background):
 #     # cut is threshold
 #     ret, t_mask = cv2.threshold(img, cut, 1, cv2.THRESH_BINARY)
@@ -8840,8 +8992,7 @@ def get_mask(
         img, ksize=(5, 5), cut=None, min_pixels=9,
         outlier_fraction=0.5,
         apply_centroid_distance_constraint=False, max_centroid_distance=None, lunar=False):
-
-    # cv2.GaussianBlur() cannot deal with big-endian data (probably because it is c++ code
+    # cv2.GaussianBlur() cannot deal with big-endian data, probably because it is c++ code
     # # that has been ported.  If we have read a FITS file, there is the
     # possibility that the image data (and hence img) is big-endian.  Here we test for that and do a
     # byte swap if img is big-endian  NOTE: as long as operations on the image data are kept in the
@@ -8881,7 +9032,7 @@ def get_mask(
         for prop in props:
             if apply_centroid_distance_constraint:
                 xc, yc = prop.centroid
-                distance_to_center = np.sqrt((xc - roi_center)**2 + (yc - roi_center)**2)
+                distance_to_center = np.sqrt((xc - roi_center) ** 2 + (yc - roi_center) ** 2)
                 if distance_to_center > max_centroid_distance:
                     continue
 
@@ -8920,182 +9071,14 @@ def get_mask(
     return max_area, mask, t_mask, centroid, cvxhull, blob_count, extent
 
 
-# def robustMeanStd(data, outlier_fraction=0.5, max_pts=10000, assume_gaussian=True):
-#     # Note:  it is expected that type(data) is numpy.darray
-#
-#     # Protect the user against accidentally running this procedure with an
-#     # excessively large number of data points (which could take too long)
-#     if data.size > max_pts:
-#         raise Exception(
-#             f'In robustMean(): data.size limit of {max_pts} exceeded. (Change max_pts if needed)'
-#         )
-#
-#     if outlier_fraction > 1:
-#         raise Exception(
-#             f'In robustMean(): {outlier_fraction} was given as outlier_fraction. This value must be <= 1.0'
-#         )
-#
-#     # The None 'flattens' data automatically so sorted_data will be 1D
-#     sorted_data = np.sort(data, None)
-#
-#     if outlier_fraction > 0:
-#         # window is the number points to be included in the 'mean' calculation
-#         window = int(sorted_data.size * (1 - outlier_fraction))
-#
-#         # Handle the case of outlier_fraction too close to zero
-#         if window == data.size:
-#             window -= 1
-#
-#         # nout is the number of outliers to exclude
-#         nout = sorted_data.size - window
-#         diffs = sorted_data[window:window + nout] - sorted_data[0:nout]
-#
-#         min_diff_pts = np.where(diffs == min(diffs))
-#
-#         j = min_diff_pts[0][0]
-#         k = min_diff_pts[0][-1]
-#         data_used = sorted_data[j:k + window]
-#         first_index = j
-#         last_index = k + window - 1
-#     else:
-#         first_index = 0
-#         last_index = data.size - 1
-#         data_used = sorted_data
-#         window = data.size
-#
-#     good_mean = np.mean(data_used)
-#
-#     # MAD means: Median Absolute Deviation  This is a robust estimator of 'scale' (measure of data dispersion)
-#     # It can be related to standard deviation by a correction factor if the data can be assumed to be drawn
-#     # from a gaussian distribution.
-#     # med = np.median(sorted_data)
-#     sigma = np.median(np.abs(sorted_data - good_mean))  # This is my MAD estimator; usually good_mean is med
-#     if assume_gaussian:
-#         sigma = sigma * 1.486  # sigma(gaussian) can be proved to equal 1.486*MAD
-#
-#     return good_mean, sigma, sorted_data, window, data.size, first_index, last_index
-
-# def newRobustMeanStd(
-#         data: np.ndarray, outlier_fraction: float = 0.5, max_pts: int = 10000,
-#         assume_gaussian: bool = True, lunar: bool = False):
-#
-#     assert data.size <= max_pts, "data.size > max_pts in newRobustMean()"
-#     assert outlier_fraction < 1.0, "outlier_fraction >= 1.0 in newRobustMean()"
-#
-#     sorted_data = np.sort(data.flatten()) # This form was needed to satisfy Numba
-#
-#     first_index = None
-#     last_index = None
-#
-#     if lunar:
-#         # noinspection PyTypeChecker
-#         mean = round(np.mean(sorted_data))
-#         mean_at = np.where(sorted_data >= mean)[0][0]
-#         lower_mean = np.mean(sorted_data[0:mean_at])
-#
-#         # print(f'mean: {mean} @ {mean_at}')
-#         # upper_mean = np.mean(sorted_data[mean_at:])
-#         # print(f'lower_mean: {lower_mean}  upper_mean: {upper_mean}')
-#
-#         # MAD means: Median Absolute Deviation
-#         MAD = np.median(np.abs(sorted_data[0:mean_at] - lower_mean))
-#         if assume_gaussian:
-#             MAD = MAD * 1.486  # sigma(gaussian) can be proved to equal 1.486*MAD
-#
-#         window = 0
-#         first_index = 0
-#         last_index = mean_at
-#
-#         return lower_mean, MAD, sorted_data, window, data.size, first_index, last_index
-#
-#     if outlier_fraction > 0:
-#         # window is the number points to be included in the 'mean' calculation
-#         window = int(sorted_data.size * (1 - outlier_fraction))
-#
-#         # Handle the case of outlier_fraction too close to zero
-#         if window == data.size:
-#             window -= 1
-#
-#         # nout is the number of outliers to exclude
-#         nout = sorted_data.size - window
-#         diffs = sorted_data[window:window + nout] - sorted_data[0:nout]
-#
-#         min_diff_pts = np.where(diffs == min(diffs))
-#
-#         j = min_diff_pts[0][0]
-#         k = min_diff_pts[0][-1]
-#         good_mean = np.mean(sorted_data[j:k + window])
-#
-#         first_index = j
-#         last_index = k + window
-#     else:
-#         good_mean = np.mean(sorted_data)
-#         window = data.size
-#
-#     # Here we treat 'clipped' backgrounds as a special case.  We calculute the mean
-#     # from ALL pixels, including any star pixels that may be present.  We do this because
-#     # 'clipped' data makes it impossible to remove outliers by the same technique that works
-#     # so well with true gaussian (or at least symmetrical) noise with outliers
-#
-#     if first_index == 0:  # This implies badly 'clipped' data with many values at the same low number
-#         app_sum = np.sum(sorted_data)
-#         app_avg = app_sum / data.size
-#         good_mean = app_avg
-#
-#         # Now we have a good first approximation for good_mean, but it could contain star pixels.
-#         # We'll remove those pixels after we get a sigma estimate
-#
-#     upper_indices = np.where(sorted_data >= good_mean)
-#
-#     # MAD means: Median Absolute Deviation
-#     MAD = np.median(sorted_data[upper_indices[0][0]:])
-#     MAD = MAD - good_mean
-#     if assume_gaussian:
-#         MAD = MAD * 1.486  # sigma(gaussian) can be proved to equal 1.486*MAD for double sided data
-#
-#     # The following calculation is included for dealing with asymetric (clipped) background noise.
-#     # It has no significant effect on the mean of symmetric noise distributions (gaussian) but does
-#     # a much better job of baskground mean estimation when the noise is asymetric.
-#
-#     # Find the indices of all points that exceed 2 sigma of the mean
-#     upper_indices = np.where(sorted_data > good_mean + 2 * MAD)
-#
-#     # Find the indices of all points that are more then 2 sigma below the mean
-#     lower_indices = np.where(sorted_data < good_mean - 2 * MAD)
-#
-#     # Here we deal with cases where there are no points more than 2 sigma above the mean
-#     # and/or there are no points more than 2 sigma below the mean.
-#     upper_len = len(upper_indices[0])
-#     lower_len = len(lower_indices[0])
-#     if upper_len > 0:
-#         top = upper_indices[0][0]
-#     else:
-#         top = sorted_data.size
-#     if lower_len > 0:
-#         bot = lower_indices[0][-1]
-#     else:
-#         bot = 0
-#
-#     app_sum = np.sum(sorted_data[bot:top])
-#     app_avg = app_sum / (top - bot + 1)
-#     good_mean = app_avg
-#     # except:
-#     #     pass
-#
-#     return good_mean, MAD, sorted_data, window, data.size, first_index, last_index
-
 def newRobustMeanStd(
         data: np.ndarray, outlier_fraction: float = 0.5, max_pts: int = 10000,
         assume_gaussian: bool = True, lunar: bool = False):
-
     assert data.size <= max_pts, "data.size > max_pts in newRobustMean()"
     assert outlier_fraction < 1.0, "outlier_fraction >= 1.0 in newRobustMean()"
 
     flat_data = data.flatten()
-    sorted_data = np.sort(flat_data) # This form was needed to satisfy Numba
-
-    # first_index = None
-    # last_index = None
+    sorted_data = np.sort(flat_data)  # This form was needed to satisfy Numba
 
     if lunar:
         # noinspection PyTypeChecker
@@ -9131,7 +9114,7 @@ def newRobustMeanStd(
         if 0 < my_hist[last] < 5:
             break
 
-    # New code to estimate standard deviation.  The idea is compute the std of each row in the image
+    # New code to estimate standard deviation.  The idea is to compute the std of each row in the image
     # thumbnail. Next, we assume that stars present in the image will affect only a few rows, so
     # the median of the row-by-row std calculations is a good estimate of std (to be refined in subsequent steps)
     stds = []
@@ -9141,14 +9124,14 @@ def newRobustMeanStd(
 
     # flat_data = data.flatten()
     est_mean = np.median(flat_data)
-    clip_point = est_mean + 4.5 * MAD              # Equivalent to 3 sigma
+    clip_point = est_mean + 4.5 * MAD  # Equivalent to 3 sigma
     calced_mean = np.mean(flat_data[np.where(flat_data <= clip_point)])
     bkgnd_sigma = np.std(flat_data[np.where(flat_data <= clip_point)])
     return calced_mean, bkgnd_sigma, sorted_data, my_hist, data.size / 2, data.size, 0, clip_point + 1
 
 
 def main():
-    if sys.version_info < (3,7):
+    if sys.version_info < (3, 7):
         sys.exit('Sorry, this program requires Python 3.7+')
 
     import traceback
@@ -9178,7 +9161,7 @@ def main():
         # The next lines are a horrible hack to deal with the pyqtgraph Histogram widget.
         # It cannot be disabled, but if given an image containing pixels of exactly one value,
         # it throws an exception that is harmless but disturbing to have printed out in the
-        # console all the time.  Here I intercept that an qietly suppress the normal display
+        # console all the time.  Here I intercept that and quietly suppress the normal display
         # of an uncaught (in my code) exception.
         s = str(value)
         if s.startswith('arange:'):
