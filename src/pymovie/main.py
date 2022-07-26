@@ -2234,9 +2234,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 aperture.xc = mydict['xc']
                 aperture.yc = mydict['yc']
 
-                # TODO remove
-                # self.connectAllSlots(aperture)
-
                 view = self.frameView.getView()
                 view.addItem(aperture)
 
@@ -2439,9 +2436,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 aperture.xc = aperture_dict['xc']
                 aperture.yc = aperture_dict['yc']
 
-                # TODO remove
-                # self.connectAllSlots(aperture)
-
                 view = self.frameView.getView()
                 view.addItem(aperture)
 
@@ -2559,8 +2553,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             for i, aperture in enumerate(self.savedStateApertures):
                 view.addItem(aperture)
                 aperture.setPos(self.savedPositions[i])
-                # TODO remove
-                # self.connectAllSlots(aperture)
 
     def moveOneFrameLeft(self):
         self.finderFrameBeingDisplayed = False
@@ -2793,8 +2785,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 view = self.frameView.getView()
                 for aperture in self.savedApertures:
                     view.addItem(aperture)
-                    # TODO remove
-                    # self.connectAllSlots(aperture)
             self.showFrame()
 
     def fieldTimeOrderChanged(self):
@@ -5096,88 +5086,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             app.thumbnail_source = False
         aperture.thumbnail_source = True
 
-    # TODO remove
-    # def makeApertureSignalToSlotConnection(self, app_object):
-    #     app_object.sendAperture.connect(self.handleAppSignal)
-    #
-    # def disconnectApertureSignalToSlot(self, app_object):
-    #     app_object.sendAperture.disconnect(self.handleAppSignal)
-    #
-    # def makeRecenterSignalToSlotConnection(self, app_object):
-    #     app_object.sendRecenter.connect(self.handleRecenterSignal)
-    #
-    # def disconnectRecenterSignalToSlot(self, app_object):
-    #     app_object.sendRecenter.disconnect(self.handleRecenterSignal)
-    #
-    # def makeSetGreenSignalToSlotConnection(self, app_object):
-    #     app_object.sendSetGreen.connect(self.handleSetGreenSignal)
-    #
-    # def disconnectSetGreenSignalToSlot(self, app_object):
-    #     app_object.sendSetGreen.disconnect(self.handleSetGreenSignal)
-    #
-    # def makeSetYellowSignalToSlotConnection(self, app_object):
-    #     app_object.sendSetYellow.connect(self.handleSetYellowSignal)
-    #
-    # def disconnectSetYellowSignalToSlot(self, app_object):
-    #     app_object.sendSetYellow.disconnect(self.handleSetYellowSignal)
-    #
-    # def makeDeleteSignalToSlotConnection(self, app_object):
-    #     app_object.sendDelete.connect(self.handleDeleteSignal)
-    #
-    # def disconnectDeleteSignalToSlot(self, app_object):
-    #     app_object.sendDelete.disconnect(self.handleDeleteSignal)
-    #
-    # def makeSetThreshSignalToSlotConnection(self, app_object):
-    #     app_object.sendSetThresh.connect(self.handleSetThreshSignal)
-    #
-    # def disconnectSetThreshSignalToSlot(self, app_object):
-    #     app_object.sendSetThresh.disconnect(self.handleSetThreshSignal)
-    #
-    # def makeSetThumbnailSourceSignalToSlotConnection(self, app_object):
-    #     app_object.sendThumbnailSource.connect(self.handleSetThumbnailSourceSignal)
-    #
-    # def disconnectSetThumbnailSourceSignalToSlot(self, app_object):
-    #     app_object.sendThumbnailSource.disconnect(self.handleSetThumbnailSourceSignal)
-    #
-    # def makeSetRaDecSignalToSlotConnection(self, app_object):
-    #     app_object.sendSetRaDec.connect(self.handleSetRaDecSignal)
-    #
-    # def disconnectSetRaDecSignalToSlot(self, app_object):
-    #     app_object.sendSetRaDec.disconnect(self.handleSetRaDecSignal)
-    #
-    # def makeSetEarlyPathPointToSlotConnection(self, app_object):
-    #     app_object.sendSetEarlyTrackPathPoint.connect(self.handleEarlyTrackPathPoint)
-    #
-    # def disconnectSetEarlyPathPointToSlotConnection(self, app_object):
-    #     app_object.sendSetEarlyTrackPathPoint.disconnect(self.handleEarlyTrackPathPoint)
-    #
-    # def makeSetLatePathPointToSlotConnection(self, app_object):
-    #     app_object.sendSetLateTrackPathPoint.connect(self.handleLateTrackPathPoint)
-    #
-    # def disconnectSetLatePathPointToSlotConnection(self, app_object):
-    #     app_object.sendSetLateTrackPathPoint.disconnect(self.handleLateTrackPathPoint)
-    #
-    # def makeClearTrackPathToSlotConnection(self, app_object):
-    #     app_object.sendClearTrackPath.connect(self.handleClearTrackPath)
-    #
-    # def disconnectClearTrackPathToSlotConnection(self, app_object):
-    #     app_object.sendClearTrackPath.disconnect(self.handleClearTrackPath)
-
-    # def makeRecordHotPixelToSlotConnection(self, app_object):
-    #     app_object.sendHotPixelRecord.connect(self.handleRecordHotPixel)
-
-    # def disconnectRecordHotPixelToSlotConnection(self, app_object):
-    #     app_object.sendHotPixelRecord.disconnect(self.handleRecordHotPixel)
-
     @pyqtSlot('PyQt_PyObject')
     def handleClearTrackPath(self):
         if self.tpathSpecified:
             self.clearTrackingPathParameters()
             self.showMsg(f'The tracking path parameters have been cleared.')
-
-    # @pyqtSlot('PyQt_PyObject')
-    # def handleRecordHotPixel(self):
-    #     self.showMsg(f'Hot pixel recording requested')
 
     def clearTrackingPathParameters(self):
         self.tpathEarlyX = None
@@ -5588,9 +5501,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         aperture.default_mask_radius = self.getDefaultMaskRadius()
 
-        # TODO Remove this code
-        # self.connectAllSlots(aperture)
-
         self.apertureId += 1
         view = self.frameView.getView()
         view.addItem(aperture)
@@ -5624,36 +5534,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.showMsg(f'The aperture just added is joggable.  All others have jogging disabled.')
 
         return aperture
-
-    # TODO Remove this code
-    # def connectAllSlots(self, aperture):
-    #     self.makeApertureSignalToSlotConnection(aperture)
-    #     self.makeRecenterSignalToSlotConnection(aperture)
-    #     self.makeSetThreshSignalToSlotConnection(aperture)
-    #     self.makeSetGreenSignalToSlotConnection(aperture)
-    #     self.makeSetYellowSignalToSlotConnection(aperture)
-    #     self.makeDeleteSignalToSlotConnection(aperture)
-    #     self.makeSetThumbnailSourceSignalToSlotConnection(aperture)
-    #     self.makeSetRaDecSignalToSlotConnection(aperture)
-    #     self.makeSetEarlyPathPointToSlotConnection(aperture)
-    #     self.makeSetLatePathPointToSlotConnection(aperture)
-    #     self.makeRecordHotPixelToSlotConnection(aperture)
-    #     self.makeClearTrackPathToSlotConnection(aperture)
-
-    # TODO remove
-    # def disconnectAllSlots(self, aperture):
-    #     self.disconnectApertureSignalToSlot(aperture)
-    #     self.disconnectRecenterSignalToSlot(aperture)
-    #     self.disconnectSetThreshSignalToSlot(aperture)
-    #     self.disconnectSetGreenSignalToSlot(aperture)
-    #     self.disconnectSetYellowSignalToSlot(aperture)
-    #     self.disconnectDeleteSignalToSlot(aperture)
-    #     self.disconnectSetThumbnailSourceSignalToSlot(aperture)
-    #     self.disconnectSetRaDecSignalToSlot(aperture)
-    #     self.disconnectSetEarlyPathPointToSlotConnection(aperture)
-    #     self.disconnectSetLatePathPointToSlotConnection(aperture)
-    #     self.disconnectRecordHotPixelToSlotConnection(aperture)
-    #     self.disconnectClearTrackPathToSlotConnection(aperture)
 
     def addGenericAperture(self):
         # self.mousex and self.mousey are continuously updated by mouseMovedInFrameView()
@@ -7864,8 +7744,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         return timeStampStr, dateStr
 
     def removeAperture(self, aperture):
-        # TODO remove
-        # self.disconnectAllSlots(aperture)
         self.frameView.getView().removeItem(aperture)
 
     def removeOcrBox(self, ocrbox):
