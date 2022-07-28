@@ -5669,9 +5669,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         strip = np.array(digits_strip)
         img = np.array(strip)
         win_name = "Model digits"
-        cv2.namedWindow(win_name)        # noqa
-        cv2.moveWindow(win_name, 0, 0)   # noqa
+        # cv2.namedWindow(win_name)        # noqa
         cv2.imshow(win_name, np.repeat(np.repeat(img, 6, axis=0), 6, axis=1))  # noqa
+        cv2.moveWindow(win_name, 80, 0)   # noqa
         cv2.setWindowProperty(win_name, cv2.WND_PROP_TOPMOST, 1)               # noqa
 
         self.showMsg(f'max pixel value: {max_px_value}')
