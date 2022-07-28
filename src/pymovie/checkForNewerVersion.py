@@ -75,10 +75,11 @@ def getLatestPackageVersion(package_name: str) -> str:
     response = subprocess.run(['python', '-m', 'pip', 'install', f"{package_name}==0.0.0"],
                               stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     errorResponse = response.stderr.decode("utf-8").split('\n')[0]
-    if len(errorResponse) == 1:
+
+    versions = errorResponse.split('versions: ')
+    if len(versions) == 1:  # Because the split above failed
         # Failed to make Internet connection
         return 'Failed to connect to PyPI - Internet connection problem?'
-    versions = errorResponse.split('versions: ')[1]
-    versions = versions.split(')')[0]  # Remove everything at and after ')'
+    versions = versions[1].split(')')[0]  # Remove everything at and after ')'
     latestVersion = versions.split(',')[-1].strip()
     return latestVersion

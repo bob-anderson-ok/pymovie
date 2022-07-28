@@ -1,5 +1,4 @@
 import pyqtgraph as pg
-# from pyqtgraph.Qt import QtGui
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QDialog
 from pymovie import apertureNameDialog

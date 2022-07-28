@@ -110,7 +110,7 @@ from pyqtgraph import PlotWidget
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import QFileDialog, QGraphicsRectItem, QButtonGroup, QMessageBox
-from PyQt5.QtCore import QSettings, QSize, QPoint, QRectF, QTimer
+from PyQt5.QtCore import QSettings, QSize, QPoint, QTimer
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtGui import QPainter
 from pymovie import gui, helpDialog, version
@@ -485,6 +485,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.frameView.ui.histogram.hide()
 
         self.buildApertureContextMenu()
+
+        # self.frameView.autoRange()
+
+        # self.frameView.scene.contextMenu = None  # This removes the export menu entry that appears at bottom
 
         # We use mouse movements to dynamically display in the status bar the mouse
         # coordinates and pixel value under the mouse cursor.
@@ -1237,89 +1241,315 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     #         summary.print_(summary_one)
     #         print(" ")
 
+    def buildOcrContextMenu(self):
+        view = self.frameView.getView()
+
+        # Start with an empty menu
+        view.menu = QtWidgets.QMenu()
+        self.frameView.scene.contextMenu = None  # This removes the export menu entry that appears at bottom
+
+        # add new actions to the ViewBox context menu:
+
+        viewAll = view.menu.addAction("View all")
+        viewAll.triggered.connect(self.viewAll)  # noqa
+
+        view.menu.addSeparator()
+
+        setshowprops = view.menu.addAction("Show properties")
+        setshowprops.triggered.connect(self.ocrMenuShowProps)  # noqa
+
+        view.menu.addSeparator()
+
+        setjogon = view.menu.addAction("Enable jogging for pointed at box")
+        setjogon.triggered.connect(self.ocrMenuEnableJogging)  # noqa
+
+        setjogoff = view.menu.addAction("Disable jogging for pointed at box")
+        setjogoff.triggered.connect(self.ocrMenuDisableJogging)  # noqa
+
+        view.menu.addSeparator()
+
+        setupperjogs = view.menu.addAction("Enable jogging for all upper boxes")
+        setupperjogs.triggered.connect(self.ocrMenuEnableUpperJogging)  # noqa
+
+        setlowerjogs = view.menu.addAction("Enable jogging for all lower boxes")
+        setlowerjogs.triggered.connect(self.ocrMenuEnableLowerJogging)  # noqa
+
+        setalljogs = view.menu.addAction("Enable jogging for all upper and lower boxes")
+        setalljogs.triggered.connect(self.ocrMenuEnableAllJogging)  # noqa
+
+        view.menu.addSeparator()
+
+        clearupperjogs = view.menu.addAction("Disable jogging for upper boxes")
+        clearupperjogs.triggered.connect(self.ocrMenuDisableUpperJogging)  # noqa
+
+        clearlowerjogs = view.menu.addAction("Disable jogging for lower boxes")
+        clearlowerjogs.triggered.connect(self.ocrMenuDisableLowerJogging)  # noqa
+
+        clearalljogs = view.menu.addAction("Disable jogging for all boxes")
+        clearalljogs.triggered.connect(self.ocrMenuDisableAllJogging)  # noqa
+
+        view.menu.addSeparator()
+
+        showdigits = view.menu.addAction('Show model digits')
+        showdigits.triggered.connect(self.ocrMenuShowDigits)  # noqa
+
+        hideDigits = view.menu.addAction('Hide model digits')
+        hideDigits.triggered.connect(self.ocrMenuHideDigits)   # noqa
+
+        retraindigits = view.menu.addAction('Retrain model digits')
+        retraindigits.triggered.connect(self.ocrMenuRetrainDigits)  # noqa
+
+        view.menu.addSeparator()
+
+        needed = self.needDigits()
+
+        if needed[0]:
+            set0 = view.menu.addAction("record 0")
+            set0.triggered.connect(self.ocrMenuWrite0)  # noqa
+
+        if needed[1]:
+            set0 = view.menu.addAction("record 1")
+            set0.triggered.connect(self.ocrMenuWrite1)  # noqa
+
+        if needed[2]:
+            set0 = view.menu.addAction("record 2")
+            set0.triggered.connect(self.ocrMenuWrite2)  # noqa
+
+        if needed[3]:
+            set0 = view.menu.addAction("record 3")
+            set0.triggered.connect(self.ocrMenuWrite3)  # noqa
+
+        if needed[4]:
+            set0 = view.menu.addAction("record 4")
+            set0.triggered.connect(self.ocrMenuWrite4)  # noqa
+
+        if needed[5]:
+            set0 = view.menu.addAction("record 5")
+            set0.triggered.connect(self.ocrMenuWrite5)  # noqa
+
+        if needed[6]:
+            set0 = view.menu.addAction("record 6")
+            set0.triggered.connect(self.ocrMenuWrite6)  # noqa
+
+        if needed[7]:
+            set0 = view.menu.addAction("record 7")
+            set0.triggered.connect(self.ocrMenuWrite7)  # noqa
+
+        if needed[8]:
+            set0 = view.menu.addAction("record 8")
+            set0.triggered.connect(self.ocrMenuWrite8)  # noqa
+
+        if needed[9]:
+            set0 = view.menu.addAction("record 9")
+            set0.triggered.connect(self.ocrMenuWrite9)  # noqa
+
+    @staticmethod
+    def ocrMenuHideDigits():
+        cv2.destroyAllWindows()  # noqa
+
+    def ocrMenuWrite0(self):
+        ocrBoxFound, ocrBox = self.isMouseInOcrBox()
+        if ocrBoxFound:
+            self.processOcrTemplate(0, ocrBox.getBox())
+            # self.buildOcrContextMenu()
+
+    def ocrMenuWrite1(self):
+        ocrBoxFound, ocrBox = self.isMouseInOcrBox()
+        if ocrBoxFound:
+            self.processOcrTemplate(1, ocrBox.getBox())
+            # self.buildOcrContextMenu()
+
+    def ocrMenuWrite2(self):
+        ocrBoxFound, ocrBox = self.isMouseInOcrBox()
+        if ocrBoxFound:
+            self.processOcrTemplate(2, ocrBox.getBox())
+            # self.buildOcrContextMenu()
+
+    def ocrMenuWrite3(self):
+        ocrBoxFound, ocrBox = self.isMouseInOcrBox()
+        if ocrBoxFound:
+            self.processOcrTemplate(3, ocrBox.getBox())
+            # self.buildOcrContextMenu()
+
+    def ocrMenuWrite4(self):
+        ocrBoxFound, ocrBox = self.isMouseInOcrBox()
+        if ocrBoxFound:
+            self.processOcrTemplate(4, ocrBox.getBox())
+            # self.buildOcrContextMenu()
+
+    def ocrMenuWrite5(self):
+        ocrBoxFound, ocrBox = self.isMouseInOcrBox()
+        if ocrBoxFound:
+            self.processOcrTemplate(5, ocrBox.getBox())
+            # self.buildOcrContextMenu()
+
+    def ocrMenuWrite6(self):
+        ocrBoxFound, ocrBox = self.isMouseInOcrBox()
+        if ocrBoxFound:
+            self.processOcrTemplate(6, ocrBox.getBox())
+            # self.buildOcrContextMenu()
+
+    def ocrMenuWrite7(self):
+        ocrBoxFound, ocrBox = self.isMouseInOcrBox()
+        if ocrBoxFound:
+            self.processOcrTemplate(7, ocrBox.getBox())
+            # self.buildOcrContextMenu()
+
+    def ocrMenuWrite8(self):
+        ocrBoxFound, ocrBox = self.isMouseInOcrBox()
+        if ocrBoxFound:
+            self.processOcrTemplate(8, ocrBox.getBox())
+            # self.buildOcrContextMenu()
+
+    def ocrMenuWrite9(self):
+        ocrBoxFound, ocrBox = self.isMouseInOcrBox()
+        if ocrBoxFound:
+            self.processOcrTemplate(9, ocrBox.getBox())
+            # self.buildOcrContextMenu()
+
+    def ocrMenuShowDigits(self):
+        self.showDigitTemplates()
+
+    def ocrMenuRetrainDigits(self):
+        self.showDigitTemplates(retrain=True)
+
+    def ocrMenuEnableJogging(self):
+        ocrBoxFound, ocrBox = self.isMouseInOcrBox()
+        if ocrBoxFound:
+            ocrBox.joggable = True
+            ocrBox.pen = pg.mkPen('y')
+            self.frameView.getView().update()
+
+    def ocrMenuDisableJogging(self):
+        ocrBoxFound, ocrBox = self.isMouseInOcrBox()
+        if ocrBoxFound:
+            ocrBox.joggable = False
+            ocrBox.pen = pg.mkPen('r')
+            self.frameView.getView().update()
+
+    def ocrMenuDisableUpperJogging(self):
+        self.setAllOcrBoxJogging(enable=False, position='upper')
+        self.frameView.getView().update()
+
+    def ocrMenuDisableLowerJogging(self):
+        self.setAllOcrBoxJogging(enable=False, position='lower')
+        self.frameView.getView().update()
+
+    def ocrMenuDisableAllJogging(self):
+        self.ocrMenuDisableLowerJogging()
+        self.ocrMenuDisableUpperJogging()
+
+    def ocrMenuEnableUpperJogging(self):
+        self.setAllOcrBoxJogging(enable=True, position='upper')
+        self.frameView.getView().update()
+
+    def ocrMenuEnableLowerJogging(self):
+        self.setAllOcrBoxJogging(enable=True, position='lower')
+        self.frameView.getView().update()
+
+    def ocrMenuEnableAllJogging(self):
+        self.ocrMenuEnableLowerJogging()
+        self.ocrMenuEnableUpperJogging()
+
+    def ocrMenuShowProps(self):
+        ocrBoxFound, ocrBox = self.isMouseInOcrBox()
+        if ocrBoxFound:
+            msg = f'ocrbox: {ocrBox.position}-{ocrBox.boxnum}   box is: {ocrBox.getBox()}'
+            if ocrBox.joggable:
+                msg += f' (jogging enabled)'
+            self.showMsg(msg=msg)
+            self.showOcrCharacter(ocrBox.getBox())
+
+    def viewAll(self):
+        self.frameView.autoRange()
+
     def buildApertureContextMenu(self):
         view = self.frameView.getView()
+
+        # Start with an empty menu
+        view.menu = QtWidgets.QMenu()
+        self.frameView.scene.contextMenu = None  # This removes the export menu entry that appears at bottom
+
         # add new actions to the ViewBox context menu:
+
+        viewAll = view.menu.addAction("View all")
+        viewAll.triggered.connect(self.viewAll)  # noqa
+
         view.menu.addSeparator()
 
         addSnapApp = view.menu.addAction("Add snap-to-blob aperture")
-        addSnapApp.triggered.connect(self.addSnapAperture)
+        addSnapApp.triggered.connect(self.addSnapAperture)  # noqa
 
         addFixedApp = view.menu.addAction('Add static aperture (no snap)')
-        addFixedApp.triggered.connect(self.addNamedStaticAperture)
+        addFixedApp.triggered.connect(self.addNamedStaticAperture)  # noqa
 
         addAppStack = view.menu.addAction('Add stack of 5 apertures')
-        addAppStack.triggered.connect(self.addApertureStack)
+        addAppStack.triggered.connect(self.addApertureStack)  # noqa
 
         view.menu.addSeparator()
 
         setthresh = view.menu.addAction("Set threshold")
-        setthresh.triggered.connect(self.apMenuSetThresh)
+        setthresh.triggered.connect(self.apMenuSetThresh)  # noqa
 
-        delete = view.menu.addAction("Delete")
-        delete.triggered.connect(self.apMenuDelete)
+        delete = view.menu.addAction("Delete")  # noqa
+        delete.triggered.connect(self.apMenuDelete)  # noqa
 
         rename = view.menu.addAction("Rename")
-        rename.triggered.connect(self.apMenuRename)
+        rename.triggered.connect(self.apMenuRename)  # noqa
 
         view.menu.addSeparator()
 
         enable_jog = view.menu.addAction("Enable jogging via arrow keys")
-        enable_jog.triggered.connect(self.apMenuEnableJog)
+        enable_jog.triggered.connect(self.apMenuEnableJog)  # noqa
 
         disable_jog = view.menu.addAction("Disable jogging")
-        disable_jog.triggered.connect(self.apMenuDisableJog)
+        disable_jog.triggered.connect(self.apMenuDisableJog)  # noqa
 
         view.menu.addSeparator()
 
         enable_auto_display = view.menu.addAction("Enable auto display")
-        enable_auto_display.triggered.connect(self.apMenuEnableAutoDisplay)
+        enable_auto_display.triggered.connect(self.apMenuEnableAutoDisplay)  # noqa
 
         disable_auto_display = view.menu.addAction("Disable auto display")
-        disable_auto_display.triggered.connect(self.apMenuDisableAutoDisplay)
+        disable_auto_display.triggered.connect(self.apMenuDisableAutoDisplay)  # noqa
 
         view.menu.addSeparator()
 
         enable_thumbnail_source = view.menu.addAction("Set as Thumbnail source")
-        enable_thumbnail_source.triggered.connect(self.apMenuEnableThumbnailSource)
+        enable_thumbnail_source.triggered.connect(self.apMenuEnableThumbnailSource)  # noqa
 
         disable_thumbnail_source = view.menu.addAction("Unset as Thumbnail source")
-        disable_thumbnail_source.triggered.connect(self.apMenuDisableThumbnailSource)
+        disable_thumbnail_source.triggered.connect(self.apMenuDisableThumbnailSource)  # noqa
 
         view.menu.addSeparator()
 
         green = view.menu.addAction("Turn green (connect to threshold spinner)")
-        green.triggered.connect(self.apMenuSetApertureGreen)
+        green.triggered.connect(self.apMenuSetApertureGreen)  # noqa
 
         red = view.menu.addAction("Turn red")
-        red.triggered.connect(self.apMenuSetApertureRed)
+        red.triggered.connect(self.apMenuSetApertureRed)  # noqa
 
         yellow = view.menu.addAction("Turn yellow (use as tracking aperture)")
-        yellow.triggered.connect(self.apMenuSetApertureYellow)
+        yellow.triggered.connect(self.apMenuSetApertureYellow)  # noqa
 
         white = view.menu.addAction("Turn white (special 'flash-tag' aperture)")
-        white.triggered.connect(self.apMenuSetApertureWhite)
+        white.triggered.connect(self.apMenuSetApertureWhite)  # noqa
 
         view.menu.addSeparator()
 
         early_track_path_point = view.menu.addAction("Use current position as early track path point")
-        early_track_path_point.triggered.connect(self.apMenuSetEarlyTrackPathPoint)
+        early_track_path_point.triggered.connect(self.apMenuSetEarlyTrackPathPoint)  # noqa
 
         late_track_path_point = view.menu.addAction("Use current position as late track path point")
-        late_track_path_point.triggered.connect(self.apMenuSetLateTrackPathPoint)
+        late_track_path_point.triggered.connect(self.apMenuSetLateTrackPathPoint)  # noqa
 
         clear_track_path = view.menu.addAction("Clear track path")
-        clear_track_path.triggered.connect(self.apMenuClearTrackPath)
+        clear_track_path.triggered.connect(self.apMenuClearTrackPath)  # noqa
 
         view.menu.addSeparator()
 
         ra_dec = view.menu.addAction("Set RA Dec (from VizieR query results)")
-        ra_dec.triggered.connect(self.apMenuSetRaDec)
-
-        # view.menu.addSeparator()
-        #
-        # hot_pixel = view.menu.addAction("Record as hot-pixel")
-        # hot_pixel.triggered.connect(self.apMenuHandleHotPixel)
+        ra_dec.triggered.connect(self.apMenuSetRaDec)  # noqa
 
     def apMenuSetRaDec(self):
         apertureFound, aperture = self.isMouseInAperture()
@@ -2654,6 +2884,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         gotVersion = True if len(latestVersion) > 2 else False
         if not gotVersion:
             self.showMsg(f"Diagnostic: PyPI returned |{latestVersion}| as latest version of PyMovie")
+            return
+
+        if latestVersion.startswith('Failed'):
+            self.showMsg(latestVersion)
+            return
 
         if gotVersion:
             if latestVersion <= version.version():
@@ -2769,6 +3004,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def handleChangeOfDisplayMode(self):
         if self.viewFieldsCheckBox.isChecked():
+            self.buildOcrContextMenu()
             # preserve all apertures
             self.savedApertures = self.getApertureList()
             # clear all apertures
@@ -2777,6 +3013,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.placeOcrBoxesOnImage()
             self.showFrame()
         else:
+            self.buildApertureContextMenu()
             # clear ocr boxes (if any)
             # if self.lowerOcrBoxes:
             self.clearOcrBoxes()
@@ -5013,6 +5250,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 # self.mousex and self.mousey are updated every time the mouse cursor is moved
                 self.lastRightClickXPosition = self.mousex
                 self.lastRightClickYPosition = self.mousex
+                if self.viewFieldsCheckBox.isChecked():
+                    self.buildOcrContextMenu()
                 if obj.toolTip():
                     self.helperThing.raise_()
                     self.helperThing.show()
@@ -5358,31 +5597,15 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             fieldbox,
             boxnum,
             position,
-            msgRoutine=self.showMsg,
-            templater=self.processOcrTemplate,
-            jogcontroller=self.setAllOcrBoxJogging,
-            frameview=self.frameView,
-            showcharacter=self.showOcrCharacter,
-            showtemplates=self.showDigitTemplates,
-            neededdigits=self.needDigits,
             kiwi=self.kiwiInUse,
-            samplemenu=True
         )
         view = self.frameView.getView()
         view.addItem(aperture)
 
     def needDigits(self):
-        num_needed = 0
         needs_list = []
         for img in self.modelDigits:
-            if img is None:
-                num_needed += 1
             needs_list.append(img is None)
-
-        if num_needed == 0:
-            needs_list = []
-            for i in range(10):
-                needs_list.append(True)
 
         return needs_list
 
@@ -5439,14 +5662,19 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             blk_border = cv2.copyMakeBorder(digits[i], 1, 1, 1, 1, cv2.BORDER_CONSTANT, value=0)
             wht_border = cv2.copyMakeBorder(blk_border, 1, 1, 1, 1, cv2.BORDER_CONSTANT, value=border_value)
             spaced_digits.append(wht_border)
+
         digits_strip = cv2.hconcat(spaced_digits[:])
 
-        p = pg.image(digits_strip)
-        p.ui.menuBtn.hide()
-        p.ui.roiBtn.hide()
-        p.ui.histogram.hide()
+        # TODO Figure out a way to center and close the image created by ...
+        strip = np.array(digits_strip)
+        img = np.array(strip)
+        win_name = "Model digits"
+        cv2.namedWindow(win_name)        # noqa
+        cv2.moveWindow(win_name, 0, 0)   # noqa
+        cv2.imshow(win_name, np.repeat(np.repeat(img, 6, axis=0), 6, axis=1))  # noqa
+        cv2.setWindowProperty(win_name, cv2.WND_PROP_TOPMOST, 1)               # noqa
+
         self.showMsg(f'max pixel value: {max_px_value}')
-        p.ui.histogram.setLevels(0, max_px_value)
 
         if ok_to_print_confusion_matrix:
             print_confusion_matrix(self.modelDigits, self.showMsg)
@@ -5908,6 +6136,28 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             else:
                 self.statusbar.showMessage(f'')
 
+    def isMouseInOcrBox(self):
+
+        # inOcrBox determines whether the point x, y is in
+        # the bounding box for that character.  Used to determine if the cursor is inside an ocr box
+        def inOcrBox(x_pos, y_pos, box_coords_in):
+            xin = box_coords_in[0] <= x_pos <= box_coords_in[1]
+            yin = box_coords_in[2] <= y_pos <= box_coords_in[3]
+            return xin and yin
+
+        ocrBoxes = self.getOcrBoxList()
+        x = self.mousex
+        y = self.mousey
+
+        if self.image is not None:
+            ylim, xlim = self.image.shape
+            if 0 <= y < ylim and 0 <= x < xlim:
+                for ocrBox in ocrBoxes:
+                    if inOcrBox(x, y, ocrBox.getBox()):
+                        return True, ocrBox
+
+        return False, None
+
     def isMouseInAperture(self):
 
         # inBbox determines whether the point x, y is in
@@ -5918,8 +6168,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             yin = y0 < y_pos < y0 + h
             return xin and yin
 
-        # Convert scene coordinates to image coordinates
-        # mousePoint = self.frameView.getView().mapSceneToView(mousePos)
         x = self.mousex
         y = self.mousey
 
