@@ -1244,103 +1244,100 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def buildOcrContextMenu(self):
         view = self.frameView.getView()
 
-        # Start with an empty menu
-        view.menu = QtWidgets.QMenu()
+        # Start with the minimum default context menu
+        view.menu = None
+        view._applyMenuEnabled()
+
         self.frameView.scene.contextMenu = None  # This removes the export menu entry that appears at bottom
 
-        # add new actions to the ViewBox context menu:
+        view.menu.addSeparator()  # noqa
 
-        viewAll = view.menu.addAction("View all")
-        viewAll.triggered.connect(self.viewAll)  # noqa
-
-        view.menu.addSeparator()
-
-        setshowprops = view.menu.addAction("Show properties")
+        setshowprops = view.menu.addAction("Show properties")  # noqa
         setshowprops.triggered.connect(self.ocrMenuShowProps)  # noqa
 
-        view.menu.addSeparator()
+        view.menu.addSeparator()  # noqa
 
-        setjogon = view.menu.addAction("Enable jogging for pointed at box")
+        setjogon = view.menu.addAction("Enable jogging for pointed at box")  # noqa
         setjogon.triggered.connect(self.ocrMenuEnableJogging)  # noqa
 
-        setjogoff = view.menu.addAction("Disable jogging for pointed at box")
+        setjogoff = view.menu.addAction("Disable jogging for pointed at box")  # noqa
         setjogoff.triggered.connect(self.ocrMenuDisableJogging)  # noqa
 
-        view.menu.addSeparator()
+        view.menu.addSeparator()  # noqa
 
-        setupperjogs = view.menu.addAction("Enable jogging for all upper boxes")
+        setupperjogs = view.menu.addAction("Enable jogging for all upper boxes")  # noqa
         setupperjogs.triggered.connect(self.ocrMenuEnableUpperJogging)  # noqa
 
-        setlowerjogs = view.menu.addAction("Enable jogging for all lower boxes")
+        setlowerjogs = view.menu.addAction("Enable jogging for all lower boxes")  # noqa
         setlowerjogs.triggered.connect(self.ocrMenuEnableLowerJogging)  # noqa
 
-        setalljogs = view.menu.addAction("Enable jogging for all upper and lower boxes")
+        setalljogs = view.menu.addAction("Enable jogging for all upper and lower boxes")  # noqa
         setalljogs.triggered.connect(self.ocrMenuEnableAllJogging)  # noqa
 
-        view.menu.addSeparator()
+        view.menu.addSeparator()  # noqa
 
-        clearupperjogs = view.menu.addAction("Disable jogging for upper boxes")
+        clearupperjogs = view.menu.addAction("Disable jogging for upper boxes")  # noqa
         clearupperjogs.triggered.connect(self.ocrMenuDisableUpperJogging)  # noqa
 
-        clearlowerjogs = view.menu.addAction("Disable jogging for lower boxes")
+        clearlowerjogs = view.menu.addAction("Disable jogging for lower boxes")  # noqa
         clearlowerjogs.triggered.connect(self.ocrMenuDisableLowerJogging)  # noqa
 
-        clearalljogs = view.menu.addAction("Disable jogging for all boxes")
+        clearalljogs = view.menu.addAction("Disable jogging for all boxes")  # noqa
         clearalljogs.triggered.connect(self.ocrMenuDisableAllJogging)  # noqa
 
-        view.menu.addSeparator()
+        view.menu.addSeparator()  # noqa
 
-        showdigits = view.menu.addAction('Show model digits')
+        showdigits = view.menu.addAction('Show model digits')  # noqa
         showdigits.triggered.connect(self.ocrMenuShowDigits)  # noqa
 
-        hideDigits = view.menu.addAction('Hide model digits')
+        hideDigits = view.menu.addAction('Hide model digits')  # noqa
         hideDigits.triggered.connect(self.ocrMenuHideDigits)   # noqa
 
-        retraindigits = view.menu.addAction('Retrain model digits')
+        retraindigits = view.menu.addAction('Retrain model digits')  # noqa
         retraindigits.triggered.connect(self.ocrMenuRetrainDigits)  # noqa
 
-        view.menu.addSeparator()
+        view.menu.addSeparator()  # noqa
 
         needed = self.needDigits()
 
         if needed[0]:
-            set0 = view.menu.addAction("record 0")
+            set0 = view.menu.addAction("record 0")  # noqa
             set0.triggered.connect(self.ocrMenuWrite0)  # noqa
 
         if needed[1]:
-            set0 = view.menu.addAction("record 1")
+            set0 = view.menu.addAction("record 1")  # noqa
             set0.triggered.connect(self.ocrMenuWrite1)  # noqa
 
         if needed[2]:
-            set0 = view.menu.addAction("record 2")
+            set0 = view.menu.addAction("record 2")  # noqa
             set0.triggered.connect(self.ocrMenuWrite2)  # noqa
 
         if needed[3]:
-            set0 = view.menu.addAction("record 3")
+            set0 = view.menu.addAction("record 3")  # noqa
             set0.triggered.connect(self.ocrMenuWrite3)  # noqa
 
         if needed[4]:
-            set0 = view.menu.addAction("record 4")
+            set0 = view.menu.addAction("record 4")  # noqa
             set0.triggered.connect(self.ocrMenuWrite4)  # noqa
 
         if needed[5]:
-            set0 = view.menu.addAction("record 5")
+            set0 = view.menu.addAction("record 5")  # noqa
             set0.triggered.connect(self.ocrMenuWrite5)  # noqa
 
         if needed[6]:
-            set0 = view.menu.addAction("record 6")
+            set0 = view.menu.addAction("record 6")  # noqa
             set0.triggered.connect(self.ocrMenuWrite6)  # noqa
 
         if needed[7]:
-            set0 = view.menu.addAction("record 7")
+            set0 = view.menu.addAction("record 7")  # noqa
             set0.triggered.connect(self.ocrMenuWrite7)  # noqa
 
         if needed[8]:
-            set0 = view.menu.addAction("record 8")
+            set0 = view.menu.addAction("record 8")  # noqa
             set0.triggered.connect(self.ocrMenuWrite8)  # noqa
 
         if needed[9]:
-            set0 = view.menu.addAction("record 9")
+            set0 = view.menu.addAction("record 9")  # noqa
             set0.triggered.connect(self.ocrMenuWrite9)  # noqa
 
     @staticmethod
@@ -1467,88 +1464,92 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         view = self.frameView.getView()
 
         # Start with an empty menu
-        view.menu = QtWidgets.QMenu()
+        # view.menu = QtWidgets.QMenu()
+
+        # Start with the minimum default menu ...
+        view.menu = None
+        view._applyMenuEnabled()
         self.frameView.scene.contextMenu = None  # This removes the export menu entry that appears at bottom
 
         # add new actions to the ViewBox context menu:
 
-        viewAll = view.menu.addAction("View all")
-        viewAll.triggered.connect(self.viewAll)  # noqa
+        # viewAll = view.menu.addAction("View all")
+        # viewAll.triggered.connect(self.viewAll)  # noqa
 
-        view.menu.addSeparator()
+        view.menu.addSeparator()  # noqa
 
-        addSnapApp = view.menu.addAction("Add snap-to-blob aperture")
+        addSnapApp = view.menu.addAction("Add snap-to-blob aperture")  # noqa
         addSnapApp.triggered.connect(self.addSnapAperture)  # noqa
 
-        addFixedApp = view.menu.addAction('Add static aperture (no snap)')
+        addFixedApp = view.menu.addAction('Add static aperture (no snap)')  # noqa
         addFixedApp.triggered.connect(self.addNamedStaticAperture)  # noqa
 
-        addAppStack = view.menu.addAction('Add stack of 5 apertures')
+        addAppStack = view.menu.addAction('Add stack of 5 apertures')  # noqa
         addAppStack.triggered.connect(self.addApertureStack)  # noqa
 
-        view.menu.addSeparator()
+        view.menu.addSeparator()  # noqa
 
-        setthresh = view.menu.addAction("Set threshold")
+        setthresh = view.menu.addAction("Set threshold")  # noqa
         setthresh.triggered.connect(self.apMenuSetThresh)  # noqa
 
         delete = view.menu.addAction("Delete")  # noqa
         delete.triggered.connect(self.apMenuDelete)  # noqa
 
-        rename = view.menu.addAction("Rename")
+        rename = view.menu.addAction("Rename")  # noqa
         rename.triggered.connect(self.apMenuRename)  # noqa
 
-        view.menu.addSeparator()
+        view.menu.addSeparator()  # noqa
 
-        enable_jog = view.menu.addAction("Enable jogging via arrow keys")
+        enable_jog = view.menu.addAction("Enable jogging via arrow keys")  # noqa
         enable_jog.triggered.connect(self.apMenuEnableJog)  # noqa
 
-        disable_jog = view.menu.addAction("Disable jogging")
+        disable_jog = view.menu.addAction("Disable jogging")  # noqa
         disable_jog.triggered.connect(self.apMenuDisableJog)  # noqa
 
-        view.menu.addSeparator()
+        view.menu.addSeparator()  # noqa
 
-        enable_auto_display = view.menu.addAction("Enable auto display")
+        enable_auto_display = view.menu.addAction("Enable auto display")  # noqa
         enable_auto_display.triggered.connect(self.apMenuEnableAutoDisplay)  # noqa
 
-        disable_auto_display = view.menu.addAction("Disable auto display")
+        disable_auto_display = view.menu.addAction("Disable auto display")  # noqa
         disable_auto_display.triggered.connect(self.apMenuDisableAutoDisplay)  # noqa
 
-        view.menu.addSeparator()
+        view.menu.addSeparator()  # noqa
 
-        enable_thumbnail_source = view.menu.addAction("Set as Thumbnail source")
+        enable_thumbnail_source = view.menu.addAction("Set as Thumbnail source")  # noqa
         enable_thumbnail_source.triggered.connect(self.apMenuEnableThumbnailSource)  # noqa
 
-        disable_thumbnail_source = view.menu.addAction("Unset as Thumbnail source")
+        disable_thumbnail_source = view.menu.addAction("Unset as Thumbnail source")  # noqa
         disable_thumbnail_source.triggered.connect(self.apMenuDisableThumbnailSource)  # noqa
 
-        view.menu.addSeparator()
+        view.menu.addSeparator()  # noqa
 
-        green = view.menu.addAction("Turn green (connect to threshold spinner)")
+        green = view.menu.addAction("Turn green (connect to threshold spinner)")  # noqa
         green.triggered.connect(self.apMenuSetApertureGreen)  # noqa
 
-        red = view.menu.addAction("Turn red")
+        red = view.menu.addAction("Turn red")  # noqa
         red.triggered.connect(self.apMenuSetApertureRed)  # noqa
 
-        yellow = view.menu.addAction("Turn yellow (use as tracking aperture)")
+        yellow = view.menu.addAction("Turn yellow (use as tracking aperture)")  # noqa
         yellow.triggered.connect(self.apMenuSetApertureYellow)  # noqa
 
-        white = view.menu.addAction("Turn white (special 'flash-tag' aperture)")
+        white = view.menu.addAction("Turn white (special 'flash-tag' aperture)")  # noqa
         white.triggered.connect(self.apMenuSetApertureWhite)  # noqa
 
-        view.menu.addSeparator()
+        view.menu.addSeparator()  # noqa
 
-        early_track_path_point = view.menu.addAction("Use current position as early track path point")
+        early_track_path_point = view.menu.addAction("Use current position as early track path point")  # noqa
         early_track_path_point.triggered.connect(self.apMenuSetEarlyTrackPathPoint)  # noqa
 
-        late_track_path_point = view.menu.addAction("Use current position as late track path point")
+        late_track_path_point = view.menu.addAction("Use current position as late track path point")  # noqa
         late_track_path_point.triggered.connect(self.apMenuSetLateTrackPathPoint)  # noqa
 
-        clear_track_path = view.menu.addAction("Clear track path")
+        clear_track_path = view.menu.addAction("Clear track path")  # noqa
         clear_track_path.triggered.connect(self.apMenuClearTrackPath)  # noqa
 
-        view.menu.addSeparator()
+        view.menu.addSeparator()  # noqa
 
-        ra_dec = view.menu.addAction("Set RA Dec (from VizieR query results)")
+        ra_dec = view.menu.addAction("Set RA Dec (from VizieR query results)")  # noqa
         ra_dec.triggered.connect(self.apMenuSetRaDec)  # noqa
 
     def apMenuSetRaDec(self):
@@ -8622,7 +8623,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             app.data.sort(key=sortOnFrame)
 
             # Start a new plot for each aperture
-            self.plots.append(pg.GraphicsWindow(title="PyMovie lightcurve plot"))
+            self.plots.append(pg.GraphicsLayoutWidget(title="PyMovie lightcurve plot"))
             self.plots[-1].resize(1000, 600)
             if self.cascadeCheckBox.isChecked():
                 self.plots[-1].move(QPoint(cascadePosition, cascadePosition))
@@ -8702,7 +8703,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 color_index = 0
 
         # Add a composite plot of all lightcurves --- because created first, will be bottom-most plot in z order
-        self.plots.append(pg.GraphicsWindow(title=f'PyMovie {version.version()} composite lightcurve'))
+        self.plots.append(pg.GraphicsLayoutWidget(title=f'PyMovie {version.version()} composite lightcurve'))
         # pw = PlotWidget(title=f'PyMovie {version.version()} composite lightcurve')
         # self.plots.append(pw.getPlotItem())
         self.plots[-1].resize(1000, 600)
