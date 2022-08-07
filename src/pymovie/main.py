@@ -9030,6 +9030,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         event.accept()
 
+        print(f"The program has exited normally. Any error messages involving QBasic timers \n"
+              f"that may be printed following this are harmless artifacts "
+              f"of the order in which various GUI elements are closed.")
+
     def openInfoFile(self):
         infoFilePath = os.path.join(os.path.split(__file__)[0], 'PyMovie-info.pdf')
 
