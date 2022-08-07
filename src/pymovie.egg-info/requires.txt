@@ -4,7 +4,7 @@ astroquery
 resource
 scikit-image>=0.15.0
 matplotlib
-numpy>=1.17.0
+numpy<=1.23.1
 astropy
 scikit-image
 scipy

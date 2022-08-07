@@ -2203,10 +2203,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if not os.name == 'posix':
             w = self.frameView.width()
             h = self.frameView.height()
-            if w % 2 == 0:
-                w = w - 1
-            else:
-                w = w + 1
+            # TODO Remove this test of no longer resizing
+            # if w % 2 == 0:
+            #     w = w - 1
+            # else:
+            #     w = w + 1
             self.frameView.resize(w, h)
 
     # def maskedMedianFilter(self, img, ksize=3):
@@ -5669,11 +5670,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         digits_strip = cv2.hconcat(spaced_digits[:])  # noqa
 
-        # TODO Figure out a way to center and close the image created by ...
         strip = np.array(digits_strip)
         img = np.array(strip)
         win_name = "Model digits"
-        # cv2.namedWindow(win_name)        # noqa
         cv2.imshow(win_name, np.repeat(np.repeat(img, 6, axis=0), 6, axis=1))  # noqa
         cv2.moveWindow(win_name, 80, 0)   # noqa
         cv2.setWindowProperty(win_name, cv2.WND_PROP_TOPMOST, 1)               # noqa
