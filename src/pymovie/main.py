@@ -486,10 +486,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.buildApertureContextMenu()
 
-        # self.frameView.autoRange()
-
-        # self.frameView.scene.contextMenu = None  # This removes the export menu entry that appears at bottom
-
         # We use mouse movements to dynamically display in the status bar the mouse
         # coordinates and pixel value under the mouse cursor.
         self.frameView.scene.sigMouseMoved.connect(self.mouseMovedInFrameView)
@@ -1246,7 +1242,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         # Start with the minimum default context menu
         view.menu = None
-        view._applyMenuEnabled()
+        view._applyMenuEnabled()  # noqa
 
         self.frameView.scene.contextMenu = None  # This removes the export menu entry that appears at bottom
 
@@ -1468,7 +1464,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         # Start with the minimum default menu ...
         view.menu = None
-        view._applyMenuEnabled()
+        view._applyMenuEnabled()  # noqa
+
         self.frameView.scene.contextMenu = None  # This removes the export menu entry that appears at bottom
 
         # add new actions to the ViewBox context menu:
@@ -3032,10 +3029,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def jogSingleOcrBox(self, dx, dy, boxnum, position, ocr):
 
         # Frame 0 is often messed up (somehow).  So we protect the user by not
-        # letting him change ocr box positions while on frame 0
-        if self.currentFrameSpinBox.value() == 0:
-            self.showMsg(f'!!!! Move past frame 0 first.  It is not representative. !!!!')
-            return
+        # letting him change ocr box positions while on frame 0 and automatically
+        # advancing to frame 1
+        self.detectFrameZeroAndAdvance()
 
         assert (position == 'upper' or position == 'lower')
         if position == 'upper':
@@ -3462,6 +3458,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if self.currentVTIindex == 0:  # None
             return
 
+        self.detectFrameZeroAndAdvance()
+
         self.kiwiInUse = False
         self.kiwiPALinUse = False
 
@@ -3746,13 +3744,18 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.viewFieldsCheckBox.setChecked(True)
         # There is often something messed up with frame 0, so we protect the user
         # by automatically moving to frame 1 in that case
-        if self.currentFrameSpinBox.value() == 0:
-            self.currentFrameSpinBox.setValue(1)
+        self.detectFrameZeroAndAdvance()
         # Set the flag that we use to automatically detect which field is earliest in time.
         # We only want to do this test once.
         self.detectFieldTimeOrder = True
         self.showFrame()
         self.clearOcrBoxes()
+
+    def detectFrameZeroAndAdvance(self):
+        if self.currentFrameSpinBox.value() == 0:
+            self.showMsgDialog(f"Frame 0 is often messed up during recording.\n\n"
+                               f"For that reason, we are automatically advancing to frame 1.")
+            self.currentFrameSpinBox.setValue(1)
 
     def loadCustomOcrProfiles(self):
         if not self.avi_wcs_folder_in_use:
@@ -5314,7 +5317,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     @pyqtSlot('PyQt_PyObject')
     def handleDeleteSignal(self, aperture):
-        # self.showMsg(f'Aperture {aperture.name} has asked to be removed')
         if aperture.color == 'yellow' and self.tpathSpecified:
             self.clearTrackingPathParameters()
             self.showMsg(f'A tracking path was associated with this aperture. It has been deleted.')
@@ -5660,11 +5662,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 if max_px > max_px_value:
                     max_px_value = max_px
 
-            blk_border = cv2.copyMakeBorder(digits[i], 1, 1, 1, 1, cv2.BORDER_CONSTANT, value=0)
-            wht_border = cv2.copyMakeBorder(blk_border, 1, 1, 1, 1, cv2.BORDER_CONSTANT, value=border_value)
+            blk_border = cv2.copyMakeBorder(digits[i], 1, 1, 1, 1, cv2.BORDER_CONSTANT, value=0)  # noqa
+
+            wht_border = cv2.copyMakeBorder(blk_border, 1, 1, 1, 1, cv2.BORDER_CONSTANT, value=border_value)  # noqa
             spaced_digits.append(wht_border)
 
-        digits_strip = cv2.hconcat(spaced_digits[:])
+        digits_strip = cv2.hconcat(spaced_digits[:])  # noqa
 
         # TODO Figure out a way to center and close the image created by ...
         strip = np.array(digits_strip)
@@ -6071,7 +6074,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 for box in ocr_boxes:
                     box_coords = box.getBox()
                     if inOcrBox(x, y, box_coords):
-                        # self.showMsg(f'Cursor is in an ocr box')
                         self.showOcrCharacter(box_coords)
 
             ylim, xlim = self.image.shape
@@ -6749,7 +6751,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             if ext == '.fit':
                 self.openFitsImageFile(self.filename)
             else:
-                img = cv2.imread(self.filename)
+                img = cv2.imread(self.filename)  # noqa
                 self.image = img[:, :, 0]
                 self.displayImageAtCurrentZoomPanState()
 
@@ -6777,7 +6779,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if self.cap is None or not self.cap.isOpened():
             return False, None
 
-        next_frame = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
+        next_frame = self.cap.get(cv2.CAP_PROP_POS_FRAMES)  # noqa
         if trace:
             self.showMsg(f'requested frame: {fr_num}  next in line for cap.read(): {next_frame}')
 
@@ -6807,8 +6809,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             if trace:
                 self.showMsg(f'Closing and reopening avi_file: {self.filename}')
             self.cap.release()
-            self.cap = cv2.VideoCapture(self.filename, cv2.CAP_FFMPEG)
-            next_frame = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
+            self.cap = cv2.VideoCapture(self.filename, cv2.CAP_FFMPEG)  # noqa
+            next_frame = self.cap.get(cv2.CAP_PROP_POS_FRAMES)  # noqa
             if trace:
                 self.showMsg(f'requested frame: {fr_num}  next in line for cap.read(): {next_frame}')
             frames_to_read = fr_num - next_frame + 1
@@ -6961,7 +6963,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.showMsg(f'Opened: {self.filename}')
                 if self.cap:
                     self.cap.release()
-                self.cap = cv2.VideoCapture(self.filename, cv2.CAP_FFMPEG)
+                self.cap = cv2.VideoCapture(self.filename, cv2.CAP_FFMPEG)  # noqa
                 if not self.cap.isOpened():
                     self.showMsg(f'  {self.filename} could not be opened!')
                     self.fourcc = ''
@@ -6970,13 +6972,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.enableControlsForAviData()
                     self.saveApertureState.setEnabled(False)
                     # Let's get the FOURCC code
-                    fourcc = int(self.cap.get(cv2.CAP_PROP_FOURCC))
+                    fourcc = int(self.cap.get(cv2.CAP_PROP_FOURCC))  # noqa
                     fourcc_str = f'{fourcc & 0xff:c}{fourcc >> 8 & 0xff:c}' \
                                  f'{fourcc >> 16 & 0xff:c}{fourcc >> 24 & 0xff:c}'
                     self.fourcc = fourcc_str
                     self.showMsg(f'FOURCC codec ID: {fourcc_str}')
 
-                    fps = self.cap.get(cv2.CAP_PROP_FPS)
+                    fps = self.cap.get(cv2.CAP_PROP_FPS)  # noqa
                     if fps > 29.0:
                         # self.showMsg('Changing navigation buttons to 30 frames')
                         self.frameJumpSmall = 30
@@ -6990,7 +6992,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
                     self.showMsg(f'frames per second:{fps:0.6f}')
 
-                    frame_count = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                    frame_count = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))  # noqa
                     self.showMsg(f'There are {frame_count} frames in the file.')
             elif self.ser_file_in_use:
                 self.enableControlsForAviData()
@@ -7283,7 +7285,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
                 if self.cap:
                     self.cap.release()
-                self.cap = cv2.VideoCapture(self.avi_location)
+                self.cap = cv2.VideoCapture(self.avi_location)  # noqa
                 if not self.cap.isOpened():
                     self.showMsg(f'  {self.avi_location} could not be opened!')
                 else:
@@ -7293,16 +7295,16 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.savedApertures = None
                     self.enableControlsForAviData()
                     # Let's get the FOURCC code
-                    fourcc = int(self.cap.get(cv2.CAP_PROP_FOURCC))
+                    fourcc = int(self.cap.get(cv2.CAP_PROP_FOURCC))  # noqa
                     fourcc_str = f'{fourcc & 0xff:c}{fourcc >> 8 & 0xff:c}' \
                                  f'{fourcc >> 16 & 0xff:c}{fourcc >> 24 & 0xff:c}'
                     self.showMsg(f'FOURCC codec ID: {fourcc_str}')
-                    self.showMsg(f'frames per second:{self.cap.get(cv2.CAP_PROP_FPS):0.6f}')
+                    self.showMsg(f'frames per second:{self.cap.get(cv2.CAP_PROP_FPS):0.6f}')  # noqa
 
-                    frame_count = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                    frame_count = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))  # noqa
                     self.showMsg(f'There are {frame_count} frames in the file.')
 
-                    fps = self.cap.get(cv2.CAP_PROP_FPS)
+                    fps = self.cap.get(cv2.CAP_PROP_FPS)  # noqa
                     if fps > 29.0:
                         self.frameJumpSmall = 30
                         self.frameJumpBig = 300
@@ -7669,12 +7671,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     if self.fourcc == 'dvsd':
                         success, frame = self.getFrame(frame_to_show)
                         if len(frame.shape) == 3:
-                            self.image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                            self.image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # noqa
                             self.doGammaCorrection()
                     else:
-                        self.cap.set(cv2.CAP_PROP_POS_FRAMES, frame_to_show)
+                        self.cap.set(cv2.CAP_PROP_POS_FRAMES, frame_to_show)  # noqa
                         status, frame = self.cap.read()
-                        self.image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                        self.image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # noqa
                         self.doGammaCorrection()
 
                     if self.applyPixelCorrectionsCheckBox.isChecked():
@@ -9128,12 +9130,12 @@ def get_mask(
     byte_order = img.dtype.byteorder  # Possible returns: '<' '>' '=' '|' (little, big, native, not applicable)
 
     if byte_order == '>':  # We assume our code will be run on Intel silicon
-        blurred_img = cv2.GaussianBlur(img.byteswap().astype("uint16"), ksize=ksize, sigmaX=1.1)
+        blurred_img = cv2.GaussianBlur(img.byteswap().astype("uint16"), ksize=ksize, sigmaX=1.1)  # noqa
     else:
-        blurred_img = cv2.GaussianBlur(img.astype("uint16"), ksize=ksize, sigmaX=1.1)
+        blurred_img = cv2.GaussianBlur(img.astype("uint16"), ksize=ksize, sigmaX=1.1)  # noqa
 
     # cut is threshold
-    ret, t_mask = cv2.threshold(blurred_img, cut, 1, cv2.THRESH_BINARY)
+    ret, t_mask = cv2.threshold(blurred_img, cut, 1, cv2.THRESH_BINARY)  # noqa
     labels = measure.label(t_mask, connectivity=1, background=0)
     blob_count = np.max(labels)
 

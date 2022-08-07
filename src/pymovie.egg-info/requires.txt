@@ -1,5 +1,5 @@
 pyqtgraph
-opencv-python-headless
+opencv-python
 astroquery
 resource
 scikit-image>=0.15.0

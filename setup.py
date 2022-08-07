@@ -22,7 +22,7 @@ PACKAGES = find_packages(where="src")
 
 print("")
 for pkg in PACKAGES:
-    print('############## package found: ' + str(pkg))
+    print(f'############## package found: {str(pkg)}')
 print(f'{len(PACKAGES)} packages were found\n')
 
 KEYWORDS = ["desktop app", "lightcurve extraction from astronomical videos"]
@@ -43,7 +43,7 @@ CLASSIFIERS = [
 INSTALL_REQUIRES = ['pyqtgraph', 'opencv-python', 'astroquery', 'resource',
                     'scikit-image(>=0.15.0)',
                     'winshell;platform_system=="Windows"',
-                    'pypiwin32;platform_system=="Windows"', 'matplotlib', 'numpy>=1.17.0', 'astropy', 'scikit-image',
+                    'pypiwin32;platform_system=="Windows"', 'matplotlib', 'numpy<=1.23.1', 'astropy', 'scikit-image',
                     'scipy', 'numba>=0.41.0', 'Adv2>=1.2.0', 'PyQt5', 'more_itertools']
 
 ###################################################################
