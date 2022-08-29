@@ -2880,6 +2880,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def checkForNewerVersion(self):
         latestVersion = getLatestPackageVersion('pymovie')
+        if latestVersion == 'none':
+            self.showMsg(f"No connection to PyPI could be made. Possible Internet problem??")
+            return
         gotVersion = True if len(latestVersion) > 2 else False
         if not gotVersion:
             self.showMsg(f"Diagnostic: PyPI returned |{latestVersion}| as latest version of PyMovie")
@@ -3062,7 +3065,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.mouseMovedInFrameView(self.lastMousePosInFrameView)
 
         self.pickleOcrBoxes()
-        self.writeFormatTypeFile(self.formatterCode)
+        # Removed in version 3.6.4  29 August 2022
+        # self.writeFormatTypeFile(self.formatterCode)
 
     def placeOcrBoxesOnImage(self):
 
@@ -3500,7 +3504,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             self.placeOcrBoxesOnImage()
             self.timestampFormatter = format_iota_timestamp
-            self.writeFormatTypeFile('iota')
+            self.formatterCode = 'iota'
+            self.writeFormatTypeFile(self.formatterCode)
             self.extractTimestamps()
             return
 
@@ -3522,7 +3527,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             self.placeOcrBoxesOnImage()
             self.timestampFormatter = format_iota_timestamp
-            self.writeFormatTypeFile('iota')
+            self.formatterCode = 'iota'
+            self.writeFormatTypeFile(self.formatterCode)
             self.extractTimestamps()
             return
 
@@ -3544,7 +3550,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             self.placeOcrBoxesOnImage()
             self.timestampFormatter = format_iota_timestamp
-            self.writeFormatTypeFile('iota')
+            self.formatterCode = 'iota'
+            self.writeFormatTypeFile(self.formatterCode)
             self.extractTimestamps()
             return
 
@@ -3566,7 +3573,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             self.placeOcrBoxesOnImage()
             self.timestampFormatter = format_iota_timestamp
-            self.writeFormatTypeFile('iota')
+            self.formatterCode = 'iota'
+            self.writeFormatTypeFile(self.formatterCode)
             self.extractTimestamps()
             return
 
@@ -3588,7 +3596,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             self.placeOcrBoxesOnImage()
             self.timestampFormatter = format_boxsprite3_timestamp
-            self.writeFormatTypeFile('boxsprite')
+            self.formatterCode = 'boxsprite'
+            self.writeFormatTypeFile(self.formatterCode)
             self.extractTimestamps()
             return
 
@@ -3616,8 +3625,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.kiwiInUse = True
             self.placeOcrBoxesOnImage()
             self.timestampFormatter = format_kiwi_timestamp
-            self.writeFormatTypeFile('kiwi-left')
             self.formatterCode = 'kiwi-left'
+            self.writeFormatTypeFile(self.formatterCode)
             self.extractTimestamps()
             return
 
@@ -3645,8 +3654,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.kiwiInUse = True
             self.placeOcrBoxesOnImage()
             self.timestampFormatter = format_kiwi_timestamp
-            self.writeFormatTypeFile('kiwi-right')
             self.formatterCode = 'kiwi-right'
+            self.writeFormatTypeFile(self.formatterCode)
             self.extractTimestamps()
             return
 
@@ -3670,8 +3679,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.kiwiPALinUse = True
             self.placeOcrBoxesOnImage()
             self.timestampFormatter = format_kiwi_timestamp
-            self.writeFormatTypeFile('kiwi-PAL-left')
             self.formatterCode = 'kiwi-PAL-left'
+            self.writeFormatTypeFile(self.formatterCode)
             self.extractTimestamps()
             return
 
@@ -3695,8 +3704,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.kiwiPALinUse = True
             self.placeOcrBoxesOnImage()
             self.timestampFormatter = format_kiwi_timestamp
-            self.writeFormatTypeFile('kiwi-PAL-right')
             self.formatterCode = 'kiwi-PAL-right'
+            self.writeFormatTypeFile(self.formatterCode)
             self.extractTimestamps()
             return
 
@@ -3721,7 +3730,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             self.placeOcrBoxesOnImage()
             self.timestampFormatter = format_ghs_timestamp
-            self.writeFormatTypeFile('GHS')
+            self.formatterCode = 'GHS'
+            self.writeFormatTypeFile(self.formatterCode)
             self.extractTimestamps()
             return
 
@@ -3731,8 +3741,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.showMsg(f'We only extract SharpCap image embedded timestamps from 8 bit avi files.')
                 return
 
-            self.writeFormatTypeFile('SharpCap8')
             self.formatterCode = 'SharpCap8'
+            self.writeFormatTypeFile(self.formatterCode)
             self.sharpCapTimestampPresent = True
             self.showFrame()
 
@@ -9030,9 +9040,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         event.accept()
 
-        print(f"The program has exited normally. Any error messages involving QBasic timers \n"
+        print(f"\nThe program has exited normally. Any error messages involving QBasicTimer \n"
               f"that may be printed following this are harmless artifacts "
-              f"of the order in which various GUI elements are closed.")
+              f"of the order in which various GUI elements are closed.\n")
 
     def openInfoFile(self):
         infoFilePath = os.path.join(os.path.split(__file__)[0], 'PyMovie-info.pdf')
