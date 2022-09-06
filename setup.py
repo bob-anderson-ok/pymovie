@@ -41,7 +41,7 @@ CLASSIFIERS = [
 ]
 
 INSTALL_REQUIRES = ['pyqtgraph', 'opencv-python', 'astroquery', 'resource',
-                    'scikit-image(>=0.15.0)',
+                    'scikit-image(>=0.15.0)', 'wheel',
                     'winshell;platform_system=="Windows"',
                     'pypiwin32;platform_system=="Windows"', 'matplotlib', 'numpy<=1.23.1', 'astropy', 'scikit-image',
                     'scipy', 'numba>=0.41.0', 'Adv2>=1.2.0', 'PyQt5', 'more_itertools']
