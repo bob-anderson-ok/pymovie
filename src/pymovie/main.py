@@ -2898,11 +2898,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.showMsg('You are running the most recent version of PyMovie')
             else:
                 self.showMsg('Version ' + latestVersion + ' is available.  To get it:', blankLine=True)
-                self.showMsg(f"==== for pip based installations, in a command window type: "
+                self.showMsg(f"====  in a command window type: "
                              f"pip install pymovie=={latestVersion} (note double = symbols)",
                              blankLine=True)
-                self.showMsg(f"==== for pipenv based installations, execute the ChangePymovieVersion.bat file.",
-                             blankLine=True)
+                # self.showMsg(f"==== for pipenv based installations, execute the ChangePymovieVersion.bat file.",
+                #              blankLine=True)
         else:
             self.showMsg(f'latestVersion found: {latestVersion}')
 
