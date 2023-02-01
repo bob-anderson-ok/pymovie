@@ -9,7 +9,7 @@
 # removing it from use.
 # def getMostRecentVersionOfPyMovieViaJason():
 #
-#     #!!!!! Many thanks to Kia Getrost for supplying this much improved version of 'getMostRecentVersionOfPymovie'
+#     #!!!!! Many thanks to Kai Getrost for supplying this much improved version of 'getMostRecentVersionOfPymovie'
 #
 #     # Returns tuple of gotVersion, latestVersion
 #     # (boolean and version-or-error string)
@@ -71,7 +71,7 @@ def upgradePyMovie(pymovieversion):
 # about a package on PyPI
 def getLatestPackageVersion(package_name: str) -> str:
     import subprocess
-    response = subprocess.run(['python', '-m', 'pip', 'install', f"{package_name}==0.0.0"],
+    response = subprocess.run(['python3', '-m', 'pip', 'install', f"{package_name}==0.0.0"],
                               stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     errorResponse = response.stderr.decode("utf-8").split('\n')[0]
 

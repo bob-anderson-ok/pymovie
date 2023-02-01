@@ -1,9 +1,11 @@
-pyqtgraph
+pyqtgraph==0.12.4
 opencv-python
 astroquery
 resource
 scikit-image>=0.15.0
 wheel
+requests
+pyephem
 matplotlib
 numpy<=1.23.1
 astropy

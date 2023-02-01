@@ -2203,11 +2203,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if not os.name == 'posix':
             w = self.frameView.width()
             h = self.frameView.height()
-            # TODO Remove this test of no longer resizing
-            # if w % 2 == 0:
-            #     w = w - 1
-            # else:
-            #     w = w + 1
             self.frameView.resize(w, h)
 
     # def maskedMedianFilter(self, img, ksize=3):
@@ -4217,9 +4212,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         # Now that we're back, if we got a new enhanced-image.fit, display it.
         fullpath = self.folder_dir + enhanced_filename_with_frame_num
         if os.path.isfile(fullpath):
-            # And now is time to write the frame number of the corresponding reference frame
-            # with open(self.folder_dir + r'/enhanced-image-frame-num.txt', 'w') as f:
-            #     f.write(f'{first_frame}')
             self.clearApertureData()
             self.clearApertures()
             self.openFitsImageFile(fullpath)
@@ -4786,6 +4778,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.viewFieldsCheckBox.setChecked(False)
                     self.viewFieldsCheckBox.setEnabled(False)
                 else:
+                    # Version 3.6.8 change
+                    if self.finderFrameBeingDisplayed:
+                        self.moveOneFrameRight()
+                        self.moveOneFrameLeft()
                     # We make this call so that we record the frame data for the current frame.
                     self.showFrame()
 
@@ -5751,7 +5747,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         aperture.defaultMask = self.defaultMask[:, :]
         aperture.defaultMaskPixelCount = self.defaultMaskPixelCount
 
-        aperture.auto_display = True
         aperture.thresh = self.big_thresh
         self.handleSetGreenSignal(aperture)
 
@@ -5761,8 +5756,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             app.auto_display = False
 
         aperture.jogging_enabled = True
-        aperture.thumbnail_source = True
-        aperture.auto_display = True
+        # TODO 3.6.7 Changed True to False in the next two lines
+        aperture.thumbnail_source = False
+        aperture.auto_display = False
 
         self.pointed_at_aperture = aperture
 
@@ -6135,6 +6131,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 else:
                     # Cursor is not in any aperture so reset pointed_at_aperture
                     self.pointed_at_aperture = None
+                    pass
 
                 if appsStacked:  # The cursor was one or more apertures
                     # status = statusMsg(app)
