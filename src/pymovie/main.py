@@ -3864,8 +3864,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         # self.showMsg('appDictList has been filled')
 
     def setThumbnails(self, aperture, showDefaultMaskInThumbnail2):
-        # self.showMsg(f'We will execute a thumbnail update on {aperture.name}', blankLine=False)
-        # self.showMsg(f'... showDefaultMaskInThumbnail2 is {showDefaultMaskInThumbnail2}')
         self.centerAperture(aperture, show_stats=False)
         if showDefaultMaskInThumbnail2:
             self.getApertureStats(aperture, show_stats=True)
@@ -4672,6 +4670,21 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.defaultMask[i, j] = 1
         # self.showMsg(f'The current default mask contains {self.defaultMaskPixelCount} pixels')
 
+    def buildMaskAtCenter(self, x, y, radius):
+        # Create the default mask
+        mask = np.zeros((self.roi_size, self.roi_size), 'int16')
+        maskPixelCount = 0
+        c = self.roi_center
+        r = int(np.ceil(radius))
+        x = c + 10
+        y = c + 10
+        for i in range(max(y - r - 1, 0), min(y + r + 2, self.roi_size + 1)):
+            for j in range(max(x - r - 1, 0), min(x + r + 2, self.roi_size + 1)):
+                if (i - c) ** 2 + (j - c) ** 2 <= radius ** 2:
+                    maskPixelCount += 1
+                    mask[i, j] = 1
+
+        return mask, maskPixelCount
     def resetMaxStopAtFrameValue(self):
         self.stopAtFrameSpinBox.setValue(self.stopAtFrameSpinBox.maximum())
 
@@ -6010,10 +6023,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 if not app.color == 'white':
                     self.centerAperture(app)
 
+        # Version 3.6.9
+        # Now we add the new adjustment of masks in static apertures
         if self.analysisRequested:
             for aperture in self.getApertureList():
                 try:
-                    data = self.getApertureStats(aperture, show_stats=False)
+                    data = self.getApertureStats(aperture, show_stats=False, adjust_static_apertures=True)
                     if self.processAsFieldsCheckBox.isChecked():
                         aperture.addData(self.field1_data)
                         aperture.addData(self.field2_data)
@@ -6222,7 +6237,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             else:
                 self.statusbar.showMessage(f'x={x} y={y}')
 
-    def getApertureStats(self, aperture, show_stats=True, save_yellow_mask=False):
+    def getApertureStats(self, aperture, show_stats=True, save_yellow_mask=False, adjust_static_apertures=False):
         # This routine is dual purpose.  When self.show_stats is True, there is output to
         # the information text box, and to the two thumbnail ImageViews.
         # But sometimes we use this routine just to get the measurements that it returns.
@@ -6263,6 +6278,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                          apply_centroid_distance_constraint=False, max_centroid_distance=self.allowed_centroid_delta,
                          lunar=self.lunarCheckBox.isChecked())
             self.displayImageAtCurrentZoomPanState()
+            # Moved here in version 3.6.9
+            if save_yellow_mask:
+                self.yellow_mask = mask.copy()
 
         elif aperture.color == 'white':
             max_area = self.roi_size * self.roi_size
@@ -6282,19 +6300,41 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 get_mask(thumbnail, ksize=self.gaussian_blur, cut=threshold, outlier_fraction=0.5,
                          apply_centroid_distance_constraint=True, max_centroid_distance=self.allowed_centroid_delta,
                          lunar=self.lunarCheckBox.isChecked())
+            # print(f'aperture: {aperture.name} had max_area: {max_area}')
 
-        if save_yellow_mask:
-            self.yellow_mask = mask.copy()
+        # Moved up in version 3.8.9
+        # if save_yellow_mask:
+        #     self.yellow_mask = mask.copy()
 
         comment = ""
 
-        if max_area == 0:
+        if max_area == 0:  # get_mask() failed to compute a satisfactory mask
             default_mask_used = True
             mask = aperture.defaultMask
             max_area = aperture.defaultMaskPixelCount
 
             centroid = (self.roi_center, self.roi_center)
             comment = f'default mask used'
+
+        # Added in version 3.8.9
+        if default_mask_used:
+            # Within the mask area, find the position of the max value pixel
+            masked_data = mask * thumbnail
+            max_pixel = np.max(masked_data)
+            pixel_limit = mean + 3 * std
+            if max_pixel > pixel_limit:
+                ind = np.unravel_index(np.argmax(masked_data, axis=None), masked_data.shape)
+                x_coord = ind[1]  # column
+                y_coord = ind[0]  # row
+                x_center_delta = x_coord - self.roi_center
+                y_center_delta = y_coord - self.roi_center
+                # if the position of the max pixel is within a mask radius, move the center of the max to that position
+                acceptable_delta = round(aperture.default_mask_radius)
+                if x_center_delta <= acceptable_delta and y_center_delta <= acceptable_delta:
+                    # print(f'will change {aperture.name} center to x:{x_coord} y:{y_coord}')
+                    # mask, max_area = self.buildMaskAtCenter(x_coord, y_coord, aperture.default_mask_radius)
+                    mask = np.roll(mask, y_center_delta, axis=0)
+                    mask = np.roll(mask, x_center_delta, axis=1)
 
         # Version 3.4.1
         thumbnail = thumbnail.astype('int32')
@@ -6413,7 +6453,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 appsum = np.sum(mask * thumbnail)
                 if aperture.color == 'white':
                     signal = appsum
-                else:
+                else:  # Subtract background
                     signal = appsum - int(round(max_area * mean))
             except Exception as e:
                 self.showMsg(f'in showApertureStats: {e}')
