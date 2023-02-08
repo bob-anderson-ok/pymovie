@@ -38,7 +38,7 @@
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_4">
            <property name="spacing">
-            <number>-1</number>
+            <number>4</number>
            </property>
            <item>
             <widget class="QPushButton" name="infoButton">
@@ -889,7 +889,7 @@
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_15">
                  <property name="spacing">
-                  <number>-1</number>
+                  <number>4</number>
                  </property>
                  <item>
                   <widget class="QLabel" name="finderRedactTopLinesLabel">
@@ -1425,7 +1425,7 @@
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_8">
                  <property name="spacing">
-                  <number>-1</number>
+                  <number>4</number>
                  </property>
                  <item>
                   <widget class="QLabel" name="wcsRedactTopLinesLabel">
@@ -1493,7 +1493,7 @@
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_7">
                  <property name="spacing">
-                  <number>-1</number>
+                  <number>4</number>
                  </property>
                  <item>
                   <widget class="QLabel" name="pixelHeightLabel">
@@ -1750,6 +1750,7 @@
                 <widget class="QToolButton" name="toolButton_2">
                  <property name="font">
                   <font>
+                   <family>.SF NS Text</family>
                    <pointsize>13</pointsize>
                   </font>
                  </property>
@@ -1772,6 +1773,7 @@ action associated with it.</string>
                  </property>
                  <property name="font">
                   <font>
+                   <family>.SF NS Text</family>
                    <pointsize>13</pointsize>
                   </font>
                  </property>
@@ -1793,6 +1795,7 @@ action associated with it.</string>
                  </property>
                  <property name="font">
                   <font>
+                   <family>.SF NS Text</family>
                    <pointsize>13</pointsize>
                   </font>
                  </property>
@@ -1857,6 +1860,7 @@ action associated with it.</string>
                   <widget class="QToolButton" name="appSizeToolButton">
                    <property name="font">
                     <font>
+                     <family>.SF NS Text</family>
                      <pointsize>13</pointsize>
                     </font>
                    </property>
@@ -1994,6 +1998,7 @@ used at startup</string>
                   <widget class="QToolButton" name="sigmaLevelToolButton">
                    <property name="font">
                     <font>
+                     <family>.SF NS Text</family>
                      <pointsize>13</pointsize>
                     </font>
                    </property>
@@ -2119,6 +2124,7 @@ above background</string>
                   <widget class="QToolButton" name="defaultMaskRadiusToolButton">
                    <property name="font">
                     <font>
+                     <family>.SF NS Text</family>
                      <pointsize>13</pointsize>
                     </font>
                    </property>
@@ -2254,7 +2260,7 @@ aperture placement.</string>
              <item row="0" column="1">
               <layout class="QHBoxLayout" name="horizontalLayout_34" stretch="0,0,0">
                <property name="spacing">
-                <number>-1</number>
+                <number>4</number>
                </property>
                <item>
                 <layout class="QVBoxLayout" name="verticalLayout_26">
@@ -2394,6 +2400,29 @@ aperture placement.</string>
                    </property>
                    <property name="text">
                     <string>Show Median Profile</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="Line" name="line_15">
+                   <property name="frameShadow">
+                    <enum>QFrame::Plain</enum>
+                   </property>
+                   <property name="lineWidth">
+                    <number>4</number>
+                   </property>
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QCheckBox" name="allowNewVersionPopupCheckbox">
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This splash screen can be disabled on the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Misc.&lt;/span&gt; tab.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;What's new with this version:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;The version adds an additional tracking feature to static apertures (with fixed circular mask). In previous versions, the fixed radius circular sampling mask was always centered inside a static aperture. Tracking the enclosed star image was indirect, depending on some other ‘tracking aperture’ placed elsewhere in the frame on a tracking star. But the position of the target star relative to the tracking star is not constant but jitters due to atmospheric turbulence, so a relatively large circular mask had to be used around the target star so that the jittering target star remained inside the circular mask. This version adds tracking to the fixed circular mask inside the aperture itself. It operates by finding the brightest pixel visible in a centered mask, then recentering the mask around that bright pixel. (A ‘bright pixel is defined as being at or above 1 std deviation above background.)&lt;br/&gt;&lt;br/&gt;It is now possible to more effectively lower the noise in an extracted target star lightcurve by using smaller and smaller circular masks to find the one that improves the noise best. This was possible in the past, but because positional jitter was not adjusted for in static masks, the size of the smallest useful radius was often rather large. Now quite small radius values remain effective.&lt;br/&gt;&lt;br/&gt;This is a reliable form of ‘optimal extraction’ because it is robust during an occultation where the target star image diminishes and shrinks (maybe disappearing) during the event. Other forms of ‘optimal extraction’ depend on a star image that is relatively bright with a well-defined and positionally stable point-spread-function. When those conditions are not met, as they often are not during the D and R transitions of an occultation, the lightcurve is at risk of being distorted by the extraction process, right at moments where we want it to be most reliable.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt; font-weight:700; color:#ff0000;&quot;&gt;Important tip:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt;&quot;&gt;Before doing an analysis, be sure to set the csv order in which the aperture data columns will be output to the csv file. This is easily done by clicking on the &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt; font-weight:700; color:#0000ff;&quot;&gt;Examine/change aperture settings&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt;&quot;&gt; button. In the panel that appears, the rightmost column is titled &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt; font-weight:700; color:#0000ff;&quot;&gt;csv output order&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt;&quot;&gt;. Use that column to set the expected best aperture for the target to 0 - this is because when PyOTE reads this file, it will be the first lightcurve displayed. With the latest version of PyOTE, all the other data sets/lightcurves will be accessible through a drop-down list and the order of items in this list are controlled by their order in the csv file, so set the csv order to make this list order be convenient for you.&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:12pt;&quot;&gt;&lt;br/&gt;&lt;br/&gt;&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="text">
+                    <string>show &quot;new version&quot; info</string>
                    </property>
                   </widget>
                  </item>
@@ -2959,6 +2988,7 @@ aperture placement.</string>
                   <widget class="QToolButton" name="transportMaxLeft">
                    <property name="font">
                     <font>
+                     <family>.SF NS Text</family>
                      <pointsize>13</pointsize>
                     </font>
                    </property>
@@ -2977,6 +3007,7 @@ aperture placement.</string>
                   <widget class="QToolButton" name="transportBigLeft">
                    <property name="font">
                     <font>
+                     <family>.SF NS Text</family>
                      <pointsize>13</pointsize>
                     </font>
                    </property>
@@ -2992,6 +3023,7 @@ aperture placement.</string>
                   <widget class="QToolButton" name="transportSmallLeft">
                    <property name="font">
                     <font>
+                     <family>.SF NS Text</family>
                      <pointsize>13</pointsize>
                     </font>
                    </property>
@@ -3007,6 +3039,7 @@ aperture placement.</string>
                   <widget class="QToolButton" name="transportMinusOneFrame">
                    <property name="font">
                     <font>
+                     <family>.SF NS Text</family>
                      <pointsize>13</pointsize>
                     </font>
                    </property>
@@ -3025,6 +3058,7 @@ aperture placement.</string>
                   <widget class="QToolButton" name="transportPlayLeft">
                    <property name="font">
                     <font>
+                     <family>.SF NS Text</family>
                      <pointsize>13</pointsize>
                     </font>
                    </property>
@@ -3046,8 +3080,8 @@ aperture placement.</string>
                    </property>
                    <property name="font">
                     <font>
+                     <family>.SF NS Text</family>
                      <pointsize>13</pointsize>
-                     <weight>75</weight>
                      <bold>true</bold>
                     </font>
                    </property>
@@ -3063,8 +3097,8 @@ aperture placement.</string>
                   <widget class="QToolButton" name="transportAnalyze">
                    <property name="font">
                     <font>
+                     <family>.SF NS Text</family>
                      <pointsize>13</pointsize>
-                     <weight>75</weight>
                      <bold>true</bold>
                     </font>
                    </property>
@@ -3080,6 +3114,7 @@ aperture placement.</string>
                   <widget class="QToolButton" name="transportPlayRight">
                    <property name="font">
                     <font>
+                     <family>.SF NS Text</family>
                      <pointsize>13</pointsize>
                     </font>
                    </property>
@@ -3095,6 +3130,7 @@ aperture placement.</string>
                   <widget class="QToolButton" name="transportPlusOneFrame">
                    <property name="font">
                     <font>
+                     <family>.SF NS Text</family>
                      <pointsize>13</pointsize>
                     </font>
                    </property>
@@ -3113,6 +3149,7 @@ aperture placement.</string>
                   <widget class="QToolButton" name="transportSmallRight">
                    <property name="font">
                     <font>
+                     <family>.SF NS Text</family>
                      <pointsize>13</pointsize>
                     </font>
                    </property>
@@ -3128,6 +3165,7 @@ aperture placement.</string>
                   <widget class="QToolButton" name="transportBigRight">
                    <property name="font">
                     <font>
+                     <family>.SF NS Text</family>
                      <pointsize>13</pointsize>
                     </font>
                    </property>
@@ -3143,6 +3181,7 @@ aperture placement.</string>
                   <widget class="QToolButton" name="transportMaxRight">
                    <property name="font">
                     <font>
+                     <family>.SF NS Text</family>
                      <pointsize>13</pointsize>
                     </font>
                    </property>
@@ -3182,8 +3221,8 @@ aperture placement.</string>
                   <widget class="QToolButton" name="transportCsv">
                    <property name="font">
                     <font>
+                     <family>.SF NS Text</family>
                      <pointsize>13</pointsize>
-                     <weight>75</weight>
                      <bold>true</bold>
                     </font>
                    </property>
@@ -3199,8 +3238,8 @@ aperture placement.</string>
                   <widget class="QToolButton" name="transportPlot">
                    <property name="font">
                     <font>
+                     <family>.SF NS Text</family>
                      <pointsize>13</pointsize>
-                     <weight>75</weight>
                      <bold>true</bold>
                     </font>
                    </property>
@@ -3303,8 +3342,8 @@ aperture placement.</string>
                   <widget class="QToolButton" name="transportMark">
                    <property name="font">
                     <font>
+                     <family>.SF NS Text</family>
                      <pointsize>13</pointsize>
-                     <weight>75</weight>
                      <bold>true</bold>
                     </font>
                    </property>
@@ -3323,8 +3362,8 @@ aperture placement.</string>
                    </property>
                    <property name="font">
                     <font>
+                     <family>.SF NS Text</family>
                      <pointsize>13</pointsize>
-                     <weight>75</weight>
                      <bold>true</bold>
                     </font>
                    </property>
@@ -3342,8 +3381,8 @@ aperture placement.</string>
                 <widget class="QToolButton" name="transportClearData">
                  <property name="font">
                   <font>
+                   <family>.SF NS Text</family>
                    <pointsize>13</pointsize>
-                   <weight>75</weight>
                    <bold>true</bold>
                   </font>
                  </property>
@@ -3409,7 +3448,7 @@ aperture placement.</string>
              <property name="font">
               <font>
                <family>Courier New</family>
-               <weight>75</weight>
+               <pointsize>13</pointsize>
                <bold>true</bold>
               </font>
              </property>

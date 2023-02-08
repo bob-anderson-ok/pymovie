@@ -49,6 +49,7 @@ in the IPython console while in src/pymovie directory
 #     print(entry)
 
 import matplotlib
+# import scipy.ndimage
 from Adv2.Adv2File import Adv2reader  # Adds support for reading AstroDigitalVideo Version 2 files (.adv)
 
 matplotlib.use('Qt5Agg')
@@ -411,6 +412,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.ocrBoxesDir = self.homeDir
         self.ocrDigitsDir = self.homeDir
 
+        self.newYellowApertureX = None
+        self.newYellowApertureY = None
+
         self.upperRedactCount = 0
 
         self.clearTextBox()
@@ -536,6 +540,22 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.thresh_inc_1.setChecked(True)
 
         self.vtiSelectLabel.installEventFilter(self)
+
+        # TODO Allow this when GUI is ready
+
+        self.helperThing.setWindowFlags( Qt.Window |
+                                         Qt.CustomizeWindowHint |
+                                         Qt.WindowTitleHint |
+                                         Qt.WindowCloseButtonHint |
+                                         Qt.WindowStaysOnTopHint
+                                        )
+        allowNewVersionPopup = self.settings.value('allowNewVersionPopup', 'true')
+        if allowNewVersionPopup == 'true':
+            self.allowNewVersionPopupCheckbox.setChecked(True)
+        else:
+            self.allowNewVersionPopupCheckbox.setChecked(False)
+
+        self.allowNewVersionPopupCheckbox.installEventFilter(self)
 
         self.satPixelLabel.installEventFilter(self)
 
@@ -1204,6 +1224,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         QtGui.QGuiApplication.processEvents()
         self.checkForNewerVersion()
+
+        # TODO Allow this when GUI is ready
+        if self.allowNewVersionPopupCheckbox.isChecked():
+            QtGui.QGuiApplication.processEvents()
+            self.showHelp(self.allowNewVersionPopupCheckbox)
 
         # self.copy_desktop_icon_file_to_home_directory()
 
@@ -2835,6 +2860,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.clearApertureData()
 
         yellow_aperture_present = False
+        self.newYellowApertureX = None
+        self.newYellowApertureY = None
         for app in self.getApertureList():
             if app.color == 'yellow':
                 yellow_aperture_present = True
@@ -2900,6 +2927,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 #              blankLine=True)
         else:
             self.showMsg(f'latestVersion found: {latestVersion}')
+
+
 
     def createAviSerWcsFolder(self):
         options = QFileDialog.Options()
@@ -4670,21 +4699,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.defaultMask[i, j] = 1
         # self.showMsg(f'The current default mask contains {self.defaultMaskPixelCount} pixels')
 
-    def buildMaskAtCenter(self, x, y, radius):
-        # Create the default mask
-        mask = np.zeros((self.roi_size, self.roi_size), 'int16')
-        maskPixelCount = 0
-        c = self.roi_center
-        r = int(np.ceil(radius))
-        x = c + 10
-        y = c + 10
-        for i in range(max(y - r - 1, 0), min(y + r + 2, self.roi_size + 1)):
-            for j in range(max(x - r - 1, 0), min(x + r + 2, self.roi_size + 1)):
-                if (i - c) ** 2 + (j - c) ** 2 <= radius ** 2:
-                    maskPixelCount += 1
-                    mask[i, j] = 1
-
-        return mask, maskPixelCount
     def resetMaxStopAtFrameValue(self):
         self.stopAtFrameSpinBox.setValue(self.stopAtFrameSpinBox.maximum())
 
@@ -5242,6 +5256,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.helperThing.textEdit.clear()
             stuffToShow = self.htmlFixup(obj.toolTip())
             self.helperThing.textEdit.insertHtml(stuffToShow)
+            self.helperThing.setHidden(True)
+            self.helperThing.setVisible(True)
 
     @staticmethod
     def htmlFixup(html):
@@ -5888,7 +5904,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     app.dy = dy
                     app.theta = None  # We don't use this value during tracking
 
-    def centerAllApertures(self):
+    def centerAllApertures(self,xc=None, yc=None):
 
         if self.preserve_apertures:
             return
@@ -5913,26 +5929,34 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                             current_xc, current_yc = app.getCenter()
                             # Get the new center from the track path calculation
                             xc_world, yc_world = self.getNewCenterFromTrackingPath(self.currentFrameSpinBox.value())
-                            # xc_roi = int(app.xsize / 2)
-                            # yc_roi = int(app.ysize / 2)
                             delta_xc = current_xc - xc_world
                             delta_yc = current_yc - yc_world
                             # Set new center
                             app.xc = xc_world
                             app.yc = yc_world
                         else:
-                            xc_roi, yc_roi, xc_world, yc_world, *_ = \
-                                self.getApertureStats(app, show_stats=False)
+                            xc_roi = yc_roi = None
+                            if xc is None:
+                                xc_roi, yc_roi, xc_world, yc_world, *_ = \
+                                    self.getApertureStats(app, show_stats=False)
 
-                            app.xc = xc_world  # Set new center
-                            app.yc = yc_world
-                            app.dx = 0
-                            app.dy = 0
-                            app.theta = 0.0
+                                app.xc = xc_world  # Set new center
+                                app.yc = yc_world
+                                app.dx = 0
+                                app.dy = 0
+                                app.theta = 0.0
+                            else:
+                                xc_world = app.xc
+                                yc_world = app.yc
 
                             # Compute the needed jog values (will be used/needed if there is but one yellow aperture)
-                            delta_xc = self.roi_center - int(round(xc_roi))
-                            delta_yc = self.roi_center - int(round(yc_roi))
+                            if xc is None:
+                                delta_xc = self.roi_center - int(round(xc_roi))
+                                delta_yc = self.roi_center - int(round(yc_roi))
+                            else:
+                                delta_xc = self.roi_center - xc
+                                delta_yc = self.roi_center - yc
+
 
                         # Save the current coordinates of the number 1 yellow aperture
                         self.yellow_x = xc_world
@@ -6028,7 +6052,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if self.analysisRequested:
             for aperture in self.getApertureList():
                 try:
-                    data = self.getApertureStats(aperture, show_stats=False, adjust_static_apertures=True)
+                    data = self.getApertureStats(aperture, show_stats=False)
                     if self.processAsFieldsCheckBox.isChecked():
                         aperture.addData(self.field1_data)
                         aperture.addData(self.field2_data)
@@ -6237,7 +6261,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             else:
                 self.statusbar.showMessage(f'x={x} y={y}')
 
-    def getApertureStats(self, aperture, show_stats=True, save_yellow_mask=False, adjust_static_apertures=False):
+    def getApertureStats(self, aperture, show_stats=True, save_yellow_mask=False):
         # This routine is dual purpose.  When self.show_stats is True, there is output to
         # the information text box, and to the two thumbnail ImageViews.
         # But sometimes we use this routine just to get the measurements that it returns.
@@ -6316,12 +6340,22 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             centroid = (self.roi_center, self.roi_center)
             comment = f'default mask used'
 
+        # Version 3.4.1
+        thumbnail = thumbnail.astype('int32')
+        maxThumbnailPixel = np.max(thumbnail)
+        minThumbnailPixel = np.min(thumbnail)
+
         # Added in version 3.8.9
         if default_mask_used:
             # Within the mask area, find the position of the max value pixel
             masked_data = mask * thumbnail
             max_pixel = np.max(masked_data)
-            pixel_limit = mean + 3 * std
+            # TODO Fiddle with num std
+            pixel_limit = mean + 1 * std
+            # TODO experimental
+            # maskedDataBkg = (masked_data - np.median(thumbnail)) * mask
+            # massCenter = scipy.ndimage.center_of_mass(maskedDataBkg)
+            # print(f'row: {massCenter[0]:0.2f}  col: {massCenter[1]:0.2f}')
             if max_pixel > pixel_limit:
                 ind = np.unravel_index(np.argmax(masked_data, axis=None), masked_data.shape)
                 x_coord = ind[1]  # column
@@ -6331,15 +6365,17 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 # if the position of the max pixel is within a mask radius, move the center of the max to that position
                 acceptable_delta = round(aperture.default_mask_radius)
                 if x_center_delta <= acceptable_delta and y_center_delta <= acceptable_delta:
-                    # print(f'will change {aperture.name} center to x:{x_coord} y:{y_coord}')
-                    # mask, max_area = self.buildMaskAtCenter(x_coord, y_coord, aperture.default_mask_radius)
-                    mask = np.roll(mask, y_center_delta, axis=0)
+                    if aperture.color == 'yellow' and self.num_yellow_apertures == 1:  # We want to move the aperture itself
+                        # Set these so that during the recenter all, it gets recognized
+                        self.newYellowApertureX = x_coord
+                        self.newYellowApertureY = y_coord
                     mask = np.roll(mask, x_center_delta, axis=1)
+                    mask = np.roll(mask, y_center_delta, axis=0)
 
         # Version 3.4.1
-        thumbnail = thumbnail.astype('int32')
-        maxThumbnailPixel = np.max(thumbnail)
-        minThumbnailPixel = np.min(thumbnail)
+        # thumbnail = thumbnail.astype('int32')
+        # maxThumbnailPixel = np.max(thumbnail)
+        # minThumbnailPixel = np.min(thumbnail)
 
         if show_stats:
             if self.pointed_at_aperture is not None:
@@ -7983,7 +8019,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     # This routine only does something when the user has enabled the special measurements
                     # needed to calibrate rolling shutter cameras.
                     self.processRowSumList()
-                self.centerAllApertures()
+                self.centerAllApertures(xc=self.newYellowApertureX, yc=self.newYellowApertureY)
             except Exception as e6:
                 self.showMsg(f'during centerAllApertures(): {repr(e6)} ')
             self.frameView.getView().update()
@@ -9172,7 +9208,7 @@ def get_mask(
         outlier_fraction=0.5,
         apply_centroid_distance_constraint=False, max_centroid_distance=None, lunar=False):
     # cv2.GaussianBlur() cannot deal with big-endian data, probably because it is c++ code
-    # # that has been ported.  If we have read a FITS file, there is the
+    # that has been ported.  If we have read a FITS file, there is the
     # possibility that the image data (and hence img) is big-endian.  Here we test for that and do a
     # byte swap if img is big-endian  NOTE: as long as operations on the image data are kept in the
     # numpy world, there is no problem with big-endian data --- those operations adapt as necessary.
