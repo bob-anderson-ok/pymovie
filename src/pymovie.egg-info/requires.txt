@@ -1,4 +1,4 @@
-pyqtgraph==0.12.4
+pyqtgraph==0.13.1
 opencv-python
 astroquery
 resource

@@ -1290,7 +1290,7 @@ class Ui_MainWindow(object):
         self.textOut.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Courier New")
-        font.setPointSize(13)
+        font.setPointSize(9)
         font.setBold(True)
         self.textOut.setFont(font)
         self.textOut.setToolTip("")

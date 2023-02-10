@@ -40,7 +40,7 @@ CLASSIFIERS = [
     "Topic :: Scientific/Engineering",
 ]
 
-INSTALL_REQUIRES = ['pyqtgraph==0.12.4', 'opencv-python', 'astroquery', 'resource',
+INSTALL_REQUIRES = ['pyqtgraph==0.13.1', 'opencv-python', 'astroquery', 'resource',
                     'scikit-image(>=0.15.0)', 'wheel', 'requests', 'pyephem',
                     'winshell;platform_system=="Windows"',
                     'pypiwin32;platform_system=="Windows"', 'matplotlib', 'numpy<=1.23.1', 'astropy', 'scikit-image',

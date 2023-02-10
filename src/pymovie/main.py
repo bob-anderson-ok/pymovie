@@ -5066,7 +5066,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     f.write(f'#\n')
                     f.write(f'# aperture name: {entry["name"]}\n')
                     f.write(f'# ____ aperture size: {self.roiComboBox.currentText()}\n')
-                    f.write(f'# ____ x,y: {entry["xy"]}\n')
+                    f.write(f'# ____ x,y: {entry["xy"]} at frame {self.currentFrameSpinBox.value()}\n')
                     # f.write(f'# ____ frame: {entry["frame"]}\n')
                     f.write(f'# ____ threshold: {entry["threshDelta"]}\n')
                     f.write(f'# ____ def mask radius: {entry["defMskRadius"]}\n')

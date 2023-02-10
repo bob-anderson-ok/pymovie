@@ -3448,7 +3448,7 @@ aperture placement.</string>
              <property name="font">
               <font>
                <family>Courier New</family>
-               <pointsize>13</pointsize>
+               <pointsize>9</pointsize>
                <bold>true</bold>
               </font>
              </property>
