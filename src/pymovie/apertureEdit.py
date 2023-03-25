@@ -77,19 +77,19 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
             elif color_str.startswith('white'):
                 item = QTableWidgetItem('white (special flash tag aperture')
             # item = QTableWidgetItem(str(rowDict['color']))
-            item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
+            item.setFlags(item.flags() ^ QtCore.Qt.ItemFlag.ItemIsEditable)
             self.tableWidget.setItem(numRows, 4, item)
 
             item = QTableWidgetItem(str(rowDict['joggable']))
-            item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
+            item.setFlags(item.flags() ^ QtCore.Qt.ItemFlag.ItemIsEditable)
             self.tableWidget.setItem(numRows, 5, item)
 
             item = QTableWidgetItem(str(rowDict['autoTextOut']))
-            item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
+            item.setFlags(item.flags() ^ QtCore.Qt.ItemFlag.ItemIsEditable)
             self.tableWidget.setItem(numRows, 6, item)
 
             item = QTableWidgetItem(str(rowDict['thumbnailSource']))
-            item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
+            item.setFlags(item.flags() ^ QtCore.Qt.ItemFlag.ItemIsEditable)
             self.tableWidget.setItem(numRows, 7, item)
 
             item = QTableWidgetItem(str(rowDict['outputOrder']))
@@ -262,21 +262,21 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
             # can have True for this property
             for row in range(self.tableWidget.rowCount()):
                 item = QTableWidgetItem('False')
-                item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
+                item.setFlags(item.flags() ^ QtCore.Qt.ItemFlag.ItemIsEditable)
                 self.tableWidget.setItem(row, self.col, item)
 
         item = QTableWidgetItem('True')
-        item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
+        item.setFlags(item.flags() ^ QtCore.Qt.ItemFlag.ItemIsEditable)
         self.tableWidget.setItem(self.row, self.col, item)
 
     def setFalse(self):
         item = QTableWidgetItem('False')
-        item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
+        item.setFlags(item.flags() ^ QtCore.Qt.ItemFlag.ItemIsEditable)
         self.tableWidget.setItem(self.row, self.col, item)
 
     def setRed(self):
         item = QTableWidgetItem('red (standard)')
-        item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
+        item.setFlags(item.flags() ^ QtCore.Qt.ItemFlag.ItemIsEditable)
         self.tableWidget.setItem(self.row, self.col, item)
 
     def setGreen(self):
@@ -285,10 +285,10 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
             # 'green' to 'red'
             if self.tableWidget.item(row, self.col).text().startswith('green'):
                 item = QTableWidgetItem('red (standard)')
-                item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
+                item.setFlags(item.flags() ^ QtCore.Qt.ItemFlag.ItemIsEditable)
                 self.tableWidget.setItem(row, self.col, item)
         item = QTableWidgetItem('green (connect to threshold spinner)')
-        item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
+        item.setFlags(item.flags() ^ QtCore.Qt.ItemFlag.ItemIsEditable)
         self.tableWidget.setItem(self.row, self.col, item)
 
         self.updateSpinnersFromRow(self.row)
@@ -315,10 +315,10 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
             return
 
         item = QTableWidgetItem('yellow (tracking aperture)')
-        item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
+        item.setFlags(item.flags() ^ QtCore.Qt.ItemFlag.ItemIsEditable)
         self.tableWidget.setItem(self.row, self.col, item)
 
     def setWhite(self):
         item = QTableWidgetItem('white (special flash tag aperture)')
-        item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
+        item.setFlags(item.flags() ^ QtCore.Qt.ItemFlag.ItemIsEditable)
         self.tableWidget.setItem(self.row, self.col, item)

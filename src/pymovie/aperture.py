@@ -52,6 +52,8 @@ class MeasurementAperture(pg.GraphicsObject):
         self.auto_display = False
         self.thumbnail_source = False
 
+        self.primary_yellow_aperture = False
+
         self.default_mask_radius = 3.0
         self.order_number = 0
         self.defaultMask = None
@@ -65,6 +67,9 @@ class MeasurementAperture(pg.GraphicsObject):
         self.yc = None      # Will hold current y value of centroid in image coordinates
 
         self.data = []
+
+        self.smoothed_background = 0
+        self.background_reading_count = 0
 
         # When created, we accept the callers restriction on the placement
         # of a bbox (bounding box) corner and enforce
@@ -94,6 +99,20 @@ class MeasurementAperture(pg.GraphicsObject):
         self.enforcePositioningConstraints(bbox)
 
     def addData(self, data_tuple):
+        new_background_value = data_tuple[13]  # Pick up new_mean from the tuple
+        smoothing_count = data_tuple[14]
+        self.background_reading_count += 1
+        n = self.background_reading_count
+        if n == 1:
+            self.smoothed_background = new_background_value
+
+        elif n < smoothing_count:   # TODO make this magic number (50) settable
+            self.smoothed_background = (n-1) * self.smoothed_background / n
+            self.smoothed_background += new_background_value / n
+        else:
+            self.smoothed_background -= self.smoothed_background / smoothing_count
+            self.smoothed_background += new_background_value / smoothing_count
+
         self.data.append(data_tuple)
 
     def enforcePositioningConstraints(self, bbox):

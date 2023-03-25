@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1893</width>
-    <height>820</height>
+    <height>806</height>
    </rect>
   </property>
   <property name="font">
@@ -2254,269 +2254,322 @@ aperture placement.</string>
            </widget>
            <widget class="QWidget" name="tab_10">
             <attribute name="title">
-             <string>Misc.</string>
+             <string>Median/Misc</string>
             </attribute>
-            <layout class="QGridLayout" name="gridLayout_8">
-             <item row="0" column="1">
-              <layout class="QHBoxLayout" name="horizontalLayout_34" stretch="0,0,0">
-               <property name="spacing">
-                <number>4</number>
-               </property>
-               <item>
-                <layout class="QVBoxLayout" name="verticalLayout_26">
-                 <item>
-                  <widget class="QCheckBox" name="lineNoiseFilterCheckBox">
-                   <property name="enabled">
-                    <bool>true</bool>
-                   </property>
-                   <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;Under some conditions for some cameras,&amp;nbsp;the background will exhibit a 'patterning' where some scan lines are a little brighter than others.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;We refer to this 'patterning' as 'line noise'.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;If you check this box,&amp;nbsp;images will be subjected to a median filter on a line by line basis.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;The filter operates by finding the median value along a scan line and using this value to adust all rows such that they share a common median value.&amp;nbsp;This procedure suppresses/eliminates the 'patterning'.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;It is up to you to decide whether this is a valid procedure,&amp;nbsp;but I have provided one tool that may help: I accumulate the line-by-line median values and calculate the average median value for each row.&amp;nbsp;This plot can be displayed by clicking on the &lt;/span&gt;&lt;span style=&quot; font-size:18pt; font-weight:600; color:#0000ff;&quot;&gt;Show Median Profile&lt;/span&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt; button below.&amp;nbsp;If the 'patterning' is due to chip/camera construction,&amp;nbsp;the median values for a line will be consistent from frame to frame and this plot will show the row to row variation in the background brightness of the rows.&amp;nbsp;If there is a consistent and significant row to row brightness difference,&amp;nbsp;I believe you have good justification in applying this filter as it 'corrects' a systematic/instrumental effect from the chip/camera design.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;If,&amp;nbsp;instead,&amp;nbsp;the row to row brightness differences are random,&amp;nbsp;the average median value from row to row will not differ much.&amp;nbsp;That means that the chip/camera is NOT showing instrumental bias and you should be cautious and conservative in deciding whther to use median line filtering for such a video.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                   </property>
-                   <property name="text">
-                    <string>apply 'line noise' median filter</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="Line" name="line_11">
-                   <property name="frameShadow">
-                    <enum>QFrame::Plain</enum>
-                   </property>
-                   <property name="lineWidth">
-                    <number>4</number>
-                   </property>
-                   <property name="orientation">
-                    <enum>Qt::Horizontal</enum>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QRadioButton" name="horizontalRadioButton">
-                   <property name="layoutDirection">
-                    <enum>Qt::LeftToRight</enum>
-                   </property>
-                   <property name="text">
-                    <string>apply horizontally</string>
-                   </property>
-                   <property name="checked">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QRadioButton" name="verticalRadioButton">
-                   <property name="text">
-                    <string>apply vertically</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QRadioButton" name="bothRadioButton">
-                   <property name="text">
-                    <string>apply horizontally and vertically</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="Line" name="line_12">
-                   <property name="frameShadow">
-                    <enum>QFrame::Plain</enum>
-                   </property>
-                   <property name="lineWidth">
-                    <number>4</number>
-                   </property>
-                   <property name="orientation">
-                    <enum>Qt::Horizontal</enum>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <layout class="QHBoxLayout" name="horizontalLayout_38">
-                   <item>
-                    <widget class="QLabel" name="upperTimestampLineLabel">
-                     <property name="toolTip">
-                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;For OCR and the median filter to work properly,&amp;nbsp;the median filter must avoid processing lines that include timestamp or other overlaid annotation.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;Use this spinner to move the red line from the topmost line down (increasing spinner values) until any timestamp or annotations are above it.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                     </property>
-                     <property name="text">
-                      <string>upper timestamp limit</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QSpinBox" name="upperTimestampMedianSpinBox">
-                     <property name="enabled">
-                      <bool>false</bool>
-                     </property>
-                     <property name="minimumSize">
-                      <size>
-                       <width>70</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                     <property name="maximum">
-                      <number>99999</number>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </item>
-                 <item>
-                  <layout class="QHBoxLayout" name="horizontalLayout_39">
-                   <item>
-                    <widget class="QLabel" name="lowerTimestampLineLabel">
-                     <property name="toolTip">
-                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;For OCR and the median filter to work properly, the median filter must avoid processing lines that include timestamp or other overlaid annotation.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;Use this spinner to move the yellow line from the bottom line up (increasing spinner values) until any timestamp or annotations are below it.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                     </property>
-                     <property name="text">
-                      <string>lower timestamp limit</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QSpinBox" name="lowerTimestampMedianSpinBox">
-                     <property name="enabled">
-                      <bool>false</bool>
-                     </property>
-                     <property name="minimumSize">
-                      <size>
-                       <width>70</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                     <property name="maximum">
-                      <number>99999</number>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </item>
-                 <item>
-                  <widget class="QPushButton" name="showMedianProfileButton">
-                   <property name="enabled">
-                    <bool>false</bool>
-                   </property>
-                   <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;During the median filtering on each processed frame,&amp;nbsp;the line-by-line median values are accumulated so that when this button is clicked,&amp;nbsp;an average median value for each row can be calculated and displayed.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;If the 'line patterning' is due to chip/camera construction,&amp;nbsp;the median values for a line will be consistent from frame to frame and this plot will show a row to row variation in the background brightness of the rows.&amp;nbsp;If there is a consistent and significant row to row brightness difference,&amp;nbsp;then you have good justification in applying this filter and using the resulting light-curve because this filter process has 'corrected' a systematic/instrumental effect from the chip/camera design.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;If,&amp;nbsp;instead,&amp;nbsp;the row to row brightness differences are random,&amp;nbsp;the average median value from row to row will not differ much.&amp;nbsp;That means that the chip/camera is NOT showing instrumental bias and you should be cautious and conservative in deciding whther to use median line filtering for such a video.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                   </property>
-                   <property name="text">
-                    <string>Show Median Profile</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="Line" name="line_15">
-                   <property name="frameShadow">
-                    <enum>QFrame::Plain</enum>
-                   </property>
-                   <property name="lineWidth">
-                    <number>4</number>
-                   </property>
-                   <property name="orientation">
-                    <enum>Qt::Horizontal</enum>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QCheckBox" name="allowNewVersionPopupCheckbox">
-                   <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This splash screen can be disabled on the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Misc.&lt;/span&gt; tab.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;What's new with this version:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;The version adds an additional tracking feature to static apertures (with fixed circular mask). In previous versions, the fixed radius circular sampling mask was always centered inside a static aperture. Tracking the enclosed star image was indirect, depending on some other ‘tracking aperture’ placed elsewhere in the frame on a tracking star. But the position of the target star relative to the tracking star is not constant but jitters due to atmospheric turbulence, so a relatively large circular mask had to be used around the target star so that the jittering target star remained inside the circular mask. This version adds tracking to the fixed circular mask inside the aperture itself. It operates by finding the brightest pixel visible in a centered mask, then recentering the mask around that bright pixel. (A ‘bright pixel is defined as being at or above 1 std deviation above background.)&lt;br/&gt;&lt;br/&gt;It is now possible to more effectively lower the noise in an extracted target star lightcurve by using smaller and smaller circular masks to find the one that improves the noise best. This was possible in the past, but because positional jitter was not adjusted for in static masks, the size of the smallest useful radius was often rather large. Now quite small radius values remain effective.&lt;br/&gt;&lt;br/&gt;This is a reliable form of ‘optimal extraction’ because it is robust during an occultation where the target star image diminishes and shrinks (maybe disappearing) during the event. Other forms of ‘optimal extraction’ depend on a star image that is relatively bright with a well-defined and positionally stable point-spread-function. When those conditions are not met, as they often are not during the D and R transitions of an occultation, the lightcurve is at risk of being distorted by the extraction process, right at moments where we want it to be most reliable.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt; font-weight:700; color:#ff0000;&quot;&gt;Important tip:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt;&quot;&gt;Before doing an analysis, be sure to set the csv order in which the aperture data columns will be output to the csv file. This is easily done by clicking on the &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt; font-weight:700; color:#0000ff;&quot;&gt;Examine/change aperture settings&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt;&quot;&gt; button. In the panel that appears, the rightmost column is titled &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt; font-weight:700; color:#0000ff;&quot;&gt;csv output order&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt;&quot;&gt;. Use that column to set the expected best aperture for the target to 0 - this is because when PyOTE reads this file, it will be the first lightcurve displayed. With the latest version of PyOTE, all the other data sets/lightcurves will be accessible through a drop-down list and the order of items in this list are controlled by their order in the csv file, so set the csv order to make this list order be convenient for you.&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:12pt;&quot;&gt;&lt;br/&gt;&lt;br/&gt;&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                   </property>
-                   <property name="text">
-                    <string>show &quot;new version&quot; info</string>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </item>
-               <item>
-                <widget class="Line" name="line_13">
-                 <property name="frameShadow">
-                  <enum>QFrame::Plain</enum>
-                 </property>
-                 <property name="lineWidth">
-                  <number>5</number>
-                 </property>
-                 <property name="orientation">
-                  <enum>Qt::Vertical</enum>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <layout class="QVBoxLayout" name="verticalLayout_27">
-                 <item>
-                  <widget class="QCheckBox" name="lunarCheckBox">
-                   <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Only for use with lunar occultations&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;When an aperture is placed on a sunlit lunar limb, it will contain pixels from the sky, pixels from the lunar limb, and pixels from the about-to-be-occulted star. This is also true for a fixed circular sampling mask positioned on the star. In that situation, what is the 'correct' way to subtract 'background'? Limovie has answered that question by providing a special aperture (Avoid Sunlit Face) that can be positioned so that a semi-circular area can be oriented so that only sky pixels are contained. Those pixels are then used to calculate the background value.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;When this box is checked, PyMovie does effectively the same thing but by a different method: it uses a statistical analysis of all the pixels in an aperture and sorts out which are from the sky and which are not by how their intensities are distributed. You can check what is happening by clicking on the Plot Robust Mean button to see where it placed the green line that shows the calculated mean value.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                   </property>
-                   <property name="text">
-                    <string>lunar</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QCheckBox" name="useYellowMaskCheckBox">
-                   <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If there is significant wind shake during the occultation, the use of a default circular mask is inappropriate because we know that the star image is not circular but rather more snake-like.&lt;/p&gt;&lt;p&gt;However, it is reasonable to expect that the wanderings of the tracking star are the same as the wanderings of the target star and so a mask computed from the tracking star, while it will probably contain more pixels than one might like, has the correct shape to be used for the target star as well.&lt;/p&gt;&lt;p&gt;Checking this box will cause the 'yellow' mask to be used for measuring all target images.&lt;/p&gt;&lt;p&gt;This is a 'last hope' option: good luck with it.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                   </property>
-                   <property name="text">
-                    <string>yellow mask = default</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QPushButton" name="view3DButton">
-                   <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button opens a new window that shows a 3D rendering of the Thumbnail One image.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                   </property>
-                   <property name="text">
-                    <string>Show 3D thumbnail</string>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </item>
-              </layout>
-             </item>
-             <item row="0" column="0">
-              <spacer name="horizontalSpacer_17">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-             <item row="0" column="2">
-              <spacer name="horizontalSpacer_18">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-             <item row="1" column="1">
-              <spacer name="verticalSpacer_7">
-               <property name="orientation">
-                <enum>Qt::Vertical</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>20</width>
-                 <height>40</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
+            <widget class="QWidget" name="">
+             <property name="geometry">
+              <rect>
+               <x>283</x>
+               <y>6</y>
+               <width>435</width>
+               <height>195</height>
+              </rect>
+             </property>
+             <layout class="QHBoxLayout" name="horizontalLayout_42">
+              <item>
+               <layout class="QVBoxLayout" name="verticalLayout_26">
+                <item>
+                 <widget class="QCheckBox" name="lineNoiseFilterCheckBox">
+                  <property name="enabled">
+                   <bool>true</bool>
+                  </property>
+                  <property name="toolTip">
+                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;Under some conditions for some cameras,&amp;nbsp;the background will exhibit a 'patterning' where some scan lines are a little brighter than others.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;We refer to this 'patterning' as 'line noise'.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;If you check this box,&amp;nbsp;images will be subjected to a median filter on a line by line basis.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;The filter operates by finding the median value along a scan line and using this value to adust all rows such that they share a common median value.&amp;nbsp;This procedure suppresses/eliminates the 'patterning'.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;It is up to you to decide whether this is a valid procedure,&amp;nbsp;but I have provided one tool that may help: I accumulate the line-by-line median values and calculate the average median value for each row.&amp;nbsp;This plot can be displayed by clicking on the &lt;/span&gt;&lt;span style=&quot; font-size:18pt; font-weight:600; color:#0000ff;&quot;&gt;Show Median Profile&lt;/span&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt; button below.&amp;nbsp;If the 'patterning' is due to chip/camera construction,&amp;nbsp;the median values for a line will be consistent from frame to frame and this plot will show the row to row variation in the background brightness of the rows.&amp;nbsp;If there is a consistent and significant row to row brightness difference,&amp;nbsp;I believe you have good justification in applying this filter as it 'corrects' a systematic/instrumental effect from the chip/camera design.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;If,&amp;nbsp;instead,&amp;nbsp;the row to row brightness differences are random,&amp;nbsp;the average median value from row to row will not differ much.&amp;nbsp;That means that the chip/camera is NOT showing instrumental bias and you should be cautious and conservative in deciding whther to use median line filtering for such a video.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                  </property>
+                  <property name="text">
+                   <string>apply 'line noise' median filter</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="Line" name="line_11">
+                  <property name="frameShadow">
+                   <enum>QFrame::Plain</enum>
+                  </property>
+                  <property name="lineWidth">
+                   <number>4</number>
+                  </property>
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QRadioButton" name="horizontalRadioButton">
+                  <property name="layoutDirection">
+                   <enum>Qt::LeftToRight</enum>
+                  </property>
+                  <property name="text">
+                   <string>apply horizontally</string>
+                  </property>
+                  <property name="checked">
+                   <bool>true</bool>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QRadioButton" name="verticalRadioButton">
+                  <property name="text">
+                   <string>apply vertically</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QRadioButton" name="bothRadioButton">
+                  <property name="text">
+                   <string>apply horizontally and vertically</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="Line" name="line_12">
+                  <property name="frameShadow">
+                   <enum>QFrame::Plain</enum>
+                  </property>
+                  <property name="lineWidth">
+                   <number>4</number>
+                  </property>
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <layout class="QHBoxLayout" name="horizontalLayout_38">
+                  <item>
+                   <widget class="QLabel" name="upperTimestampLineLabel">
+                    <property name="toolTip">
+                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;For OCR and the median filter to work properly,&amp;nbsp;the median filter must avoid processing lines that include timestamp or other overlaid annotation.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;Use this spinner to move the red line from the topmost line down (increasing spinner values) until any timestamp or annotations are above it.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                    </property>
+                    <property name="text">
+                     <string>upper timestamp limit</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QSpinBox" name="upperTimestampMedianSpinBox">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="minimumSize">
+                     <size>
+                      <width>70</width>
+                      <height>0</height>
+                     </size>
+                    </property>
+                    <property name="maximum">
+                     <number>99999</number>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+                <item>
+                 <layout class="QHBoxLayout" name="horizontalLayout_39">
+                  <item>
+                   <widget class="QLabel" name="lowerTimestampLineLabel">
+                    <property name="toolTip">
+                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;For OCR and the median filter to work properly, the median filter must avoid processing lines that include timestamp or other overlaid annotation.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;Use this spinner to move the yellow line from the bottom line up (increasing spinner values) until any timestamp or annotations are below it.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                    </property>
+                    <property name="text">
+                     <string>lower timestamp limit</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QSpinBox" name="lowerTimestampMedianSpinBox">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="minimumSize">
+                     <size>
+                      <width>70</width>
+                      <height>0</height>
+                     </size>
+                    </property>
+                    <property name="maximum">
+                     <number>99999</number>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="showMedianProfileButton">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="toolTip">
+                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;During the median filtering on each processed frame,&amp;nbsp;the line-by-line median values are accumulated so that when this button is clicked,&amp;nbsp;an average median value for each row can be calculated and displayed.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;If the 'line patterning' is due to chip/camera construction,&amp;nbsp;the median values for a line will be consistent from frame to frame and this plot will show a row to row variation in the background brightness of the rows.&amp;nbsp;If there is a consistent and significant row to row brightness difference,&amp;nbsp;then you have good justification in applying this filter and using the resulting light-curve because this filter process has 'corrected' a systematic/instrumental effect from the chip/camera design.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;If,&amp;nbsp;instead,&amp;nbsp;the row to row brightness differences are random,&amp;nbsp;the average median value from row to row will not differ much.&amp;nbsp;That means that the chip/camera is NOT showing instrumental bias and you should be cautious and conservative in deciding whther to use median line filtering for such a video.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                  </property>
+                  <property name="text">
+                   <string>Show Median Profile</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <widget class="Line" name="line_13">
+                <property name="frameShadow">
+                 <enum>QFrame::Plain</enum>
+                </property>
+                <property name="lineWidth">
+                 <number>5</number>
+                </property>
+                <property name="orientation">
+                 <enum>Qt::Vertical</enum>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <layout class="QVBoxLayout" name="verticalLayout_32">
+                <item>
+                 <layout class="QVBoxLayout" name="verticalLayout_31">
+                  <item>
+                   <layout class="QVBoxLayout" name="verticalLayout_30">
+                    <item>
+                     <layout class="QVBoxLayout" name="verticalLayout_29">
+                      <item>
+                       <layout class="QVBoxLayout" name="verticalLayout_27">
+                        <item>
+                         <layout class="QHBoxLayout" name="horizontalLayout_41">
+                          <item>
+                           <layout class="QHBoxLayout" name="horizontalLayout_34">
+                            <property name="spacing">
+                             <number>4</number>
+                            </property>
+                            <item>
+                             <widget class="QLabel" name="backgroundSmoothingLabel">
+                              <property name="maximumSize">
+                               <size>
+                                <width>16777215</width>
+                                <height>20</height>
+                               </size>
+                              </property>
+                              <property name="font">
+                               <font>
+                                <family>.SF NS Text</family>
+                                <pointsize>13</pointsize>
+                                <bold>false</bold>
+                               </font>
+                              </property>
+                              <property name="toolTip">
+                               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This value controls the window size (&lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;n&lt;/span&gt;) used for background smoothing.&lt;/p&gt;&lt;p&gt;PyMovie implements a simple sliding window algorithm to produce a 'smoothed' per-pixel-background value using the following equation (after a 'startup' of n frames):&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;avgBkgnd = (avgBkgnd * (n-1) + newBkgnd) / n&lt;/span&gt;&lt;/p&gt;&lt;p&gt;where &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;newBkgnd&lt;/span&gt; is the background calculated for the current frame (per pixel).&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;avgBkgnd&lt;/span&gt; is used in background-subtracted-signals to reduce the noise introduced by this needed/useful calculation. &lt;/p&gt;&lt;p&gt;That equation is: &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;signal = apertureSum - avgBkgnd * numPixelsInAperture&lt;/span&gt;&lt;/p&gt;&lt;p&gt;The default value for the window size upon startup is always 1 (not sticky between runs), but any value between 1 (no smoothing in this case) to 1000 may be used. The sliding window algorithm has a 'startup' period equal to the window size during which a series of avgBkgnd values will be produced, each a little smoother than the last until n is reached. &lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;Do not expect this to have a significant effect.&lt;/span&gt; The reason I say this is that the per-frame estimate of the per-pixel background level is based on (for the typical 51 x 51 aperture) a poisson fit to 1300 sample points from the background that have all star pixels excluded. The result is an &lt;span style=&quot; font-weight:700; text-decoration: underline;&quot;&gt;already&lt;/span&gt; very low noise background estimation - for example: improving it by a factor of 7 by using a smoothing count of 49 has shown a tiny effect only at low signal levels (near zero) and only during noise reduction extraction. Your mileage may vary.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                              </property>
+                              <property name="text">
+                               <string>bkgnd smoothing count</string>
+                              </property>
+                             </widget>
+                            </item>
+                            <item>
+                             <widget class="QSpinBox" name="backgroundSmoothingIntervalSpinBox">
+                              <property name="maximumSize">
+                               <size>
+                                <width>50</width>
+                                <height>16777215</height>
+                               </size>
+                              </property>
+                              <property name="font">
+                               <font>
+                                <family>.SF NS Text</family>
+                                <pointsize>13</pointsize>
+                                <bold>true</bold>
+                               </font>
+                              </property>
+                              <property name="minimum">
+                               <number>1</number>
+                              </property>
+                              <property name="maximum">
+                               <number>1000</number>
+                              </property>
+                              <property name="value">
+                               <number>1</number>
+                              </property>
+                             </widget>
+                            </item>
+                           </layout>
+                          </item>
+                          <item>
+                           <spacer name="horizontalSpacer_18">
+                            <property name="orientation">
+                             <enum>Qt::Horizontal</enum>
+                            </property>
+                            <property name="sizeHint" stdset="0">
+                             <size>
+                              <width>40</width>
+                              <height>20</height>
+                             </size>
+                            </property>
+                           </spacer>
+                          </item>
+                         </layout>
+                        </item>
+                        <item>
+                         <widget class="QCheckBox" name="lunarCheckBox">
+                          <property name="toolTip">
+                           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Only for use with lunar occultations&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;When an aperture is placed on a sunlit lunar limb, it will contain pixels from the sky, pixels from the lunar limb, and pixels from the about-to-be-occulted star. This is also true for a fixed circular sampling mask positioned on the star. In that situation, what is the 'correct' way to subtract 'background'? Limovie has answered that question by providing a special aperture (Avoid Sunlit Face) that can be positioned so that a semi-circular area can be oriented so that only sky pixels are contained. Those pixels are then used to calculate the background value.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;When this box is checked, PyMovie does effectively the same thing but by a different method: it uses a statistical analysis of all the pixels in an aperture and sorts out which are from the sky and which are not by how their intensities are distributed. You can check what is happening by clicking on the Plot Robust Mean button to see where it placed the green line that shows the calculated mean value.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                          </property>
+                          <property name="text">
+                           <string>lunar</string>
+                          </property>
+                         </widget>
+                        </item>
+                       </layout>
+                      </item>
+                      <item>
+                       <widget class="QCheckBox" name="useYellowMaskCheckBox">
+                        <property name="toolTip">
+                         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If there is significant wind shake during the occultation, the use of a default circular mask is inappropriate because we know that the star image is not circular but rather more snake-like.&lt;/p&gt;&lt;p&gt;However, it is reasonable to expect that the wanderings of the tracking star are the same as the wanderings of the target star and so a mask computed from the tracking star, while it will probably contain more pixels than one might like, has the correct shape to be used for the target star as well.&lt;/p&gt;&lt;p&gt;Checking this box will cause the 'yellow' mask to be used for measuring all target images.&lt;/p&gt;&lt;p&gt;This is a 'last hope' option: good luck with it.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                        </property>
+                        <property name="text">
+                         <string>yellow mask = default</string>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
+                    </item>
+                    <item>
+                     <widget class="QPushButton" name="view3DButton">
+                      <property name="toolTip">
+                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button opens a new window that shows a 3D rendering of the Thumbnail One image.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                      </property>
+                      <property name="text">
+                       <string>Show 3D thumbnail</string>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </item>
+                  <item>
+                   <widget class="QCheckBox" name="allowNewVersionPopupCheckbox">
+                    <property name="toolTip">
+                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This splash screen can be disabled on the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Misc.&lt;/span&gt; tab.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;What's new with this version:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;Centering/tracking of fixed radius masks (in static apertures) now finds the center position of the mass centroid calculated using the nThBrightPixel algorithm conceived and tested by A. G. Basden (reported in &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; color:#ff0000;&quot;&gt;Centroids using Brightest Pixel Algorithm by A. G. Basden, et al, MNRAS, 2011&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;) &lt;br/&gt;&lt;br/&gt;This operates by finding the n brightest pixels in the mask, setting all other pixel values to zero, and calculating the x,y centroid of the remaining ‘mass’.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-weight:700; color:#ff0000;&quot;&gt;Noise Reduction Extraction has been added:&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;&lt;br/&gt;&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:12pt;&quot;&gt;&lt;br/&gt;&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-weight:700;&quot;&gt;Background: &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;Optimal extraction for imaging photometry was introduced by Tim Naylor in his 1998 paper titled: &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-weight:700; color:#ff0000;&quot;&gt;An optimal extraction algorithm for imaging photometry. [ Mon. Not. R. Astron. Soc. 296, 339-346 (1998)]&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; color:#000000;&quot;&gt;.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; color:#000000;&quot;&gt;Naylor's algorithm utilizes a two-dimensional gaussian as an approximation to the psf of stars in the image and demonstrates that this is an effective approximation in practice. Using this analytic psf, the paper describes how to calculate a weighted mask that lowers the noise in a star intensity measurement by giving a larger weight to those pixel that have a higher SNR and a lower weight to dimmer, noisier pixels - &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-weight:700; color:#000000;&quot;&gt;this is the core idea in all optimal extraction schemes&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; color:#000000;&quot;&gt;.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Noise Reduction Extraction is a version of Optimal Extraction inspired by an observation made by  V. Marchiori in the paper: &lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;In-Flight photometry extraction of PLATO targets, Optimal apertures for detecting extrasolar planets. arXiv:1906.00892v1 [Astro-ph.IM] 3 Jun 2019.&lt;/span&gt;&lt;br/&gt;&lt;br/&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;That paper (in section 4.6.1 Gradient mask) develops an equation for computing the optimal weights for the pixels in a star image with an arbitrary psf. The inspirational (for me) observation was made a little later in the paper: it says that the weights calculated by their equation resemble very closely the weights from a gaussian mask and goes on to show that the results obtained using the gaussian mask were nearly as good as using the mathematically correct weights of a gradient mask. Noting that the psf of the star recorded by PLATO optics is a gaussian, PyMovie takes that idea to an extreme and uses the &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; text-decoration: underline;&quot;&gt;measured&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt; psf of the target star as the basis of the weights to use for optimal extraction.&lt;br/&gt;&lt;br/&gt;In short: the psf of the target (or a comparable star) is measured by adding a sequence of frames centered by the nThBrightPixel algorithm described above. Appropriately normalized, this experimental psf is the basis for the weights that are subsequently used in light curve extraction. This has proven to be both robust and usable, even for occultations where the target completely disappears.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-weight:700; color:#ff0000;&quot;&gt;Note:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Both of the referenced papers develop an equation for weights that are mathematically optimum, given the model that they use. Because the procedure used by PyMovie does not have an underlying mathematical procedure for determining the weights used that come from an optimization calculation, the term Optimal Extraction is not appropriate. Instead, we use the term Noise Reduction Extraction. &lt;/p&gt;&lt;p&gt;Its efficacy has been proven by testing, not by mathematics.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt; font-weight:700; color:#ff0000;&quot;&gt;Important tip:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt;&quot;&gt;Before doing an analysis, be sure to set the csv order in which the aperture data columns will be output to the csv file. This is easily done by clicking on the &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt; font-weight:700; color:#0000ff;&quot;&gt;Examine/change aperture settings&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt;&quot;&gt; button. In the panel that appears, the rightmost column is titled &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt; font-weight:700; color:#0000ff;&quot;&gt;csv output order&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt;&quot;&gt;. Use that column to set the expected best aperture for the target to 0 - this is because when PyOTE reads this file, it will be the first lightcurve displayed. With the latest version of PyOTE, all the other data sets/lightcurves will be accessible through a drop-down list and the order of items in this list are controlled by their order in the csv file, so set the csv order to make this list order be convenient for you.&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:12pt;&quot;&gt;&lt;br/&gt;&lt;br/&gt;&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                    </property>
+                    <property name="text">
+                     <string>show &quot;new version&quot; info</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+                <item>
+                 <spacer name="verticalSpacer_11">
+                  <property name="orientation">
+                   <enum>Qt::Vertical</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>20</width>
+                    <height>40</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </widget>
            </widget>
            <widget class="QWidget" name="tab_8">
             <attribute name="title">
@@ -2946,7 +2999,7 @@ aperture placement.</string>
         </layout>
        </widget>
        <widget class="QWidget" name="layoutWidget">
-        <layout class="QVBoxLayout" name="verticalLayout_16">
+        <layout class="QVBoxLayout" name="verticalLayout_28">
          <item>
           <widget class="ImageView" name="frameView">
            <property name="sizePolicy">
@@ -2961,264 +3014,283 @@ aperture placement.</string>
           </widget>
          </item>
          <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_24">
+          <layout class="QVBoxLayout" name="verticalLayout_16">
            <item>
-            <widget class="QCheckBox" name="runPyote">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If PyOTE is installed on your machine, this checkbox will be enabled, otherwise it will remain disabled.&lt;/p&gt;&lt;p&gt;If this box is checked, when a new csv file has been written, PyOTE will be automatically started and will read the newly created csv file.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="text">
-              <string>auto-run PyOTE</string>
-             </property>
-            </widget>
+            <layout class="QHBoxLayout" name="horizontalLayout_18">
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_19">
+               <property name="spacing">
+                <number>0</number>
+               </property>
+               <item>
+                <widget class="QToolButton" name="transportMaxLeft">
+                 <property name="font">
+                  <font>
+                   <family>.SF NS Text</family>
+                   <pointsize>13</pointsize>
+                  </font>
+                 </property>
+                 <property name="toolTip">
+                  <string>Jump to frame 0</string>
+                 </property>
+                 <property name="text">
+                  <string>&lt;&lt;</string>
+                 </property>
+                 <property name="toolButtonStyle">
+                  <enum>Qt::ToolButtonTextOnly</enum>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QToolButton" name="transportBigLeft">
+                 <property name="font">
+                  <font>
+                   <family>.SF NS Text</family>
+                   <pointsize>13</pointsize>
+                  </font>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump left 10 seconds (if avi in use) or 200 frames (if FITS file in use).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>- 10 sec</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QToolButton" name="transportSmallLeft">
+                 <property name="font">
+                  <font>
+                   <family>.SF NS Text</family>
+                   <pointsize>13</pointsize>
+                  </font>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump left 1 second (if avi in use) or 25 frames (if FITS file in use).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>- 1 sec</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QToolButton" name="transportMinusOneFrame">
+                 <property name="font">
+                  <font>
+                   <family>.SF NS Text</family>
+                   <pointsize>13</pointsize>
+                  </font>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Move left 1 frame&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>-1 fr</string>
+                 </property>
+                 <property name="autoRepeat">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QToolButton" name="transportPlayLeft">
+                 <property name="font">
+                  <font>
+                   <family>.SF NS Text</family>
+                   <pointsize>13</pointsize>
+                  </font>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Play the file continuously to the left (earlier in time). No data is recorded during 'play'. You must click &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;analyze&lt;/span&gt; in order to have data recorded.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>&lt;</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QToolButton" name="transportPause">
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>.SF NS Text</family>
+                   <pointsize>13</pointsize>
+                   <bold>true</bold>
+                  </font>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pause an analysis (light curve extraction) that is in progress.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>pause</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QToolButton" name="transportAnalyze">
+                 <property name="maximumSize">
+                  <size>
+                   <width>80</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>.SF NS Text</family>
+                   <pointsize>13</pointsize>
+                   <bold>true</bold>
+                  </font>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Extract light curves using aperture photometry (even if an optimal extraction psf has been calculated).&lt;/p&gt;&lt;p&gt;Advance frame by frame from &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;current frame&lt;/span&gt; up to (or down to) &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;stop frame&lt;/span&gt;, tracking and recording aperture data for plots and csv export. That is, generate the light curve data using aperture photometry with binary masks.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>AP analysis</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="transportAnalyzeWithOE">
+                 <property name="maximumSize">
+                  <size>
+                   <width>90</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>.SF NS Text</family>
+                   <pointsize>13</pointsize>
+                   <bold>true</bold>
+                  </font>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Extract light curves using optimal extraction.&lt;/p&gt;&lt;p&gt;Advance frame by frame from &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;current frame&lt;/span&gt; up to (or down to) &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;stop frame&lt;/span&gt;, tracking and recording aperture data for plots and csv export. That is, generate the light curve data using optimal extraction based on a previously calculated Optimal Extraction psf. &lt;/p&gt;&lt;p&gt;Weighted masks are used that give more weight to bright pixels, which have lower noise, and less weight to dimmer pixels, which are inherently noisier, resulting in an overall lower noise in the extracted light curves.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>NRE analysis</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QToolButton" name="transportPlayRight">
+                 <property name="font">
+                  <font>
+                   <family>.SF NS Text</family>
+                   <pointsize>13</pointsize>
+                  </font>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Play the file to the right (forward in time). No data is recorded during 'play'. You must click &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;analyze&lt;/span&gt; in order to have data recorded.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>&gt;</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QToolButton" name="transportPlusOneFrame">
+                 <property name="font">
+                  <font>
+                   <family>.SF NS Text</family>
+                   <pointsize>13</pointsize>
+                  </font>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Move right 1 frame&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>+1 fr</string>
+                 </property>
+                 <property name="autoRepeat">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QToolButton" name="transportSmallRight">
+                 <property name="font">
+                  <font>
+                   <family>.SF NS Text</family>
+                   <pointsize>13</pointsize>
+                  </font>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump right 1 second (if avi in use) or 25 frames (if FITS file in use).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>+ 1 sec</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QToolButton" name="transportBigRight">
+                 <property name="font">
+                  <font>
+                   <family>.SF NS Text</family>
+                   <pointsize>13</pointsize>
+                  </font>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump right 10 seconds (if avi in use) or 200 frames (if FITS file in use).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>+ 10 sec</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QToolButton" name="transportMaxRight">
+                 <property name="font">
+                  <font>
+                   <family>.SF NS Text</family>
+                   <pointsize>13</pointsize>
+                  </font>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump to last frame.&lt;/p&gt;&lt;p&gt;In addition, set &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;stop frame&lt;/span&gt; to the frame number of the last frame.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>&gt;&gt;</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+            </layout>
            </item>
            <item>
             <layout class="QVBoxLayout" name="verticalLayout_13">
              <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_18">
-               <item>
-                <layout class="QHBoxLayout" name="horizontalLayout_19">
-                 <property name="spacing">
-                  <number>0</number>
-                 </property>
-                 <item>
-                  <widget class="QToolButton" name="transportMaxLeft">
-                   <property name="font">
-                    <font>
-                     <family>.SF NS Text</family>
-                     <pointsize>13</pointsize>
-                    </font>
-                   </property>
-                   <property name="toolTip">
-                    <string>Jump to frame 0</string>
-                   </property>
-                   <property name="text">
-                    <string>&lt;&lt;</string>
-                   </property>
-                   <property name="toolButtonStyle">
-                    <enum>Qt::ToolButtonTextOnly</enum>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QToolButton" name="transportBigLeft">
-                   <property name="font">
-                    <font>
-                     <family>.SF NS Text</family>
-                     <pointsize>13</pointsize>
-                    </font>
-                   </property>
-                   <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump left 10 seconds (if avi in use) or 200 frames (if FITS file in use).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                   </property>
-                   <property name="text">
-                    <string>- 10 sec</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QToolButton" name="transportSmallLeft">
-                   <property name="font">
-                    <font>
-                     <family>.SF NS Text</family>
-                     <pointsize>13</pointsize>
-                    </font>
-                   </property>
-                   <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump left 1 second (if avi in use) or 25 frames (if FITS file in use).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                   </property>
-                   <property name="text">
-                    <string>- 1 sec</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QToolButton" name="transportMinusOneFrame">
-                   <property name="font">
-                    <font>
-                     <family>.SF NS Text</family>
-                     <pointsize>13</pointsize>
-                    </font>
-                   </property>
-                   <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Move left 1 frame&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                   </property>
-                   <property name="text">
-                    <string>-1 fr</string>
-                   </property>
-                   <property name="autoRepeat">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QToolButton" name="transportPlayLeft">
-                   <property name="font">
-                    <font>
-                     <family>.SF NS Text</family>
-                     <pointsize>13</pointsize>
-                    </font>
-                   </property>
-                   <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Play the file continuously to the left (earlier in time). No data is recorded during 'play'. You must click &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;analyze&lt;/span&gt; in order to have data recorded.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                   </property>
-                   <property name="text">
-                    <string>&lt;</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QToolButton" name="transportPause">
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>0</height>
-                    </size>
-                   </property>
-                   <property name="font">
-                    <font>
-                     <family>.SF NS Text</family>
-                     <pointsize>13</pointsize>
-                     <bold>true</bold>
-                    </font>
-                   </property>
-                   <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pause an analysis (light curve extraction) that is in progress.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                   </property>
-                   <property name="text">
-                    <string>pause</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QToolButton" name="transportAnalyze">
-                   <property name="font">
-                    <font>
-                     <family>.SF NS Text</family>
-                     <pointsize>13</pointsize>
-                     <bold>true</bold>
-                    </font>
-                   </property>
-                   <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Advance frame by frame from &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;cur frame&lt;/span&gt; up to (or down to) &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;stop frame&lt;/span&gt;, tracking and recording aperture data for plots and csv export. I.e., generate the light curve data.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                   </property>
-                   <property name="text">
-                    <string>analyze</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QToolButton" name="transportPlayRight">
-                   <property name="font">
-                    <font>
-                     <family>.SF NS Text</family>
-                     <pointsize>13</pointsize>
-                    </font>
-                   </property>
-                   <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Play the file to the right (forward in time). No data is recorded during 'play'. You must click &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;analyze&lt;/span&gt; in order to have data recorded.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                   </property>
-                   <property name="text">
-                    <string>&gt;</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QToolButton" name="transportPlusOneFrame">
-                   <property name="font">
-                    <font>
-                     <family>.SF NS Text</family>
-                     <pointsize>13</pointsize>
-                    </font>
-                   </property>
-                   <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Move right 1 frame&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                   </property>
-                   <property name="text">
-                    <string>+1 fr</string>
-                   </property>
-                   <property name="autoRepeat">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QToolButton" name="transportSmallRight">
-                   <property name="font">
-                    <font>
-                     <family>.SF NS Text</family>
-                     <pointsize>13</pointsize>
-                    </font>
-                   </property>
-                   <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump right 1 second (if avi in use) or 25 frames (if FITS file in use).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                   </property>
-                   <property name="text">
-                    <string>+ 1 sec</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QToolButton" name="transportBigRight">
-                   <property name="font">
-                    <font>
-                     <family>.SF NS Text</family>
-                     <pointsize>13</pointsize>
-                    </font>
-                   </property>
-                   <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump right 10 seconds (if avi in use) or 200 frames (if FITS file in use).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                   </property>
-                   <property name="text">
-                    <string>+ 10 sec</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QToolButton" name="transportMaxRight">
-                   <property name="font">
-                    <font>
-                     <family>.SF NS Text</family>
-                     <pointsize>13</pointsize>
-                    </font>
-                   </property>
-                   <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Jump to last frame.&lt;/p&gt;&lt;p&gt;In addition, set &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;stop frame&lt;/span&gt; to the frame number of the last frame.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                   </property>
-                   <property name="text">
-                    <string>&gt;&gt;</string>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </item>
-              </layout>
-             </item>
-             <item>
               <layout class="QHBoxLayout" name="horizontalLayout_23">
+               <item>
+                <spacer name="horizontalSpacer_7">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_20">
                  <property name="spacing">
                   <number>0</number>
                  </property>
                  <item>
-                  <spacer name="horizontalSpacer_7">
-                   <property name="orientation">
-                    <enum>Qt::Horizontal</enum>
-                   </property>
-                   <property name="sizeHint" stdset="0">
-                    <size>
-                     <width>40</width>
-                     <height>20</height>
-                    </size>
-                   </property>
-                  </spacer>
-                 </item>
-                 <item>
                   <widget class="QToolButton" name="transportCsv">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
                    <property name="font">
                     <font>
                      <family>.SF NS Text</family>
@@ -3236,6 +3308,9 @@ aperture placement.</string>
                  </item>
                  <item>
                   <widget class="QToolButton" name="transportPlot">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
                    <property name="font">
                     <font>
                      <family>.SF NS Text</family>
@@ -3278,6 +3353,13 @@ aperture placement.</string>
                      <height>0</height>
                     </size>
                    </property>
+                   <property name="font">
+                    <font>
+                     <family>.SF NS Text</family>
+                     <pointsize>13</pointsize>
+                     <bold>true</bold>
+                    </font>
+                   </property>
                    <property name="layoutDirection">
                     <enum>Qt::RightToLeft</enum>
                    </property>
@@ -3306,6 +3388,13 @@ aperture placement.</string>
                      <width>73</width>
                      <height>0</height>
                     </size>
+                   </property>
+                   <property name="font">
+                    <font>
+                     <family>.SF NS Text</family>
+                     <pointsize>13</pointsize>
+                     <bold>true</bold>
+                    </font>
                    </property>
                    <property name="layoutDirection">
                     <enum>Qt::RightToLeft</enum>
@@ -3379,6 +3468,9 @@ aperture placement.</string>
                </item>
                <item>
                 <widget class="QToolButton" name="transportClearData">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
                  <property name="font">
                   <font>
                    <family>.SF NS Text</family>
@@ -3409,20 +3501,122 @@ aperture placement.</string>
                </item>
               </layout>
              </item>
+             <item>
+              <widget class="Line" name="line_16">
+               <property name="frameShadow">
+                <enum>QFrame::Plain</enum>
+               </property>
+               <property name="lineWidth">
+                <number>4</number>
+               </property>
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_24">
+               <item>
+                <widget class="QCheckBox" name="runPyote">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If PyOTE is installed on your machine, this checkbox will be enabled, otherwise it will remain disabled.&lt;/p&gt;&lt;p&gt;If this box is checked, when a new csv file has been written, PyOTE will be automatically started and will read the newly created csv file.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>auto-run PyOTE</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_35">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeType">
+                  <enum>QSizePolicy::Fixed</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item>
+                <widget class="QPushButton" name="transportTargetPsf">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>.SF NS Text</family>
+                   <pointsize>13</pointsize>
+                   <bold>true</bold>
+                  </font>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;To apply Noise Reduction Extraction in PyMovie follow these steps:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;1) Choose a representative star that is fairly bright but not saturated and place a static mask aperture on this star.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;2) Name this aperture with a string that starts with: &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-weight:700; color:#0000ff;&quot;&gt;psf-star&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; color:#000000;&quot;&gt;3) Set the radius of the circular mask in this aperture to a size that generously excloses the star image. 6 is a good starting point.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; color:#000000;&quot;&gt;4) The circular mask radius of ALL other static mask apertures must be the same as that used in &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-weight:700; color:#0000ff;&quot;&gt;psf-star&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; color:#000000;&quot;&gt;5) Place a static mask aperture on the target star using the same circular mask radius used in step 3&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;6) Set the start frame and the stop frame so that several hundred (or so) frames will be utilized in composing the experimental psf.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;7) Click the &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-weight:700; color:#0000ff;&quot;&gt;calculate Noise Reduction psf&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt; button.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;After the above steps have been performed, you can choose to perform a light curve extraction using 'Noise Reduction Extraction' by clicking on the &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-weight:700; color:#0000ff;&quot;&gt;NRE analysis&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt; button. There is no restriction on what frames can be utilized in that analysis run - no need to avoid the frames used in composing the psf.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;If you click instead on the &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-weight:700; color:#0000ff;&quot;&gt;AP analysis&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt; button, then light curve extraction will use normal aperture photometry, even if a Noise Reduction Extraction psf has been calculated.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;============ Background =================&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Optimal extraction for imaging photometry was introduced by Tim Naylor in his 1998 paper titled: &lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;An optimal extraction algorithm for imaging photometry. [Mon. Not. R. Astron. Soc. 296, 339-346 (1998)]&lt;/span&gt;&lt;span style=&quot; color:#000000;&quot;&gt;.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Naylor's algorithm utilizes a two-dimensional gaussian as an approximation to the psf of stars in the image and demonstrates that this is an effective approximation in practice. Using this analytic psf, the paper describes how to calculate a weighted mask that lowers the noise in a star intensity measurement by giving a larger weight to those pixel that have a higher SNR and a lower weight to dimmer, noisier pixels - &lt;/span&gt;&lt;span style=&quot; font-weight:700; color:#000000;&quot;&gt;this is the core idea in all optimal extraction schemes&lt;/span&gt;&lt;span style=&quot; color:#000000;&quot;&gt;.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;PyMovie uses a version of Optimal Extraction inspired by an observation made by V. Marchiori in the paper: &lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;In-Flight photometry extraction of PLATO targets, Optimal apertures for detecting extrasolar planets. [arXiv:1906.00892v1 (Astro-ph.IM) 3 Jun 2019]&lt;/span&gt;.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;That paper (in section 4.6.1 Gradient mask) develops an equation for computing the optimal weights for the pixels in a star image that has an arbitrary psf, not necessarily gaussian or symmetric. The inspirational (for me) observation was made a little later in the paper: it says that the weights calculated by their equation resemble very closely the weights from a gaussian mask and they go on to show that the results obtained using the gaussian mask were nearly as good as those obtained by using the mathematically correct weights of a gradient mask. Noting that the psf of the star recorded by PLATO optics is a gaussian, PyMovie takes that idea to an extreme and uses the &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; text-decoration: underline;&quot;&gt;measured&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt; psf of a star in the image field as the basis of the weights to be used for optimal extraction. That is, PyMovie assumes no psf model other than that derived from the video recording itself.&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:12pt;&quot;&gt;&lt;br/&gt;&lt;br/&gt;&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;In short: the psf of a selected star is measured by adding the pixel values from a sequence of frames centered by the nThBrightPixel algorithm described below. Appropriately normalized, this psf is the basis for the weights that are subsequently used in light curve extraction. This has proven to be both robust and usable even for occultations where the target completely disappears.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-weight:700; color:#ff0000;&quot;&gt;nThBrightPixel cenroid algorithm: &lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;The nThBrightPixel algorithm was conceived and tested by A. G. Basden (reported in &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; color:#ff0000;&quot;&gt;Centroids using Brightest Pixel Algorithm by A. G. Basden, et al, MNRAS, 2011&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;). &lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;It operates by finding the n brightest pixels in a masked image, setting all other pixel values to zero, and calculating the x,y centroid of the remaining ‘mass’ (i.e., the pixels values are used in the calculation) - and using that as the center of the image.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-weight:700; color:#ff0000;&quot;&gt;Note:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Both of the referenced papers develop an equation for weights that are mathematically optimum, given the model that they use. Because the procedure used by PyMovie does not have a mathematical underpinning for the weights used that come from an optimization calculation, it can't/shouldn't be called Optimal Extraction. Instead, we use the term Noise Reduction Extraction. &lt;/p&gt;&lt;p&gt;Its efficacy has been proven by testing, not by mathematics.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:12pt;&quot;&gt;&lt;br/&gt;&lt;br/&gt;&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>calculate Noise Reduction psf</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_45">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeType">
+                  <enum>QSizePolicy::Fixed</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>10</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item>
+                <widget class="QPushButton" name="transportClearOE">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>.SF NS Text</family>
+                   <pointsize>13</pointsize>
+                   <bold>true</bold>
+                  </font>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This deletes the experimentally determined psf.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>clear Noise Reduction psf</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_48">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
             </layout>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_12">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
            </item>
           </layout>
          </item>
@@ -3640,7 +3834,6 @@ aperture placement.</string>
   <tabstop>lowerTimestampPixelSpinBox</tabstop>
   <tabstop>pixelPanelInfoButton</tabstop>
   <tabstop>frameView</tabstop>
-  <tabstop>runPyote</tabstop>
   <tabstop>transportMaxLeft</tabstop>
   <tabstop>transportBigLeft</tabstop>
   <tabstop>transportSmallLeft</tabstop>
