@@ -3,6 +3,7 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QDialog
 from pymovie import apertureNameDialog
 import PyQt5
+import numpy as np
 
 
 class AppNameDialog(QDialog, apertureNameDialog.Ui_Dialog):
@@ -102,16 +103,20 @@ class MeasurementAperture(pg.GraphicsObject):
         new_background_value = data_tuple[13]  # Pick up new_mean from the tuple
         smoothing_count = data_tuple[14]
         self.background_reading_count += 1
-        n = self.background_reading_count
-        if n == 1:
-            self.smoothed_background = new_background_value
-
-        elif n < smoothing_count:   # TODO make this magic number (50) settable
-            self.smoothed_background = (n-1) * self.smoothed_background / n
-            self.smoothed_background += new_background_value / n
+        if not smoothing_count == 0:
+            b1 = np.exp(-1/smoothing_count)
         else:
-            self.smoothed_background -= self.smoothed_background / smoothing_count
-            self.smoothed_background += new_background_value / smoothing_count
+            b1 = 0.0
+        a0 = 1.0 - b1
+        if self.smoothed_background == 0:  # Detect startup and jump to the first value given
+            self.smoothed_background = new_background_value
+        else:
+            self.smoothed_background = a0 * new_background_value + b1 * self.smoothed_background
+
+        # TODO Remove this debug print
+        if self.name.startswith('psf-star-debug'):
+            print(f'frame: {int(data_tuple[8])} sm_bk: {self.smoothed_background:0.2f}  '
+                  f'  new_bk: {new_background_value:0.2f}  delta: {new_background_value - self.smoothed_background:0.2f}')
 
         self.data.append(data_tuple)
 

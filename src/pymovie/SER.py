@@ -56,8 +56,13 @@ def getMetaData(fpath):
         ColorID = np.fromfile(f, dtype='<i4', count=1)[0]
         ans.update(ColorID=ColorID)
 
-        if not ColorID == 0:  # monochrome image
-            raise ValueError("Color SER files not supported.  Only mono")
+        # if not ColorID in [0,8]:  # mono or BAYER_RGGB
+        #     raise ValueError(f"Color SER files of type {ColorID} not supported.")
+
+        if not ColorID == 0:
+            colorMsg = f'A ColorID of {ColorID} was found. We will treat this as monochrome data anyway.'
+        else:
+            colorMsg = ''
 
         LittleEndian = np.fromfile(f, dtype='<i4', count=1)[0]
         ans.update(LittleEndian=LittleEndian)
@@ -127,7 +132,7 @@ def getMetaData(fpath):
                 # DateTimeUTC = convertJDtoTimestamp(convertNETdatetimeToJD(datetimeUTC))
                 timestamps.append(DateTimeUTC)
 
-    return ans, timestamps
+    return ans, timestamps, colorMsg
 
 def getSerImage(f, frameNum, bytes_per_pixel, image_width, image_height, little_endian):
     # height is y axis   width is x axis

@@ -430,7 +430,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         # type float64 when in use
         self.target_psf = None
         self.psf_radius_in_use = None
-        self.target_appsum = 0.0
+        # self.target_appsum = 0.0
         self.fractional_weights = None
         self.sum_fractional_weights = None
         self.target_psf_number_accumulated = np.int64
@@ -1375,7 +1375,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def clearOptimalExtractionVariables(self):
         self.target_psf = None
         self.psf_radius_in_use = None
-        self.target_appsum = 0.0
+        # self.target_appsum = 0.0
         self.fractional_weights = None
         self.sum_fractional_weights = None
         self.target_psf_number_accumulated = 0
@@ -2157,14 +2157,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             midMedian = int(np.median(horMedians))
             for i in range(h):
                 self.image[i, :] = np.array(
-                    np.clip(self.image[i, :].astype(np.int) + (midMedian - horMedians[i]), 0, maxPixel),
+                    np.clip(self.image[i, :].astype(int) + (midMedian - horMedians[i]), 0, maxPixel),
                     dtype=imageDtype)
 
         if applyVerticalFilter:
             midMedian = int(np.median(vertMedians))
             for i in range(w):
                 self.image[:, i] = np.array(
-                    np.clip(self.image[:, i].astype(np.int) + (midMedian - vertMedians[i]), 0, maxPixel),
+                    np.clip(self.image[:, i].astype(int) + (midMedian - vertMedians[i]), 0, maxPixel),
                     dtype=imageDtype)
 
         self.displayImageAtCurrentZoomPanState()
@@ -5149,13 +5149,18 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     #     self.fractional_weights *= self.correct_sum_fractional_weights / new_sum
 
     def calcOptimalExtractionWeights(self):
-        self.target_appsum /= self.target_psf_number_accumulated  # float result
+        # We no longer make use of this measurement.
+        # self.target_appsum /= self.target_psf_number_accumulated  # float result
+
+        # self.target_psf has background subtracted
         self.target_psf_float = self.target_psf / self.target_psf_number_accumulated  # float result and float input
 
-        np.clip(self.target_psf_float, 0, np.max(self.target_psf_float), self.target_psf_float)
+        # Don't allow any negative value in self.target_psf_float
+        # np.clip(self.target_psf_float, 0, np.max(self.target_psf_float), self.target_psf_float)
 
-        clip_level = np.median(self.target_psf_float)
-        np.clip(self.target_psf_float, clip_level, np.max(self.target_psf_float), self.target_psf_float)
+        # TODO Experimental code ... but it looks like a keeper
+        np.clip(self.target_psf_float, self.psf_background, np.max(self.target_psf_float), self.target_psf_float)
+        self.target_psf_float -= self.psf_background
 
         target_psf_signal_sum = np.sum(self.target_psf_float) / (self.zoom_factor**2)
 
@@ -5201,18 +5206,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.hair2.setPos((0, 0))
 
         sum_raw = np.sum(self.target_psf_float * self.fractional_weights)
-        # normalizer = self.target_appsum / sum_raw
         normalizer = target_psf_signal_sum / sum_raw
         self.fractional_weights = self.fractional_weights * normalizer
-        # The + 10.0 in the next line is needed because the display routine for thumbTwo does
-        # a -1.0 subtraction is part of its color coding process so that has a value for black and yet
-        # still has a value for yellow (black = 0.0  yellow = 1.0  other values scaled)
-        # We're also normalizing the display in an arbitrary manner so that the display looks good
-        # self.thumbTwoImage = self.fractional_weights * 100 / np.max(self.fractional_weights) + 10.0
-        # self.thumbTwoView.setImage(self.thumbTwoImage)
-        # This value becomes the value that the sum of the fractional weights must be
-        # whenever the center of the 2D gaussian differs from the center used here
-        # self.correct_sum_fractional_weights = np.sum(self.fractional_weights)
         self.showMsgPopup(f'Thumbnail One is now displaying the centered/summed "target" psf.\n\n'
                           f'This "target psf" will be directly used in forming the Noise Reduction Extraction weights.\n\n'
                           f'Note: The psf has been normalized for display purposes such that the peak '
@@ -5222,20 +5217,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.transportClearOE.setEnabled(True)
 
         self.sorted_fractional_weights = np.sort(self.fractional_weights.flatten())
-
-        # TODO Experimental code
-        # row = 0
-        # col = 1
-        # fw = np.copy(self.fractional_weights)
-        # self.fractional_weights_11 = np.roll(fw, (-1,-1), axis=(row, col))  # align to upper left
-        # self.fractional_weights_12 = np.roll(fw, (-1, 0), axis=(row, col))
-        # self.fractional_weights_13 = np.roll(fw, (-1, 1), axis=(row, col))
-        # self.fractional_weights_21 = np.roll(fw, ( 0,-1), axis=(row, col))
-        # self.fractional_weights_22 = np.roll(fw, ( 0, 0), axis=(row, col))  # center fw unchanged
-        # self.fractional_weights_23 = np.roll(fw, ( 0, 1), axis=(row, col))
-        # self.fractional_weights_31 = np.roll(fw, ( 1,-1), axis=(row, col))
-        # self.fractional_weights_32 = np.roll(fw, ( 1, 0), axis=(row, col))
-        # self.fractional_weights_33 = np.roll(fw, ( 1, 1), axis=(row, col))  # align to lower right
 
     def zeroWeightsOutsideCircularMask(self):
         w = self.target_psf.shape[0]
@@ -6777,7 +6758,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         thumbnail = self.image[y0:y0 + ny, x0:x0 + nx]
         mean, std, sorted_data, _, _, _, _, _, bkgnd_pixels = newRobustMeanStd(thumbnail, outlier_fraction=.5,
                                                       lunar=self.lunarCheckBox.isChecked())
-        new_mean = mean  # This is a poisson mean
+        new_mean = mean  # This is now a poisson mean
         maxpx = sorted_data[-1]
 
         mean_top, *_ = newRobustMeanStd(thumbnail[0::2, :], outlier_fraction=.5, lunar=self.lunarCheckBox.isChecked())
@@ -6788,7 +6769,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         # We computed the initial aperture.thresh as an offset from the background value present
         # in the frame used for the initial threshold determination.  Now we add the current
         # value of the background so that we can respond to a general change in background dynamically.
-        background = int(round(mean))  # Note: this is a poisson mean
+        background = int(round(mean))  # Note: 'mean' is now a poisson mean as of version 3.7.5
         threshold = aperture.thresh + background
 
         default_mask_used = False
@@ -6834,12 +6815,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 get_mask(thumbnail, ksize=self.gaussian_blur, cut=threshold, outlier_fraction=0.5,
                          apply_centroid_distance_constraint=True, max_centroid_distance=self.allowed_centroid_delta,
                          lunar=self.lunarCheckBox.isChecked())
-            # print(f'aperture: {aperture.name} had max_area: {max_area}')
-
-        # Moved up in version 3.8.9
-        # if save_yellow_mask:
-        #     self.yellow_mask = mask.copy()
-
         comment = ""
 
         if max_area == 0:  # get_mask() failed to compute a satisfactory mask
@@ -6857,11 +6832,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         mass_centroid = (self.roi_center, self.roi_center)  # These are default values
         if default_mask_used:   # a fixed radius circular mask is in use
-            # Within the mask area, find the position of the max value pixel
+            # Within the mask area, find the position of the max value pixel. We just want to know if
+            # there is enough 'star' to justify a centroid searh.
             masked_data = mask * thumbnail
             max_pixel = np.max(masked_data)
             pixel_limit = mean + 1 * std
 
+            # TODO Think about whether this is a problem when gathering psf  It won't be if star is bright
             if max_pixel > pixel_limit:
                 try:
                     mass_centroid = brightest_pixel(masked_data.copy(), 5)
@@ -6875,13 +6852,15 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 w = 2 * int(aperture.default_mask_radius) + 1
                 self.w = w
 
+                # self.recordPsf is controlled in autoRun() to avoid double counting
                 if aperture.name.startswith('psf-star') and self.recordPsf and self.target_psf_gathering_in_progress:
                     if self.target_psf is None:
                         self.target_psf = np.zeros((w * self.zoom_factor,w * self.zoom_factor), dtype=float)
                         self.target_psf_number_accumulated = 0
-                        self.target_appsum = 0
+                        # self.target_appsum = 0
                         self.mask_size = w
 
+                    # We don't do 'zooming' anymore, but we do use the centering mechanism.
                     zoomed_masked_data = self.getZoomedAndCenteredVersionOfMaskedData(masked_data, mass_centroid)
 
                     # upper left corner coordinate is at x,y = offset_x, offset+y
@@ -6889,12 +6868,16 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     offset_y = (len(masked_data) // 2 - w // 2) * self.zoom_factor  # starting row
                     for i in range(w * self.zoom_factor):
                         for j in range(w * self.zoom_factor):
-                            # self.target_psf[i,j] += zoomed_masked_data[i+offset_y,j+offset_x]   # row,col indexing
+                            # Accumulate a psf image. Later we will divide by self.target_psf_number_accumulated
                             self.target_psf[i,j] += zoomed_masked_data[i+offset_x,j+offset_y]   # x,y indexing
-                    self.target_psf -= mean  # actually, this is a 'signal' psf because of the background subtraction
+
+                    # This would make a 'signal' psf because of this background subtraction. We now do this in
+                    # calcOptimalExtractWeights by a different mechanism invloving self.psf_background
+                    # self.target_psf -= mean
+                    self.psf_background = aperture.smoothed_background
                     self.target_psf_number_accumulated += 1
-                    self.target_appsum += np.sum(masked_data)
-                    self.recordPsf = False
+                    # self.target_appsum += np.sum(masked_data)
+                    self.recordPsf = False  # We use this to keep from doubling up - this code would get called twice
 
                 x_center_delta = x_coord - self.roi_center
                 y_center_delta = y_coord - self.roi_center
@@ -7019,12 +7002,26 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             signal = appsum - int(round(max_area * mean))
         else:
             try:
-                # TODO Do twe have to put mean in place of zeroes?
-                masked_data = thumbnail
+                # TODO Do we have to put mean in place of zeroes?
+                masked_data = thumbnail * mask
                 signal = None
                 if self.fractional_weights is not None and \
                         not self.target_psf_gathering_in_progress and self.useOptimalExtraction:
-                    zoomed_masked_data = self.getZoomedAndCenteredVersionOfMaskedData(masked_data, mass_centroid)
+                    centered_data = self.getZoomedAndCenteredVersionOfMaskedData(thumbnail, mass_centroid)
+                    centered_masked_data = centered_data * aperture.defaultMask
+                    reverse_mask = np.copy(aperture.defaultMask)
+                    for i in range(reverse_mask.shape[0]):
+                        for j in range(reverse_mask.shape[1]):
+                            if centered_masked_data[i,j] == 0:
+                                reverse_mask[i,j] = 1
+                            else:
+                                reverse_mask[i,j] = 0
+
+                    background_image = thumbnail * reverse_mask
+                    mean, std, _, _, _, _, _, _, bkgnd_pixels = newRobustMeanStd(background_image,
+                                                                               outlier_fraction=.5,
+                                                                               lunar=self.lunarCheckBox.isChecked())
+
                     w = 2 * int(aperture.default_mask_radius) + 1
 
                     n = self.sorted_fractional_weights.size
@@ -7036,7 +7033,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     # upper left corner coordinate is at x,y = offset_x, offset+y
                     offset_x = (len(masked_data) // 2 - w // 2) * self.zoom_factor  # starting column
                     offset_y = (len(masked_data) // 2 - w // 2) * self.zoom_factor  # starting row
-                    win_data = zoomed_masked_data[offset_y:offset_y + w * self.zoom_factor, offset_x:offset_x + w * self.zoom_factor]
+                    win_data = centered_masked_data[offset_y:offset_y + w * self.zoom_factor, offset_x:offset_x + w * self.zoom_factor]
                     raw_signal = self.calcRawSignal(mean, win_data)
                     signal = raw_signal
                     IP = 2
@@ -7050,7 +7047,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     else:
                         bkgnd_corr =  1.0 - (signal - reference_background) / (reference_background * (IP -1))
 
-                    signal -= bkgnd_corr * reference_background
+                    signal -= reference_background
 
                     appsum = signal + mean * aperture.defaultMaskPixelCount
                 else:
@@ -7062,12 +7059,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     if self.fractional_weights is not None and not self.target_psf_gathering_in_progress and self.useOptimalExtraction:
                         pass  # signal is already calculated
                     else:
-                        # if self.transportCalcBackgroundCheckBox.isChecked() and self.firstFrameInApertureData is not None:
-                        #     current_frame = self.currentFrameSpinBox.value()
-                        #     if self.firstFrameInApertureData <= current_frame <= self.lastFrameInApertureData:
-                        #         # Override the frame specific mean with the smoothed mean (background value)
-                        #         mean = aperture.computed_background[current_frame - self.firstFrameInApertureData]
-                        signal = appsum - int(round(max_area * mean))
+                        if aperture.smoothed_background == 0:  # We're in startup for the smoothed background
+                            signal = appsum - int(round(max_area * mean))
+                        else:
+                            signal = appsum - int(round(max_area * aperture.smoothed_background))
             except Exception as e:
                 self.showMsg(f'in showApertureStats: {e}')
                 appsum = 0
@@ -7206,26 +7201,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def getZoomedAndCenteredVersionOfMaskedData(self, masked_data, mass_centroid):
         zoomed_masked_data = self.zoomer(masked_data)
-        # my_center = None
-        # bob_max = None
-        # if self.fractional_weights is not None:
-        #     bob = self.cross_image(zoomed_masked_data)
-        #     my_center = np.unravel_index(bob.argmax(), bob.shape)
-        #     bob_max = np.max(bob)
-        #     print(f'{my_center}  max: {np.max(bob):6.2f}')
-        # Centroids are relative to the upper left corner of the aperture
-        # if my_center is None:
-        #     y_centroid = mass_centroid[1]
-        #     x_centroid = mass_centroid[0]
-        #     target = len(masked_data) // 2
-        #     y_roll_count = self.roll_count(target, y_centroid, 1 / self.zoom_factor)
-        #     x_roll_count = self.roll_count(target, x_centroid, 1 / self.zoom_factor)
-        # else:
-        #     target = len(masked_data) * self.zoom_factor// 2
-        #     y_centroid = my_center[1]
-        #     x_centroid = my_center[0]
-        #     y_roll_count = target - y_centroid
-        #     x_roll_count = target - x_centroid
 
         target_center = len(masked_data) // 2
 
@@ -7311,6 +7286,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.saveStateNeeded = True
             self.avi_wcs_folder_in_use = False
             self.fits_folder_in_use = True
+            self.ser_file_in_use = False
             self.clearTextBox()
             self.saveTargetLocButton.setEnabled(True)
             self.loadCustomProfilesButton.setEnabled(False)
@@ -7649,7 +7625,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.adv_timestamp = ''
 
             if self.ser_file_in_use:
-                self.ser_meta_data, self.ser_timestamps = SER.getMetaData(self.filename)
+                try:
+                    self.ser_meta_data, self.ser_timestamps, colorMsg = SER.getMetaData(self.filename)
+                    if not colorMsg == '':
+                        self.showMsgPopup(colorMsg)
+                except ValueError as e:
+                    self.showMsgPopup(f'{e}')
+                    return
                 self.ser_file_handle = open(self.filename, 'rb')
             else:
                 self.ser_meta_data = {}
@@ -8070,7 +8052,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.showFrame()  # So that we get the first frame timestamp (if possible)
 
             elif self.ser_file_in_use:
-                self.ser_meta_data, self.ser_timestamps = SER.getMetaData(self.avi_location)
+                self.ser_meta_data, self.ser_timestamps, colorMsg = SER.getMetaData(self.avi_location)
+                if not colorMsg == '':
+                    self.showMsgPopup(colorMsg)
                 self.ser_file_handle = open(self.avi_location, 'rb')
 
                 self.showMsg(f'Opened: {self.avi_location}')
@@ -10020,7 +10004,7 @@ def get_mask(
 
 
 
-def poisson_mean(data_set, debug=False):
+def poisson_mean(data_set, initial_guess, debug=False):
     def fit_function(k, lamb):
         # The parameter lamb will be used as the fit parameter
         return poisson.pmf(k, lamb)
@@ -10035,17 +10019,20 @@ def poisson_mean(data_set, debug=False):
     if debug:
         print(f'bins len: {len(bins)}')
 
-    hist, my_edges = np.histogram(data_set, bins)
-    entries = hist / np.sum(hist)
+    hist, my_edges = np.histogram(data_set.astype('float64'), bins)
+    entries = hist / np.sum(hist)  # This normalization is critical!
 
     # calculate bin centers
     middle_of_bins = (my_edges[1:] + my_edges[:-1]) * 0.5
     if debug:
         print(f'middles_bins len: {len(middle_of_bins)}')
 
-    # fit with curve_fit
+    # We don't care about the covariance matrix, hence the following call ...
     warnings.filterwarnings('ignore', 'Covariance')
-    parameters, _ = curve_fit(fit_function, middle_of_bins, entries)  # We don't care about the covariance matrix
+    try:
+        parameters, _ = curve_fit(fit_function, middle_of_bins, entries, p0=initial_guess)
+    except RuntimeError:
+        return None, hist
 
     return parameters[0], hist
 
@@ -10103,16 +10090,21 @@ def newRobustMeanStd(
     # flat_data = data.flatten()
     est_mean = np.median(flat_data)
     clip_point = est_mean + 4.5 * MAD  # Equivalent to 3 sigma
-    data_to_use = flat_data[np.where(flat_data <= clip_point)]
-    calced_mean = np.mean(data_to_use)
-    if len(data_to_use) > 0 and calced_mean > 0.0:
-        try:
-            poisson_mean_value, _ = poisson_mean(flat_data[np.where(flat_data <= clip_point)])
-            calced_mean = poisson_mean_value
-        except ValueError as e:
-            print(f'{e}')
-    bkgnd_sigma = np.std(data_to_use)
-    return calced_mean, bkgnd_sigma, sorted_data, my_hist, data.size / 2, data.size, 0, clip_point + 1, data_to_use
+    bkgnd_values = flat_data[np.where(flat_data <= clip_point)]
+    calced_mean = np.mean(bkgnd_values)  # A backup value in case the poisson fit fails for some reason
+
+    # TODO This 'fit' takes an exorbitant amount of computer time
+    # if len(bkgnd_values) > 0 and calced_mean > 0.0:
+    #     try:
+    #         poisson_mean_value, _ = poisson_mean(bkgnd_values, initial_guess=calced_mean)
+    #         if poisson_mean_value is not None:
+    #             calced_mean = poisson_mean_value
+    #     except ValueError as e:
+    #         print(f'{e}')
+    #         pass
+
+    bkgnd_sigma = np.std(bkgnd_values)
+    return calced_mean, bkgnd_sigma, sorted_data, my_hist, data.size / 2, data.size, 0, clip_point + 1, bkgnd_values
 
 
 def main():

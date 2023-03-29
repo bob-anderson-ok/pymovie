@@ -2262,7 +2262,7 @@ aperture placement.</string>
                <x>283</x>
                <y>6</y>
                <width>435</width>
-               <height>195</height>
+               <height>211</height>
               </rect>
              </property>
              <layout class="QHBoxLayout" name="horizontalLayout_42">
@@ -2455,7 +2455,7 @@ aperture placement.</string>
                                </font>
                               </property>
                               <property name="toolTip">
-                               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This value controls the window size (&lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;n&lt;/span&gt;) used for background smoothing.&lt;/p&gt;&lt;p&gt;PyMovie implements a simple sliding window algorithm to produce a 'smoothed' per-pixel-background value using the following equation (after a 'startup' of n frames):&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;avgBkgnd = (avgBkgnd * (n-1) + newBkgnd) / n&lt;/span&gt;&lt;/p&gt;&lt;p&gt;where &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;newBkgnd&lt;/span&gt; is the background calculated for the current frame (per pixel).&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;avgBkgnd&lt;/span&gt; is used in background-subtracted-signals to reduce the noise introduced by this needed/useful calculation. &lt;/p&gt;&lt;p&gt;That equation is: &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;signal = apertureSum - avgBkgnd * numPixelsInAperture&lt;/span&gt;&lt;/p&gt;&lt;p&gt;The default value for the window size upon startup is always 1 (not sticky between runs), but any value between 1 (no smoothing in this case) to 1000 may be used. The sliding window algorithm has a 'startup' period equal to the window size during which a series of avgBkgnd values will be produced, each a little smoother than the last until n is reached. &lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;Do not expect this to have a significant effect.&lt;/span&gt; The reason I say this is that the per-frame estimate of the per-pixel background level is based on (for the typical 51 x 51 aperture) a poisson fit to 1300 sample points from the background that have all star pixels excluded. The result is an &lt;span style=&quot; font-weight:700; text-decoration: underline;&quot;&gt;already&lt;/span&gt; very low noise background estimation - for example: improving it by a factor of 7 by using a smoothing count of 49 has shown a tiny effect only at low signal levels (near zero) and only during noise reduction extraction. Your mileage may vary.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This value controls the 'time constant', in readings, to be used by the background smoothing filter.&lt;/p&gt;&lt;p&gt;PyMovie implements a recursive filter to produce a 'smoothed' per-pixel-background value using the following equations, which implement an 'RC filter':&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#0000ff;&quot;&gt;(&lt;/span&gt;&lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;smoothing_count &lt;/span&gt;&lt;span style=&quot; color:#0000ff;&quot;&gt;i&lt;/span&gt;&lt;span style=&quot; color:#000000;&quot;&gt;s the 'time constant' of the RC filter)&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;b = e^(-1/smoothing_count) &lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;a = 1.0 - b&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;If n=0 then avgBkgnd[n] = newBkgnd&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;If n &amp;gt; 0 then avgBkgnd[n] = a * newBkgnd + b * avgBkgnd[n-1]&lt;/span&gt;&lt;/p&gt;&lt;p&gt;where &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;newBkgnd&lt;/span&gt; is the background calculated for the current frame (per pixel). &lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;avgBkgnd&lt;/span&gt; is used in background-subtracted-signals to reduce the noise introduced by this needed/useful calculation. &lt;/p&gt;&lt;p&gt;That equation is: &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;signal = apertureSum - avgBkgnd * numPixelsInAperture&lt;/span&gt;&lt;/p&gt;&lt;p&gt;The default value for the window size upon startup is always 50 (not sticky between runs), but any value between 0 (no smoothing in this case) to 1000 may be used.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;Do not expect this to have a significant effect on aperture photometry.&lt;/span&gt; The reason I say this is that the per-frame estimate of the per-pixel background level is based on (for the typical 51 x 51 aperture) a poisson fit to 1300 sample points from the background that have all star pixels excluded. The result is an &lt;span style=&quot; font-weight:700; text-decoration: underline;&quot;&gt;already&lt;/span&gt; very low noise background estimation.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;For NRE (Noise Reduction Extraction) such background smoothing is needed&lt;/span&gt; because the algorithm used for noise reduction has a side effect of producing much more background noise and this smoothing mitigates that effect.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                               </property>
                               <property name="text">
                                <string>bkgnd smoothing count</string>
@@ -2478,13 +2478,13 @@ aperture placement.</string>
                                </font>
                               </property>
                               <property name="minimum">
-                               <number>1</number>
+                               <number>0</number>
                               </property>
                               <property name="maximum">
                                <number>1000</number>
                               </property>
                               <property name="value">
-                               <number>1</number>
+                               <number>50</number>
                               </property>
                              </widget>
                             </item>
