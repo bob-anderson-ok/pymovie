@@ -426,6 +426,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.secondYellowApertureX = None
         self.secondYellowAperturey = None
 
+        self.sorted_background = None
+        self.sorted_masked_data = None
+
         # self.fractional_weights will be of size 2 * int(radius_of_default_mask_of_target) + 1 and
         # type float64 when in use
         self.target_psf = None
@@ -7034,18 +7037,36 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     offset_x = (len(masked_data) // 2 - w // 2) * self.zoom_factor  # starting column
                     offset_y = (len(masked_data) // 2 - w // 2) * self.zoom_factor  # starting row
                     win_data = centered_masked_data[offset_y:offset_y + w * self.zoom_factor, offset_x:offset_x + w * self.zoom_factor]
-                    raw_signal = self.calcRawSignal(mean, win_data)
+
+                    data_to_use = win_data - mean
+                    judy = data_to_use.flatten()
+                    k = judy.size
+                    n = self.sorted_fractional_weights.size
+                    m = k - n
+                    sorted_data_to_use = np.sort(judy)
+                    bob = sorted_data_to_use[m:] * self.sorted_fractional_weights
+                    raw_signal = np.sum(bob)
+
                     signal = raw_signal
-                    IP = 2
+                    # IP = 2
+
+                    self.sorted_background = sorted_bkgnd
+                    self.sorted_masked_data = sorted_data_to_use
+                    # if aperture.name.startswith('psf-star') and int(self.currentFrameSpinBox.text()) == 500:
+                    # self.cullBackground(replacement=0)
+                    bob = sorted_data_to_use[m:] * self.sorted_fractional_weights
+                    raw_signal = np.sum(bob)
+
+                    signal = raw_signal
 
                     reference_background = aperture.smoothed_background
                     if reference_background == 0:
                         # This deals with intial value startup
                         reference_background = weighted_bknd
-                    if signal > IP * reference_background:
-                        bkgnd_corr = 0.0
-                    else:
-                        bkgnd_corr =  1.0 - (signal - reference_background) / (reference_background * (IP -1))
+                    # if signal > IP * reference_background:
+                    #     bkgnd_corr = 0.0
+                    # else:
+                    #     bkgnd_corr =  1.0 - (signal - reference_background) / (reference_background * (IP -1))
 
                     signal -= reference_background
 
@@ -7178,15 +7199,52 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 appsum, mean, max_area, frame_num, cvxhull, maxpx, std, timestamp,
                 new_mean, self.backgroundSmoothingIntervalSpinBox.value())
 
-    def calcRawSignal(self, mean, win_data):
-        data_to_use = win_data - mean
-        judy = data_to_use.flatten()
-        k = judy.size
-        n = self.sorted_fractional_weights.size
-        m = k - n
-        sorted_data_to_use = np.sort(judy)
-        bob = sorted_data_to_use[m:] * self.sorted_fractional_weights
-        return np.sum(bob)
+    def cullBackground(self, replacement=0, debug=False):
+
+        # Get at-entry plot of spectrums
+        if debug:
+            self.showSortedPixelSpectrum(self.sorted_background, self.sorted_masked_data, "Sorted background",
+                                         "Sorted masked data")
+
+        # Initialize the pointers that walk backward through the data - start at last entry
+        bkgnd_index = len(self.sorted_background) - 1
+        data_index = len(self.sorted_masked_data) - 1
+        assert bkgnd_index == data_index, f'len(sorted_background): {bkgnd_index}  ' \
+                                          f'len(sorted_masked_data): {data_index}  must be equal.'
+
+        last_delta = self.sorted_masked_data[data_index] - self.sorted_background[bkgnd_index] # This initial value is potentially negative.
+
+        # We are looking for a position where sorted_bkgnd[k] lies between sorted_data[m] and sorted_data[m-1]
+        # When we find such a position, we replace the sorted_data entry that is closest to sorted_bkgnd[k]
+        # with the given replacement value (to remove this background pixel value from sorted_data spectrum
+        while data_index > 0:
+            data_index -= 1
+            current_delta = self.sorted_masked_data[data_index] - self.sorted_background[bkgnd_index]
+            if current_delta >= 0:
+                data_index -= 1  # We need to find a smaller sorted_data value
+                last_delta = current_delta
+                continue
+            else:
+                if abs(current_delta) <= abs(last_delta):
+                    self.sorted_masked_data[data_index] = replacement
+                else:
+                    self.sorted_masked_data[data_index+1] = replacement
+
+        # We have to resort the masked data to remove gaps caused by replacements
+        self.sorted_masked_data = np.sort(self.sorted_masked_data)
+        if debug:
+            self.showSortedPixelSpectrum(self.sorted_background, self.sorted_masked_data, "Sorted background",
+                                         "Sorted masked data")
+
+    # def calcRawSignal(self, mean, win_data):
+    #     data_to_use = win_data - mean
+    #     judy = data_to_use.flatten()
+    #     k = judy.size
+    #     n = self.sorted_fractional_weights.size
+    #     m = k - n
+    #     sorted_data_to_use = np.sort(judy)
+    #     bob = sorted_data_to_use[m:] * self.sorted_fractional_weights
+    #     return np.sum(bob)
 
     def cross_image(self, im1):
         im1_gray = np.copy(im1)
@@ -9200,6 +9258,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def showRobustMeanDemo(self):
 
+        if self.sorted_background is not None:
+            self.showSortedPixelSpectrum(self.sorted_background, self.sorted_masked_data, "Sorted background", "Sorted masked data")
+
         dark_gray = (50, 50, 50)
         black = (0, 0, 0)
 
@@ -9266,6 +9327,63 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             p2.addItem(vLineMean, ignoreBounds=True)
             vLineRight.setPos(local_right)
             vLineMean.setPos(good_mean)
+
+        self.plots[-1].show()  # Let everyone see the results
+
+
+    def showSortedPixelSpectrum(self, spectrum_one, spectrum_two, title_one, title_two):
+
+        # dark_gray = (50, 50, 50)
+        black = (0, 0, 0)
+
+        # Start a new plot
+        self.plots.append(pg.GraphicsLayoutWidget(title="Spectrum plots"))
+        self.plots[-1].resize(1200, 800)
+        self.plots[-1].setWindowTitle(f'PyMovie {version.version()} Spectrum demo')
+
+
+        values_title = title_one
+
+        xs = list(range(len(spectrum_one) + 1))  # The + 1 is needed when stepMode=True in addPlot()
+        self.plots[-1].addPlot(
+            row=0, col=0,
+            x=xs,
+            y=spectrum_one,
+            stepMode=True,
+            title=values_title,
+            # pen=dark_gray
+            pen=black
+        )
+
+        self.plots[-1].nextRow()  # Tell GraphicsWindow that we want another plot row
+
+        values_title = title_two
+
+        xs = list(range(len(spectrum_two) + 1))  # The + 1 is needed when stepMode=True in addPlot()
+        self.plots[-1].addPlot(
+            row=1, col=0,
+            x=xs,
+            y=spectrum_two,
+            stepMode=True,
+            title=values_title,
+            # pen=dark_gray
+            pen=black
+        )
+
+        self.plots[-1].nextRow()  # Tell GraphicsWindow that we want another plot row
+
+        values_title = "Sorted fractional weights"
+
+        xs = list(range(len(self.sorted_fractional_weights) + 1))  # The + 1 is needed when stepMode=True in addPlot()
+        self.plots[-1].addPlot(
+            row=2, col=0,
+            x=xs,
+            y=self.sorted_fractional_weights,
+            stepMode=True,
+            title=values_title,
+            # pen=dark_gray
+            pen=black
+        )
 
         self.plots[-1].show()  # Let everyone see the results
 
@@ -10093,7 +10211,11 @@ def newRobustMeanStd(
     bkgnd_values = flat_data[np.where(flat_data <= clip_point)]
     calced_mean = np.mean(bkgnd_values)  # A backup value in case the poisson fit fails for some reason
 
-    # TODO This 'fit' takes an exorbitant amount of computer time
+    # Remove this if mode is not good - it wasn't good; very noisy and too small for poisson shaped background
+    # distributions
+    # calced_mode = 3 * np.median(bkgnd_values) - 2 * calced_mean
+
+    # This 'fit' takes an exorbitant amount of computer time
     # if len(bkgnd_values) > 0 and calced_mean > 0.0:
     #     try:
     #         poisson_mean_value, _ = poisson_mean(bkgnd_values, initial_guess=calced_mean)
