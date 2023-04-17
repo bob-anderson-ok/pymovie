@@ -2256,16 +2256,16 @@ aperture placement.</string>
             <attribute name="title">
              <string>Median/Misc</string>
             </attribute>
-            <widget class="QWidget" name="layoutWidget">
+            <widget class="QWidget" name="">
              <property name="geometry">
               <rect>
-               <x>283</x>
-               <y>6</y>
-               <width>435</width>
-               <height>211</height>
+               <x>285</x>
+               <y>7</y>
+               <width>462</width>
+               <height>210</height>
               </rect>
              </property>
-             <layout class="QHBoxLayout" name="horizontalLayout_42">
+             <layout class="QHBoxLayout" name="horizontalLayout_43">
               <item>
                <layout class="QVBoxLayout" name="verticalLayout_26">
                 <item>
@@ -2550,6 +2550,9 @@ aperture placement.</string>
                      <string>show &quot;new version&quot; info</string>
                     </property>
                    </widget>
+                  </item>
+                  <item>
+                   <layout class="QHBoxLayout" name="horizontalLayout_42"/>
                   </item>
                  </layout>
                 </item>
@@ -3155,7 +3158,7 @@ aperture placement.</string>
                 </widget>
                </item>
                <item>
-                <widget class="QPushButton" name="transportAnalyzeWithOE">
+                <widget class="QPushButton" name="transportAnalyzeWithNRE">
                  <property name="maximumSize">
                   <size>
                    <width>90</width>
@@ -3174,6 +3177,26 @@ aperture placement.</string>
                  </property>
                  <property name="text">
                   <string>NRE analysis</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="transportAnalyzeWithNPIX">
+                 <property name="maximumSize">
+                  <size>
+                   <width>90</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>.SF NS Text</family>
+                   <pointsize>13</pointsize>
+                   <bold>true</bold>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>NPIX analysis</string>
                  </property>
                 </widget>
                </item>
@@ -3561,7 +3584,7 @@ aperture placement.</string>
                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;To apply Noise Reduction Extraction in PyMovie follow these steps:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;1) Choose a representative star that is fairly bright but not saturated and place a static mask aperture on this star.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;2) Name this aperture with a string that starts with: &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-weight:700; color:#0000ff;&quot;&gt;psf-star&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; color:#000000;&quot;&gt;3) Set the radius of the circular mask in this aperture to a size that generously encloses the star image. 6.8 has been found to be effective.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; color:#000000;&quot;&gt;4) The circular mask radius of ALL other static mask apertures must be the same as that used in &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-weight:700; color:#0000ff;&quot;&gt;psf-star&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; color:#000000;&quot;&gt;5) Place a static mask aperture on the target star using the same circular mask radius used in step 3&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;6) Set the start frame and the stop frame so that several hundred (or so) frames will be utilized in composing the experimental psf.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;7) Click the &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-weight:700; color:#0000ff;&quot;&gt;calculate Noise Reduction psf&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt; button.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;After the above steps have been performed, you can choose to perform a light curve extraction using 'Noise Reduction Extraction' by clicking on the &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-weight:700; color:#0000ff;&quot;&gt;NRE analysis&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt; button. There is no restriction on what frames can be utilized in that analysis run - no need to avoid the frames used in composing the psf.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;If you click instead on the &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-weight:700; color:#0000ff;&quot;&gt;AP analysis&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt; button, then light curve extraction will use normal aperture photometry, even if a Noise Reduction Extraction psf has been calculated.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;============ Background =================&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Optimal extraction for imaging photometry was introduced by Tim Naylor in his 1998 paper titled: &lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;An optimal extraction algorithm for imaging photometry. [Mon. Not. R. Astron. Soc. 296, 339-346 (1998)]&lt;/span&gt;&lt;span style=&quot; color:#000000;&quot;&gt;.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Naylor's algorithm utilizes a two-dimensional gaussian as an approximation to the psf of stars in the image and demonstrates that this is an effective approximation in practice. Using this analytic psf, the paper describes how to calculate a weighted mask that lowers the noise in a star intensity measurement by giving a larger weight to those pixel that have a higher SNR and a lower weight to dimmer, noisier pixels - &lt;/span&gt;&lt;span style=&quot; font-weight:700; color:#000000;&quot;&gt;this is the core idea in all optimal extraction schemes&lt;/span&gt;&lt;span style=&quot; color:#000000;&quot;&gt;.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;PyMovie uses a version of Optimal Extraction inspired by an observation made by V. Marchiori in the paper: &lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;In-Flight photometry extraction of PLATO targets, Optimal apertures for detecting extrasolar planets. [arXiv:1906.00892v1 (Astro-ph.IM) 3 Jun 2019]&lt;/span&gt;.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;That paper (in section 4.6.1 Gradient mask) develops an equation for computing the optimal weights for the pixels in a star image that has an arbitrary psf, not necessarily gaussian or symmetric. The inspirational (for me) observation was made a little later in the paper: it says that the weights calculated by their equation resemble very closely the weights from a gaussian mask and they go on to show that the results obtained using the gaussian mask were nearly as good as those obtained by using the mathematically correct weights of a gradient mask. Noting that the psf of the star recorded by PLATO optics is a gaussian, PyMovie takes that idea to an extreme and uses the &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; text-decoration: underline;&quot;&gt;measured&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt; psf of a star in the image field as the basis of the weights to be used for optimal extraction. That is, PyMovie assumes no psf model other than that derived from the video recording itself.&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:12pt;&quot;&gt;&lt;br/&gt;&lt;br/&gt;&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;In short: the psf of a selected star is measured by adding the pixel values from a sequence of frames centered by the nThBrightPixel algorithm described below. Appropriately normalized, this psf is the basis for the weights that are subsequently used in light curve extraction. This has proven to be both robust and usable even for occultations where the target completely disappears.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-weight:700; color:#ff0000;&quot;&gt;nThBrightPixel cenroid algorithm: &lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;The nThBrightPixel algorithm was conceived and tested by A. G. Basden (reported in &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; color:#ff0000;&quot;&gt;Centroids using Brightest Pixel Algorithm by A. G. Basden, et al, MNRAS, 2011&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;). &lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;It operates by finding the n brightest pixels in a masked image, setting all other pixel values to zero, and calculating the x,y centroid of the remaining ‘mass’ (i.e., the pixels values are used in the calculation) - and using that as the center of the image.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-weight:700; color:#ff0000;&quot;&gt;Note:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Both of the referenced papers develop an equation for weights that are mathematically optimum, given the model that they use. Because the procedure used by PyMovie does not have a mathematical underpinning for the weights used that come from an optimization calculation, it can't/shouldn't be called Optimal Extraction. Instead, we use the term Noise Reduction Extraction. &lt;/p&gt;&lt;p&gt;Its efficacy has been proven by testing, not by mathematics.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:12pt;&quot;&gt;&lt;br/&gt;&lt;br/&gt;&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                  </property>
                  <property name="text">
-                  <string>calculate Noise Reduction psf</string>
+                  <string>calculate NRE psf</string>
                  </property>
                 </widget>
                </item>
@@ -3582,7 +3605,7 @@ aperture placement.</string>
                 </spacer>
                </item>
                <item>
-                <widget class="QPushButton" name="transportClearOE">
+                <widget class="QPushButton" name="transportClearNREpsf">
                  <property name="enabled">
                   <bool>false</bool>
                  </property>
@@ -3597,7 +3620,51 @@ aperture placement.</string>
                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This deletes the experimentally determined psf.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                  </property>
                  <property name="text">
-                  <string>clear Noise Reduction psf</string>
+                  <string>clear NRE psf</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_12">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item>
+                <widget class="QPushButton" name="transportCalcGrowthCurveButton">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>.SF NS Text</family>
+                   <pointsize>13</pointsize>
+                   <bold>true</bold>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>calculate Growth Curve</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="numPixelsToSumLabel">
+                 <property name="text">
+                  <string>num pixels to sum</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QSpinBox" name="numPixelsToSumSpinBox">
+                 <property name="enabled">
+                  <bool>false</bool>
                  </property>
                 </widget>
                </item>

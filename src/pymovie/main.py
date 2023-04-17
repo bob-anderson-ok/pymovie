@@ -81,8 +81,8 @@ import warnings
 # from numba import njit
 # from numba.typed import List
 from astropy.utils.exceptions import AstropyWarning
-# from astropy import modeling
-# from astropy.modeling.models import Gaussian1D, Gaussian2D
+from astropy import modeling
+# from astropy.modeling.models import Gaussian2D
 # from astropy.time import Time
 import sys
 import os
@@ -111,7 +111,7 @@ from numpy import pi as PI
 # from scipy.stats import norm
 
 from pyqtgraph import PlotWidget
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets, Qt
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import QFileDialog, QGraphicsRectItem, QButtonGroup, QMessageBox
 from PyQt5.QtCore import QSettings, QSize, QPoint, QTimer
@@ -426,6 +426,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.secondYellowApertureX = None
         self.secondYellowAperturey = None
 
+        self.sorted_fractional_weights = None
+
         self.sorted_background = None
         self.sorted_masked_data = None
 
@@ -569,12 +571,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.vtiSelectLabel.installEventFilter(self)
 
-        self.helperThing.setWindowFlags( Qt.Window |
-                                         Qt.CustomizeWindowHint |
-                                         Qt.WindowTitleHint |
-                                         Qt.WindowCloseButtonHint |
-                                         Qt.WindowStaysOnTopHint
-                                        )
+        # TODO Figure out why this had to be commented out. Did it EVER do anythong needed?
+        # self.helperThing.setWindowFlags( Qt.Window|
+        #                                  Qt.CustomizeWindowHint |
+        #                                  Qt.WindowTitleHint |
+        #                                  Qt.WindowCloseButtonHint |
+        #                                  Qt.QtWindowStaysOnTopHint
+        #                                 )
+
         # setting font to the dialog (This does not work, probably because the font size is set by the html content)
         # self.helperThing.setFont(QtGui.QFont('Times', 12))
 
@@ -1096,8 +1100,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.transportAnalyze.installEventFilter(self)
         self.transportAnalyze.clicked.connect(self.startAnalysisWithAP)
 
-        self.transportAnalyzeWithOE.installEventFilter(self)
-        self.transportAnalyzeWithOE.clicked.connect(self.startAnalysisWithOE)
+        self.transportAnalyzeWithNRE.installEventFilter(self)
+        self.transportAnalyzeWithNRE.clicked.connect(self.startAnalysisWithNRE)
+
+        self.transportAnalyzeWithNPIX.installEventFilter(self)
+        self.transportAnalyzeWithNPIX.clicked.connect(self.startAnalyzeWithNPIX)
 
         # self.transportBkgndPolyDegreeLabel.installEventFilter(self)
 
@@ -1110,8 +1117,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.transportTargetPsf.installEventFilter(self)
         self.transportTargetPsf.clicked.connect(self.startPsfGathering)
 
-        self.transportClearOE.installEventFilter(self)
-        self.transportClearOE.clicked.connect(self.turnOffOptimalExtraction)
+        self.transportClearNREpsf.installEventFilter(self)
+        self.transportClearNREpsf.clicked.connect(self.turnOffNREpsfExtraction)
+
+        self.transportCalcGrowthCurveButton.installEventFilter(self)
+        self.transportCalcGrowthCurveButton.clicked.connect(self.startGrowthCurveGathering)
+
+        self.numPixelsToSumSpinBox.valueChanged.connect(self.updateNumPixelsToSum)
 
         self.transportPlayRight.installEventFilter(self)
         self.transportPlayRight.clicked.connect(self.playRight)
@@ -3021,17 +3033,25 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.analysisRequested = False
         self.setTransportButtonsEnableState(True)
 
-    def turnOffOptimalExtraction(self):
+    def turnOffNREpsfExtraction(self):
         if self.target_psf is not None:
-            self.transportClearOE.setEnabled(False)
+            self.transportClearNREpsf.setEnabled(False)
             self.clearOptimalExtractionVariables()
-            self.showMsgPopup(f'Noise Reduction Extraction data has been cleared and disabled.\n\n'
-                              f'Aperture photometry is now active.')
+            # self.showMsgPopup(f'Noise Reduction Extraction data has been cleared and disabled.\n\n')
         else:
-            self.showMsgPopup(f'There was no Noise Reduction Extraction data available to be cleared.\n\n'
-                              f'Aperture photometry remains active.')
+            self.showMsgPopup(f'There was no Noise Reduction Extraction data available to be cleared.\n\n')
+
+    def updateNumPixelsToSum(self):
+        self.best_pixel_count_to_sum = self.numPixelsToSumSpinBox.value()
+
+    def startGrowthCurveGathering(self):
+        self.extractionCode = 'NPIX'
+        self.target_psf_gathering_in_progress = True
+        self.startAnalysis()
 
     def startPsfGathering(self):
+
+        self.extractionCode = 'NRE'
 
         if self.fractional_weights is not None:
             self.showMsgPopup(f"A Noise Reduction Extraction psf already exists.\n\n"
@@ -3071,13 +3091,39 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def startAnalysisWithAP(self):
         self.useOptimalExtraction = False
+        self.extractionMode = 'Aperture Photometry'
+        self.extractionCode = 'AP'
         self.startAnalysis()
 
-    def startAnalysisWithOE(self):
-        if self.fractional_weights is None:
-            self.showMsgPopup('A Noise Reduction Extraction psf has not been calculated yet, so analysis with Noise '
-                              'Reduction Extraction cannot be performed.')
+    def startAnalyzeWithNPIX(self):
+        if self.numPixelsToSumSpinBox.value() > 0:
+            self.extractionMode = f'Sum of brightest {self.numPixelsToSumSpinBox.value()} pixels photometry'
+            self.extractionCode = 'NPIX'
+        else:
+            self.showMsgPopup(f'The number of brightest pixels to sum is zero.\n\n'
+                              f'Do you need to run a growth curve to determine the optimal value to use? If so, '
+                              f'press the caluclate Growth Curve button.')
             return
+
+        self.pixel_sums = []
+        self.pixel_sums_per_frame = []
+        self.max_pixels_in_sum = 49
+
+        self.useOptimalExtraction = True
+
+        self.startAnalysis()
+
+
+    def startAnalysisWithNRE(self):
+        if self.fractional_weights is None:
+            self.showMsgPopup('A psf has not been calculated yet, so analysis with Noise '
+                              'Reduction Extraction cannot be performed.\n\n'
+                              'Do you need to calculate an experimental psf to be used for NRE?. If so, '
+                              'click the calculate NRE psf button.')
+            return
+        else:
+            self.extractionMode = f'NRE mode (pixels weighted by experimental psf)'
+            self.extractionCode = 'NRE'
 
         self.useOptimalExtraction = True
         self.startAnalysis()
@@ -4836,6 +4882,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.viewFieldsCheckBox.setEnabled(False)
         self.currentFrameSpinBox.setEnabled(False)
+        self.stopAtFrameSpinBox.setEnabled(False)
 
         self.setTransportButtonsEnableState(False)
         self.transportReturnToMark.setEnabled(False)
@@ -4852,14 +4899,15 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.transportPlayLeft.setEnabled(state)
         self.transportPause.setEnabled(state)
         self.transportAnalyze.setEnabled(state)
-        self.transportAnalyzeWithOE.setEnabled(state)
+        self.transportAnalyzeWithNRE.setEnabled(state)
+        self.transportAnalyzeWithNPIX.setEnabled(state)
         self.transportTargetPsf.setEnabled(state)
+        self.transportCalcGrowthCurveButton.setEnabled(state)
 
         # We don't want to enable these, but allow the disable
         if not state:
-            # self.transportCalcBackgroundCheckBox.setEnabled(state)
             if self.fractional_weights is None:
-                self.transportClearOE.setEnabled(state)
+                self.transportClearNREpsf.setEnabled(state)
 
         self.transportPlayRight.setEnabled(state)
         self.transportPlusOneFrame.setEnabled(state)
@@ -4879,6 +4927,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.viewFieldsCheckBox.setEnabled(True)
         self.currentFrameSpinBox.setEnabled(True)
+        self.stopAtFrameSpinBox.setEnabled(True)
         self.processAsFieldsCheckBox.setEnabled(True)
         self.topFieldFirstRadioButton.setEnabled(True)
         self.bottomFieldFirstRadioButton.setEnabled(True)
@@ -4891,6 +4940,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.saveApertureState.setEnabled(True)
 
         self.currentFrameSpinBox.setEnabled(True)
+        self.stopAtFrameSpinBox.setEnabled(True)
         self.viewFieldsCheckBox.setChecked(False)
         self.viewFieldsCheckBox.setEnabled(False)
 
@@ -5152,8 +5202,96 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     #     self.fractional_weights *= self.correct_sum_fractional_weights / new_sum
 
     def calcOptimalExtractionWeights(self):
-        # We no longer make use of this measurement.
-        # self.target_appsum /= self.target_psf_number_accumulated  # float result
+
+        if self.extractionCode == 'NPIX':
+            self.target_psf_gathering_in_progress = False
+
+            # TODO Start NPIX experimental code
+            raw_pixel_sums_matrix = np.array(self.pixel_sums_per_frame)
+            avg_values = []
+            for i in range(self.max_pixels_in_sum):
+                avg_values.append(np.mean(raw_pixel_sums_matrix[:,i]))
+
+            std_values = []
+            for i in range(self.max_pixels_in_sum):
+                std_values.append(np.std(raw_pixel_sums_matrix[:,i]))
+
+            snr_values = []
+            for i in range(self.max_pixels_in_sum):
+                if std_values[i] > 0:
+                    snr_values.append(avg_values[i] / std_values[i])
+                else:
+                    snr_values.append(0.0)
+
+            # Find first peak snr
+            best_snr_so_far = snr_values[0] # Corresponds to a 'best pixel count' of 1
+            k = 1
+            while k < self.max_pixels_in_sum:
+                if snr_values[k] > best_snr_so_far:
+                    best_snr_so_far = snr_values[k]
+                    k += 1
+                else:
+                    break
+
+            self.numPixelsToSumSpinBox.setValue(k)
+            self.numPixelsToSumSpinBox.setEnabled(True)
+
+            if k > self.max_pixels_in_sum - 1:
+                k = self.max_pixels_in_sum - 1
+
+            self.best_pixel_count_to_sum = k
+            self.showMsg(f'Best number of pixels from sorted list to sum: {self.best_pixel_count_to_sum}')
+            self.showMsg(f'mean_value: {avg_values[k]:0.2f}  noise: {std_values[k]:0.2f}  snr: {snr_values[k]:0.2f}')
+            self.showMsg(f'@ {self.max_pixels_in_sum} pixels summed: mean: {avg_values[-1]:0.2f}  '
+                         f'noise: {std_values[-1]:0.2f}  snr: {snr_values[-1]:0.2f}')
+
+            x = range(1,len(avg_values)+1)
+            # Plot stuff
+            # Start a new plot
+            self.plots.append(pg.GraphicsLayoutWidget(title="Growth curve plots"))
+            self.plots[-1].resize(1400, 900)
+            self.plots[-1].setWindowTitle(f'PyMovie {version.version()} Growth curve plots')
+            # dark_gray = (50, 50, 50)
+            black = (0, 0, 0)
+            p1 = self.plots[-1].addPlot(
+                row=0, col=0,
+                x=x,
+                y=avg_values,
+                symbol='o',
+                # title=f'Average signal',
+                pen=black
+            )
+            label_style = {'color': '#000', 'font-size': '15pt'}
+            p1.setLabel(axis='bottom', text='pixels summed', **label_style)
+            p1.setLabel(axis='left', text='Signal', **label_style)
+            p1.setXRange(1,len(avg_values)+1)
+
+
+            font = QtGui.QFont()
+            font.setPixelSize(15)
+            p1.getAxis("bottom").setStyle(tickFont=font)
+            p1.getAxis("left").setStyle(tickFont=font)
+            p1.showGrid(x=True, y=True)
+
+            self.plots[-1].nextRow()  # Tell GraphicsWindow that we want another row of plots
+            p2 = self.plots[-1].addPlot(
+                row=1, col=0,
+                x=x,
+                y=snr_values,
+                symbol='o',
+                # title=f'SNR',
+                pen=black
+            )
+            p2.setLabel(axis='bottom', text='pixels summed', **label_style)
+            p2.setLabel(axis='left', text='SNR', **label_style)
+            p2.setXRange(1,len(avg_values)+1)
+
+            p2.getAxis("bottom").setStyle(tickFont=font)
+            p2.getAxis("left").setStyle(tickFont=font)
+            p2.showGrid(x=True, y=True)
+            self.plots[-1].show()
+            return
+            # TODO End experimental code
 
         # self.target_psf has background subtracted
         self.target_psf_float = self.target_psf / self.target_psf_number_accumulated  # float result and float input
@@ -5167,59 +5305,116 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         target_psf_signal_sum = np.sum(self.target_psf_float) / (self.zoom_factor**2)
 
-        # w = self.w
-        # fitter = modeling.fitting.LevMarLSQFitter()
-        # # depending on the data you need to give some initial values
-        # model = modeling.models.Gaussian2D(amplitude=np.max(self.target_psf_float),
-        #                                    x_mean=w / 2 * self.zoom_factor, y_mean=w / 2 * self.zoom_factor,
-        #                                    x_stddev=2, y_stddev=2, theta=np.pi/4)
-        # y, x = np.mgrid[:w * self.zoom_factor, :w * self.zoom_factor]
-        # z = self.target_psf_float
-        # fitted_psf = fitter(model, y, x, z)
-        # self.g2d_amplitude = fitted_psf.amplitude.value
-        # self.g2d_x_mean = fitted_psf.x_mean.value
-        # self.g2d_y_mean = fitted_psf.y_mean.value
-        # self.g2d_x_stddev = fitted_psf.x_stddev.value
-        # self.g2d_y_stddev = fitted_psf.y_stddev.value
-        # self.g2d_theta = fitted_psf.theta.value
-        # self.g2d_x_fwhm = fitted_psf.x_fwhm
-        # self.g2d_y_fwhm = fitted_psf.y_fwhm
-        #
-        # print(f'amplitude: {self.g2d_amplitude:0.3f}  x_stddev: {self.g2d_x_stddev:0.3f}  '
-        #       f'y_stddev: {self.g2d_y_stddev:0.3f}  '
-        #       f'theta: {self.g2d_theta:0.3f}  x_fwhm: {self.g2d_x_fwhm:0.3f}  y_fwhm: {self.g2d_y_fwhm:0.3f}  '
-        #       f'x_mean: {self.g2d_x_mean:0.3f}  y_mean: {self.g2d_y_mean:0.3f}')
-        #
-        # y, x = np.mgrid[:self.mask_size * self.zoom_factor, :self.mask_size * self.zoom_factor]
-        # g2d = modeling.models.Gaussian2D()
-        # self.fractional_weights = g2d.evaluate(x=x, y=y, amplitude=self.g2d_amplitude,
-        #                                        x_mean=self.mask_size // 2 * self.zoom_factor,
-        #                                        y_mean=self.mask_size // 2 * self.zoom_factor,
-        #                                        x_stddev=self.g2d_x_stddev, y_stddev=self.g2d_y_stddev,
-        #                                        theta=self.g2d_theta)
+        w = self.w
+        fitter = modeling.fitting.LevMarLSQFitter()
+        # depending on the data you need to give some initial values
+        model = modeling.models.Gaussian2D(amplitude=np.max(self.target_psf_float),
+                                           x_mean=w/2, y_mean=w/2,
+                                           x_stddev=2, y_stddev=2, theta=0)
+        x, y = np.mgrid[:w, :w]
+        z = self.target_psf_float
+        fitted_psf = fitter(model, y, x, z)
+        self.g2d_amplitude = fitted_psf.amplitude.value
+        self.g2d_x_mean = fitted_psf.x_mean.value
+        self.g2d_y_mean = fitted_psf.y_mean.value
+        self.g2d_x_stddev = fitted_psf.x_stddev.value
+        self.g2d_y_stddev = fitted_psf.y_stddev.value
+        self.g2d_theta = fitted_psf.theta.value
+        self.g2d_x_fwhm = fitted_psf.x_fwhm
+        self.g2d_y_fwhm = fitted_psf.y_fwhm
+
+        self.showMsg(f'amplitude: {self.g2d_amplitude:0.3f}  x_stddev: {self.g2d_x_stddev:0.3f}  '
+                     f'y_stddev: {self.g2d_y_stddev:0.3f}  '
+                     f'theta: {self.g2d_theta:0.3f}  x_fwhm: {self.g2d_x_fwhm:0.3f}  y_fwhm: {self.g2d_y_fwhm:0.3f}  '
+                     f'x_mean: {self.g2d_x_mean:0.3f}  y_mean: {self.g2d_y_mean:0.3f}')
+
+        # the +0.1 term in the statement below is to ensure that the rightmost point will include w
+        # The dimension for self.high_res_psf will now be [(2 * w * 4) + 1] and the center will
+        # be at [2 * w * 2, 2 * w * 2]
+        y, x = np.mgrid[-w : w + 0.1 : 0.25, -w : w + 0.1 : 0.25]
+        g2d = modeling.models.Gaussian2D()
+        self.high_res_psf = g2d.evaluate(x=x, y=y, amplitude=self.g2d_amplitude,
+                            x_mean=0,
+                            y_mean=0,
+                            x_stddev=self.g2d_x_stddev, y_stddev=self.g2d_y_stddev,
+                            theta=self.g2d_theta)
+        self.calcNaylorWeights(w)
+
+        # TODO Remove this test print. It is just to show that peak will equal g2d_amplitude at center (x=y=0
+        peak = g2d.evaluate(x=0, y=0, amplitude=self.g2d_amplitude,
+                            x_mean=0,
+                            y_mean=0,
+                            x_stddev=self.g2d_x_stddev, y_stddev=self.g2d_y_stddev,
+                            theta=self.g2d_theta)
+        self.showMsg(f'peak: {peak:0.3f}')
 
         self.fractional_weights = np.clip(self.target_psf_float, 0, np.max(self.target_psf_float))
 
         self.zeroWeightsOutsideCircularMask()
 
-        self.thumbOneImage = self.target_psf_float / np.max(self.target_psf_float) * 100.0
+        # self.thumbOneImage = self.target_psf_float / np.max(self.target_psf_float) * 100.0
+        self.thumbOneImage = self.high_res_psf
         self.thumbOneView.setImage(self.thumbOneImage)
 
-        self.hair1.setPos((0, self.target_psf_float.shape[0]))
+        # self.hair1.setPos((0, self.target_psf_float.shape[0]))
+        # self.hair1.setPos((0.5, self.high_res_psf.shape[0]+0.5))
+        self.hair1.setPos((0, self.high_res_psf.shape[0]))
         self.hair2.setPos((0, 0))
 
         sum_raw = np.sum(self.target_psf_float * self.fractional_weights)
         normalizer = target_psf_signal_sum / sum_raw
         self.fractional_weights = self.fractional_weights * normalizer
-        self.showMsgPopup(f'Thumbnail One is now displaying the centered/summed "target" psf.\n\n'
-                          f'This "target psf" will be directly used in forming the Noise Reduction Extraction weights.\n\n'
-                          f'Note: The psf has been normalized for display purposes such that the peak '
-                          f'value is always 100.\n\n')
+        # self.showMsgPopup(f'Thumbnail One is now displaying the centered/summed "target" psf.\n\n'
+        #                   f'This "target psf" will be directly used in forming the Noise Reduction Extraction weights.\n\n'
+        #                   f'Note: The psf has been normalized for display purposes such that the peak '
+        #                   f'value is always 100.\n\n')
                           # f'Note: The psf has been composed at {1/self.zoom_factor:0.2f} pixel resolution.')
         self.target_psf_gathering_in_progress = False
-        self.transportClearOE.setEnabled(True)
+        self.transportClearNREpsf.setEnabled(True)
 
         self.sorted_fractional_weights = np.sort(self.fractional_weights.flatten())
+
+    def calcNaylorWeights(self, w):
+        normer = np.zeros((5,5))
+        dim_PE = 2 * w
+        PE = np.zeros((dim_PE,dim_PE,5,5))
+        def patchPE(xc_in, yc_in):
+            xc_in -= 2
+            yc_in -= 2
+            if xc_in < 0 or yc_in < 0:
+                return 0.0
+            if not xc_in + 5 < self.high_res_psf.size or not yc_in < self.high_res_psf.size:
+                return 0.0
+            return np.sum(self.high_res_psf[xc_in:xc_in+5, yc_in:yc_in+5]) / 25
+
+        for xc in range(5):
+            for yc in range(5):
+                normer[xc, yc] = 0.0  # This is not necessary, but it makes the intention clear
+                for m in range(2 * w):
+                    i = xc + m * 5
+                    for n in range(2 * w):
+                        j = yc + n * 5
+                        avg_PE = patchPE(i, j)
+                        # This is this strange hack (adding 2 to m and n) I do not know why this is needed,
+                        # but it does work reliably. Without it the peak is translated diagonally by 2 pixels. This
+                        # just compensates for that.
+                        if not m + 2 < 2 * w:
+                            pass
+                        elif not n + 2  < 2 * w:
+                            pass
+                        else:
+                            PE[m+2, n+2, xc, yc] = avg_PE
+                        # PE[m, n, xc, yc] = avg_PE
+                        normer[xc, yc] += PE[m, n, xc, yc]
+
+        # Normalize the weights
+        for xc in range(5):
+            for yc in range(5):
+                for m in range(2 * w):
+                    for n in range(2 * w):
+                        PE[m, n, xc, yc] /= normer[xc, yc]
+        _ = w  # This statement is here to provide a breakpoint target
+
 
     def zeroWeightsOutsideCircularMask(self):
         w = self.target_psf.shape[0]
@@ -6761,7 +6956,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         thumbnail = self.image[y0:y0 + ny, x0:x0 + nx]
         mean, std, sorted_data, _, _, _, _, _, bkgnd_pixels = newRobustMeanStd(thumbnail, outlier_fraction=.5,
                                                       lunar=self.lunarCheckBox.isChecked())
-        new_mean = mean  # This is now a poisson mean
+        new_mean = mean  #
         maxpx = sorted_data[-1]
 
         mean_top, *_ = newRobustMeanStd(thumbnail[0::2, :], outlier_fraction=.5, lunar=self.lunarCheckBox.isChecked())
@@ -6838,11 +7033,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             # Within the mask area, find the position of the max value pixel. We just want to know if
             # there is enough 'star' to justify a centroid searh.
             masked_data = mask * thumbnail
-            max_pixel = np.max(masked_data)
-            pixel_limit = mean + 1 * std
+            # max_pixel = np.max(masked_data)
+            # pixel_limit = mean + 1 * std
 
-            # TODO Think about whether this is a problem when gathering psf  It won't be if star is bright
-            if max_pixel > pixel_limit:
+            if True:
                 try:
                     mass_centroid = brightest_pixel(masked_data.copy(), 5)
                     x_coord = round(mass_centroid[0])
@@ -6862,6 +7056,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         self.target_psf_number_accumulated = 0
                         # self.target_appsum = 0
                         self.mask_size = w
+                        self.pixel_sums = []
+                        self.pixel_sums_per_frame = []
+                        self.max_pixels_in_sum = 49
 
                     # We don't do 'zooming' anymore, but we do use the centering mechanism.
                     zoomed_masked_data = self.getZoomedAndCenteredVersionOfMaskedData(masked_data, mass_centroid)
@@ -6873,9 +7070,20 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         for j in range(w * self.zoom_factor):
                             # Accumulate a psf image. Later we will divide by self.target_psf_number_accumulated
                             self.target_psf[i,j] += zoomed_masked_data[i+offset_x,j+offset_y]   # x,y indexing
+                    # TODO Experimental NPIX code
+                    if aperture.name.startswith('psf-star'):
+                        sorted_masked_data = np.sort(masked_data.flatten()) - mean
+                        # TODO Experiment: only count pixels 1 sigma over mean
+                        sorted_masked_data -= std
+                        np.clip(sorted_masked_data, 0, sorted_masked_data[-1])
+                        self.pixel_sums = []
+                        for i in range(self.max_pixels_in_sum):
+                            self.pixel_sums.append(np.sum(sorted_masked_data[-(i+1):]))
+                        self.pixel_sums_per_frame.append(self.pixel_sums)
+
 
                     # This would make a 'signal' psf because of this background subtraction. We now do this in
-                    # calcOptimalExtractWeights by a different mechanism invloving self.psf_background
+                    # calcOptimalExtractWeights by a different mechanism involving self.psf_background
                     # self.target_psf -= mean
                     self.psf_background = aperture.smoothed_background
                     self.target_psf_number_accumulated += 1
@@ -6998,6 +7206,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                                            levels=(minThumbnailPixel, maxThumbnailPixel))
                 self.thumbTwoView.setColorMap(cmap_thumb2)
 
+        frame_num = float(self.currentFrameSpinBox.text())
+
         if self.use_yellow_mask and self.yellow_mask is not None:
             default_mask_used = False
             appsum = np.sum(self.yellow_mask * thumbnail)
@@ -7008,7 +7218,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 # TODO Do we have to put mean in place of zeroes?
                 masked_data = thumbnail * mask
                 signal = None
-                if self.fractional_weights is not None and \
+                if (self.fractional_weights is not None or self.extractionCode == 'NPIX') and \
                         not self.target_psf_gathering_in_progress and self.useOptimalExtraction:
                     centered_data = self.getZoomedAndCenteredVersionOfMaskedData(thumbnail, mass_centroid)
                     centered_masked_data = centered_data * aperture.defaultMask
@@ -7027,48 +7237,94 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
                     w = 2 * int(aperture.default_mask_radius) + 1
 
-                    n = self.sorted_fractional_weights.size
+                    # TODO Check that this alternate computation works
+                    # n = self.sorted_fractional_weights.size
+                    n = w * w
+
                     bkgnd_sample = np.random.choice(bkgnd_pixels, size=n, replace=True)
                     sorted_bkgnd = np.sort(bkgnd_sample - mean)
-                    weighted_bknd = np.sum(sorted_bkgnd * self.sorted_fractional_weights)
-                    new_mean = weighted_bknd
+                    if self.sorted_fractional_weights is not None:
+                        weighted_bkgnd = np.sum(sorted_bkgnd * self.sorted_fractional_weights)
+                    else:
+                        weighted_bkgnd = 0.0
+                        
+                    # TODO Experimental code
+                    bkgnd_pixels = sorted_bkgnd[-self.best_pixel_count_to_sum:]
+                    new_mean = weighted_bkgnd
 
                     # upper left corner coordinate is at x,y = offset_x, offset+y
                     offset_x = (len(masked_data) // 2 - w // 2) * self.zoom_factor  # starting column
                     offset_y = (len(masked_data) // 2 - w // 2) * self.zoom_factor  # starting row
                     win_data = centered_masked_data[offset_y:offset_y + w * self.zoom_factor, offset_x:offset_x + w * self.zoom_factor]
 
-                    data_to_use = win_data - mean
-                    judy = data_to_use.flatten()
-                    k = judy.size
-                    n = self.sorted_fractional_weights.size
-                    m = k - n
-                    sorted_data_to_use = np.sort(judy)
-                    bob = sorted_data_to_use[m:] * self.sorted_fractional_weights
-                    raw_signal = np.sum(bob)
+                    sorted_data_to_use = None
 
-                    signal = raw_signal
+                    if self.extractionCode == 'NRE':
+                        data_to_use = win_data - mean
+                        judy = data_to_use.flatten()
+                        # k = judy.size
+                        # n = self.sorted_fractional_weights.size
+                        # m = k - n
+                        sorted_data_to_use = np.sort(judy)
+                        # bob = sorted_data_to_use[m:] * self.sorted_fractional_weights
+                        # raw_signal = np.sum(bob)
+
+
+                    if self.extractionCode == 'NPIX':
+                        # TODO Experimental code A begin
+                        data_to_use = win_data - mean
+
+                        if frame_num == 500.0:
+                            _ = 0  # To provide a breakpoint target
+                        sorted_data_to_use = np.sort(data_to_use.flatten())
+                        # bob = sorted_data_to_use[m:]
+                        raw_pixels = sorted_data_to_use[-self.best_pixel_count_to_sum:]
+                        star_signal = np.sum(raw_pixels)
+                        bkgnd_signal = np.sum(bkgnd_pixels)
+                        if bkgnd_signal > 0:
+                            star_versus_bkgnd_ratio = star_signal / bkgnd_signal
+                        else:
+                            star_versus_bkgnd_ratio = 2.0
+                        if  star_versus_bkgnd_ratio >= 2.0:  # Assumption: star pixel spectrum push bkgnd pixel spectrum out of the picture
+                            # Do faked up background subtraction - division by two is arbitrary hack
+                            signal = star_signal - bkgnd_signal / 2.0
+                        else:
+                            signal = star_signal - bkgnd_signal / 2.0 - (2.0 - star_versus_bkgnd_ratio)**2 * bkgnd_signal / 2.0
+                            if aperture.name.startswith('psf-star'):
+                                _ = 0  # To provide a breakpoint target
+
+                        # Default - always subtract bkgnd_signal - makes empty aperture correct but over substracts from
+                        # other apertures
+                        # signal = star_signal - bkgnd_signal
+
+                        # TODO Experimental code A end
+
+                    # signal = raw_signal
                     # IP = 2
 
-                    self.sorted_background = sorted_bkgnd
-                    self.sorted_masked_data = sorted_data_to_use
-                    # if aperture.name.startswith('psf-star') and int(self.currentFrameSpinBox.text()) == 500:
-                    # self.cullBackground(replacement=0)
-                    bob = sorted_data_to_use[m:] * self.sorted_fractional_weights
-                    raw_signal = np.sum(bob)
+                    # TODO Experimental code A removals start
+                    if not self.extractionCode == 'NPIX':
+                        self.sorted_background = sorted_bkgnd
+                        self.sorted_masked_data = sorted_data_to_use
+                        bob = sorted_data_to_use * self.sorted_fractional_weights
+                        raw_signal = np.sum(bob)
 
-                    signal = raw_signal
+                        signal = raw_signal
+                        # TODO Experimental code A removals end
 
                     reference_background = aperture.smoothed_background
                     if reference_background == 0:
                         # This deals with intial value startup
-                        reference_background = weighted_bknd
+                        reference_background = weighted_bkgnd
                     # if signal > IP * reference_background:
                     #     bkgnd_corr = 0.0
                     # else:
                     #     bkgnd_corr =  1.0 - (signal - reference_background) / (reference_background * (IP -1))
 
-                    signal -= reference_background
+                    # TODO Experimental code A removals start
+                    if not self.extractionCode == 'NPIX':
+                        signal -= reference_background
+                    # TODO Experimental code A removals end
 
                     appsum = signal + mean * aperture.defaultMaskPixelCount
                 else:
@@ -7085,7 +7341,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         else:
                             signal = appsum - int(round(max_area * aperture.smoothed_background))
             except Exception as e:
-                self.showMsg(f'in showApertureStats: {e}')
+                self.showMsg(f'in getApertureStats: {e}')
                 appsum = 0
                 signal = 0
 
@@ -7097,7 +7353,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         else:
             xc_roi = yc_roi = xc_world = yc_world = None
 
-        frame_num = float(self.currentFrameSpinBox.text())
 
         if default_mask_used:
             # A negative value for mask pixel count indicates that a default mask was used in the measurement
@@ -7321,7 +7576,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             self.clearOptimalExtractionVariables()
             # self.transportCalcBackgroundCheckBox.setChecked(False)
-            self.transportClearOE.setEnabled(False)
+            self.transportClearNREpsf.setEnabled(False)
 
             self.firstFrameInApertureData = None
             self.lastFrameInApertureData = None
@@ -7642,7 +7897,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             self.clearOptimalExtractionVariables()
             # self.transportCalcBackgroundCheckBox.setChecked(False)
-            self.transportClearOE.setEnabled(False)
+            self.transportClearNREpsf.setEnabled(False)
 
             self.firstFrameInApertureData = None
             self.lastFrameInApertureData = None
@@ -7873,7 +8128,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             self.clearOptimalExtractionVariables()
             # self.transportCalcBackgroundCheckBox.setChecked(False)
-            self.transportClearOE.setEnabled(False)
+            self.transportClearNREpsf.setEnabled(False)
 
             self.firstFrameInApertureData = None
             self.lastFrameInApertureData = None
@@ -9473,12 +9728,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             app.data.sort(key=sortOnFrame)
 
             # Start a new plot for each aperture
-            self.plots.append(pg.GraphicsLayoutWidget(title="PyMovie lightcurve plot"))
+            title = f'PyMovie lightcurve plot. Mode: {self.extractionMode}'
+            self.plots.append(pg.GraphicsLayoutWidget(title=title))
             self.plots[-1].resize(1000, 600)
             if self.cascadeCheckBox.isChecked():
                 self.plots[-1].move(QPoint(cascadePosition, cascadePosition))
             cascadePosition += cascadeDelta
-            self.plots[-1].setWindowTitle(f'PyMovie {version.version()} lightcurve for aperture: {app.name}')
+            self.plots[-1].setWindowTitle(f'PyMovie {version.version()} lightcurve for aperture: {app.name} using {self.extractionMode}')
 
             yvalues = []
             xvalues = []
@@ -9553,7 +9809,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 color_index = 0
 
         # Add a composite plot of all lightcurves --- because created first, will be bottom-most plot in z order
-        self.plots.append(pg.GraphicsLayoutWidget(title=f'PyMovie {version.version()} composite lightcurve'))
+        self.plots.append(pg.GraphicsLayoutWidget(title=f'PyMovie {version.version()} composite lightcurve using {self.extractionMode}'))
         # pw = PlotWidget(title=f'PyMovie {version.version()} composite lightcurve')
         # self.plots.append(pw.getPlotItem())
         self.plots[-1].resize(1000, 600)
@@ -10155,7 +10411,7 @@ def poisson_mean(data_set, initial_guess, debug=False):
     return parameters[0], hist
 
 def newRobustMeanStd(
-        data: np.ndarray, outlier_fraction: float = 0.5, max_pts: int = 10000,
+        data: np.ndarray, outlier_fraction: float = 0.5, max_pts: int = 20000,
         assume_gaussian: bool = True, lunar: bool = False):
     assert data.size <= max_pts, "data.size > max_pts in newRobustMean()"
     assert outlier_fraction < 1.0, "outlier_fraction >= 1.0 in newRobustMean()"
