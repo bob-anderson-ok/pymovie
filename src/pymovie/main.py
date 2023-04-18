@@ -5374,6 +5374,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.sorted_fractional_weights = np.sort(self.fractional_weights.flatten())
 
+        naylor_value_of_psf = self.calcNaylorIntensity(self.target_psf_float)
+        self.naylorRescaleFactor = target_psf_signal_sum / naylor_value_of_psf
+        _ = 1
+
     def calcNaylorWeights(self, w):
         normer = np.zeros((5,5))
         dim_PE = 2 * w
@@ -5413,6 +5417,17 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 for m in range(2 * w):
                     for n in range(2 * w):
                         PE[m, n, xc, yc] /= normer[xc, yc]
+        wi = w // 2
+        self.naylorWgts = np.copy(PE[wi:3*wi+1,wi:3*wi+1,:,:])
+        central_wgts = np.copy(self.naylorWgts[:,:,2,2])
+        # Make 5 x 5 array of central_wgts in 5 positions around the center
+        self.naylorInShiftedPositions = np.zeros((central_wgts.shape[0], central_wgts.shape[1], 5, 5, 5, 5))
+        for i in range(5):      # index over sub-pixels
+            for j in range(5):  # index over sub-pixels
+                wgts_to_shift = np.copy(self.naylorWgts[:,:,i,j])
+                for m in range(5):     # index over pixels
+                    for n in range(5): # index over pixels
+                        self.naylorInShiftedPositions[:,:,i,j,m,n] = np.copy(np.roll(wgts_to_shift,(m-2,n-2),(0,1)))
         _ = w  # This statement is here to provide a breakpoint target
 
 
@@ -7064,8 +7079,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     zoomed_masked_data = self.getZoomedAndCenteredVersionOfMaskedData(masked_data, mass_centroid)
 
                     # upper left corner coordinate is at x,y = offset_x, offset+y
-                    offset_x = (len(masked_data) // 2 - w // 2) * self.zoom_factor  # starting column
-                    offset_y = (len(masked_data) // 2 - w // 2) * self.zoom_factor  # starting row
+                    offset_x = (masked_data.shape[0] // 2 - w // 2) * self.zoom_factor  # starting column
+                    offset_y = (masked_data.shape[0] // 2 - w // 2) * self.zoom_factor  # starting row
                     for i in range(w * self.zoom_factor):
                         for j in range(w * self.zoom_factor):
                             # Accumulate a psf image. Later we will divide by self.target_psf_number_accumulated
@@ -7218,6 +7233,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 # TODO Do we have to put mean in place of zeroes?
                 masked_data = thumbnail * mask
                 signal = None
+                naylor_signal = None
                 if (self.fractional_weights is not None or self.extractionCode == 'NPIX') and \
                         not self.target_psf_gathering_in_progress and self.useOptimalExtraction:
                     centered_data = self.getZoomedAndCenteredVersionOfMaskedData(thumbnail, mass_centroid)
@@ -7235,11 +7251,20 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                                                                                outlier_fraction=.5,
                                                                                lunar=self.lunarCheckBox.isChecked())
 
+                    # TODO Experimental code - override above calculation
+                    mean, std, _, _, _, _, _, _, bkgnd_pixels = newRobustMeanStd(thumbnail,
+                                                                                 outlier_fraction=.5,
+                                                                                 lunar=self.lunarCheckBox.isChecked())
                     w = 2 * int(aperture.default_mask_radius) + 1
 
                     # TODO Check that this alternate computation works
                     # n = self.sorted_fractional_weights.size
                     n = w * w
+
+                    naylor_background = np.zeros((w,w))
+                    for i in range(w):
+                        for j in range(w):
+                            naylor_background[i,j] = np.random.choice(bkgnd_pixels, size=1, replace=True)
 
                     bkgnd_sample = np.random.choice(bkgnd_pixels, size=n, replace=True)
                     sorted_bkgnd = np.sort(bkgnd_sample - mean)
@@ -7249,14 +7274,20 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         weighted_bkgnd = 0.0
                         
                     # TODO Experimental code
-                    bkgnd_pixels = sorted_bkgnd[-self.best_pixel_count_to_sum:]
+                    # bkgnd_pixels = sorted_bkgnd[-self.best_pixel_count_to_sum:]
                     new_mean = weighted_bkgnd
 
                     # upper left corner coordinate is at x,y = offset_x, offset+y
-                    offset_x = (len(masked_data) // 2 - w // 2) * self.zoom_factor  # starting column
-                    offset_y = (len(masked_data) // 2 - w // 2) * self.zoom_factor  # starting row
+                    offset_x = (masked_data.shape[0] // 2 - w // 2) * self.zoom_factor  # starting column
+                    offset_y = (masked_data.shape[0] // 2 - w // 2) * self.zoom_factor  # starting row
+                    # win_data is the square containing the circular mask. It has the proper dimensions to
+                    # be used with the Naylor weights
                     win_data = centered_masked_data[offset_y:offset_y + w * self.zoom_factor, offset_x:offset_x + w * self.zoom_factor]
 
+                    naylor_mean = self.calcNaylorIntensity(naylor_background)
+
+                    naylor_signal = self.calcNaylorIntensity((win_data - naylor_mean)) * self.naylorRescaleFactor
+                    signal = naylor_signal
                     sorted_data_to_use = None
 
                     if self.extractionCode == 'NRE':
@@ -7326,6 +7357,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         signal -= reference_background
                     # TODO Experimental code A removals end
 
+                    # signal = naylor_signal
+
                     appsum = signal + mean * aperture.defaultMaskPixelCount
                 else:
                     masked_data = mask * thumbnail
@@ -7340,6 +7373,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                             signal = appsum - int(round(max_area * mean))
                         else:
                             signal = appsum - int(round(max_area * aperture.smoothed_background))
+                # TODO Remove this test code
+                if self.extractionCode == 'NRE':
+                    signal = naylor_signal
             except Exception as e:
                 self.showMsg(f'in getApertureStats: {e}')
                 appsum = 0
@@ -7454,6 +7490,17 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 appsum, mean, max_area, frame_num, cvxhull, maxpx, std, timestamp,
                 new_mean, self.backgroundSmoothingIntervalSpinBox.value())
 
+    def calcNaylorIntensity(self, naylor_background):
+        signal_matrix = np.zeros((5, 5, 5, 5))
+        for i in range(5):
+            for j in range(5):
+                for m in range(5):
+                    for n in range(5):
+                        signal_matrix[i, j, m, n] = np.sum(
+                            naylor_background * self.naylorInShiftedPositions[:, :, i, j, m, n])
+        naylor_mean = np.max(signal_matrix)
+        return naylor_mean
+
     def cullBackground(self, replacement=0, debug=False):
 
         # Get at-entry plot of spectrums
@@ -7513,16 +7560,19 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         return scipy.signal.fftconvolve(im1_gray, im2_gray[::-1, ::-1], mode='same')
 
     def getZoomedAndCenteredVersionOfMaskedData(self, masked_data, mass_centroid):
-        zoomed_masked_data = self.zoomer(masked_data)
+        zoomed_masked_data = self.zoomer(masked_data)  # This includes all pixels in the aperture
 
-        target_center = len(masked_data) // 2
+        target_center = masked_data.shape[0] // 2
 
         y_centroid = mass_centroid[1]
         x_centroid = mass_centroid[0]
         y_roll_count = self.roll_count(target_center, y_centroid, 1 / self.zoom_factor)
         x_roll_count = self.roll_count(target_center, x_centroid, 1 / self.zoom_factor)
-        zoomed_masked_data = np.roll(zoomed_masked_data, y_roll_count, axis=0)
-        zoomed_masked_data = np.roll(zoomed_masked_data, x_roll_count, axis=1)
+        row_axis = 0
+        col_axis = 1
+        # roll count is positive to the right
+        zoomed_masked_data = np.roll(zoomed_masked_data, y_roll_count, axis=row_axis)
+        zoomed_masked_data = np.roll(zoomed_masked_data, x_roll_count, axis=col_axis)
         return zoomed_masked_data
 
     def clearApertures(self):
