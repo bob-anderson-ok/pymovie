@@ -6955,7 +6955,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         # the information text box, and to the two thumbnail ImageViews.
         # But sometimes we use this routine just to get the measurements that it returns.
 
-        # self.zoom_factor = 10
         self.zoom_factor = 1
 
         if self.one_time_suppress_stats:
@@ -6971,18 +6970,16 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         thumbnail = self.image[y0:y0 + ny, x0:x0 + nx]
         mean, std, sorted_data, _, _, _, _, _, bkgnd_pixels = newRobustMeanStd(thumbnail, outlier_fraction=.5,
                                                       lunar=self.lunarCheckBox.isChecked())
-        new_mean = mean  #
+        aperture_mean = mean  #
         maxpx = sorted_data[-1]
 
         mean_top, *_ = newRobustMeanStd(thumbnail[0::2, :], outlier_fraction=.5, lunar=self.lunarCheckBox.isChecked())
         mean_bot, *_ = newRobustMeanStd(thumbnail[1::2, :], outlier_fraction=.5, lunar=self.lunarCheckBox.isChecked())
-        # if show_stats:
-        #     self.showMsg(f'mean_top: {mean_top:0.3f}  mean_bot: {mean_bot:0.3f}')
 
         # We computed the initial aperture.thresh as an offset from the background value present
         # in the frame used for the initial threshold determination.  Now we add the current
         # value of the background so that we can respond to a general change in background dynamically.
-        background = int(round(mean))  # Note: 'mean' is now a poisson mean as of version 3.7.5
+        background = int(round(mean))
         threshold = aperture.thresh + background
 
         default_mask_used = False
@@ -7040,74 +7037,67 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         # Version 3.4.1
         thumbnail = thumbnail.astype('int32')
-        maxThumbnailPixel = np.max(thumbnail)
-        minThumbnailPixel = np.min(thumbnail)
 
         mass_centroid = (self.roi_center, self.roi_center)  # These are default values
         if default_mask_used:   # a fixed radius circular mask is in use
             # Within the mask area, find the position of the max value pixel. We just want to know if
             # there is enough 'star' to justify a centroid searh.
             masked_data = mask * thumbnail
-            # max_pixel = np.max(masked_data)
-            # pixel_limit = mean + 1 * std
 
-            if True:
-                try:
-                    mass_centroid = brightest_pixel(masked_data.copy(), 5)
-                    x_coord = round(mass_centroid[0])
-                    y_coord = round(mass_centroid[1])
-                except ValueError:
-                    mass_centroid = (self.roi_center, self.roi_center)
-                    x_coord = self.roi_center
-                    y_coord = self.roi_center
+            try:
+                mass_centroid = brightest_pixel(masked_data.copy(), 5)
+                x_coord = round(mass_centroid[0])
+                y_coord = round(mass_centroid[1])
+            except ValueError:
+                mass_centroid = (self.roi_center, self.roi_center)
+                x_coord = self.roi_center
+                y_coord = self.roi_center
 
-                w = 2 * int(aperture.default_mask_radius) + 1
-                self.w = w
+            w = 2 * int(aperture.default_mask_radius) + 1
+            self.w = w
 
-                # self.recordPsf is controlled in autoRun() to avoid double counting
-                if aperture.name.startswith('psf-star') and self.recordPsf and self.target_psf_gathering_in_progress:
-                    if self.target_psf is None:
-                        self.target_psf = np.zeros((w * self.zoom_factor,w * self.zoom_factor), dtype=float)
-                        self.target_psf_number_accumulated = 0
-                        # self.target_appsum = 0
-                        self.mask_size = w
-                        self.pixel_sums = []
-                        self.pixel_sums_per_frame = []
-                        self.max_pixels_in_sum = 49
+            # self.recordPsf is controlled in autoRun() to avoid double counting
+            if aperture.name.startswith('psf-star') and self.recordPsf and self.target_psf_gathering_in_progress:
+                if self.target_psf is None:
+                    self.target_psf = np.zeros((w * self.zoom_factor,w * self.zoom_factor), dtype=float)
+                    self.target_psf_number_accumulated = 0
+                    # self.target_appsum = 0
+                    self.mask_size = w
+                    self.pixel_sums = []
+                    self.pixel_sums_per_frame = []
+                    self.max_pixels_in_sum = 49
 
-                    # We don't do 'zooming' anymore, but we do use the centering mechanism.
-                    zoomed_masked_data = self.getZoomedAndCenteredVersionOfMaskedData(masked_data, mass_centroid)
+                # We don't do 'zooming' anymore, but we do use the centering mechanism.
+                zoomed_masked_data = self.getZoomedAndCenteredVersionOfMaskedData(masked_data, mass_centroid)
 
-                    # upper left corner coordinate is at x,y = offset_x, offset+y
-                    offset_x = (masked_data.shape[0] // 2 - w // 2) * self.zoom_factor  # starting column
-                    offset_y = (masked_data.shape[0] // 2 - w // 2) * self.zoom_factor  # starting row
-                    for i in range(w * self.zoom_factor):
-                        for j in range(w * self.zoom_factor):
-                            # Accumulate a psf image. Later we will divide by self.target_psf_number_accumulated
-                            self.target_psf[i,j] += zoomed_masked_data[i+offset_x,j+offset_y]   # x,y indexing
-                    # TODO Experimental NPIX code
-                    if aperture.name.startswith('psf-star'):
-                        sorted_masked_data = np.sort(masked_data.flatten()) - mean
-                        # TODO Experiment: only count pixels 1 sigma over mean
-                        sorted_masked_data -= std
-                        np.clip(sorted_masked_data, 0, sorted_masked_data[-1])
-                        self.pixel_sums = []
-                        for i in range(self.max_pixels_in_sum):
-                            self.pixel_sums.append(np.sum(sorted_masked_data[-(i+1):]))
-                        self.pixel_sums_per_frame.append(self.pixel_sums)
+                # upper left corner coordinate is at x,y = offset_x, offset+y
+                offset_x = (masked_data.shape[0] // 2 - w // 2) * self.zoom_factor  # starting column
+                offset_y = (masked_data.shape[0] // 2 - w // 2) * self.zoom_factor  # starting row
+                for i in range(w * self.zoom_factor):
+                    for j in range(w * self.zoom_factor):
+                        # Accumulate a psf image. Later we will divide by self.target_psf_number_accumulated
+                        self.target_psf[i,j] += zoomed_masked_data[i+offset_x,j+offset_y]   # x,y indexing
+                # TODO Experimental NPIX code
+                if aperture.name.startswith('psf-star'):
+                    sorted_masked_data = np.sort(masked_data.flatten()) - mean
+                    # TODO Experiment: only count pixels 1 sigma over mean
+                    sorted_masked_data -= std
+                    np.clip(sorted_masked_data, 0, sorted_masked_data[-1])
+                    self.pixel_sums = []
+                    for i in range(self.max_pixels_in_sum):
+                        self.pixel_sums.append(np.sum(sorted_masked_data[-(i+1):]))
+                    self.pixel_sums_per_frame.append(self.pixel_sums)
 
-
-                    # This would make a 'signal' psf because of this background subtraction. We now do this in
-                    # calcOptimalExtractWeights by a different mechanism involving self.psf_background
-                    # self.target_psf -= mean
-                    self.psf_background = aperture.smoothed_background
-                    self.target_psf_number_accumulated += 1
-                    # self.target_appsum += np.sum(masked_data)
-                    self.recordPsf = False  # We use this to keep from doubling up - this code would get called twice
+                # This would make a 'signal' psf because of this background subtraction. We now do this in
+                # calcOptimalExtractWeights by a different mechanism involving self.psf_background
+                # self.target_psf -= mean
+                self.psf_background = aperture.smoothed_background
+                self.target_psf_number_accumulated += 1
+                self.recordPsf = False  # We use this to keep from doubling up - this code would get called twice
 
                 x_center_delta = x_coord - self.roi_center
                 y_center_delta = y_coord - self.roi_center
-                # if the position of the max pixel is within a mask radius, move the center of the max to that position
+                # if the position of the max pixel is within a mask radius, move the center of the mask to that position
                 acceptable_delta = round(aperture.default_mask_radius)
                 if x_center_delta <= acceptable_delta and y_center_delta <= acceptable_delta:
                     if aperture.color == 'yellow':  # We want to move the aperture itself
@@ -7118,108 +7108,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         else:
                             self.secondYellowApertureX = x_coord
                             self.secondYellowApertureY = y_coord
-                    mask = np.roll(mask, x_center_delta, axis=1)
-                    mask = np.roll(mask, y_center_delta, axis=0)
+                    mask = np.roll(mask, x_center_delta, axis=1)  # column axis
+                    mask = np.roll(mask, y_center_delta, axis=0)  # row axis
 
         if show_stats:
-            if self.pointed_at_aperture is not None:
-                if aperture == self.pointed_at_aperture:
-                    self.thumbnail_one_aperture_name = aperture.name
-                    self.thumbOneImage = thumbnail
-                    # Version 3.4.1 added following line
-                    self.thumbOneView.setImage(thumbnail,
-                                               levels=(minThumbnailPixel, maxThumbnailPixel))
-                    self.thumbnailOneLabel.setText(aperture.name)
-                    # Version 3.4.1 added levels parameter
-                    self.thumbTwoView.setImage(mask, levels=(minThumbnailPixel, maxThumbnailPixel))
-            else:
-                priority_aperture_present = False
-                for app in self.getApertureList():
-                    if app.thumbnail_source:
-                        priority_aperture_present = True
-                        break
-
-                if priority_aperture_present:
-                    if aperture.thumbnail_source:
-                        self.thumbnail_one_aperture_name = aperture.name
-                        self.thumbOneImage = thumbnail
-                        # Version 3.4.1 added following line
-                        self.thumbOneView.setImage(thumbnail,
-                                                   levels=(minThumbnailPixel, minThumbnailPixel))
-                        self.thumbnailOneLabel.setText(aperture.name)
-                        # Version 3.4.1 added levels parameter
-                        self.thumbTwoView.setImage(mask,
-                                                   levels=(minThumbnailPixel, maxThumbnailPixel))
-                else:
-                    self.thumbnail_one_aperture_name = aperture.name
-                    self.thumbOneImage = thumbnail
-                    # Version 3.4.1 added following line
-                    self.thumbOneView.setImage(thumbnail,
-                                               levels=(minThumbnailPixel, maxThumbnailPixel))
-                    self.thumbnailOneLabel.setText(aperture.name)
-                    # Version 3.4.1 added levels parameter
-                    self.thumbTwoView.setImage(mask,
-                                               levels=(minThumbnailPixel, maxThumbnailPixel))
-
-            self.hair1.setPos((0, self.roi_size))
-            self.hair2.setPos((0, 0))
-
-            satPixelValue = self.satPixelSpinBox.value() - 1
-
-            thumb1_colors = [
-                (0, 0, 0),  # black
-                (255, 255, 255),  # white
-                (255, 0, 0)  # red
-            ]
-
-            thumb2_colors = [
-                (255, 255, 128),  # yellow for aperture 'surround'
-                (0, 0, 0),  # black
-                (255, 255, 255),  # white
-                (255, 0, 0)  # red
-            ]
-
-            red_cusp = satPixelValue / maxThumbnailPixel
-            if red_cusp >= 1.0:
-                red_cusp = 1.0
-                thumb1_colors[2] = (255, 255, 255)  # white (no saturation)
-
-            cmap_thumb1 = pg.ColorMap([0.0, red_cusp, 1.0], color=thumb1_colors)
-
-            # black_and_white = pg.ColorMap([0.0, 1.0], color=[(0,0,0),(255,255,255)])
-
-            thumbOneImage = thumbnail.astype('int32')
-            self.thumbOneView.setImage(thumbOneImage,
-                                       levels=(minThumbnailPixel, maxThumbnailPixel))
-            self.thumbOneView.setColorMap(cmap_thumb1)
-
-            # Show the pixels included by the mask
-            if self.use_yellow_mask:
-                self.thumbTwoImage = self.yellow_mask * thumbnail
-            else:
-                self.thumbTwoImage = mask * thumbnail
-
-            red_cusp = satPixelValue / maxThumbnailPixel
-            if red_cusp >= 1.0:
-                red_cusp = 1.0
-                thumb2_colors[3] = (255, 255, 255)
-
-            pedestal = 1  # This value needs to coordinated with the value in mouseMovedInThumbTwo
-            pedestal_cusp = pedestal / (maxThumbnailPixel + 0)
-            cmap_thumb2 = pg.ColorMap([0.0, pedestal_cusp, red_cusp, 1.0], color=thumb2_colors)
-
-            # Add a pedestal (only to masked pixels) so that we can trigger a yellow background
-            # for values of 0
-            np.clip(self.thumbTwoImage, 0, minThumbnailPixel - 1)  # ... so that we can add 1 without overflow concerns
-            if self.thumbTwoImage is not None:
-                if self.use_yellow_mask:
-                    self.thumbTwoImage += self.yellow_mask  # Put the masked pixels on the pedestal
-                else:
-                    # self.thumbTwoImage += pedestal # Put the masked pixels on the pedestal
-                    self.thumbTwoImage += mask  # Put the masked pixels on the pedestal
-                self.thumbTwoView.setImage(self.thumbTwoImage,
-                                           levels=(minThumbnailPixel, maxThumbnailPixel))
-                self.thumbTwoView.setColorMap(cmap_thumb2)
+            self.displayThumbnails(aperture, mask, thumbnail)
 
         frame_num = float(self.currentFrameSpinBox.text())
 
@@ -7229,13 +7122,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             max_area = int(np.sum(self.yellow_mask))
             signal = appsum - int(round(max_area * mean))
         else:
-            try:
+            # try:
                 # TODO Do we have to put mean in place of zeroes?
                 masked_data = thumbnail * mask
-                signal = None
-                naylor_signal = None
-                if (self.fractional_weights is not None or self.extractionCode == 'NPIX') and \
-                        not self.target_psf_gathering_in_progress and self.useOptimalExtraction:
+                # We used to set the following 2 values to None, but that caused the print of aperture stats to faile
+                # when a psf was cleared and a moused moved over an aperture. This change makes that a don't-care.
+                signal = 0
+
+                if (self.extractionCode == 'NPIX' or self.extractionCode == 'NRE') and not self.target_psf_gathering_in_progress:
                     centered_data = self.getZoomedAndCenteredVersionOfMaskedData(thumbnail, mass_centroid)
                     centered_masked_data = centered_data * aperture.defaultMask
                     reverse_mask = np.copy(aperture.defaultMask)
@@ -7246,36 +7140,35 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                             else:
                                 reverse_mask[i,j] = 0
 
-                    background_image = thumbnail * reverse_mask
-                    mean, std, _, _, _, _, _, _, bkgnd_pixels = newRobustMeanStd(background_image,
-                                                                               outlier_fraction=.5,
-                                                                               lunar=self.lunarCheckBox.isChecked())
+                    if self.extractionCode == 'NPIX':
+                        background_image = thumbnail * reverse_mask
+                        mean, std, _, _, _, _, _, _, bkgnd_pixels = newRobustMeanStd(background_image,
+                                                                                   outlier_fraction=.5,
+                                                                                   lunar=self.lunarCheckBox.isChecked())
 
-                    # TODO Experimental code - override above calculation
-                    mean, std, _, _, _, _, _, _, bkgnd_pixels = newRobustMeanStd(thumbnail,
-                                                                                 outlier_fraction=.5,
-                                                                                 lunar=self.lunarCheckBox.isChecked())
+                    if self.extractionCode == 'NRE':
+                        mean, std, _, _, _, _, _, _, bkgnd_pixels = newRobustMeanStd(thumbnail,
+                                                                                     outlier_fraction=.5,
+                                                                                     lunar=self.lunarCheckBox.isChecked())
+
                     w = 2 * int(aperture.default_mask_radius) + 1
 
-                    # TODO Check that this alternate computation works
-                    # n = self.sorted_fractional_weights.size
                     n = w * w
 
-                    naylor_background = np.zeros((w,w))
-                    for i in range(w):
-                        for j in range(w):
-                            naylor_background[i,j] = np.random.choice(bkgnd_pixels, size=1, replace=True)
+                    if self.extractionCode == 'NRE':
+                        naylor_background = np.zeros((w,w))
+                        for i in range(w):
+                            for j in range(w):
+                                naylor_background[i,j] = np.random.choice(bkgnd_pixels, size=1, replace=True)
 
-                    bkgnd_sample = np.random.choice(bkgnd_pixels, size=n, replace=True)
-                    sorted_bkgnd = np.sort(bkgnd_sample - mean)
-                    if self.sorted_fractional_weights is not None:
-                        weighted_bkgnd = np.sum(sorted_bkgnd * self.sorted_fractional_weights)
-                    else:
-                        weighted_bkgnd = 0.0
-                        
-                    # TODO Experimental code
-                    # bkgnd_pixels = sorted_bkgnd[-self.best_pixel_count_to_sum:]
-                    new_mean = weighted_bkgnd
+                    if self.extractionCode == 'NPIX':
+                        bkgnd_sample = np.random.choice(bkgnd_pixels, size=n, replace=True)
+                        sorted_bkgnd = np.sort(bkgnd_sample - mean)
+
+                        # TODO Experimental code
+                        bkgnd_pixels = sorted_bkgnd[-self.best_pixel_count_to_sum:]
+                        weighted_bkgnd = np.mean(bkgnd_pixels)
+                        aperture_mean = weighted_bkgnd  # Used for background smoothing
 
                     # upper left corner coordinate is at x,y = offset_x, offset+y
                     offset_x = (masked_data.shape[0] // 2 - w // 2) * self.zoom_factor  # starting column
@@ -7284,31 +7177,19 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     # be used with the Naylor weights
                     win_data = centered_masked_data[offset_y:offset_y + w * self.zoom_factor, offset_x:offset_x + w * self.zoom_factor]
 
-                    naylor_mean = self.calcNaylorIntensity(naylor_background)
-
-                    naylor_signal = self.calcNaylorIntensity((win_data - naylor_mean)) * self.naylorRescaleFactor
-                    signal = naylor_signal
-                    sorted_data_to_use = None
-
                     if self.extractionCode == 'NRE':
-                        data_to_use = win_data - mean
-                        judy = data_to_use.flatten()
-                        # k = judy.size
-                        # n = self.sorted_fractional_weights.size
-                        # m = k - n
-                        sorted_data_to_use = np.sort(judy)
-                        # bob = sorted_data_to_use[m:] * self.sorted_fractional_weights
-                        # raw_signal = np.sum(bob)
-
+                        # Calculate background using naylor weights
+                        naylor_mean = self.calcNaylorIntensity(naylor_background)  # noqa
+                        # NOTE: aperture_mean is added to aperture stats and used in aperture code to smooth background
+                        # using a recursive filter that implements an rc filter. The 'smoothed' value can be retrieved
+                        # for an aperture by aperture.smoothed_background
+                        aperture_mean = naylor_mean  # Used for background smoothing
+                        naylor_signal = self.calcNaylorIntensity((win_data - naylor_mean)) * self.naylorRescaleFactor
+                        signal = naylor_signal
 
                     if self.extractionCode == 'NPIX':
-                        # TODO Experimental code A begin
                         data_to_use = win_data - mean
-
-                        if frame_num == 500.0:
-                            _ = 0  # To provide a breakpoint target
                         sorted_data_to_use = np.sort(data_to_use.flatten())
-                        # bob = sorted_data_to_use[m:]
                         raw_pixels = sorted_data_to_use[-self.best_pixel_count_to_sum:]
                         star_signal = np.sum(raw_pixels)
                         bkgnd_signal = np.sum(bkgnd_pixels)
@@ -7324,45 +7205,17 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                             if aperture.name.startswith('psf-star'):
                                 _ = 0  # To provide a breakpoint target
 
-                        # Default - always subtract bkgnd_signal - makes empty aperture correct but over substracts from
-                        # other apertures
-                        # signal = star_signal - bkgnd_signal
-
-                        # TODO Experimental code A end
-
-                    # signal = raw_signal
-                    # IP = 2
-
-                    # TODO Experimental code A removals start
-                    if not self.extractionCode == 'NPIX':
-                        self.sorted_background = sorted_bkgnd
-                        self.sorted_masked_data = sorted_data_to_use
-                        bob = sorted_data_to_use * self.sorted_fractional_weights
-                        raw_signal = np.sum(bob)
-
-                        signal = raw_signal
-                        # TODO Experimental code A removals end
-
                     reference_background = aperture.smoothed_background
                     if reference_background == 0:
                         # This deals with intial value startup
-                        reference_background = weighted_bkgnd
-                    # if signal > IP * reference_background:
-                    #     bkgnd_corr = 0.0
-                    # else:
-                    #     bkgnd_corr =  1.0 - (signal - reference_background) / (reference_background * (IP -1))
-
-                    # TODO Experimental code A removals start
-                    if not self.extractionCode == 'NPIX':
-                        signal -= reference_background
-                    # TODO Experimental code A removals end
-
-                    # signal = naylor_signal
+                        # reference_background = mean
+                        aperture.smoothed_background = mean
 
                     appsum = signal + mean * aperture.defaultMaskPixelCount
-                else:
+                else: # Aperture photometry in use
                     masked_data = mask * thumbnail
                     appsum = np.sum(masked_data)
+
                 if aperture.color == 'white':
                     signal = appsum
                 else:  # Subtract background
@@ -7373,13 +7226,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                             signal = appsum - int(round(max_area * mean))
                         else:
                             signal = appsum - int(round(max_area * aperture.smoothed_background))
-                # TODO Remove this test code
-                if self.extractionCode == 'NRE':
-                    signal = naylor_signal
-            except Exception as e:
-                self.showMsg(f'in getApertureStats: {e}')
-                appsum = 0
-                signal = 0
+            # except Exception as e:
+            #     self.showMsg(f'in getApertureStats: {e}')
+            #     appsum = 0
+            #     signal = 0
 
         if not centroid == (None, None):
             xc_roi = centroid[1]
@@ -7488,7 +7338,96 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         return (xc_roi, yc_roi, xc_world, yc_world, signal,
                 appsum, mean, max_area, frame_num, cvxhull, maxpx, std, timestamp,
-                new_mean, self.backgroundSmoothingIntervalSpinBox.value())
+                aperture_mean, self.backgroundSmoothingIntervalSpinBox.value())  # These last two are for background smoothing
+
+    def displayThumbnails(self, aperture, mask, thumbnail):
+        maxThumbnailPixel = np.max(thumbnail)
+        minThumbnailPixel = np.min(thumbnail)
+        if self.pointed_at_aperture is not None:
+            if aperture == self.pointed_at_aperture:
+                self.thumbnail_one_aperture_name = aperture.name
+                self.thumbOneImage = thumbnail
+                # Version 3.4.1 added following line
+                self.thumbOneView.setImage(thumbnail,
+                                           levels=(minThumbnailPixel, maxThumbnailPixel))
+                self.thumbnailOneLabel.setText(aperture.name)
+                # Version 3.4.1 added levels parameter
+                self.thumbTwoView.setImage(mask, levels=(minThumbnailPixel, maxThumbnailPixel))
+        else:
+            priority_aperture_present = False
+            for app in self.getApertureList():
+                if app.thumbnail_source:
+                    priority_aperture_present = True
+                    break
+
+            if priority_aperture_present:
+                if aperture.thumbnail_source:
+                    self.thumbnail_one_aperture_name = aperture.name
+                    self.thumbOneImage = thumbnail
+                    # Version 3.4.1 added following line
+                    self.thumbOneView.setImage(thumbnail,
+                                               levels=(minThumbnailPixel, minThumbnailPixel))
+                    self.thumbnailOneLabel.setText(aperture.name)
+                    # Version 3.4.1 added levels parameter
+                    self.thumbTwoView.setImage(mask,
+                                               levels=(minThumbnailPixel, maxThumbnailPixel))
+            else:
+                self.thumbnail_one_aperture_name = aperture.name
+                self.thumbOneImage = thumbnail
+                # Version 3.4.1 added following line
+                self.thumbOneView.setImage(thumbnail,
+                                           levels=(minThumbnailPixel, maxThumbnailPixel))
+                self.thumbnailOneLabel.setText(aperture.name)
+                # Version 3.4.1 added levels parameter
+                self.thumbTwoView.setImage(mask,
+                                           levels=(minThumbnailPixel, maxThumbnailPixel))
+        self.hair1.setPos((0, self.roi_size))
+        self.hair2.setPos((0, 0))
+        satPixelValue = self.satPixelSpinBox.value() - 1
+        thumb1_colors = [
+            (0, 0, 0),  # black
+            (255, 255, 255),  # white
+            (255, 0, 0)  # red
+        ]
+        thumb2_colors = [
+            (255, 255, 128),  # yellow for aperture 'surround'
+            (0, 0, 0),  # black
+            (255, 255, 255),  # white
+            (255, 0, 0)  # red
+        ]
+        red_cusp = satPixelValue / maxThumbnailPixel
+        if red_cusp >= 1.0:
+            red_cusp = 1.0
+            thumb1_colors[2] = (255, 255, 255)  # white (no saturation)
+        cmap_thumb1 = pg.ColorMap([0.0, red_cusp, 1.0], color=thumb1_colors)
+        thumbOneImage = thumbnail.astype('int32')
+        self.thumbOneView.setImage(thumbOneImage,
+                                   levels=(minThumbnailPixel, maxThumbnailPixel))
+        self.thumbOneView.setColorMap(cmap_thumb1)
+        # Show the pixels included by the mask
+        if self.use_yellow_mask:
+            self.thumbTwoImage = self.yellow_mask * thumbnail
+        else:
+            self.thumbTwoImage = mask * thumbnail
+        red_cusp = satPixelValue / maxThumbnailPixel
+        if red_cusp >= 1.0:
+            red_cusp = 1.0
+            thumb2_colors[3] = (255, 255, 255)
+        pedestal = 1  # This value needs to coordinated with the value in mouseMovedInThumbTwo
+        pedestal_cusp = pedestal / (maxThumbnailPixel + 0)
+        cmap_thumb2 = pg.ColorMap([0.0, pedestal_cusp, red_cusp, 1.0], color=thumb2_colors)
+        # Add a pedestal (only to masked pixels) so that we can trigger a yellow background
+        # for values of 0
+        np.clip(self.thumbTwoImage, 0, minThumbnailPixel - 1)  # ... so that we can add 1 without overflow concerns
+        if self.thumbTwoImage is not None:
+            if self.use_yellow_mask:
+                self.thumbTwoImage += self.yellow_mask  # Put the masked pixels on the pedestal
+            else:
+                # self.thumbTwoImage += pedestal # Put the masked pixels on the pedestal
+                self.thumbTwoImage += mask  # Put the masked pixels on the pedestal
+            self.thumbTwoView.setImage(self.thumbTwoImage,
+                                       levels=(minThumbnailPixel, maxThumbnailPixel))
+            self.thumbTwoView.setColorMap(cmap_thumb2)
 
     def calcNaylorIntensity(self, naylor_background):
         signal_matrix = np.zeros((5, 5, 5, 5))

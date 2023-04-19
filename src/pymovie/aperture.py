@@ -100,8 +100,8 @@ class MeasurementAperture(pg.GraphicsObject):
         self.enforcePositioningConstraints(bbox)
 
     def addData(self, data_tuple):
-        new_background_value = data_tuple[13]  # Pick up new_mean from the tuple
-        smoothing_count = data_tuple[14]
+        new_background_value = data_tuple[13]  # Pick up new_mean from the tuple output from getApertureStats()
+        smoothing_count = data_tuple[14]       # Pick up the smoothing count from the tuple
         self.background_reading_count += 1
         if not smoothing_count == 0:
             b1 = np.exp(-1/smoothing_count)
