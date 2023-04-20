@@ -49,7 +49,7 @@ in the IPython console while in src/pymovie directory
 #     print(entry)
 
 import matplotlib
-import scipy.signal
+# import scipy.signal
 from Adv2.Adv2File import Adv2reader  # Adds support for reading AstroDigitalVideo Version 2 files (.adv)
 
 matplotlib.use('Qt5Agg')
@@ -403,6 +403,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.lastRightClickYPosition = None
         self.lastRightClickXPosition = None
 
+        self.extractionCode = ''
+
         # Change pyqtgraph plots to be black on white
         pg.setConfigOption('background',
                            (255, 255, 255))  # Do before any widgets drawn
@@ -424,18 +426,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.newYellowApertureX = None
         self.newYellowApertureY = None
         self.secondYellowApertureX = None
-        self.secondYellowAperturey = None
+        self.secondYellowApertureY = None
 
-        self.sorted_fractional_weights = None
-
-        self.sorted_background = None
         self.sorted_masked_data = None
 
-        # self.fractional_weights will be of size 2 * int(radius_of_default_mask_of_target) + 1 and
-        # type float64 when in use
+        self.naylorInShiftedPositions = None
+
         self.target_psf = None
         self.psf_radius_in_use = None
-        # self.target_appsum = 0.0
         self.fractional_weights = None
         self.sum_fractional_weights = None
         self.target_psf_number_accumulated = np.int64
@@ -571,7 +569,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.vtiSelectLabel.installEventFilter(self)
 
-        # TODO Figure out why this had to be commented out. Did it EVER do anythong needed?
+        # TODO Figure out why this had to be commented out. Did it EVER do anything needed?
         # self.helperThing.setWindowFlags( Qt.Window|
         #                                  Qt.CustomizeWindowHint |
         #                                  Qt.WindowTitleHint |
@@ -1117,9 +1115,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.transportTargetPsf.installEventFilter(self)
         self.transportTargetPsf.clicked.connect(self.startPsfGathering)
 
-        self.transportClearNREpsf.installEventFilter(self)
-        self.transportClearNREpsf.clicked.connect(self.turnOffNREpsfExtraction)
-
         self.transportCalcGrowthCurveButton.installEventFilter(self)
         self.transportCalcGrowthCurveButton.clicked.connect(self.startGrowthCurveGathering)
 
@@ -1641,7 +1636,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         addFixedApp = view.menu.addAction('Add static aperture (no snap)')  # noqa
         addFixedApp.triggered.connect(self.addNamedStaticAperture)  # noqa
 
-        addAppStack = view.menu.addAction('Add stack of 5 apertures')  # noqa
+        addAppStack = view.menu.addAction('Add 10 nested radius mask apertures')  # noqa
         addAppStack.triggered.connect(self.addApertureStack)  # noqa
 
         view.menu.addSeparator()  # noqa
@@ -2454,8 +2449,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.helperThing.textEdit.insertHtml(msg)
 
     def addApertureStack(self):
-        for i in range(5):
-            self.addStaticAperture(askForName=False)
+        for radius in [2.4, 3.2, 4.0, 4.3, 5.1, 5.7, 6.1, 6.5, 7.2, 8.0]:
+            self.addStaticAperture(askForName=False, radius=radius, name=f'nest-{radius:0.1f}')
         for app in self.getApertureList():
             if app.color == 'green':
                 app.setRed()
@@ -3033,14 +3028,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.analysisRequested = False
         self.setTransportButtonsEnableState(True)
 
-    def turnOffNREpsfExtraction(self):
-        if self.target_psf is not None:
-            self.transportClearNREpsf.setEnabled(False)
-            self.clearOptimalExtractionVariables()
-            # self.showMsgPopup(f'Noise Reduction Extraction data has been cleared and disabled.\n\n')
-        else:
-            self.showMsgPopup(f'There was no Noise Reduction Extraction data available to be cleared.\n\n')
-
     def updateNumPixelsToSum(self):
         self.best_pixel_count_to_sum = self.numPixelsToSumSpinBox.value()
 
@@ -3051,21 +3038,24 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def startPsfGathering(self):
 
-        self.extractionCode = 'NRE'
+        # We allow a new psf to be gathered without warning of one already existing.
+        # It will be a qiet over-write
 
-        if self.fractional_weights is not None:
-            self.showMsgPopup(f"A Noise Reduction Extraction psf already exists.\n\n"
-                              f"To start a new Noise Reduction Extraction psf estimation, clear the current one first.")
-            return
+        self.extractionCode = 'NRE'
 
         for app in self.getApertureList():
             if app.name.startswith('psf-star'):
+                if not app.thresh == 99999:
+                    self.showMsgPopup(f'The psf-star aperture must be static (threshold = 99999)\n\n'
+                                      f'It has a threshold of {app.thresh}')
+                    return
                 mask_radius_in_use = app.default_mask_radius
                 break
         else:
             self.showMsgPopup(f"There is no aperture with a name starting with 'psf-star'\n"
                               f"so this operation cannot be performed.")
             return
+
         all_mask_radius_same = True
         offending_aperture_name = ""
         offending_mask_radius = None
@@ -3115,7 +3105,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
 
     def startAnalysisWithNRE(self):
-        if self.fractional_weights is None:
+        for ap in self.getApertureList():
+            default_mask_size = ap.default_mask_radius
+
+        if self.naylorInShiftedPositions is None:
             self.showMsgPopup('A psf has not been calculated yet, so analysis with Noise '
                               'Reduction Extraction cannot be performed.\n\n'
                               'Do you need to calculate an experimental psf to be used for NRE?. If so, '
@@ -3162,7 +3155,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.newYellowApertureX = None
         self.newYellowApertureY = None
         self.secondYellowApertureX = None
-        self.secondYellowAperturey = None
+        self.secondYellowApertureY = None
         for app in self.getApertureList():
             if app.color == 'yellow':
                 yellow_aperture_present = True
@@ -4904,11 +4897,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.transportTargetPsf.setEnabled(state)
         self.transportCalcGrowthCurveButton.setEnabled(state)
 
-        # We don't want to enable these, but allow the disable
-        if not state:
-            if self.fractional_weights is None:
-                self.transportClearNREpsf.setEnabled(state)
-
         self.transportPlayRight.setEnabled(state)
         self.transportPlusOneFrame.setEnabled(state)
         self.transportSmallRight.setEnabled(state)
@@ -5190,23 +5178,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         else:
             self.viewFieldsCheckBox.setEnabled(True)
 
-    # def calcFractionalWeightsAtNewCenter(self, x_center, y_center):
-    #     y, x = np.mgrid[:self.mask_size, :self.mask_size]
-    #     g2d = modeling.models.Gaussian2D()
-    #     self.fractional_weights = g2d.evaluate(x=x, y=y, amplitude=self.g2d_amplitude,
-    #                                            x_mean=x_center, y_mean=y_center,
-    #                                            x_stddev=self.g2d_x_stddev, y_stddev=self.g2d_y_stddev,
-    #                                            theta=self.g2d_theta)
-    #     self.zeroWeightsOutsideCircularMask()
-    #     new_sum = np.sum(self.fractional_weights)
-    #     self.fractional_weights *= self.correct_sum_fractional_weights / new_sum
-
     def calcOptimalExtractionWeights(self):
 
         if self.extractionCode == 'NPIX':
             self.target_psf_gathering_in_progress = False
 
-            # TODO Start NPIX experimental code
             raw_pixel_sums_matrix = np.array(self.pixel_sums_per_frame)
             avg_values = []
             for i in range(self.max_pixels_in_sum):
@@ -5291,15 +5267,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             p2.showGrid(x=True, y=True)
             self.plots[-1].show()
             return
-            # TODO End experimental code
 
         # self.target_psf has background subtracted
         self.target_psf_float = self.target_psf / self.target_psf_number_accumulated  # float result and float input
 
-        # Don't allow any negative value in self.target_psf_float
-        # np.clip(self.target_psf_float, 0, np.max(self.target_psf_float), self.target_psf_float)
-
-        # TODO Experimental code ... but it looks like a keeper
         np.clip(self.target_psf_float, self.psf_background, np.max(self.target_psf_float), self.target_psf_float)
         self.target_psf_float -= self.psf_background
 
@@ -5338,19 +5309,20 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                             y_mean=0,
                             x_stddev=self.g2d_x_stddev, y_stddev=self.g2d_y_stddev,
                             theta=self.g2d_theta)
+
         self.calcNaylorWeights(w)
 
-        # TODO Remove this test print. It is just to show that peak will equal g2d_amplitude at center (x=y=0
-        peak = g2d.evaluate(x=0, y=0, amplitude=self.g2d_amplitude,
-                            x_mean=0,
-                            y_mean=0,
-                            x_stddev=self.g2d_x_stddev, y_stddev=self.g2d_y_stddev,
-                            theta=self.g2d_theta)
-        self.showMsg(f'peak: {peak:0.3f}')
+        # A test print. It is just to show that peak will equal g2d_amplitude at center (x=y=0
+        # peak = g2d.evaluate(x=0, y=0, amplitude=self.g2d_amplitude,
+        #                     x_mean=0,
+        #                     y_mean=0,
+        #                     x_stddev=self.g2d_x_stddev, y_stddev=self.g2d_y_stddev,
+        #                     theta=self.g2d_theta)
+        # self.showMsg(f'peak: {peak:0.3f}')
 
-        self.fractional_weights = np.clip(self.target_psf_float, 0, np.max(self.target_psf_float))
+        # self.fractional_weights = np.clip(self.target_psf_float, 0, np.max(self.target_psf_float))
 
-        self.zeroWeightsOutsideCircularMask()
+        # self.zeroWeightsOutsideCircularMask()
 
         # self.thumbOneImage = self.target_psf_float / np.max(self.target_psf_float) * 100.0
         self.thumbOneImage = self.high_res_psf
@@ -5361,18 +5333,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.hair1.setPos((0, self.high_res_psf.shape[0]))
         self.hair2.setPos((0, 0))
 
-        sum_raw = np.sum(self.target_psf_float * self.fractional_weights)
-        normalizer = target_psf_signal_sum / sum_raw
-        self.fractional_weights = self.fractional_weights * normalizer
-        # self.showMsgPopup(f'Thumbnail One is now displaying the centered/summed "target" psf.\n\n'
-        #                   f'This "target psf" will be directly used in forming the Noise Reduction Extraction weights.\n\n'
-        #                   f'Note: The psf has been normalized for display purposes such that the peak '
-        #                   f'value is always 100.\n\n')
-                          # f'Note: The psf has been composed at {1/self.zoom_factor:0.2f} pixel resolution.')
         self.target_psf_gathering_in_progress = False
-        self.transportClearNREpsf.setEnabled(True)
 
-        self.sorted_fractional_weights = np.sort(self.fractional_weights.flatten())
+        # self.sorted_fractional_weights = np.sort(self.fractional_weights.flatten())
 
         naylor_value_of_psf = self.calcNaylorIntensity(self.target_psf_float)
         self.naylorRescaleFactor = target_psf_signal_sum / naylor_value_of_psf
@@ -5431,13 +5394,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         _ = w  # This statement is here to provide a breakpoint target
 
 
-    def zeroWeightsOutsideCircularMask(self):
-        w = self.target_psf.shape[0]
-        c = w // 2  # Center position index
-        for i in range(w):
-            for j in range(w):
-                if (i - c) ** 2 + (j - c) ** 2 > (self.psf_radius_in_use * self.zoom_factor) ** 2:
-                    self.fractional_weights[i, j] = 0.0
+    # def zeroWeightsOutsideCircularMask(self):
+    #     w = self.target_psf.shape[0]
+    #     c = w // 2  # Center position index
+    #     for i in range(w):
+    #         for j in range(w):
+    #             if (i - c) ** 2 + (j - c) ** 2 > (self.psf_radius_in_use * self.zoom_factor) ** 2:
+    #                 self.fractional_weights[i, j] = 0.0
 
     def checkForDataAlreadyPresent(self):
         dataAlreadyPresent = False
@@ -5650,8 +5613,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
                 f.write(f'#\n')
 
-                if self.fractional_weights is not None:
+                if self.extractionCode == 'NRE':
                     f.write(f'# Noise Reduction Extraction was used to extract the lightcurves\n')
+                elif self.extractionCode == 'NPIX':
+                    f.write(f'# NPIX Extraction ( n brightest pixels) was used to extract the lightcurves\n')
                 else:
                     f.write(f'# Aperture photometry was used to extract the lightcurves\n')
 
@@ -5695,8 +5660,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
                 f.write(f'#\n')
 
-                if self.fractional_weights is not None:
+                if self.extractionCode == 'NRE':
                     f.write(f'# Noise Reduction Extraction was used to extract the lightcurves\n')
+                elif self.extractionCode == 'NPIX':
+                    f.write(f'# NPIX Extraction ( n brightest pixels) was used to extract the lightcurves\n')
                 else:
                     f.write(f'# Aperture photometry was used to extract the lightcurves\n')
 
@@ -6264,11 +6231,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def addNamedStaticAperture(self):
         self.addStaticAperture(askForName=True)
 
-    def addStaticAperture(self, askForName=True):
+    def addStaticAperture(self, askForName=True, name=None, radius=None):
         if self.image is None:  # Don't add an aperture if there is no image showing yet.
             return
 
-        aperture = self.addGenericAperture()  # This adds a green aperture
+        aperture = self.addGenericAperture(radius=radius)  # This adds a green aperture
         aperture.thresh = self.big_thresh
 
         self.one_time_suppress_stats = True
@@ -6276,6 +6243,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         if askForName:
             self.nameAperture(aperture)
+        elif name is not None:
+            aperture.name = name
 
     def addOcrAperture(self, fieldbox, boxnum, position):
 
@@ -6399,7 +6368,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'Training completed.')
             self.showFrame()
 
-    def addApertureAtPosition(self, x, y):
+    def addApertureAtPosition(self, x, y, custom_default_mask_radius=None):
+        # custom_default_mask_radius is used for 'add stack of 5 apertures' to generate 'russian doll' mask set
+
         x0 = x - self.roi_center
         y0 = y - self.roi_center
         xsize = self.roi_size
@@ -6412,7 +6383,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         aperture.order_number = self.apertureId
 
-        aperture.default_mask_radius = self.getDefaultMaskRadius()
+        if custom_default_mask_radius is None:
+            aperture.default_mask_radius = self.getDefaultMaskRadius()
+        else:
+            aperture.default_mask_radius = custom_default_mask_radius
 
         aperture.smoothed_background = 0
         aperture.background_reading_count = 0
@@ -6451,10 +6425,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         return aperture
 
-    def addGenericAperture(self):
+    def addGenericAperture(self, radius=None):
         # self.mousex and self.mousey are continuously updated by mouseMovedInFrameView()
         # self.showMsg(f'placing generic aperture at {self.mousex} {self.mousey}')
-        return self.addApertureAtPosition(self.mousex, self.mousey)
+        return self.addApertureAtPosition(self.mousex, self.mousey, custom_default_mask_radius=radius)
 
     def positionApertureAtCentroid(self, aperture, xc, yc):
         bbox = aperture.getBbox()
@@ -7040,8 +7014,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         mass_centroid = (self.roi_center, self.roi_center)  # These are default values
         if default_mask_used:   # a fixed radius circular mask is in use
-            # Within the mask area, find the position of the max value pixel. We just want to know if
-            # there is enough 'star' to justify a centroid searh.
             masked_data = mask * thumbnail
 
             try:
@@ -7058,6 +7030,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             # self.recordPsf is controlled in autoRun() to avoid double counting
             if aperture.name.startswith('psf-star') and self.recordPsf and self.target_psf_gathering_in_progress:
+
                 if self.target_psf is None:
                     self.target_psf = np.zeros((w * self.zoom_factor,w * self.zoom_factor), dtype=float)
                     self.target_psf_number_accumulated = 0
@@ -7095,21 +7068,21 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.target_psf_number_accumulated += 1
                 self.recordPsf = False  # We use this to keep from doubling up - this code would get called twice
 
-                x_center_delta = x_coord - self.roi_center
-                y_center_delta = y_coord - self.roi_center
-                # if the position of the max pixel is within a mask radius, move the center of the mask to that position
-                acceptable_delta = round(aperture.default_mask_radius)
-                if x_center_delta <= acceptable_delta and y_center_delta <= acceptable_delta:
-                    if aperture.color == 'yellow':  # We want to move the aperture itself
-                        # Set these so that during the recenter all, it gets recognized
-                        if aperture.primary_yellow_aperture:
-                            self.newYellowApertureX = x_coord
-                            self.newYellowApertureY = y_coord
-                        else:
-                            self.secondYellowApertureX = x_coord
-                            self.secondYellowApertureY = y_coord
-                    mask = np.roll(mask, x_center_delta, axis=1)  # column axis
-                    mask = np.roll(mask, y_center_delta, axis=0)  # row axis
+            x_center_delta = x_coord - self.roi_center
+            y_center_delta = y_coord - self.roi_center
+            # if the position of the center is within a mask radius, move the center of the mask to that position
+            acceptable_delta = round(aperture.default_mask_radius)
+            if x_center_delta <= acceptable_delta and y_center_delta <= acceptable_delta:
+                if aperture.color == 'yellow':  # We want to move the aperture itself
+                    # Set these so that during the recenter all, it gets recognized
+                    if aperture.primary_yellow_aperture:
+                        self.newYellowApertureX = x_coord
+                        self.newYellowApertureY = y_coord
+                    else:
+                        self.secondYellowApertureX = x_coord
+                        self.secondYellowApertureY = y_coord
+                mask = np.roll(mask, x_center_delta, axis=1)  # column axis
+                mask = np.roll(mask, y_center_delta, axis=0)  # row axis
 
         if show_stats:
             self.displayThumbnails(aperture, mask, thumbnail)
@@ -7123,7 +7096,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             signal = appsum - int(round(max_area * mean))
         else:
             # try:
-                # TODO Do we have to put mean in place of zeroes?
                 masked_data = thumbnail * mask
                 # We used to set the following 2 values to None, but that caused the print of aperture stats to faile
                 # when a psf was cleared and a moused moved over an aperture. This change makes that a don't-care.
@@ -7153,8 +7125,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
                     w = 2 * int(aperture.default_mask_radius) + 1
 
-                    n = w * w
-
                     if self.extractionCode == 'NRE':
                         naylor_background = np.zeros((w,w))
                         for i in range(w):
@@ -7162,13 +7132,15 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                                 naylor_background[i,j] = np.random.choice(bkgnd_pixels, size=1, replace=True)
 
                     if self.extractionCode == 'NPIX':
+                        n = w * w
                         bkgnd_sample = np.random.choice(bkgnd_pixels, size=n, replace=True)
                         sorted_bkgnd = np.sort(bkgnd_sample - mean)
 
                         # TODO Experimental code
                         bkgnd_pixels = sorted_bkgnd[-self.best_pixel_count_to_sum:]
-                        weighted_bkgnd = np.mean(bkgnd_pixels)
-                        aperture_mean = weighted_bkgnd  # Used for background smoothing
+                        # weighted_bkgnd = np.mean(bkgnd_pixels)
+                        # aperture_mean = weighted_bkgnd  # Used for background smoothing
+                        aperture_mean = mean
 
                     # upper left corner coordinate is at x,y = offset_x, offset+y
                     offset_x = (masked_data.shape[0] // 2 - w // 2) * self.zoom_factor  # starting column
@@ -7183,7 +7155,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         # NOTE: aperture_mean is added to aperture stats and used in aperture code to smooth background
                         # using a recursive filter that implements an rc filter. The 'smoothed' value can be retrieved
                         # for an aperture by aperture.smoothed_background
-                        aperture_mean = naylor_mean  # Used for background smoothing
+                        aperture_mean = mean  # Used for background smoothing
                         naylor_signal = self.calcNaylorIntensity((win_data - naylor_mean)) * self.naylorRescaleFactor
                         signal = naylor_signal
 
@@ -7219,7 +7191,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 if aperture.color == 'white':
                     signal = appsum
                 else:  # Subtract background
-                    if self.fractional_weights is not None and not self.target_psf_gathering_in_progress and self.useOptimalExtraction:
+                    if not self.target_psf_gathering_in_progress and self.useOptimalExtraction:
                         pass  # signal is already calculated
                     else:
                         if aperture.smoothed_background == 0:  # We're in startup for the smoothed background
@@ -7440,63 +7412,16 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         naylor_mean = np.max(signal_matrix)
         return naylor_mean
 
-    def cullBackground(self, replacement=0, debug=False):
-
-        # Get at-entry plot of spectrums
-        if debug:
-            self.showSortedPixelSpectrum(self.sorted_background, self.sorted_masked_data, "Sorted background",
-                                         "Sorted masked data")
-
-        # Initialize the pointers that walk backward through the data - start at last entry
-        bkgnd_index = len(self.sorted_background) - 1
-        data_index = len(self.sorted_masked_data) - 1
-        assert bkgnd_index == data_index, f'len(sorted_background): {bkgnd_index}  ' \
-                                          f'len(sorted_masked_data): {data_index}  must be equal.'
-
-        last_delta = self.sorted_masked_data[data_index] - self.sorted_background[bkgnd_index] # This initial value is potentially negative.
-
-        # We are looking for a position where sorted_bkgnd[k] lies between sorted_data[m] and sorted_data[m-1]
-        # When we find such a position, we replace the sorted_data entry that is closest to sorted_bkgnd[k]
-        # with the given replacement value (to remove this background pixel value from sorted_data spectrum
-        while data_index > 0:
-            data_index -= 1
-            current_delta = self.sorted_masked_data[data_index] - self.sorted_background[bkgnd_index]
-            if current_delta >= 0:
-                data_index -= 1  # We need to find a smaller sorted_data value
-                last_delta = current_delta
-                continue
-            else:
-                if abs(current_delta) <= abs(last_delta):
-                    self.sorted_masked_data[data_index] = replacement
-                else:
-                    self.sorted_masked_data[data_index+1] = replacement
-
-        # We have to resort the masked data to remove gaps caused by replacements
-        self.sorted_masked_data = np.sort(self.sorted_masked_data)
-        if debug:
-            self.showSortedPixelSpectrum(self.sorted_background, self.sorted_masked_data, "Sorted background",
-                                         "Sorted masked data")
-
-    # def calcRawSignal(self, mean, win_data):
-    #     data_to_use = win_data - mean
-    #     judy = data_to_use.flatten()
-    #     k = judy.size
-    #     n = self.sorted_fractional_weights.size
-    #     m = k - n
-    #     sorted_data_to_use = np.sort(judy)
-    #     bob = sorted_data_to_use[m:] * self.sorted_fractional_weights
-    #     return np.sum(bob)
-
-    def cross_image(self, im1):
-        im1_gray = np.copy(im1)
-        im2_gray = np.copy(self.fractional_weights)
-
-        # get rid of the averages, otherwise the results are not good
-        # im1_gray -= np.mean(im1_gray)
-        im2_gray -= np.mean(im2_gray)
-
-        # calculate the correlation image; note the flipping of one of the images
-        return scipy.signal.fftconvolve(im1_gray, im2_gray[::-1, ::-1], mode='same')
+    # def cross_image(self, im1):
+    #     im1_gray = np.copy(im1)
+    #     im2_gray = np.copy(self.fractional_weights)
+    #
+    #     # get rid of the averages, otherwise the results are not good
+    #     # im1_gray -= np.mean(im1_gray)
+    #     im2_gray -= np.mean(im2_gray)
+    #
+    #     # calculate the correlation image; note the flipping of one of the images
+    #     return scipy.signal.fftconvolve(im1_gray, im2_gray[::-1, ::-1], mode='same')
 
     def getZoomedAndCenteredVersionOfMaskedData(self, masked_data, mass_centroid):
         zoomed_masked_data = self.zoomer(masked_data)  # This includes all pixels in the aperture
@@ -7564,8 +7489,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if dir_path:
 
             self.clearOptimalExtractionVariables()
-            # self.transportCalcBackgroundCheckBox.setChecked(False)
-            self.transportClearNREpsf.setEnabled(False)
 
             self.firstFrameInApertureData = None
             self.lastFrameInApertureData = None
@@ -7885,8 +7808,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if self.filename:
 
             self.clearOptimalExtractionVariables()
-            # self.transportCalcBackgroundCheckBox.setChecked(False)
-            self.transportClearNREpsf.setEnabled(False)
 
             self.firstFrameInApertureData = None
             self.lastFrameInApertureData = None
@@ -8116,8 +8037,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if dir_path:
 
             self.clearOptimalExtractionVariables()
-            # self.transportCalcBackgroundCheckBox.setChecked(False)
-            self.transportClearNREpsf.setEnabled(False)
 
             self.firstFrameInApertureData = None
             self.lastFrameInApertureData = None
@@ -9502,8 +9421,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def showRobustMeanDemo(self):
 
-        if self.sorted_background is not None:
-            self.showSortedPixelSpectrum(self.sorted_background, self.sorted_masked_data, "Sorted background", "Sorted masked data")
+        # if self.sorted_background is not None:
+        #     self.showSortedPixelSpectrum(self.sorted_background, self.sorted_masked_data, "Sorted background", "Sorted masked data")
 
         dark_gray = (50, 50, 50)
         black = (0, 0, 0)
@@ -9571,63 +9490,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             p2.addItem(vLineMean, ignoreBounds=True)
             vLineRight.setPos(local_right)
             vLineMean.setPos(good_mean)
-
-        self.plots[-1].show()  # Let everyone see the results
-
-
-    def showSortedPixelSpectrum(self, spectrum_one, spectrum_two, title_one, title_two):
-
-        # dark_gray = (50, 50, 50)
-        black = (0, 0, 0)
-
-        # Start a new plot
-        self.plots.append(pg.GraphicsLayoutWidget(title="Spectrum plots"))
-        self.plots[-1].resize(1200, 800)
-        self.plots[-1].setWindowTitle(f'PyMovie {version.version()} Spectrum demo')
-
-
-        values_title = title_one
-
-        xs = list(range(len(spectrum_one) + 1))  # The + 1 is needed when stepMode=True in addPlot()
-        self.plots[-1].addPlot(
-            row=0, col=0,
-            x=xs,
-            y=spectrum_one,
-            stepMode=True,
-            title=values_title,
-            # pen=dark_gray
-            pen=black
-        )
-
-        self.plots[-1].nextRow()  # Tell GraphicsWindow that we want another plot row
-
-        values_title = title_two
-
-        xs = list(range(len(spectrum_two) + 1))  # The + 1 is needed when stepMode=True in addPlot()
-        self.plots[-1].addPlot(
-            row=1, col=0,
-            x=xs,
-            y=spectrum_two,
-            stepMode=True,
-            title=values_title,
-            # pen=dark_gray
-            pen=black
-        )
-
-        self.plots[-1].nextRow()  # Tell GraphicsWindow that we want another plot row
-
-        values_title = "Sorted fractional weights"
-
-        xs = list(range(len(self.sorted_fractional_weights) + 1))  # The + 1 is needed when stepMode=True in addPlot()
-        self.plots[-1].addPlot(
-            row=2, col=0,
-            x=xs,
-            y=self.sorted_fractional_weights,
-            stepMode=True,
-            title=values_title,
-            # pen=dark_gray
-            pen=black
-        )
 
         self.plots[-1].show()  # Let everyone see the results
 
