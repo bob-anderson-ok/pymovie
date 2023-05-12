@@ -3105,8 +3105,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
 
     def startAnalysisWithNRE(self):
-        for ap in self.getApertureList():
-            default_mask_size = ap.default_mask_radius
+        # for ap in self.getApertureList():
+        #     default_mask_size = ap.default_mask_radius
 
         if self.naylorInShiftedPositions is None:
             self.showMsgPopup('A psf has not been calculated yet, so analysis with Noise '
@@ -7195,9 +7195,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         pass  # signal is already calculated
                     else:
                         if aperture.smoothed_background == 0:  # We're in startup for the smoothed background
-                            signal = appsum - int(round(max_area * mean))
+                            signal = appsum - int(np.ceil(max_area * mean))
                         else:
-                            signal = appsum - int(round(max_area * aperture.smoothed_background))
+                            signal = appsum - int(np.ceil(max_area * aperture.smoothed_background))
             # except Exception as e:
             #     self.showMsg(f'in getApertureStats: {e}')
             #     appsum = 0
@@ -7245,17 +7245,24 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         # The remaining outputs are used in writing the lightcurve information
         # !!! ANY CHANGE TO THE TYPE OR ORDERING OF THIS OUTPUT MUST BE REFLECTED IN writeCsvFile() !!!
         if self.processAsFieldsCheckBox.isChecked():
-            top_mask = mask[0::2, :]
+            if y0 % 2 == 0:
+                top_index = 0
+                bot_index = 1
+            else:
+                top_index = 1
+                bot_index = 0
+
+            top_mask = mask[top_index::2, :]
             top_mask_pixel_count = np.sum(top_mask)
-            top_thumbnail = thumbnail[0::2, :]
+            top_thumbnail = thumbnail[top_index::2, :]
             top_appsum = np.sum(top_mask * top_thumbnail)
             top_signal = top_appsum - int(round(top_mask_pixel_count * mean_top))
             if default_mask_used:
                 top_mask_pixel_count = -top_mask_pixel_count
 
-            bottom_mask = mask[1::2, :]
+            bottom_mask = mask[bot_index::2, :]
             bottom_mask_pixel_count = np.sum(bottom_mask)
-            bottom_thumbnail = thumbnail[1::2, :]
+            bottom_thumbnail = thumbnail[bot_index::2, :]
             bottom_appsum = np.sum(bottom_mask * bottom_thumbnail)
             bottom_signal = bottom_appsum - int(round(bottom_mask_pixel_count * mean_bot))
             if default_mask_used:
@@ -7269,20 +7276,26 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 timestamp = self.upperTimestamp
                 self.field1_data = (xc_roi, yc_roi, xc_world, yc_world,
                                     top_signal, top_appsum, mean_top, top_mask_pixel_count,
-                                    frame_num, cvxhull, maxpx, std, timestamp)
+                                    frame_num, cvxhull, maxpx, std, timestamp,
+                                    aperture_mean, self.backgroundSmoothingIntervalSpinBox.value())
                 timestamp = self.lowerTimestamp
                 self.field2_data = (xc_roi, yc_roi, xc_world, yc_world,
                                     bottom_signal, bottom_appsum, mean_bot, bottom_mask_pixel_count,
-                                    frame_num + 0.5, cvxhull, maxpx, std, timestamp)
+                                    frame_num + 0.5, cvxhull, maxpx, std, timestamp,
+                                    aperture_mean, self.backgroundSmoothingIntervalSpinBox.value())
             else:
                 timestamp = self.lowerTimestamp
                 self.field1_data = (xc_roi, yc_roi, xc_world, yc_world,
                                     bottom_signal, bottom_appsum, mean_bot, bottom_mask_pixel_count,
-                                    frame_num, cvxhull, maxpx, std, timestamp)
+                                    frame_num, cvxhull, maxpx, std, timestamp,
+                                    aperture_mean, self.backgroundSmoothingIntervalSpinBox.value()
+                                    )
                 timestamp = self.upperTimestamp
                 self.field2_data = (xc_roi, yc_roi, xc_world, yc_world,
                                     top_signal, top_appsum, mean_top, top_mask_pixel_count,
-                                    frame_num + 0.5, cvxhull, maxpx, std, timestamp)
+                                    frame_num + 0.5, cvxhull, maxpx, std, timestamp,
+                                    aperture_mean, self.backgroundSmoothingIntervalSpinBox.value()
+                                    )
 
         if not (self.avi_in_use or self.aav_file_in_use):
             if self.fits_folder_in_use:
