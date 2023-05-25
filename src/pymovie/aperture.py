@@ -113,10 +113,10 @@ class MeasurementAperture(pg.GraphicsObject):
         else:
             self.smoothed_background = a0 * new_background_value + b1 * self.smoothed_background
 
-        # TODO Remove this debug print
-        if self.name.startswith('psf-star-debug'):
-            print(f'frame: {int(data_tuple[8])} sm_bk: {self.smoothed_background:0.2f}  '
-                  f'  new_bk: {new_background_value:0.2f}  delta: {new_background_value - self.smoothed_background:0.2f}')
+        # Debug print
+        # if self.name.startswith('psf-star-debug'):
+        #     print(f'frame: {int(data_tuple[8])} sm_bk: {self.smoothed_background:0.2f}  '
+        #           f'  new_bk: {new_background_value:0.2f}  delta: {new_background_value - self.smoothed_background:0.2f}')
 
         self.data.append(data_tuple)
 

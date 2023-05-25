@@ -149,6 +149,7 @@ from scipy.stats import poisson
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
+PRINT_TRACKING_DATA = False
 
 class CustomViewBox(pg.ViewBox):
     def __init__(self, *args, **kwds):
@@ -423,8 +424,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.ocrBoxesDir = self.homeDir
         self.ocrDigitsDir = self.homeDir
 
-        self.newYellowApertureX = None
-        self.newYellowApertureY = None
+        self.firstYellowApertureX = None
+        self.firstYellowApertureY = None
         self.secondYellowApertureX = None
         self.secondYellowApertureY = None
 
@@ -568,17 +569,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.thresh_inc_1.setChecked(True)
 
         self.vtiSelectLabel.installEventFilter(self)
-
-        # TODO Figure out why this had to be commented out. Did it EVER do anything needed?
-        # self.helperThing.setWindowFlags( Qt.Window|
-        #                                  Qt.CustomizeWindowHint |
-        #                                  Qt.WindowTitleHint |
-        #                                  Qt.WindowCloseButtonHint |
-        #                                  Qt.QtWindowStaysOnTopHint
-        #                                 )
-
-        # setting font to the dialog (This does not work, probably because the font size is set by the html content)
-        # self.helperThing.setFont(QtGui.QFont('Times', 12))
 
         allowNewVersionPopup = self.settings.value('allowNewVersionPopup', 'true')
         if allowNewVersionPopup == 'true':
@@ -1102,7 +1092,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.transportAnalyzeWithNRE.clicked.connect(self.startAnalysisWithNRE)
 
         self.transportAnalyzeWithNPIX.installEventFilter(self)
-        self.transportAnalyzeWithNPIX.clicked.connect(self.startAnalyzeWithNPIX)
+        self.transportAnalyzeWithNPIX.clicked.connect(self.startAnalysisWithNPIX)
 
         # self.transportBkgndPolyDegreeLabel.installEventFilter(self)
 
@@ -1317,70 +1307,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     #         print(" ")
     #         summary.print_(summary_one)
     #         print(" ")
-
-    # def computeBackgrounds(self):
-    #     if not self.transportCalcBackgroundCheckBox.isChecked():
-    #         return
-    #
-    #     apertures = self.getApertureList()
-    #     if not apertures and self.transportCalcBackgroundCheckBox.isChecked():
-    #         self.showMsgPopup('There is no data to process.')
-    #         self.transportCalcBackgroundCheckBox.setChecked(False)
-    #         return
-    #
-    #     # We look for per frame background data availability.
-    #     start_frame = self.currentFrameSpinBox.value()  # This is a spinBox without buttons
-    #     stop_frame = self.stopAtFrameSpinBox.value()    # This is a spinBox without buttons
-    #     data_available = apertures[0].data
-    #
-    #     if len(data_available) == 0:
-    #         self.showMsgPopup('There is no data to process.')
-    #         self.transportCalcBackgroundCheckBox.setChecked(False)
-    #         return
-    #
-    #     start_frame_bkgnd_data_available = False
-    #     stop_frame_bkgnd_data_available = False
-    #     first_frame_available = int(data_available[0][8])
-    #     last_frame_available = int(data_available[-1][8])
-    #     for item in data_available:
-    #         if int(item[8]) == start_frame:
-    #             start_frame_bkgnd_data_available = True
-    #         if int(item[8]) == stop_frame:
-    #             stop_frame_bkgnd_data_available = True
-    #
-    #     if not (start_frame_bkgnd_data_available and stop_frame_bkgnd_data_available):
-    #         self.showMsgPopup(f'Complete per frame background data is not available in the designated frame range of '
-    #                           f'{start_frame}...{stop_frame}\n\n'
-    #                           f'Data is available for frames {first_frame_available}...{last_frame_available}')
-    #         self.transportCalcBackgroundCheckBox.setChecked(False)
-    #         return
-    #
-    #     # self.showMsgPopup(f'We are going to calculate smoothed backgrounds now.')
-    #     per_frame_bkgnd_data = []  # This will be a list of lists with the internal lists being the 'bkgnd means'
-    #     for i in range(len(apertures)):
-    #         data_available = apertures[i].data
-    #         bkgnd_values = [data_available[k][6] for k in range(len(data_available))]
-    #         per_frame_bkgnd_data.append(bkgnd_values)
-    #
-    #     # Now we need to fit polynomials to the backgrounds in each list.
-    #     x = [frame for frame in range(first_frame_available,last_frame_available+1)]
-    #     for i in range(len(apertures)):
-    #         ans = np.polynomial.polynomial.Polynomial.fit(x, per_frame_bkgnd_data[i],
-    #                                                       self.transportBkgndPolynomialDegreeSpinBox.value())
-    #         coef = ans.convert().coef  # noqa
-    #         # Now we need to compute the smoothed background values and store them in the aperture.computed_background[]
-    #         computed_values = np.polynomial.polynomial.polyval(x,coef)
-    #         # And put them into the aperture
-    #         apertures[i].computed_background = computed_values
-
-    # def handleBkgndPolynomialDegreeChange(self):
-    #     # If there no apertures (and so no data) or the calc background is not checked,
-    #     # allow the polynomial degree to be changed
-    #     apertures = self.getApertureList()
-    #     if not apertures or not self.transportCalcBackgroundCheckBox.isChecked():
-    #         return
-    #     else:
-    #         self.computeBackgrounds()
 
     def clearOptimalExtractionVariables(self):
         self.target_psf = None
@@ -1630,10 +1556,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         view.menu.addSeparator()  # noqa
 
-        addSnapApp = view.menu.addAction("Add snap-to-blob aperture")  # noqa
+        addSnapApp = view.menu.addAction("Add dynamic mask aperture")  # noqa
         addSnapApp.triggered.connect(self.addSnapAperture)  # noqa
 
-        addFixedApp = view.menu.addAction('Add static aperture (no snap)')  # noqa
+        addFixedApp = view.menu.addAction('Add fixed circular mask aperture')  # noqa
         addFixedApp.triggered.connect(self.addNamedStaticAperture)  # noqa
 
         addAppStack = view.menu.addAction('Add 10 nested radius mask apertures')  # noqa
@@ -2235,8 +2161,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.showHelp(self.alignWithTwoPointTrackInfoButton)
 
     def loadHotPixelProfile(self):
-        self.showMsg(f'loadHotPixelProfile: partially implemented')
-        if self.image is None:
+        self.showMsg(f'loadHotPixelProfile: Not yet implemented')
+        return
+
+        if self.image is None:  # noqa  Suppress code cannot be reached caused by the return above
             self.showMsg(f'There is no frame showing yet.')
             return
 
@@ -2343,7 +2271,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         ny = 51
         nx = 51
         thumbnail = self.image[y0:y0 + ny, x0:x0 + nx]
-        avg_bkgnd, *_ = newRobustMeanStd(thumbnail, outlier_fraction=.5)
+        avg_bkgnd, *_ = newRobustMeanStd(thumbnail)
         return avg_bkgnd
 
     def applyHotPixelErasure(self, avg_bkgnd=None):
@@ -2368,6 +2296,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         if self.stateOfView is None:
             self.frameView.setImage(self.image)
+            if self.levels:                                                       # KNG  5/22/2023
+                self.frameView.setLevels(min=self.levels[0], max=self.levels[1])  # KNG  5/22/2023
             return
 
         # Preserve the current zoom/pan state
@@ -2592,7 +2522,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.clearApertures()
 
         # Then place all the apertures with complete state
-        for mydict in hot_pixel_profile['aperture_dict_list']:
+        for mydict in hot_pixel_profile['id']:
             try:
                 x0 = mydict['x0']
                 y0 = mydict['y0']
@@ -2601,15 +2531,19 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
                 # Set the aperture size selection to match the incoming aperture group.
                 if xsize == 51:
-                    self.roiComboBox.setCurrentIndex(0)
-                elif xsize == 41:
-                    self.roiComboBox.setCurrentIndex(1)
-                elif xsize == 31:
                     self.roiComboBox.setCurrentIndex(2)
-                elif xsize == 21:
+                elif xsize == 41:
                     self.roiComboBox.setCurrentIndex(3)
-                elif xsize == 11:
+                elif xsize == 31:
                     self.roiComboBox.setCurrentIndex(4)
+                elif xsize == 21:
+                    self.roiComboBox.setCurrentIndex(5)
+                elif xsize == 11:
+                    self.roiComboBox.setCurrentIndex(6)
+                elif xsize == 71:
+                    self.roiComboBox.setCurrentIndex(1)
+                elif xsize == 91:
+                    self.roiComboBox.setCurrentIndex(7)
                 else:
                     self.showMsg(f'Unexpected aperture size of {xsize} in restored aperture group')
 
@@ -2817,8 +2751,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.roiComboBox.setCurrentIndex(5)
                 elif xsize == 11:
                     self.roiComboBox.setCurrentIndex(6)
+                elif xsize == 71:
+                    self.roiComboBox.setCurrentIndex(1)
+                elif xsize == 91:
+                    self.roiComboBox.setCurrentIndex(0)
                 else:
                     self.showMsg(f'Unexpected aperture size of {xsize} in restored aperture group')
+
 
                 bbox = (x0, y0, xsize, ysize)
                 name = aperture_dict['name']
@@ -2993,18 +2932,22 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 aperture.setPos(self.savedPositions[i])
 
     def moveOneFrameLeft(self):
+        self.analysisRequested = False  # to suppress data capture while stepping off a finder frame
         self.finderFrameBeingDisplayed = False
         self.disableUpdateFrameWithTracking = False
         curFrame = self.currentFrameSpinBox.value()
         curFrame -= 1
         self.currentFrameSpinBox.setValue(curFrame)
+        self.analysisRequested = True
 
     def moveOneFrameRight(self):
+        self.analysisRequested = False  # to suppress data capture while stepping off a finder frame
         self.finderFrameBeingDisplayed = False
         self.disableUpdateFrameWithTracking = False
         curFrame = self.currentFrameSpinBox.value()
         curFrame += 1
         self.currentFrameSpinBox.setValue(curFrame)
+        self.analysisRequested = True
 
     def seekMaxLeft(self):
         self.currentFrameSpinBox.setValue(0)
@@ -3032,11 +2975,24 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.best_pixel_count_to_sum = self.numPixelsToSumSpinBox.value()
 
     def startGrowthCurveGathering(self):
+
+        ok, msg, pixel_count = self.testForConsistentPsfStarFixedMasks()
+
+        if not ok:
+            self.showMsgPopup(msg)
+            return
+
         self.extractionCode = 'NPIX'
         self.target_psf_gathering_in_progress = True
         self.startAnalysis()
 
     def startPsfGathering(self):
+
+        ok, msg, pixel_count = self.testForConsistentPsfStarFixedMasks()
+
+        if not ok:
+            self.showMsgPopup(msg)
+            return
 
         # We allow a new psf to be gathered without warning of one already existing.
         # It will be a qiet over-write
@@ -3056,23 +3012,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                               f"so this operation cannot be performed.")
             return
 
-        all_mask_radius_same = True
-        offending_aperture_name = ""
-        offending_mask_radius = None
-        for app in self.getApertureList():
-            if not app.default_mask_radius == mask_radius_in_use:
-                all_mask_radius_same = False
-                offending_aperture_name = app.name
-                offending_mask_radius = app.default_mask_radius
-                break
-
-        if not all_mask_radius_same:
-            self.showMsgPopup(f"Aperture '{offending_aperture_name}' has a default_mask_radius of {offending_mask_radius}\n"
-                              f"which is different from the 'psf-star' default_mask_radius of {mask_radius_in_use}\n\n"
-                              f"The optimal extraction procedure "
-                              f"requires that the default_mask_radius for all static apertures be the same.")
-            return
-
         self.clearOptimalExtractionVariables()
 
         self.psf_radius_in_use = mask_radius_in_use
@@ -3085,28 +3024,79 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.extractionCode = 'AP'
         self.startAnalysis()
 
-    def startAnalyzeWithNPIX(self):
-        if self.numPixelsToSumSpinBox.value() > 0:
-            self.extractionMode = f'Sum of brightest {self.numPixelsToSumSpinBox.value()} pixels photometry'
+    def startAnalysisWithNPIX(self):
+
+        ok, msg, mask_pixel_count = self.testForConsistentPsfStarFixedMasks()
+
+        if not ok:
+            self.showMsgPopup(msg)
+            return
+
+        number_of_pixels_to_sum = self.numPixelsToSumSpinBox.value()
+
+        if number_of_pixels_to_sum > 0:
+            self.extractionMode = f'Sum of brightest {number_of_pixels_to_sum} pixels photometry'
             self.extractionCode = 'NPIX'
         else:
             self.showMsgPopup(f'The number of brightest pixels to sum is zero.\n\n'
                               f'Do you need to run a growth curve to determine the optimal value to use? If so, '
-                              f'press the caluclate Growth Curve button.')
+                              f'press the calculate Growth Curve button.')
+            return
+
+        if mask_pixel_count < self.numPixelsToSumSpinBox.value():
+            self.showMsgPopup(f'The number of pixels to sum ({number_of_pixels_to_sum}) is greater \n\n'
+                              f'than the number of pixels in the mask ({mask_pixel_count})\n\n'
+                              f'so this opertion cannot proceed.')
             return
 
         self.pixel_sums = []
         self.pixel_sums_per_frame = []
-        self.max_pixels_in_sum = 49
 
         self.useOptimalExtraction = True
 
         self.startAnalysis()
 
+    def testForConsistentPsfStarFixedMasks(self):
+
+        # Ensure that there is at most 1 aperture with a name that starts with psf-star
+        starts_with_psf_star_count = 0
+        for app in self.getApertureList():
+            if app.name.startswith('psf-star'):
+                starts_with_psf_star_count += 1
+
+        if not starts_with_psf_star_count == 1:
+            return False, f'There can be only one aperture with a name that starts with "psf-star".\n\n' \
+                          f'{starts_with_psf_star_count} were found.', None
+
+        mask_size = None
+        psf_star_found = False
+        for app in self.getApertureList():
+            if 'psf-star' in app.name:
+                psf_star_found = True
+                if not app.thresh == 99999:
+                    return False, f'All psf-star apertures require a fixed mask (threshold = 99999) for this operation.\n\n' \
+                                  f'The aperture named: {app.name} does not.', None
+                if mask_size is None:
+                    mask_size = app.default_mask_radius
+                    pixel_count = app.defaultMaskPixelCount
+                else:
+                    if not app.default_mask_radius == mask_size:
+                        return False, f'All psf-stars must have the same default mask size. {app.name} differs\n\n' \
+                                      f'from previously encountered psf-star aperture.', None
+
+
+        if psf_star_found:
+            return True, f'All psf-stars have fixed and equal masks.', pixel_count  # noqa
+        else:
+            return False, 'No apertures with a name containing "psf-star" were found', None
 
     def startAnalysisWithNRE(self):
-        # for ap in self.getApertureList():
-        #     default_mask_size = ap.default_mask_radius
+
+        ok, msg, _ = self.testForConsistentPsfStarFixedMasks()
+
+        if not ok:
+            self.showMsgPopup(msg)
+            return
 
         if self.naylorInShiftedPositions is None:
             self.showMsgPopup('A psf has not been calculated yet, so analysis with Noise '
@@ -3131,7 +3121,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         appdata = apertures[0].data
         if not appdata == []:
             self.firstFrameInApertureData = int(apertures[0].data[0][8])
-            self.lastFrameInApertureData= int(apertures[0].data[-1][8])
+            self.lastFrameInApertureData = int(apertures[0].data[-1][8])
 
         if self.checkForDataAlreadyPresent():
             msg = QMessageBox()
@@ -3152,8 +3142,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.clearApertureData()
 
         yellow_aperture_present = False
-        self.newYellowApertureX = None
-        self.newYellowApertureY = None
+        self.firstYellowApertureX = None
+        self.firstYellowApertureY = None
         self.secondYellowApertureX = None
         self.secondYellowApertureY = None
         for app in self.getApertureList():
@@ -3180,7 +3170,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.analysisRequested = True
         self.analysisPaused = False
         self.setTransportButtonsEnableState(False)
-        # self.transportCalcBackgroundCheckBox.setEnabled(True)
         self.transportClearData.setEnabled(True)
         self.transportPause.setEnabled(True)
         self.transportPlot.setEnabled(True)
@@ -3191,7 +3180,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             app.smoothed_background = 0.0
             app.background_reading_count = 0
 
-        self.autoRun()
+        if self.testForProperUseYellowMaskSetup():
+            self.autoRun()
+        else:
+            return
 
     @staticmethod
     def queryWhetherNewVersionShouldBeInstalled():
@@ -4358,7 +4350,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         ny = 51
         nx = 51
         thumbnail = self.image[y0:y0 + ny, x0:x0 + nx]
-        mean, *_ = newRobustMeanStd(thumbnail, outlier_fraction=.5)
+        mean, *_ = newRobustMeanStd(thumbnail)
 
         image_height = self.image.shape[0]  # number of rows
         image_width = self.image.shape[1]  # number of columns
@@ -4992,6 +4984,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def setRoiFromComboBox(self):
         self.clearApertures()
+        # TODO Fix for sticky flag upon aperture size change
+        self.useYellowMaskCheckBox.setChecked(False)
+        self.use_yellow_mask = self.useYellowMaskCheckBox.isChecked()
         self.roi_size = int(self.roiComboBox.currentText())
         self.roi_center = int(self.roi_size / 2)
         if self.image is not None:
@@ -5133,18 +5128,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             currentFrame = self.currentFrameSpinBox.value()
             lastFrame = self.stopAtFrameSpinBox.value()
-
-            # if self.transportCalcBackgroundCheckBox.isChecked():
-            #     if currentFrame < self.firstFrameInApertureData:
-            #         self.showMsgPopup(f'The starting frame ({currentFrame}) is earlier than first frame with smoothed'
-            #                           f' background data ({self.firstFrameInApertureData})')
-            #         self.setTransportButtonsEnableState(True)
-            #         return
-            #     if lastFrame > self.lastFrameInApertureData:
-            #         self.showMsgPopup(f'The stop frame ({lastFrame}) is later than the last frame with smoothed'
-            #                           f' background data ({self.lastFrameInApertureData})')
-            #         self.setTransportButtonsEnableState(True)
-            #         return
 
             stop_offset = 0
             if currentFrame > lastFrame:
@@ -5737,6 +5720,19 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 else:
                     self.centerAperture(app, show_stats=True)
 
+    def testForProperUseYellowMaskSetup(self):
+        if not self.useYellowMaskCheckBox.isChecked():
+            return True
+        for app in self.getApertureList():
+            if app.primary_yellow_aperture:
+                if app.thresh == 99999:
+                    self.showMsgPopup(f'For "use yellow mask" to work, the primary yellow aperture (the first one '
+                                      f'defined if there are 2)\nmust use a dynamic mask, not a static mask.\n\n'
+                                      f'The "use yellow mask" checkbox has been cleared.')
+                    self.use_yellow_mask = False
+                    self.useYellowMaskCheckBox.setChecked(False)
+                    return False
+        return True
     def handleUseYellowMaskClick(self):
 
         yellow_aperture_present = False
@@ -5751,6 +5747,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             return
 
         self.use_yellow_mask = self.useYellowMaskCheckBox.isChecked()
+
+        if self.use_yellow_mask:
+            if not self.testForProperUseYellowMaskSetup():
+                return
+
         if self.use_yellow_mask:
             self.moveOneFrameRight()
             self.moveOneFrameLeft()
@@ -6479,8 +6480,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             for app in self.getApertureList():
                 # Find and deal with the primary yellow aperture first
                 if app.color == 'yellow' and app.primary_yellow_aperture:  # This is our primary yellow
-                    # app.primary_yellow_aperture = True
                     yellow_count += 1
+                    # TODO Experimental test (suppress stats)
+                    self.one_time_suppress_stats = False
                     if self.use_yellow_mask:
                         xc_roi, yc_roi, xc_world, yc_world, *_ = \
                             self.getApertureStats(app, show_stats=False, save_yellow_mask=True)
@@ -6537,7 +6539,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def centerAllApertures(self,xc=None, yc=None):
         # New: for the primary yellow aperture, there will a value for xc and yc (which are relative to roi)
-        # If there are two yellow apertures, there will be values in self.secondYellowApertureX and
+        # If there are two yellow apertures, there will also be values in self.secondYellowApertureX and
         # self.secondApertureY
 
         if self.preserve_apertures:
@@ -6579,9 +6581,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                                 app.dx = 0
                                 app.dy = 0
                                 app.theta = 0.0
-                            # else:
-                            #     xc_world = app.xc
-                            #     yc_world = app.yc
 
                             # Compute the needed jog values (will be used/needed if there is but one yellow aperture)
                             if xc is None:
@@ -6592,22 +6591,19 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                                 delta_yc = self.roi_center - yc
 
 
-                        # Save the current coordinates of the number 1 yellow aperture (pre-jog)
-                        # self.yellow_x = xc_world
-                        # self.yellow_y = yc_world
-
                         # Always jog yellow # 1 into position
                         self.jogApertureAndXcYc(app, delta_xc, delta_yc)  # jog yellow #1
 
+                        if PRINT_TRACKING_DATA:
+                            print(f'Jogging first yellow aperture: x by {-delta_xc}  y by {-delta_yc}')
 
                         # If we're referencing everything off of yellow #1, we need to jog it
                         # so that translations are followed by the aperture when we are in field
                         # rotation tracking configuration
                         if self.num_yellow_apertures == 2:  # There is a second yellow -but we're still on # 1
-                            # self.jogApertureAndXcYc(app, delta_xc, delta_yc)  # jog yellow #1
                             self.yellow_x = app.xc
                             self.yellow_y = app.yc
-                            # If we are going to use the mask of this aperture for all the others,
+                            # If we are going to use the mask of this aperture as a default for all the others,
                             # now that it's properly positioned, we need to recalculate and save
                             # that mask.
                             if self.use_yellow_mask:
@@ -6617,17 +6613,31 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
                         assert not app.primary_yellow_aperture
 
-                        # We're referencing all but yellow #2 of off yellow #1
-                        # We need to jog yellow #2 based on it's own measurement
+                        # We're referencing all but yellow #2 off of yellow #1
+                        # We need to jog yellow #2 based on it's own either its own measurement or,
+                        # if self.use_yellow_mask is true, we want to jog the seciond yellow aperture identically
+                        # to the first yellow apertue
                         # so that translations are followed, and we can get a good angle calculation.
+                        # if self.use_yellow_mask:
+                        #     delta_xc_2 = self.roi_center - self.firstYellowApertureX
+                        #     delta_yc_2 = self.roi_center - self.firstYellowApertureY
+                        # else:
+                        #     delta_xc_2 = self.roi_center - self.secondYellowApertureX
+                        #     delta_yc_2 = self.roi_center - self.secondYellowApertureY
                         delta_xc_2 = self.roi_center - self.secondYellowApertureX
                         delta_yc_2 = self.roi_center - self.secondYellowApertureY
-                        self.jogApertureAndXcYc(app, delta_xc_2, delta_yc_2)  # jog yellow # 2 from itself
+
+                        self.jogApertureAndXcYc(app, delta_xc_2, delta_yc_2)  # jog yellow #2 from itself
+                        if PRINT_TRACKING_DATA:
+                            print(f'Jogging second yellow aperture: x by {-delta_xc_2}  y by {-delta_yc_2}')
 
                         # Note that if we're in 'use yellow mask mode', the mask computed from
-                        # the 'already jogged into position' yellow 2 will be used here.
-                        xc_roi, yc_roi, xc_world, yc_world, *_ = \
-                            self.getApertureStats(app, show_stats=False)
+                        # the 'already jogged into position' yellow 1 will be used here.
+                        xc_roi, yc_roi, xc_world, yc_world, *_ =  self.getApertureStats(app, show_stats=False)
+
+                        if PRINT_TRACKING_DATA:
+                            print(f'Handling second yellow aperture in centerAllApertures')
+                            print(f'    secondYellowAperture: {self.secondYellowApertureX},{self.secondYellowApertureY}')
 
                         app.xc = xc_world
                         app.yc = yc_world
@@ -6683,7 +6693,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             if self.use_yellow_mask:
                 for eachapp in self.getApertureList():
                     if eachapp.color == 'yellow':
-                        self.getApertureStats(eachapp, show_stats=False, save_yellow_mask=True)
+                        # TODO We are trying to deal with double yellow apertures and want the mask to come from the primary
+                        if eachapp.primary_yellow_aperture:
+                            self.getApertureStats(eachapp, show_stats=False, save_yellow_mask=True)
                         break
         else:
             # There were no yellow apertures, so just center all apertures using the centroid of their mask
@@ -6909,20 +6921,37 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if self.thumbTwoImage is not None:
             ylim, xlim = self.thumbTwoImage.shape
             if 0 <= y < ylim and 0 <= x < xlim:
-                self.statusbar.showMessage(f'x={x} y={y} intensity={self.thumbTwoImage[y, x] - pedestal}')
+                self.statusbar.showMessage(f'x={x} y={y} intensity={int((self.thumbTwoImage[y, x] - pedestal) / self.thumbTwoScaleFactor)}')
             else:
                 self.statusbar.showMessage(f'x={x} y={y}')
 
-    def zoomer(self, data):
-        # This routine expands the input data by self.zoom_factor
-        # data x and y size will be increased by self.zoom_factor (by repitition)
-        expander = np.ones((self.zoom_factor, self.zoom_factor), dtype=int)
-        return np.kron(data, expander)
+    # def zoomer(self, data):
+    #     # This routine expands the input data by self.zoom_factor
+    #     # data x and y size will be increased by self.zoom_factor (by repitition)
+    #     expander = np.ones((self.zoom_factor, self.zoom_factor), dtype=int)
+    #     return np.kron(data, expander)
 
     @staticmethod
     def roll_count(target, value, interval):
         delta = target - value
         return round((delta - int(delta)) / interval)
+
+    @staticmethod
+    def nonRecenteringAperture(aperture):
+        name_to_test = aperture.name.lower()
+        if name_to_test.startswith("nc-"):
+            return True
+        if name_to_test.startswith("nc_"):
+            return True
+        if "empty" in name_to_test:
+            return True
+        if "no-star" in name_to_test:
+            return True
+        if "no_star" in name_to_test:
+            return True
+        if "no star" in name_to_test:
+            return True
+        return False
 
     def getApertureStats(self, aperture, show_stats=True, save_yellow_mask=False):
         # This routine is dual purpose.  When self.show_stats is True, there is output to
@@ -6931,6 +6960,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.zoom_factor = 1
 
+        # Test the flag used by routines that call other routines that call this procedure and don't want any side effects
         if self.one_time_suppress_stats:
             self.one_time_suppress_stats = False
             return None
@@ -6942,13 +6972,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         # thumbnail is the portion of the main image that is covered by the aperture bounding box
         thumbnail = self.image[y0:y0 + ny, x0:x0 + nx]
-        mean, std, sorted_data, _, _, _, _, _, bkgnd_pixels = newRobustMeanStd(thumbnail, outlier_fraction=.5,
-                                                      lunar=self.lunarCheckBox.isChecked())
-        aperture_mean = mean  #
-        maxpx = sorted_data[-1]
+        mean, std, sorted_data, _, _, _, _, _, bkgnd_pixels = newRobustMeanStd(thumbnail,
+                                                                               lunar=self.lunarCheckBox.isChecked())
+        aperture_mean = mean
+        maxpx = sorted_data[-1]  # Needed only as a return value - part of statistics of the aperture
 
-        mean_top, *_ = newRobustMeanStd(thumbnail[0::2, :], outlier_fraction=.5, lunar=self.lunarCheckBox.isChecked())
-        mean_bot, *_ = newRobustMeanStd(thumbnail[1::2, :], outlier_fraction=.5, lunar=self.lunarCheckBox.isChecked())
+        mean_top, *_ = newRobustMeanStd(thumbnail[0::2, :], lunar=self.lunarCheckBox.isChecked())
+        mean_bot, *_ = newRobustMeanStd(thumbnail[1::2, :], lunar=self.lunarCheckBox.isChecked())
 
         # We computed the initial aperture.thresh as an offset from the background value present
         # in the frame used for the initial threshold determination.  Now we add the current
@@ -6960,25 +6990,33 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         timestamp = None
 
         if aperture.color == 'yellow':
-            # Version 3.7.4 added ...
-            # ... force default mask use if double yellow apertures are in use
-            if self.num_yellow_apertures == 2:
-                default_mask_used = True
-                threshold = 99999
 
             max_area, mask, t_mask, centroid, cvxhull, nblobs, extent = \
-                get_mask(thumbnail, ksize=self.gaussian_blur, cut=threshold, outlier_fraction=0.5,
+                get_mask(thumbnail, ksize=self.gaussian_blur, cut=threshold,
                          apply_centroid_distance_constraint=False, max_centroid_distance=self.allowed_centroid_delta,
                          lunar=self.lunarCheckBox.isChecked())
+
+            # Set these so that during the recenter all, it gets recognized
+            if aperture.primary_yellow_aperture and not max_area == 0:
+                x_coord = round(centroid[1])  # noqa
+                y_coord = round(centroid[0])  # noqa
+                if PRINT_TRACKING_DATA:
+                    print(f'getApertureStats() pt1: firstYellowAperture: {x_coord},{y_coord}')
+                self.firstYellowApertureX = x_coord
+                self.firstYellowApertureY = y_coord
+                # pass
+            elif not max_area == 0:
+                x_coord = round(centroid[1])  # noqa
+                y_coord = round(centroid[0])  # noqa
+                if PRINT_TRACKING_DATA:
+                    print(f'getApertureStats() pt1: secondYellowAperture: {x_coord},{y_coord}')
+                self.secondYellowApertureX = x_coord
+                self.secondYellowApertureY = y_coord
+
             self.displayImageAtCurrentZoomPanState()
             # Moved here in version 3.6.9
-            if save_yellow_mask:
+            if save_yellow_mask and aperture.primary_yellow_aperture:
                 threshold = aperture.thresh + background
-                max_area, mask, t_mask, centroid, cvxhull, nblobs, extent = \
-                    get_mask(thumbnail, ksize=self.gaussian_blur, cut=threshold, outlier_fraction=0.5,
-                             apply_centroid_distance_constraint=False,
-                             max_centroid_distance=self.allowed_centroid_delta,
-                             lunar=self.lunarCheckBox.isChecked())
                 self.yellow_mask = mask.copy()
 
         elif aperture.color == 'white':
@@ -6996,7 +7034,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         else:
             # This handles 'red' and 'green' apertures
             max_area, mask, t_mask, centroid, cvxhull, nblobs, extent = \
-                get_mask(thumbnail, ksize=self.gaussian_blur, cut=threshold, outlier_fraction=0.5,
+                get_mask(thumbnail, ksize=self.gaussian_blur, cut=threshold,
                          apply_centroid_distance_constraint=True, max_centroid_distance=self.allowed_centroid_delta,
                          lunar=self.lunarCheckBox.isChecked())
         comment = ""
@@ -7022,8 +7060,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 y_coord = round(mass_centroid[1])
             except ValueError:
                 mass_centroid = (self.roi_center, self.roi_center)
-                x_coord = self.roi_center
-                y_coord = self.roi_center
+                if centroid == (None, None):
+                    x_coord = self.roi_center
+                    y_coord = self.roi_center
+                else:
+                    x_coord = centroid[0]
+                    y_coord = centroid[1]
 
             w = 2 * int(aperture.default_mask_radius) + 1
             self.w = w
@@ -7038,10 +7080,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.mask_size = w
                     self.pixel_sums = []
                     self.pixel_sums_per_frame = []
-                    self.max_pixels_in_sum = 49
+                    self.max_pixels_in_sum = int(0.7 * aperture.defaultMaskPixelCount)
 
-                # We don't do 'zooming' anymore, but we do use the centering mechanism.
-                zoomed_masked_data = self.getZoomedAndCenteredVersionOfMaskedData(masked_data, mass_centroid)
+                centered_masked_data = self.getCenteredVersionOfData(masked_data, mass_centroid, aperture.xsize)
 
                 # upper left corner coordinate is at x,y = offset_x, offset+y
                 offset_x = (masked_data.shape[0] // 2 - w // 2) * self.zoom_factor  # starting column
@@ -7049,11 +7090,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 for i in range(w * self.zoom_factor):
                     for j in range(w * self.zoom_factor):
                         # Accumulate a psf image. Later we will divide by self.target_psf_number_accumulated
-                        self.target_psf[i,j] += zoomed_masked_data[i+offset_x,j+offset_y]   # x,y indexing
-                # TODO Experimental NPIX code
+                        self.target_psf[i,j] += centered_masked_data[i+offset_x,j+offset_y]   # x,y indexing
                 if aperture.name.startswith('psf-star'):
                     sorted_masked_data = np.sort(masked_data.flatten()) - mean
-                    # TODO Experiment: only count pixels 1 sigma over mean
+                    # Only count pixels 1 sigma over mean
                     sorted_masked_data -= std
                     np.clip(sorted_masked_data, 0, sorted_masked_data[-1])
                     self.pixel_sums = []
@@ -7076,18 +7116,36 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 if aperture.color == 'yellow':  # We want to move the aperture itself
                     # Set these so that during the recenter all, it gets recognized
                     if aperture.primary_yellow_aperture:
-                        self.newYellowApertureX = x_coord
-                        self.newYellowApertureY = y_coord
+                        if PRINT_TRACKING_DATA:
+                            print(f'getApertureStats() pt2: firstYellowAperture: {x_coord},{y_coord}')
+                        self.firstYellowApertureX = x_coord
+                        self.firstYellowApertureY = y_coord
                     else:
+                        if PRINT_TRACKING_DATA:
+                            print(f'getApertureStats() pt2: secondYellowAperture: {x_coord},{y_coord}')
                         self.secondYellowApertureX = x_coord
                         self.secondYellowApertureY = y_coord
-                mask = np.roll(mask, x_center_delta, axis=1)  # column axis
-                mask = np.roll(mask, y_center_delta, axis=0)  # row axis
+                if not self.nonRecenteringAperture(aperture):
+                    # This is new: we are limiting the roll count to avoid wrapping when mask passes the aperture edge
+                    max_roll_count = int(aperture.xsize // 2 - np.ceil(aperture.default_mask_radius))
+                    # print(f'max_roll_count: {max_roll_count}')
+                    if abs(x_center_delta) > max_roll_count:
+                        x_center_delta = max_roll_count * np.sign(x_center_delta)
+                    if abs(y_center_delta) > max_roll_count:
+                        y_center_delta = max_roll_count * np.sign(y_center_delta)
+                    mask = np.roll(mask, x_center_delta, axis=1)  # column axis
+                    mask = np.roll(mask, y_center_delta, axis=0)  # row axis
 
         if show_stats:
             self.displayThumbnails(aperture, mask, thumbnail)
 
         frame_num = float(self.currentFrameSpinBox.text())
+
+        if not 'psf-star' in aperture.name:
+            processAsNREorNPIX = False
+        else:
+            processAsNREorNPIX = (self.extractionCode == 'NPIX' or self.extractionCode == 'NRE') \
+                                 and not self.target_psf_gathering_in_progress
 
         if self.use_yellow_mask and self.yellow_mask is not None:
             default_mask_used = False
@@ -7095,118 +7153,105 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             max_area = int(np.sum(self.yellow_mask))
             signal = appsum - int(round(max_area * mean))
         else:
-            # try:
-                masked_data = thumbnail * mask
-                # We used to set the following 2 values to None, but that caused the print of aperture stats to faile
-                # when a psf was cleared and a moused moved over an aperture. This change makes that a don't-care.
-                signal = 0
+            masked_data = thumbnail * mask
+            signal = 0
 
-                if (self.extractionCode == 'NPIX' or self.extractionCode == 'NRE') and not self.target_psf_gathering_in_progress:
-                    centered_data = self.getZoomedAndCenteredVersionOfMaskedData(thumbnail, mass_centroid)
-                    centered_masked_data = centered_data * aperture.defaultMask
-                    reverse_mask = np.copy(aperture.defaultMask)
-                    for i in range(reverse_mask.shape[0]):
-                        for j in range(reverse_mask.shape[1]):
-                            if centered_masked_data[i,j] == 0:
-                                reverse_mask[i,j] = 1
-                            else:
-                                reverse_mask[i,j] = 0
-
-                    if self.extractionCode == 'NPIX':
-                        background_image = thumbnail * reverse_mask
-                        mean, std, _, _, _, _, _, _, bkgnd_pixels = newRobustMeanStd(background_image,
-                                                                                   outlier_fraction=.5,
-                                                                                   lunar=self.lunarCheckBox.isChecked())
-
-                    if self.extractionCode == 'NRE':
-                        mean, std, _, _, _, _, _, _, bkgnd_pixels = newRobustMeanStd(thumbnail,
-                                                                                     outlier_fraction=.5,
-                                                                                     lunar=self.lunarCheckBox.isChecked())
-
-                    w = 2 * int(aperture.default_mask_radius) + 1
-
-                    if self.extractionCode == 'NRE':
-                        naylor_background = np.zeros((w,w))
-                        for i in range(w):
-                            for j in range(w):
-                                naylor_background[i,j] = np.random.choice(bkgnd_pixels, size=1, replace=True)
-
-                    if self.extractionCode == 'NPIX':
-                        n = w * w
-                        bkgnd_sample = np.random.choice(bkgnd_pixels, size=n, replace=True)
-                        sorted_bkgnd = np.sort(bkgnd_sample - mean)
-
-                        # TODO Experimental code
-                        bkgnd_pixels = sorted_bkgnd[-self.best_pixel_count_to_sum:]
-                        # weighted_bkgnd = np.mean(bkgnd_pixels)
-                        # aperture_mean = weighted_bkgnd  # Used for background smoothing
-                        aperture_mean = mean
-
-                    # upper left corner coordinate is at x,y = offset_x, offset+y
-                    offset_x = (masked_data.shape[0] // 2 - w // 2) * self.zoom_factor  # starting column
-                    offset_y = (masked_data.shape[0] // 2 - w // 2) * self.zoom_factor  # starting row
-                    # win_data is the square containing the circular mask. It has the proper dimensions to
-                    # be used with the Naylor weights
-                    win_data = centered_masked_data[offset_y:offset_y + w * self.zoom_factor, offset_x:offset_x + w * self.zoom_factor]
-
-                    if self.extractionCode == 'NRE':
-                        # Calculate background using naylor weights
-                        naylor_mean = self.calcNaylorIntensity(naylor_background)  # noqa
-                        # NOTE: aperture_mean is added to aperture stats and used in aperture code to smooth background
-                        # using a recursive filter that implements an rc filter. The 'smoothed' value can be retrieved
-                        # for an aperture by aperture.smoothed_background
-                        aperture_mean = mean  # Used for background smoothing
-                        naylor_signal = self.calcNaylorIntensity((win_data - naylor_mean)) * self.naylorRescaleFactor
-                        signal = naylor_signal
-
-                    if self.extractionCode == 'NPIX':
-                        data_to_use = win_data - mean
-                        sorted_data_to_use = np.sort(data_to_use.flatten())
-                        raw_pixels = sorted_data_to_use[-self.best_pixel_count_to_sum:]
-                        star_signal = np.sum(raw_pixels)
-                        bkgnd_signal = np.sum(bkgnd_pixels)
-                        if bkgnd_signal > 0:
-                            star_versus_bkgnd_ratio = star_signal / bkgnd_signal
+            if processAsNREorNPIX:
+                centered_data = self.getCenteredVersionOfData(thumbnail, mass_centroid, aperture.xsize)
+                centered_masked_data = centered_data * aperture.defaultMask
+                reverse_mask = np.copy(aperture.defaultMask)
+                for i in range(reverse_mask.shape[0]):
+                    for j in range(reverse_mask.shape[1]):
+                        if centered_masked_data[i,j] == 0:
+                            reverse_mask[i,j] = 1
                         else:
-                            star_versus_bkgnd_ratio = 2.0
-                        if  star_versus_bkgnd_ratio >= 2.0:  # Assumption: star pixel spectrum push bkgnd pixel spectrum out of the picture
-                            # Do faked up background subtraction - division by two is arbitrary hack
-                            signal = star_signal - bkgnd_signal / 2.0
-                        else:
-                            signal = star_signal - bkgnd_signal / 2.0 - (2.0 - star_versus_bkgnd_ratio)**2 * bkgnd_signal / 2.0
-                            if aperture.name.startswith('psf-star'):
-                                _ = 0  # To provide a breakpoint target
+                            reverse_mask[i,j] = 0
 
-                    reference_background = aperture.smoothed_background
-                    if reference_background == 0:
-                        # This deals with intial value startup
-                        # reference_background = mean
-                        aperture.smoothed_background = mean
+                if self.extractionCode == 'NPIX':
+                    background_image = thumbnail * reverse_mask
+                    mean, std, _, _, _, _, _, _, bkgnd_pixels = newRobustMeanStd(background_image,
+                                                                                 lunar=self.lunarCheckBox.isChecked())
 
-                    appsum = signal + mean * aperture.defaultMaskPixelCount
-                else: # Aperture photometry in use
-                    masked_data = mask * thumbnail
-                    appsum = np.sum(masked_data)
+                if self.extractionCode == 'NRE':
+                    mean, std, _, _, _, _, _, _, bkgnd_pixels = newRobustMeanStd(thumbnail,
+                                                                                 lunar=self.lunarCheckBox.isChecked())
 
-                if aperture.color == 'white':
-                    signal = appsum
-                else:  # Subtract background
-                    if not self.target_psf_gathering_in_progress and self.useOptimalExtraction:
-                        pass  # signal is already calculated
+                w = 2 * int(aperture.default_mask_radius) + 1
+
+                if self.extractionCode == 'NRE':
+                    naylor_background = np.zeros((w,w))
+                    for i in range(w):
+                        for j in range(w):
+                            naylor_background[i,j] = np.random.choice(bkgnd_pixels, size=1, replace=True)
+
+                if self.extractionCode == 'NPIX':
+                    n = w * w
+                    bkgnd_sample = np.random.choice(bkgnd_pixels, size=n, replace=True)
+                    sorted_bkgnd = np.sort(bkgnd_sample - mean)
+
+                    bkgnd_pixels = sorted_bkgnd[-self.best_pixel_count_to_sum:]
+                    aperture_mean = mean
+
+                # upper left corner coordinate is at x,y = offset_x, offset+y
+                offset_x = (masked_data.shape[0] // 2 - w // 2) * self.zoom_factor  # starting column
+                offset_y = (masked_data.shape[0] // 2 - w // 2) * self.zoom_factor  # starting row
+                # win_data is the square containing the circular mask. It has the proper dimensions to
+                # be used with the Naylor weights
+                win_data = centered_masked_data[offset_y:offset_y + w * self.zoom_factor, offset_x:offset_x + w * self.zoom_factor]
+
+                if self.extractionCode == 'NRE':
+                    # Calculate background using naylor weights
+                    naylor_mean = self.calcNaylorIntensity(naylor_background)  # noqa
+                    # NOTE: aperture_mean is added to aperture stats and used in aperture code to smooth background
+                    # using a recursive filter that implements an rc filter. The 'smoothed' value can be retrieved
+                    # for an aperture by aperture.smoothed_background
+                    aperture_mean = mean  # Used for background smoothing
+                    naylor_signal = self.calcNaylorIntensity((win_data - naylor_mean)) * self.naylorRescaleFactor
+                    signal = naylor_signal
+
+                if self.extractionCode == 'NPIX':
+                    data_to_use = win_data - mean
+                    sorted_data_to_use = np.sort(data_to_use.flatten())
+                    raw_pixels = sorted_data_to_use[-self.best_pixel_count_to_sum:]
+                    star_signal = np.sum(raw_pixels)
+                    bkgnd_signal = np.sum(bkgnd_pixels)
+                    if bkgnd_signal > 0:
+                        star_versus_bkgnd_ratio = star_signal / bkgnd_signal
                     else:
-                        if aperture.smoothed_background == 0:  # We're in startup for the smoothed background
-                            signal = appsum - int(np.ceil(max_area * mean))
-                        else:
-                            signal = appsum - int(np.ceil(max_area * aperture.smoothed_background))
-            # except Exception as e:
-            #     self.showMsg(f'in getApertureStats: {e}')
-            #     appsum = 0
-            #     signal = 0
+                        star_versus_bkgnd_ratio = 2.0
+                    if  star_versus_bkgnd_ratio >= 2.0:  # Assumption: star pixel spectrum push bkgnd pixel spectrum out of the picture
+                        # Do faked up background subtraction - division by two is arbitrary hack
+                        signal = star_signal - bkgnd_signal / 2.0
+                    else:
+                        signal = star_signal - bkgnd_signal / 2.0 - (2.0 - star_versus_bkgnd_ratio)**2 * bkgnd_signal / 2.0
+
+                reference_background = aperture.smoothed_background
+                if reference_background == 0:
+                    # This deals with intial value startup
+                    # reference_background = mean
+                    aperture.smoothed_background = mean
+
+                appsum = signal + mean * aperture.defaultMaskPixelCount
+            else: # Aperture photometry in use
+                mean, std, _, _, _, _, _, _, bkgnd_pixels = newRobustMeanStd(thumbnail, lunar=self.lunarCheckBox.isChecked())
+                masked_data = mask * thumbnail
+                appsum = np.sum(masked_data)
+
+            if aperture.color == 'white':
+                signal = appsum
+            else:  # Subtract background
+                if not self.target_psf_gathering_in_progress and self.useOptimalExtraction and 'psf-star' in aperture.name:
+                    pass  # signal is already calculated
+                else:
+                    if aperture.smoothed_background == 0:  # We're in startup for the smoothed background
+                        signal = appsum - int(np.round(max_area * mean))
+                    else:
+                        signal = appsum - int(np.round(max_area * aperture.smoothed_background))
 
         if not centroid == (None, None):
-            xc_roi = centroid[1]
-            yc_roi = centroid[0]
-            xc_world = xc_roi + x0  # x0 and y0 are ints that give the corner position of the aperture
+            xc_roi = centroid[1]  # from dynamic mask calculation
+            yc_roi = centroid[0]  # from dynamic mask calculation
+            xc_world = xc_roi + x0  # x0 and y0 are ints that give the corner position of the aperture in image (world) coordinates
             yc_world = yc_roi + y0
         else:
             xc_roi = yc_roi = xc_world = yc_world = None
@@ -7218,9 +7263,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             # add visual annotation that a default mask was employed
             max_area = -max_area
         if show_stats:
-            # minpx = sorted_data[0]
-            # maxpx = sorted_data[-1]
-
             # In version 2.9.0 we changed the meaning of min and max pixels to be restricted to pixels in the masked
             # region.
             maxpx = np.max(thumbnail, where=mask == 1, initial=0)
@@ -7376,42 +7418,47 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         ]
         thumb2_colors = [
             (255, 255, 128),  # yellow for aperture 'surround'
-            (0, 0, 0),  # black
+            (255, 255, 128),  # yellow for aperture 'surround'
+            (0, 0, 0),        # black
             (255, 255, 255),  # white
-            (255, 0, 0)  # red
+            (255, 0, 0)       # red  (or may have white substituted)
         ]
         red_cusp = satPixelValue / maxThumbnailPixel
         if red_cusp >= 1.0:
             red_cusp = 1.0
-            thumb1_colors[2] = (255, 255, 255)  # white (no saturation)
+            thumb1_colors[2] = (255, 255, 255)  # white (no saturated pixel in thumbnail)
         cmap_thumb1 = pg.ColorMap([0.0, red_cusp, 1.0], color=thumb1_colors)
         thumbOneImage = thumbnail.astype('int32')
         self.thumbOneView.setImage(thumbOneImage,
                                    levels=(minThumbnailPixel, maxThumbnailPixel))
         self.thumbOneView.setColorMap(cmap_thumb1)
         # Show the pixels included by the mask
-        if self.use_yellow_mask:
+        if self.use_yellow_mask and self.yellow_mask is not None:
             self.thumbTwoImage = self.yellow_mask * thumbnail
         else:
             self.thumbTwoImage = mask * thumbnail
         red_cusp = satPixelValue / maxThumbnailPixel
         if red_cusp >= 1.0:
             red_cusp = 1.0
-            thumb2_colors[3] = (255, 255, 255)
+            thumb2_colors[4] = (255, 255, 255)  # change red to white (no saturated pixel in thumbnail)
+
         pedestal = 1  # This value needs to coordinated with the value in mouseMovedInThumbTwo
-        pedestal_cusp = pedestal / (maxThumbnailPixel + 0)
-        cmap_thumb2 = pg.ColorMap([0.0, pedestal_cusp, red_cusp, 1.0], color=thumb2_colors)
+
+        self.thumbTwoScaleFactor = 255 / maxThumbnailPixel
+        self.thumbTwoImage = self.thumbTwoImage * self.thumbTwoScaleFactor
+        pedestal_cusp = pedestal / 255
+
+        cmap_thumb2 = pg.ColorMap([0.0, pedestal_cusp * 0.5, pedestal_cusp, red_cusp, 1.0], color=thumb2_colors)
         # Add a pedestal (only to masked pixels) so that we can trigger a yellow background
         # for values of 0
-        np.clip(self.thumbTwoImage, 0, minThumbnailPixel - 1)  # ... so that we can add 1 without overflow concerns
+        # self.thumbTwoImage = np.clip(self.thumbTwoImage, 0, maxThumbnailPixel - pedestal)  # ... so that we can add pedestal without overflow concerns
         if self.thumbTwoImage is not None:
-            if self.use_yellow_mask:
+            if self.use_yellow_mask and self.yellow_mask is not None:
                 self.thumbTwoImage += self.yellow_mask  # Put the masked pixels on the pedestal
             else:
-                # self.thumbTwoImage += pedestal # Put the masked pixels on the pedestal
                 self.thumbTwoImage += mask  # Put the masked pixels on the pedestal
-            self.thumbTwoView.setImage(self.thumbTwoImage,
-                                       levels=(minThumbnailPixel, maxThumbnailPixel))
+
+            self.thumbTwoView.setImage(self.thumbTwoImage, levels=(0, 255))
             self.thumbTwoView.setColorMap(cmap_thumb2)
 
     def calcNaylorIntensity(self, naylor_background):
@@ -7436,21 +7483,28 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     #     # calculate the correlation image; note the flipping of one of the images
     #     return scipy.signal.fftconvolve(im1_gray, im2_gray[::-1, ::-1], mode='same')
 
-    def getZoomedAndCenteredVersionOfMaskedData(self, masked_data, mass_centroid):
-        zoomed_masked_data = self.zoomer(masked_data)  # This includes all pixels in the aperture
+    def getCenteredVersionOfData(self, data, mass_centroid, apertureSize):
 
-        target_center = masked_data.shape[0] // 2
+        target_center = data.shape[0] // 2
 
         y_centroid = mass_centroid[1]
         x_centroid = mass_centroid[0]
         y_roll_count = self.roll_count(target_center, y_centroid, 1 / self.zoom_factor)
         x_roll_count = self.roll_count(target_center, x_centroid, 1 / self.zoom_factor)
+        # TODO This is new: we are limiting the roll count to avoid wrapping when mask passes the aperture edge
+        max_roll_count = int(data.shape[0] - apertureSize // 2)
+        # print(f'max_roll_count in getZoomed...: {max_roll_count}')
+        if abs(x_roll_count) > max_roll_count:
+            x_roll_count = max_roll_count * np.sign(x_roll_count)
+        if abs(y_roll_count) > max_roll_count:
+            y_roll_count = max_roll_count * np.sign(y_roll_count)
+
         row_axis = 0
         col_axis = 1
         # roll count is positive to the right
-        zoomed_masked_data = np.roll(zoomed_masked_data, y_roll_count, axis=row_axis)
-        zoomed_masked_data = np.roll(zoomed_masked_data, x_roll_count, axis=col_axis)
-        return zoomed_masked_data
+        data = np.roll(data, y_roll_count, axis=row_axis)
+        data = np.roll(data, x_roll_count, axis=col_axis)
+        return data
 
     def clearApertures(self):
         # Remove measurement apertures (if any)
@@ -8610,6 +8664,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def showFrame(self):
 
+        if PRINT_TRACKING_DATA:
+            print(f'\n===== entering showFrame() =====')
         try:
             if not self.initialFrame:
                 # We want to maintain whatever pan/zoom is in effect ...
@@ -8764,7 +8820,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                             # We clip at 1 and 65535 to guarantee that the conversion to uint16 will work.
                             # The lower clip of 1 is chosen to satisfy the color scheme that we use in ThumbnailTwo
                             # where a 0 value is shown as yellow.
-                            np.clip(self.image, 1, 65535)
+                            self.image = np.clip(self.image, 1, 65535)
                             self.image = self.image.astype('uint16', casting='unsafe')
 
                         if self.lineNoiseFilterCheckBox.isChecked():
@@ -8844,7 +8900,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.createImageFields()
 
             if self.finderFrameBeingDisplayed:
-                self.showMsg(f'Recalculating thresholds for all snap-to-blob apertures')
+                self.showMsg(f'Recalculating thresholds for all dynamic mask apertures')
                 for app in self.getApertureList():
                     if not app.thresh == self.big_thresh:
                         self.computeInitialThreshold(app)
@@ -8890,7 +8946,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     # This routine only does something when the user has enabled the special measurements
                     # needed to calibrate rolling shutter cameras.
                     self.processRowSumList()
-                self.centerAllApertures(xc=self.newYellowApertureX, yc=self.newYellowApertureY)
+                self.processYellowApertures(frame_to_show)
+                self.centerAllApertures(xc=self.firstYellowApertureX, yc=self.firstYellowApertureY)
             except Exception as e6:
                 self.showMsg(f'during centerAllApertures(): {repr(e6)} ')
             self.frameView.getView().update()
@@ -8910,6 +8967,22 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         except Exception as e0:
             self.showMsg(repr(e0))
             self.showMsg(f'There are no frames to display.  Have you read a file?')
+
+    def processYellowApertures(self,frame_num):
+        if PRINT_TRACKING_DATA:
+            print(f'\nProcessing yellow apertures (to find centroids in new image) for frame: {frame_num} ...')
+        apertures = self.getApertureList()
+        for aperture in apertures:
+            if aperture.primary_yellow_aperture:
+                self.getApertureStats(aperture=aperture, show_stats=False)
+                break
+
+        for aperture in apertures:
+            if aperture.color == 'yellow' and not aperture.primary_yellow_aperture:
+                self.getApertureStats(aperture=aperture, show_stats=False)
+                break
+        if PRINT_TRACKING_DATA:
+            print(f'... done processinging yellow apertures for frame {frame_num}')
 
     def processRowSumList(self):
         if not self.rowSums:
@@ -9121,7 +9194,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         ny = 51
         nx = 51
         thumbnail = self.image[y0:y0 + ny, x0:x0 + nx]
-        mean, *_ = newRobustMeanStd(thumbnail, outlier_fraction=.5)
+        mean, *_ = newRobustMeanStd(thumbnail)
 
         image_height = self.image.shape[0]  # number of rows
         image_width = self.image.shape[1]  # number of columns
@@ -10160,7 +10233,6 @@ def brightest_pixel(img, nPxls=9):
 
 def get_mask(
         img, ksize=(5, 5), cut=None, min_pixels=9,
-        outlier_fraction=0.5,
         apply_centroid_distance_constraint=False, max_centroid_distance=None, lunar=False):
     # cv2.GaussianBlur() cannot deal with big-endian data, probably because it is c++ code
     # that has been ported.  If we have read a FITS file, there is the
@@ -10191,7 +10263,7 @@ def get_mask(
     # the following calculation will be invalid
     roi_center = int(img.shape[0] / 2)
 
-    bkavg, *_ = newRobustMeanStd(img, outlier_fraction=outlier_fraction, lunar=lunar)
+    bkavg, *_ = newRobustMeanStd(img, lunar=lunar)
     blob_signals = []
 
     if blob_count > 0:
@@ -10275,10 +10347,9 @@ def poisson_mean(data_set, initial_guess, debug=False):
     return parameters[0], hist
 
 def newRobustMeanStd(
-        data: np.ndarray, outlier_fraction: float = 0.5, max_pts: int = 20000,
+        data: np.ndarray, max_pts: int = 20000,
         assume_gaussian: bool = True, lunar: bool = False):
     assert data.size <= max_pts, "data.size > max_pts in newRobustMean()"
-    assert outlier_fraction < 1.0, "outlier_fraction >= 1.0 in newRobustMean()"
 
     flat_data = data.flatten()
     sorted_data = np.sort(flat_data)  # This form was needed to satisfy Numba
@@ -10333,7 +10404,7 @@ def newRobustMeanStd(
 
     # Remove this if mode is not good - it wasn't good; very noisy and too small for poisson shaped background
     # distributions
-    # calced_mode = 3 * np.median(bkgnd_values) - 2 * calced_mean
+    # calced_mean = 3 * np.median(bkgnd_values) - 2 * calced_mean  # mode estimatee
 
     # This 'fit' takes an exorbitant amount of computer time
     # if len(bkgnd_values) > 0 and calced_mean > 0.0:

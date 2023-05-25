@@ -156,7 +156,7 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
                 return
             aperture.thresh = thresh
 
-            # Enforce that def mask radius has value between 2.0 and 24.0
+            # Enforce that def mask radius cannot be less than 2
             text = self.tableWidget.item(row, 3).text()
             try:
                 radius = float(text)
@@ -170,6 +170,10 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
 
             aperture.defaultMask, aperture.defaultMaskPixelCount, aperture.default_mask_radius = \
                 self.createDefaultMask(radius)
+
+            if not aperture.default_mask_radius == radius:
+                self.msgRoutine(f'In {aperture.name}(def mask radius): radius too large for aperture. Setting it to {aperture.default_mask_radius}')
+                self.tableWidget.item(row, 3).setText(f'{aperture.default_mask_radius}')
 
             aperture.color = self.tableWidget.item(row, 4).text()
             if aperture.color.startswith('green'):
