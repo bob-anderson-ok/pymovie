@@ -19,3 +19,7 @@ src/pymovie/vtiList*.p
 src/pymovie/*boxes*.p
 src/pymovie/simple-ote.ini
 src/pymovie/play*
+pymovie-3.7.6/src/pymovie/NE3Lut.p
+src/pymovie/custom-digits.p
+src/pymovie/formatter.txt
+src/pymovie/pyote.ini

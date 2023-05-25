@@ -429,6 +429,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.secondYellowApertureX = None
         self.secondYellowApertureY = None
 
+        self.pixel_sums = []
+
         self.sorted_masked_data = None
 
         self.naylorInShiftedPositions = None
@@ -1311,7 +1313,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def clearOptimalExtractionVariables(self):
         self.target_psf = None
         self.psf_radius_in_use = None
-        # self.target_appsum = 0.0
         self.fractional_weights = None
         self.sum_fractional_weights = None
         self.target_psf_number_accumulated = 0
@@ -1559,7 +1560,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         addSnapApp = view.menu.addAction("Add dynamic mask aperture")  # noqa
         addSnapApp.triggered.connect(self.addSnapAperture)  # noqa
 
-        addFixedApp = view.menu.addAction('Add fixed circular mask aperture')  # noqa
+        addFixedApp = view.menu.addAction('Add static (fixed circular) mask aperture')  # noqa
         addFixedApp.triggered.connect(self.addNamedStaticAperture)  # noqa
 
         addAppStack = view.menu.addAction('Add 10 nested radius mask apertures')  # noqa
@@ -2978,12 +2979,19 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         ok, msg, pixel_count = self.testForConsistentPsfStarFixedMasks()
 
+        self.pixel_sums = []
+
         if not ok:
             self.showMsgPopup(msg)
             return
 
         self.extractionCode = 'NPIX'
         self.target_psf_gathering_in_progress = True
+
+        # TODO Check that this sequence (which saves keystrokes) does not cause problems
+        self.clearApertureData()
+        self.saveCurrentState()
+
         self.startAnalysis()
 
     def startPsfGathering(self):
@@ -3016,6 +3024,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.psf_radius_in_use = mask_radius_in_use
         self.target_psf_gathering_in_progress = True
+
+        # TODO Check that this sequence (which saves keystrokes) does not cause problems
+        self.clearApertureData()
+        self.saveCurrentState()
+
         self.startAnalysisWithAP()
 
     def startAnalysisWithAP(self):
@@ -5182,16 +5195,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 else:
                     snr_values.append(0.0)
 
-            # Find first peak snr
-            best_snr_so_far = snr_values[0] # Corresponds to a 'best pixel count' of 1
-            k = 1
-            while k < self.max_pixels_in_sum:
-                if snr_values[k] > best_snr_so_far:
-                    best_snr_so_far = snr_values[k]
-                    k += 1
-                else:
-                    break
-
+            # Find the peak snr
+            k = np.argwhere(snr_values == np.max(snr_values))[0][0] + 1
             self.numPixelsToSumSpinBox.setValue(k)
             self.numPixelsToSumSpinBox.setEnabled(True)
 
@@ -5241,6 +5246,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 # title=f'SNR',
                 pen=black
             )
+
+            v_line_at_peak = pg.InfiniteLine(angle=90, movable=False, pen='r')
+            v_line_at_peak.setPos(k)
+            p2.addItem(v_line_at_peak)
+
+            p2.plot([k,k],[0,np.max(snr_values)*1.1],'-', color='red', width=4)
             p2.setLabel(axis='bottom', text='pixels summed', **label_style)
             p2.setLabel(axis='left', text='SNR', **label_style)
             p2.setXRange(1,len(avg_values)+1)
@@ -5249,6 +5260,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             p2.getAxis("left").setStyle(tickFont=font)
             p2.showGrid(x=True, y=True)
             self.plots[-1].show()
+
+            # TODO Check that this has no unwanted side effects
+            self.restoreSavedState()
+
             return
 
         # self.target_psf has background subtracted
@@ -5308,6 +5323,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         # self.zeroWeightsOutsideCircularMask()
 
         # self.thumbOneImage = self.target_psf_float / np.max(self.target_psf_float) * 100.0
+
+        # TODO Check that this has no unwanted side effects
+        self.restoreSavedState()
+
         self.thumbOneImage = self.high_res_psf
         self.thumbOneView.setImage(self.thumbOneImage)
 
@@ -5322,7 +5341,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         naylor_value_of_psf = self.calcNaylorIntensity(self.target_psf_float)
         self.naylorRescaleFactor = target_psf_signal_sum / naylor_value_of_psf
-        _ = 1
 
     def calcNaylorWeights(self, w):
         normer = np.zeros((5,5))
@@ -7076,7 +7094,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 if self.target_psf is None:
                     self.target_psf = np.zeros((w * self.zoom_factor,w * self.zoom_factor), dtype=float)
                     self.target_psf_number_accumulated = 0
-                    # self.target_appsum = 0
+                    self.mask_size = w
+
+                if not self.pixel_sums:
                     self.mask_size = w
                     self.pixel_sums = []
                     self.pixel_sums_per_frame = []
