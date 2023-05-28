@@ -160,7 +160,6 @@ class CustomViewBox(pg.ViewBox):
     def mouseClickEvent(self, ev):
         if ev.button() == QtCore.Qt.MouseButton.RightButton:
             self.autoRange()
-            # mouseSignal.emit()
 
     def mouseDragEvent(self, ev, axis=None):
         if ev.button() == QtCore.Qt.MouseButton.RightButton:
@@ -6956,10 +6955,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     @staticmethod
     def nonRecenteringAperture(aperture):
-        name_to_test = aperture.name.lower()
-        if name_to_test.startswith("nc-"):
+        name_to_test: object = aperture.name.lower()
+        if "nc-" in name_to_test:
             return True
-        if name_to_test.startswith("nc_"):
+        if "nc_" in name_to_test:
             return True
         if "empty" in name_to_test:
             return True
@@ -7073,7 +7072,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             masked_data = mask * thumbnail
 
             try:
-                mass_centroid = brightest_pixel(masked_data.copy(), 5)
+                mass_centroid = brightest_pixel(masked_data.copy(), 5)  # 5 is the number of brightest pixels to use
+                if PRINT_TRACKING_DATA:
+                    print(f'getApertureStats() pt3: mass_centroid is {mass_centroid}')
                 x_coord = round(mass_centroid[0])
                 y_coord = round(mass_centroid[1])
             except ValueError:
@@ -7199,6 +7200,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 w = 2 * int(aperture.default_mask_radius) + 1
 
                 if self.extractionCode == 'NRE':
+                    np.random.seed(1)
                     naylor_background = np.zeros((w,w))
                     for i in range(w):
                         for j in range(w):
@@ -7206,6 +7208,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
                 if self.extractionCode == 'NPIX':
                     n = w * w
+                    np.random.seed(1)
                     bkgnd_sample = np.random.choice(bkgnd_pixels, size=n, replace=True)
                     sorted_bkgnd = np.sort(bkgnd_sample - mean)
 
@@ -10217,8 +10220,14 @@ def brightest_pixel(img, nPxls=9):
     # nPxls = int(round(threshold*img.shape[-1]*img.shape[-2]))
 
     if len(img.shape)==2:
-        pxlValue = np.sort(img.flatten())[-nPxls]
-        img-=pxlValue
+        pixel_max = img.max()
+        pixel_thresh = np.sort(img.flatten())[-nPxls]
+
+        # This protects against all brightest pixels having exactly the same value
+        if pixel_max == pixel_thresh:
+            pixel_thresh -= 1
+
+        img-=pixel_thresh
         img = img.clip(0, img.max())
 
     elif len(img.shape)==3:
