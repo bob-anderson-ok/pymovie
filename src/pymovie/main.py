@@ -1565,6 +1565,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         addAppStack = view.menu.addAction('Add 10 nested radius mask apertures')  # noqa
         addAppStack.triggered.connect(self.addApertureStack)  # noqa
 
+        addAppStack = view.menu.addAction('Add nested dynamic mask apertures (0.5,1,2,3 sigma set)')  # noqa
+        addAppStack.triggered.connect(self.addDynamicApertureStack)  # noqa
+
         view.menu.addSeparator()  # noqa
 
         setthresh = view.menu.addAction("Set threshold")  # noqa
@@ -2380,10 +2383,44 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def addApertureStack(self):
         for radius in [2.4, 3.2, 4.0, 4.3, 5.1, 5.7, 6.1, 6.5, 7.2, 8.0]:
-            self.addStaticAperture(askForName=False, radius=radius, name=f'nest-{radius:0.1f}')
+            self.addStaticAperture(askForName=False, radius=radius, name=f'static-nest-{radius:0.1f}')
         for app in self.getApertureList():
             if app.color == 'green':
                 app.setRed()
+
+    def addDynamicApertureStack(self):
+        if self.image is None:  # Don't add an aperture if there is no image showing yet.
+            return
+
+        self.one_time_suppress_stats = True
+        aperture = self.addGenericAperture()  # Just calls addApertureAtPosition() with mouse coords
+        # Grab the properties that we need from the first aperture object
+        bbox = aperture.getBbox()
+        x0, y0, nx, ny = bbox
+
+        # img is the portion of the main image that is covered by the aperture bounding box
+        img = self.image[y0:y0 + ny, x0:x0 + nx]
+
+        bkavg, std, *_ = newRobustMeanStd(img, lunar=self.lunarCheckBox.isChecked())
+
+        sigma_1 = int(np.ceil(std))
+        aperture.thresh = sigma_1 // 2
+        aperture.name = 'dynamic-nest-0.5-sigma'
+
+        self.one_time_suppress_stats = True
+        aperture = self.addGenericAperture()  # Just calls addApertureAtPosition() with mouse coords
+        aperture.thresh = sigma_1
+        aperture.name = 'dynamic-nest-1-sigma'
+
+        self.one_time_suppress_stats = True
+        aperture = self.addGenericAperture()  # Just calls addApertureAtPosition() with mouse coords
+        aperture.thresh = 2 * sigma_1
+        aperture.name = 'dynamic-nest-2-sigma'
+
+        self.one_time_suppress_stats = True
+        aperture = self.addGenericAperture()  # Just calls addApertureAtPosition() with mouse coords
+        aperture.thresh = 3 * sigma_1
+        aperture.name = 'dynamic-nest-3-sigma'
 
     def doGammaCorrection(self):
         if self.currentGamma == 1.00:
@@ -2987,7 +3024,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.extractionCode = 'NPIX'
         self.target_psf_gathering_in_progress = True
 
-        # TODO Check that this sequence (which saves keystrokes) does not cause problems
         self.clearApertureData()
         self.saveCurrentState()
 
@@ -3024,7 +3060,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.psf_radius_in_use = mask_radius_in_use
         self.target_psf_gathering_in_progress = True
 
-        # TODO Check that this sequence (which saves keystrokes) does not cause problems
         self.clearApertureData()
         self.saveCurrentState()
 
@@ -4996,7 +5031,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def setRoiFromComboBox(self):
         self.clearApertures()
-        # TODO Fix for sticky flag upon aperture size change
         self.useYellowMaskCheckBox.setChecked(False)
         self.use_yellow_mask = self.useYellowMaskCheckBox.isChecked()
         self.roi_size = int(self.roiComboBox.currentText())
@@ -5260,7 +5294,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             p2.showGrid(x=True, y=True)
             self.plots[-1].show()
 
-            # TODO Check that this has no unwanted side effects
             self.restoreSavedState()
 
             return
@@ -5323,7 +5356,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         # self.thumbOneImage = self.target_psf_float / np.max(self.target_psf_float) * 100.0
 
-        # TODO Check that this has no unwanted side effects
         self.restoreSavedState()
 
         self.thumbOneImage = self.high_res_psf
@@ -6498,7 +6530,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 # Find and deal with the primary yellow aperture first
                 if app.color == 'yellow' and app.primary_yellow_aperture:  # This is our primary yellow
                     yellow_count += 1
-                    # TODO Experimental test (suppress stats)
                     self.one_time_suppress_stats = False
                     if self.use_yellow_mask:
                         xc_roi, yc_roi, xc_world, yc_world, *_ = \
@@ -6710,7 +6741,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             if self.use_yellow_mask:
                 for eachapp in self.getApertureList():
                     if eachapp.color == 'yellow':
-                        # TODO We are trying to deal with double yellow apertures and want the mask to come from the primary
+                        # We are trying to deal with double yellow apertures and want the mask to come from the primary
                         if eachapp.primary_yellow_aperture:
                             self.getApertureStats(eachapp, show_stats=False, save_yellow_mask=True)
                         break
@@ -7087,11 +7118,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     y_coord = centroid[1]
 
             w = 2 * int(aperture.default_mask_radius) + 1
-            self.w = w
 
             # self.recordPsf is controlled in autoRun() to avoid double counting
             if aperture.name.startswith('psf-star') and self.recordPsf and self.target_psf_gathering_in_progress:
 
+                self.w = w
                 if self.target_psf is None:
                     self.target_psf = np.zeros((w * self.zoom_factor,w * self.zoom_factor), dtype=float)
                     self.target_psf_number_accumulated = 0
@@ -7514,7 +7545,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         x_centroid = mass_centroid[0]
         y_roll_count = self.roll_count(target_center, y_centroid, 1 / self.zoom_factor)
         x_roll_count = self.roll_count(target_center, x_centroid, 1 / self.zoom_factor)
-        # TODO This is new: we are limiting the roll count to avoid wrapping when mask passes the aperture edge
+        # This is new: we are limiting the roll count to avoid wrapping when mask passes the aperture edge
         max_roll_count = int(data.shape[0] - apertureSize // 2)
         # print(f'max_roll_count in getZoomed...: {max_roll_count}')
         if abs(x_roll_count) > max_roll_count:
