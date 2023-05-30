@@ -700,7 +700,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.ocrboxBasePath = None
         self.modelDigitsFilename = None
 
+
+        # These are used for CCD hot pixel treatment
         self.hotPixelList = []
+        self.savedApertureDictList = []
         self.alwaysEraseHotPixels = False
         self.hotPixelProfileDict = {}
 
@@ -730,6 +733,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.createHotPixelListButton.clicked.connect(self.createHotPixelList)
         self.createHotPixelListButton.installEventFilter(self)
+
+        self.clearCCDhotPixelListPushButton.clicked.connect(self.clearCCDhotPixelList)
+        self.clearCCDhotPixelListPushButton.installEventFilter(self)
 
         self.restoreApertureState.clicked.connect(self.restoreApertureGroup)
         self.restoreApertureState.installEventFilter(self)
@@ -783,7 +789,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.darkPixelCoords = None
         self.noisyPixelCoords = None
         self.deadPixelCoords = None
-        self.outlawPoints = [()]  # outlaw points is a list of coordinate tuples
+
+        # TODO Check that this change does break CMOS outlaws
+        # self.outlawPoints = [()]  # outlaw points is a list of coordinate tuples
+        self.outlawPoints = []
 
         # self.rowsToSumList = [0,1,100,101,200,201,300,301,400,401]
         self.rowsToSumList = []
@@ -1092,8 +1101,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.transportAnalyzeWithNRE.installEventFilter(self)
         self.transportAnalyzeWithNRE.clicked.connect(self.startAnalysisWithNRE)
 
-        self.transportAnalyzeWithNPIX.installEventFilter(self)
-        self.transportAnalyzeWithNPIX.clicked.connect(self.startAnalysisWithNPIX)
+        # self.transportAnalyzeWithNPIX.installEventFilter(self)
+        # self.transportAnalyzeWithNPIX.clicked.connect(self.startAnalysisWithNPIX)
 
         # self.transportBkgndPolyDegreeLabel.installEventFilter(self)
 
@@ -1106,10 +1115,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.transportTargetPsf.installEventFilter(self)
         self.transportTargetPsf.clicked.connect(self.startPsfGathering)
 
-        self.transportCalcGrowthCurveButton.installEventFilter(self)
-        self.transportCalcGrowthCurveButton.clicked.connect(self.startGrowthCurveGathering)
+        # self.transportCalcGrowthCurveButton.installEventFilter(self)
+        # self.transportCalcGrowthCurveButton.clicked.connect(self.startGrowthCurveGathering)
 
-        self.numPixelsToSumSpinBox.valueChanged.connect(self.updateNumPixelsToSum)
+        # self.numPixelsToSumSpinBox.valueChanged.connect(self.updateNumPixelsToSum)
 
         self.transportPlayRight.installEventFilter(self)
         self.transportPlayRight.clicked.connect(self.playRight)
@@ -2164,8 +2173,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.showHelp(self.alignWithTwoPointTrackInfoButton)
 
     def loadHotPixelProfile(self):
-        self.showMsg(f'loadHotPixelProfile: Not yet implemented')
-        return
+
+        # TODO Is this still needed?
+        # self.showMsg(f'loadHotPixelProfile: Not yet implemented')
+        # return
 
         if self.image is None:  # noqa  Suppress code cannot be reached caused by the return above
             self.showMsg(f'There is no frame showing yet.')
@@ -2194,9 +2205,16 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         else:
             self.showMsg(f'No profile was selected for loading.')
 
+        self.showFrame()
+
+    def clearCCDhotPixelList(self):
+        self.hotPixelList = []
+        self.savedApertureDictList = []
+
     def createHotPixelList(self):
 
-        self.hotPixelList = []
+        # TODO Test that removing this is ok. It should allow a cumulative build of hot pixel list (but how to clear?)
+        # self.hotPixelList = []
 
         hot_apps = self.getApertureList()
         if not hot_apps:
@@ -2246,8 +2264,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.showMsg(f'average background: {avg_bkgnd:.2f}')
 
-        savedApertureDictList = []
-
         for aperture in hot_apps:
             dict_entry = self.composeApertureStateDictionary(aperture)
             if dict_entry is None:
@@ -2256,16 +2272,16 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                                   f'You will need to redefine them so that the new fields are added.\n\n'
                                   f'You will not be able to save the apertures currently showing.')
                 return
-            savedApertureDictList.append(dict_entry)
+            self.savedApertureDictList.append(dict_entry)
 
         dict_entry = {}
         dict_entry.update({'id': 'TBD'})
-        dict_entry.update({'aperture_dict_list': savedApertureDictList})
+        dict_entry.update({'aperture_dict_list': self.savedApertureDictList})
         dict_entry.update({'hot_pixels_list': self.hotPixelList})
-
         self.hotPixelProfileDict = dict_entry
 
-        # self.applyHotPixelErasure(avg_bkgnd)
+        self.applyHotPixelErasure(avg_bkgnd)
+        self.clearApertures()
 
     def getBackgroundFromImageCenter(self):
         # Get a robust mean from near the center of the current image
@@ -2559,12 +2575,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.clearApertures()
 
         # Then place all the apertures with complete state
-        for mydict in hot_pixel_profile['id']:
+        for app in hot_pixel_profile['aperture_dict_list']:
             try:
-                x0 = mydict['x0']
-                y0 = mydict['y0']
-                xsize = mydict['xsize']
-                ysize = mydict['ysize']
+                x0 = app['x0']
+                y0 = app['y0']
+                xsize = app['xsize']
+                ysize = app['ysize']
 
                 # Set the aperture size selection to match the incoming aperture group.
                 if xsize == 51:
@@ -2585,16 +2601,16 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.showMsg(f'Unexpected aperture size of {xsize} in restored aperture group')
 
                 bbox = (x0, y0, xsize, ysize)
-                name = mydict['name']
-                max_xpos = mydict['max_xpos']
-                max_ypos = mydict['max_ypos']
+                name = app['name']
+                max_xpos = app['max_xpos']
+                max_ypos = app['max_ypos']
 
                 # Create an aperture object (box1) and connect it to us (self)
                 aperture = MeasurementAperture(name, bbox, max_xpos, max_ypos)
 
-                aperture.thresh = mydict['thresh']
+                aperture.thresh = app['thresh']
 
-                color = mydict['color']
+                color = app['color']
                 if color == 'red':
                     aperture.setRed()
                 elif color == 'green':
@@ -2606,23 +2622,23 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 else:
                     self.showMsg(f'Unexpected color (color) found while restoring marked apertures')
 
-                aperture.jogging_enabled = mydict['jogging_enabled']
-                aperture.auto_display = mydict['auto_display']
-                aperture.thumbnail_source = mydict['thumbnail_source']
-                aperture.default_mask_radius = mydict['default_mask_radius']
-                aperture.order_number = mydict['order_number']
-                aperture.defaultMask = mydict['defaultMask']
-                aperture.defaultMaskPixelCount = mydict['defaultMaskPixelCount']
-                aperture.theta = mydict['theta']
+                aperture.jogging_enabled = app['jogging_enabled']
+                aperture.auto_display = app['auto_display']
+                aperture.thumbnail_source = app['thumbnail_source']
+                aperture.default_mask_radius = app['default_mask_radius']
+                aperture.order_number = app['order_number']
+                aperture.defaultMask = app['defaultMask']
+                aperture.defaultMaskPixelCount = app['defaultMaskPixelCount']
+                aperture.theta = app['theta']
                 # This test is so that legacy apertures are not rejected because they lack this field added in 3.7.4
                 try:
-                    aperture.primary_yellow_aperture = mydict['primary_yellow_aperture']
+                    aperture.primary_yellow_aperture = app['primary_yellow_aperture']
                 except KeyError:
                     pass
-                aperture.dx = mydict['dx']
-                aperture.dy = mydict['dy']
-                aperture.xc = mydict['xc']
-                aperture.yc = mydict['yc']
+                aperture.dx = app['dx']
+                aperture.dy = app['dy']
+                aperture.xc = app['xc']
+                aperture.yc = app['yc']
 
                 view = self.frameView.getView()
                 view.addItem(aperture)
@@ -3008,8 +3024,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.analysisRequested = False
         self.setTransportButtonsEnableState(True)
 
-    def updateNumPixelsToSum(self):
-        self.best_pixel_count_to_sum = self.numPixelsToSumSpinBox.value()
+    # def updateNumPixelsToSum(self):
+    #     self.best_pixel_count_to_sum = self.numPixelsToSumSpinBox.value()
 
     def startGrowthCurveGathering(self):
 
@@ -3071,37 +3087,37 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.extractionCode = 'AP'
         self.startAnalysis()
 
-    def startAnalysisWithNPIX(self):
-
-        ok, msg, mask_pixel_count = self.testForConsistentPsfStarFixedMasks()
-
-        if not ok:
-            self.showMsgPopup(msg)
-            return
-
-        number_of_pixels_to_sum = self.numPixelsToSumSpinBox.value()
-
-        if number_of_pixels_to_sum > 0:
-            self.extractionMode = f'Sum of brightest {number_of_pixels_to_sum} pixels photometry'
-            self.extractionCode = 'NPIX'
-        else:
-            self.showMsgPopup(f'The number of brightest pixels to sum is zero.\n\n'
-                              f'Do you need to run a growth curve to determine the optimal value to use? If so, '
-                              f'press the calculate Growth Curve button.')
-            return
-
-        if mask_pixel_count < self.numPixelsToSumSpinBox.value():
-            self.showMsgPopup(f'The number of pixels to sum ({number_of_pixels_to_sum}) is greater \n\n'
-                              f'than the number of pixels in the mask ({mask_pixel_count})\n\n'
-                              f'so this opertion cannot proceed.')
-            return
-
-        self.pixel_sums = []
-        self.pixel_sums_per_frame = []
-
-        self.useOptimalExtraction = True
-
-        self.startAnalysis()
+    # def startAnalysisWithNPIX(self):
+    #
+    #     ok, msg, mask_pixel_count = self.testForConsistentPsfStarFixedMasks()
+    #
+    #     if not ok:
+    #         self.showMsgPopup(msg)
+    #         return
+    #
+    #     number_of_pixels_to_sum = self.numPixelsToSumSpinBox.value()
+    #
+    #     if number_of_pixels_to_sum > 0:
+    #         self.extractionMode = f'Sum of brightest {number_of_pixels_to_sum} pixels photometry'
+    #         self.extractionCode = 'NPIX'
+    #     else:
+    #         self.showMsgPopup(f'The number of brightest pixels to sum is zero.\n\n'
+    #                           f'Do you need to run a growth curve to determine the optimal value to use? If so, '
+    #                           f'press the calculate Growth Curve button.')
+    #         return
+    #
+    #     if mask_pixel_count < self.numPixelsToSumSpinBox.value():
+    #         self.showMsgPopup(f'The number of pixels to sum ({number_of_pixels_to_sum}) is greater \n\n'
+    #                           f'than the number of pixels in the mask ({mask_pixel_count})\n\n'
+    #                           f'so this opertion cannot proceed.')
+    #         return
+    #
+    #     self.pixel_sums = []
+    #     self.pixel_sums_per_frame = []
+    #
+    #     self.useOptimalExtraction = True
+    #
+    #     self.startAnalysis()
 
     def testForConsistentPsfStarFixedMasks(self):
 
@@ -4932,9 +4948,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.transportPause.setEnabled(state)
         self.transportAnalyze.setEnabled(state)
         self.transportAnalyzeWithNRE.setEnabled(state)
-        self.transportAnalyzeWithNPIX.setEnabled(state)
+        # self.transportAnalyzeWithNPIX.setEnabled(state)
         self.transportTargetPsf.setEnabled(state)
-        self.transportCalcGrowthCurveButton.setEnabled(state)
+        # self.transportCalcGrowthCurveButton.setEnabled(state)
 
         self.transportPlayRight.setEnabled(state)
         self.transportPlusOneFrame.setEnabled(state)
@@ -5209,94 +5225,94 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def calcOptimalExtractionWeights(self):
 
-        if self.extractionCode == 'NPIX':
-            self.target_psf_gathering_in_progress = False
-
-            raw_pixel_sums_matrix = np.array(self.pixel_sums_per_frame)
-            avg_values = []
-            for i in range(self.max_pixels_in_sum):
-                avg_values.append(np.mean(raw_pixel_sums_matrix[:,i]))
-
-            std_values = []
-            for i in range(self.max_pixels_in_sum):
-                std_values.append(np.std(raw_pixel_sums_matrix[:,i]))
-
-            snr_values = []
-            for i in range(self.max_pixels_in_sum):
-                if std_values[i] > 0:
-                    snr_values.append(avg_values[i] / std_values[i])
-                else:
-                    snr_values.append(0.0)
-
-            # Find the peak snr
-            k = np.argwhere(snr_values == np.max(snr_values))[0][0] + 1
-            self.numPixelsToSumSpinBox.setValue(k)
-            self.numPixelsToSumSpinBox.setEnabled(True)
-
-            if k > self.max_pixels_in_sum - 1:
-                k = self.max_pixels_in_sum - 1
-
-            self.best_pixel_count_to_sum = k
-            self.showMsg(f'Best number of pixels from sorted list to sum: {self.best_pixel_count_to_sum}')
-            self.showMsg(f'mean_value: {avg_values[k]:0.2f}  noise: {std_values[k]:0.2f}  snr: {snr_values[k]:0.2f}')
-            self.showMsg(f'@ {self.max_pixels_in_sum} pixels summed: mean: {avg_values[-1]:0.2f}  '
-                         f'noise: {std_values[-1]:0.2f}  snr: {snr_values[-1]:0.2f}')
-
-            x = range(1,len(avg_values)+1)
-            # Plot stuff
-            # Start a new plot
-            self.plots.append(pg.GraphicsLayoutWidget(title="Growth curve plots"))
-            self.plots[-1].resize(1400, 900)
-            self.plots[-1].setWindowTitle(f'PyMovie {version.version()} Growth curve plots')
-            # dark_gray = (50, 50, 50)
-            black = (0, 0, 0)
-            p1 = self.plots[-1].addPlot(
-                row=0, col=0,
-                x=x,
-                y=avg_values,
-                symbol='o',
-                # title=f'Average signal',
-                pen=black
-            )
-            label_style = {'color': '#000', 'font-size': '15pt'}
-            p1.setLabel(axis='bottom', text='pixels summed', **label_style)
-            p1.setLabel(axis='left', text='Signal', **label_style)
-            p1.setXRange(1,len(avg_values)+1)
-
-
-            font = QtGui.QFont()
-            font.setPixelSize(15)
-            p1.getAxis("bottom").setStyle(tickFont=font)
-            p1.getAxis("left").setStyle(tickFont=font)
-            p1.showGrid(x=True, y=True)
-
-            self.plots[-1].nextRow()  # Tell GraphicsWindow that we want another row of plots
-            p2 = self.plots[-1].addPlot(
-                row=1, col=0,
-                x=x,
-                y=snr_values,
-                symbol='o',
-                # title=f'SNR',
-                pen=black
-            )
-
-            v_line_at_peak = pg.InfiniteLine(angle=90, movable=False, pen='r')
-            v_line_at_peak.setPos(k)
-            p2.addItem(v_line_at_peak)
-
-            p2.plot([k,k],[0,np.max(snr_values)*1.1],'-', color='red', width=4)
-            p2.setLabel(axis='bottom', text='pixels summed', **label_style)
-            p2.setLabel(axis='left', text='SNR', **label_style)
-            p2.setXRange(1,len(avg_values)+1)
-
-            p2.getAxis("bottom").setStyle(tickFont=font)
-            p2.getAxis("left").setStyle(tickFont=font)
-            p2.showGrid(x=True, y=True)
-            self.plots[-1].show()
-
-            self.restoreSavedState()
-
-            return
+        # if self.extractionCode == 'NPIX':
+        #     self.target_psf_gathering_in_progress = False
+        #
+        #     raw_pixel_sums_matrix = np.array(self.pixel_sums_per_frame)
+        #     avg_values = []
+        #     for i in range(self.max_pixels_in_sum):
+        #         avg_values.append(np.mean(raw_pixel_sums_matrix[:,i]))
+        #
+        #     std_values = []
+        #     for i in range(self.max_pixels_in_sum):
+        #         std_values.append(np.std(raw_pixel_sums_matrix[:,i]))
+        #
+        #     snr_values = []
+        #     for i in range(self.max_pixels_in_sum):
+        #         if std_values[i] > 0:
+        #             snr_values.append(avg_values[i] / std_values[i])
+        #         else:
+        #             snr_values.append(0.0)
+        #
+        #     # Find the peak snr
+        #     k = np.argwhere(snr_values == np.max(snr_values))[0][0] + 1
+        #     self.numPixelsToSumSpinBox.setValue(k)
+        #     self.numPixelsToSumSpinBox.setEnabled(True)
+        #
+        #     if k > self.max_pixels_in_sum - 1:
+        #         k = self.max_pixels_in_sum - 1
+        #
+        #     self.best_pixel_count_to_sum = k
+        #     self.showMsg(f'Best number of pixels from sorted list to sum: {self.best_pixel_count_to_sum}')
+        #     self.showMsg(f'mean_value: {avg_values[k]:0.2f}  noise: {std_values[k]:0.2f}  snr: {snr_values[k]:0.2f}')
+        #     self.showMsg(f'@ {self.max_pixels_in_sum} pixels summed: mean: {avg_values[-1]:0.2f}  '
+        #                  f'noise: {std_values[-1]:0.2f}  snr: {snr_values[-1]:0.2f}')
+        #
+        #     x = range(1,len(avg_values)+1)
+        #     # Plot stuff
+        #     # Start a new plot
+        #     self.plots.append(pg.GraphicsLayoutWidget(title="Growth curve plots"))
+        #     self.plots[-1].resize(1400, 900)
+        #     self.plots[-1].setWindowTitle(f'PyMovie {version.version()} Growth curve plots')
+        #     # dark_gray = (50, 50, 50)
+        #     black = (0, 0, 0)
+        #     p1 = self.plots[-1].addPlot(
+        #         row=0, col=0,
+        #         x=x,
+        #         y=avg_values,
+        #         symbol='o',
+        #         # title=f'Average signal',
+        #         pen=black
+        #     )
+        #     label_style = {'color': '#000', 'font-size': '15pt'}
+        #     p1.setLabel(axis='bottom', text='pixels summed', **label_style)
+        #     p1.setLabel(axis='left', text='Signal', **label_style)
+        #     p1.setXRange(1,len(avg_values)+1)
+        #
+        #
+        #     font = QtGui.QFont()
+        #     font.setPixelSize(15)
+        #     p1.getAxis("bottom").setStyle(tickFont=font)
+        #     p1.getAxis("left").setStyle(tickFont=font)
+        #     p1.showGrid(x=True, y=True)
+        #
+        #     self.plots[-1].nextRow()  # Tell GraphicsWindow that we want another row of plots
+        #     p2 = self.plots[-1].addPlot(
+        #         row=1, col=0,
+        #         x=x,
+        #         y=snr_values,
+        #         symbol='o',
+        #         # title=f'SNR',
+        #         pen=black
+        #     )
+        #
+        #     v_line_at_peak = pg.InfiniteLine(angle=90, movable=False, pen='r')
+        #     v_line_at_peak.setPos(k)
+        #     p2.addItem(v_line_at_peak)
+        #
+        #     p2.plot([k,k],[0,np.max(snr_values)*1.1],'-', color='red', width=4)
+        #     p2.setLabel(axis='bottom', text='pixels summed', **label_style)
+        #     p2.setLabel(axis='left', text='SNR', **label_style)
+        #     p2.setXRange(1,len(avg_values)+1)
+        #
+        #     p2.getAxis("bottom").setStyle(tickFont=font)
+        #     p2.getAxis("left").setStyle(tickFont=font)
+        #     p2.showGrid(x=True, y=True)
+        #     self.plots[-1].show()
+        #
+        #     self.restoreSavedState()
+        #
+        #     return
 
         # self.target_psf has background subtracted
         self.target_psf_float = self.target_psf / self.target_psf_number_accumulated  # float result and float input
@@ -7237,14 +7253,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         for j in range(w):
                             naylor_background[i,j] = np.random.choice(bkgnd_pixels, size=1, replace=True)
 
-                if self.extractionCode == 'NPIX':
-                    n = w * w
-                    np.random.seed(1)
-                    bkgnd_sample = np.random.choice(bkgnd_pixels, size=n, replace=True)
-                    sorted_bkgnd = np.sort(bkgnd_sample - mean)
-
-                    bkgnd_pixels = sorted_bkgnd[-self.best_pixel_count_to_sum:]
-                    aperture_mean = mean
+                # if self.extractionCode == 'NPIX':
+                #     n = w * w
+                #     np.random.seed(1)
+                #     bkgnd_sample = np.random.choice(bkgnd_pixels, size=n, replace=True)
+                #     sorted_bkgnd = np.sort(bkgnd_sample - mean)
+                #
+                #     bkgnd_pixels = sorted_bkgnd[-self.best_pixel_count_to_sum:]
+                #     aperture_mean = mean
 
                 # upper left corner coordinate is at x,y = offset_x, offset+y
                 offset_x = (masked_data.shape[0] // 2 - w // 2) * self.zoom_factor  # starting column
@@ -7263,21 +7279,21 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     naylor_signal = self.calcNaylorIntensity((win_data - naylor_mean)) * self.naylorRescaleFactor
                     signal = naylor_signal
 
-                if self.extractionCode == 'NPIX':
-                    data_to_use = win_data - mean
-                    sorted_data_to_use = np.sort(data_to_use.flatten())
-                    raw_pixels = sorted_data_to_use[-self.best_pixel_count_to_sum:]
-                    star_signal = np.sum(raw_pixels)
-                    bkgnd_signal = np.sum(bkgnd_pixels)
-                    if bkgnd_signal > 0:
-                        star_versus_bkgnd_ratio = star_signal / bkgnd_signal
-                    else:
-                        star_versus_bkgnd_ratio = 2.0
-                    if  star_versus_bkgnd_ratio >= 2.0:  # Assumption: star pixel spectrum push bkgnd pixel spectrum out of the picture
-                        # Do faked up background subtraction - division by two is arbitrary hack
-                        signal = star_signal - bkgnd_signal / 2.0
-                    else:
-                        signal = star_signal - bkgnd_signal / 2.0 - (2.0 - star_versus_bkgnd_ratio)**2 * bkgnd_signal / 2.0
+                # if self.extractionCode == 'NPIX':
+                #     data_to_use = win_data - mean
+                #     sorted_data_to_use = np.sort(data_to_use.flatten())
+                #     raw_pixels = sorted_data_to_use[-self.best_pixel_count_to_sum:]
+                #     star_signal = np.sum(raw_pixels)
+                #     bkgnd_signal = np.sum(bkgnd_pixels)
+                #     if bkgnd_signal > 0:
+                #         star_versus_bkgnd_ratio = star_signal / bkgnd_signal
+                #     else:
+                #         star_versus_bkgnd_ratio = 2.0
+                #     if  star_versus_bkgnd_ratio >= 2.0:  # Assumption: star pixel spectrum push bkgnd pixel spectrum out of the picture
+                #         # Do faked up background subtraction - division by two is arbitrary hack
+                #         signal = star_signal - bkgnd_signal / 2.0
+                #     else:
+                #         signal = star_signal - bkgnd_signal / 2.0 - (2.0 - star_versus_bkgnd_ratio)**2 * bkgnd_signal / 2.0
 
                 reference_background = aperture.smoothed_background
                 if reference_background == 0:
@@ -8743,8 +8759,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         self.doGammaCorrection()
 
                     if self.applyPixelCorrectionsCheckBox.isChecked():
-                        self.image = self.scrubImage(self.image)
-                    self.applyHotPixelErasure()
+                        self.image = self.scrubImage(self.image)  # CMOS pixel defects dealt with here
+                    self.applyHotPixelErasure()  # CCD hot pixels dealt with here
 
                     if self.lineNoiseFilterCheckBox.isChecked():
                         self.applyMedianFilterToImage()
@@ -8775,8 +8791,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.doGammaCorrection()
 
                     if self.applyPixelCorrectionsCheckBox.isChecked():
-                        self.image = self.scrubImage(self.image)
-                    self.applyHotPixelErasure()
+                        self.image = self.scrubImage(self.image)  # CMOS pixel defects dealt with here
+                    self.applyHotPixelErasure()  # CCD hot pixels dealt with here
 
                     raw_ser_timestamp = self.ser_timestamps[frame_to_show]
                     parts = raw_ser_timestamp.split('T')
@@ -8800,8 +8816,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.doGammaCorrection()
 
                     if self.applyPixelCorrectionsCheckBox.isChecked():
-                        self.image = self.scrubImage(self.image)
-                    self.applyHotPixelErasure()
+                        self.image = self.scrubImage(self.image)  # CMOS pixel defects dealt with here
+                    self.applyHotPixelErasure()  # CCD hot pixels dealt with here
 
                     if self.lineNoiseFilterCheckBox.isChecked():
                         self.applyMedianFilterToImage()
@@ -8826,8 +8842,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.doGammaCorrection()
 
                     if self.applyPixelCorrectionsCheckBox.isChecked():
-                        self.image = self.scrubImage(self.image)
-                    self.applyHotPixelErasure()
+                        self.image = self.scrubImage(self.image)  # CMOS pixel defects dealt with here
+                    self.applyHotPixelErasure()  # CCD hot pixels dealt with here
 
                     if self.lineNoiseFilterCheckBox.isChecked():
                         self.applyMedianFilterToImage()
@@ -8863,8 +8879,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         self.doGammaCorrection()
 
                         if self.applyPixelCorrectionsCheckBox.isChecked():
-                            self.image = self.scrubImage(self.image)
-                        self.applyHotPixelErasure()
+                            self.image = self.scrubImage(self.image)  # CMOS pixel defects dealt with here
+                        self.applyHotPixelErasure()  # CCD hot pixels dealt with here
 
                         # This code deals with processed FITS files (not from a camera) that contain
                         # negative values (which a camera cannot produce).

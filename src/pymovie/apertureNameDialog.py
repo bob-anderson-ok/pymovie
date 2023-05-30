@@ -45,6 +45,24 @@ class Ui_Dialog(object):
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Enter desired aperture name"))
-        self.label.setText(_translate("Dialog", "Enter name for aperture..."))
+        self.label.setText(_translate(
+            "Dialog",
+            f"If you want to base NRE on this star, begin the name with 'psf-star' (without the quotes).\n\n"
+            f"A star/aperture so named will be the one used in estimating the instrumental psf when the\n"
+            f"'generate NRE psf' button is pressed.\n\n"
+            f"Of course, only a single aperture with a name starting\n"
+            f"with 'psf-star' is allowed, but if you want other stars\n"
+            f"to use NRE, put the string 'psf-star' somewhere in\n"
+            f"the name. (Usually the psf would be determined from the target star, but\n"
+            f"you can control this by appropriate naming.)\n\n"
+            f"If you want to suppress the re-centering of static masks within an\n"
+            f"aperture, put the string 'nc-' somewhere in the name. (Dynamic masks must\n"
+            f"relocate to do their job, so the presence of 'nc-' will be ignored.)\n\n"
+            f"Apertures named 'empty' or 'no-star', or 'no_star' or 'no star' are\n"
+            f"treated as though they contain the 'nc-' string - this is because the\n"
+            f"N-brightest-pixel-mass-centroid re-centering of static circular masks,\n"
+            f"if allowed to 'hunt' within the aperture, will find opportunistic\n"
+            f"clumps of pixels that are a little brighter than other clumps and thus\n"
+            f"generate a tiny, but false, signal - disabling recentering prevents this."))
 
 
