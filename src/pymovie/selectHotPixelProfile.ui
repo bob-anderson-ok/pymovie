@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Select/save hot-pixel profile</string>
+   <string>hot-pixel profile table</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
@@ -31,7 +31,7 @@
          </attribute>
          <column>
           <property name="text">
-           <string>hot-pixel profile description (camera ID and context)</string>
+           <string>hot-pixel profile table (suggested format for names:  camera ID and date)</string>
           </property>
          </column>
         </widget>
@@ -40,17 +40,36 @@
         <layout class="QVBoxLayout" name="verticalLayout">
          <item>
           <widget class="QPushButton" name="loadButton">
+           <property name="minimumSize">
+            <size>
+             <width>280</width>
+             <height>0</height>
+            </size>
+           </property>
            <property name="text">
-            <string>Load selected profile</string>
+            <string>Load profile selected (highlighted) in table</string>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QPushButton" name="deleteButton">
            <property name="text">
-            <string>Delete selected profile</string>
+            <string>Delete profile highlighted in table</string>
            </property>
           </widget>
+         </item>
+         <item>
+          <spacer name="verticalSpacer">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
          </item>
          <item>
           <widget class="QPushButton" name="exitButton">
@@ -61,6 +80,19 @@
             <bool>true</bool>
            </property>
           </widget>
+         </item>
+         <item>
+          <spacer name="verticalSpacer_2">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
          </item>
         </layout>
        </item>
@@ -80,8 +112,14 @@
        </item>
        <item>
         <widget class="QPushButton" name="addProfileButton">
+         <property name="minimumSize">
+          <size>
+           <width>360</width>
+           <height>0</height>
+          </size>
+         </property>
          <property name="text">
-          <string>Add current hot-pixel profile to list</string>
+          <string>Add current hot-pixel list to the table above (with name provided at left)</string>
          </property>
         </widget>
        </item>

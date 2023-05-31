@@ -610,8 +610,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.loadPixelCorrectionTableButton.clicked.connect(self.loadCmosOutlawPixelList)
         self.loadPixelCorrectionTableButton.installEventFilter(self)
 
-        self.loadCmosPixelCorrectionTableButton.clicked.connect(self.loadCmosOutlawPixelList)
-        self.loadCmosPixelCorrectionTableButton.installEventFilter(self)
+        # self.loadCmosPixelCorrectionTableButton.clicked.connect(self.loadCmosOutlawPixelList)
+        # self.loadCmosPixelCorrectionTableButton.installEventFilter(self)
 
         self.applyPixelCorrectionsCheckBox.installEventFilter(self)
 
@@ -764,8 +764,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.hotPixelEraseOff.installEventFilter(self)
         self.hotPixelEraseOff.clicked.connect(self.showFrame)
 
-        self.enableCmosCorrectionsDuringFrameReadsCheckBox.clicked.connect(self.enableCmosCorrectionsDuringFrameReads)
-        self.enableCmosCorrectionsDuringFrameReadsCheckBox.installEventFilter(self)
+        # self.enableCmosCorrectionsDuringFrameReadsCheckBox.clicked.connect(self.enableCmosCorrectionsDuringFrameReads)
+        # self.enableCmosCorrectionsDuringFrameReadsCheckBox.installEventFilter(self)
 
         self.hotPixelEraseFromList.installEventFilter(self)
         self.hotPixelEraseFromList.clicked.connect(self.showFrame)
@@ -1765,12 +1765,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             if not aperture.color == 'yellow':
                 self.handleSetYellowSignal(aperture)
 
-    def enableCmosCorrectionsDuringFrameReads(self):
-        if self.enableCmosCorrectionsDuringFrameReadsCheckBox.isChecked():
-            self.applyPixelCorrectionsCheckBox.setEnabled(True)
-            self.applyPixelCorrectionsCheckBox.setChecked(True)
-        else:
-            self.applyPixelCorrectionsCheckBox.setChecked(False)
+    # def enableCmosCorrectionsDuringFrameReads(self):
+    #     if self.enableCmosCorrectionsDuringFrameReadsCheckBox.isChecked():
+    #         self.applyPixelCorrectionsCheckBox.setEnabled(True)
+    #         self.applyPixelCorrectionsCheckBox.setChecked(True)
+    #     else:
+    #         self.applyPixelCorrectionsCheckBox.setChecked(False)
 
     def applyOutlawPixelFilter(self):
         self.image = self.scrubImage(self.image)
@@ -2174,11 +2174,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def loadHotPixelProfile(self):
 
-        # TODO Is this still needed?
-        # self.showMsg(f'loadHotPixelProfile: Not yet implemented')
-        # return
-
-        if self.image is None:  # noqa  Suppress code cannot be reached caused by the return above
+        if self.image is None:
             self.showMsg(f'There is no frame showing yet.')
             return
 
@@ -2221,6 +2217,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'There are no apertures on the frame.')
             return
 
+        self.showRobustMeanDemo()
+
         hpxdialog = HotPixelDialog()
         result = hpxdialog.exec_()
 
@@ -2245,15 +2243,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             # app_image is the portion of the main image that is covered by the aperture bounding box
             app_img = self.image[y0:y0 + ny, x0:x0 + nx]
             hot_pixels = np.nonzero(app_img >= threshold)
-            # self.showMsg(f'{repr(hot_pixels)}')
 
             yvals = hot_pixels[0] + y0
             xvals = hot_pixels[1] + x0
-            # self.showMsg(f'xvals: {repr(xvals)}')
-            # self.showMsg(f'yvals: {repr(yvals)}')
 
             hot_list = list(tuple(zip(yvals, xvals)))
-            # self.showMsg(f'hot_list: {repr(hot_list)}')
 
             for pair in hot_list:
                 self.hotPixelList.append(pair)
@@ -7642,6 +7636,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.lunarCheckBox.setChecked(False)
 
             self.hotPixelList = []
+            self.savedApertureDictList = []
+
             self.alwaysEraseHotPixels = False
             self.hotPixelProfileDict = {}
 
@@ -7958,6 +7954,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.aav_bad_frames = []
 
             self.hotPixelList = []
+            self.savedApertureDictList = []
+
             self.alwaysEraseHotPixels = False
             self.hotPixelProfileDict = {}
 
@@ -8190,6 +8188,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.aav_bad_frames = []
 
             self.hotPixelList = []
+            self.savedApertureDictList = []
+
             self.alwaysEraseHotPixels = False
             self.hotPixelProfileDict = {}
 
