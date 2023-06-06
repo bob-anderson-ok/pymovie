@@ -7,12 +7,14 @@ import numpy as np
 
 
 class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
-    def __init__(self, messager, saver, dictList, appSize, threshSpinner, imageUpdate, setThumbnails):
+    def __init__(self, messager, saver, apertureRemover, apertureGetList, dictList, appSize, threshSpinner, imageUpdate, setThumbnails):
         super(EditApertureDialog, self).__init__()
         self.setupUi(self)
         self.msgRoutine = messager
         self.settingsSaver = saver
         self.dictList = dictList
+        self.apRemover = apertureRemover
+        self.apLister = apertureGetList
         self.fillApertureTable()
         self.appSize = appSize
         self.threshSpinner = threshSpinner
@@ -259,6 +261,22 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
             self.menu.addAction(setWhite)
 
             self.menu.popup(QtGui.QCursor.pos())
+        elif self.col == 0:  # The name column
+            self.menu = QMenu()
+
+            setDelete = QAction("Delete", self)
+            setDelete.triggered.connect(self.performRowDelete)
+            self.menu.addAction(setDelete)
+            self.menu.popup(QtGui.QCursor.pos())
+
+    def performRowDelete(self):
+        name_of_aperture_to_be_removed = self.tableWidget.item(self.row, 0).text()
+        for app in self.apLister():
+            if app.name == name_of_aperture_to_be_removed:
+                self.apRemover(app)
+
+        self.tableWidget.removeRow(self.row)
+        del self.dictList[self.row]
 
     def setTrue(self):
         if self.col == 7:

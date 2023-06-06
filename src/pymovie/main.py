@@ -1574,7 +1574,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         addAppStack = view.menu.addAction('Add 10 nested radius mask apertures')  # noqa
         addAppStack.triggered.connect(self.addApertureStack)  # noqa
 
-        addAppStack = view.menu.addAction('Add nested dynamic mask apertures (0.5,1,2,3 sigma set)')  # noqa
+        addAppStack = view.menu.addAction('Add 5 nested dynamic mask apertures')  # noqa
         addAppStack.triggered.connect(self.addDynamicApertureStack)  # noqa
 
         view.menu.addSeparator()  # noqa
@@ -1739,6 +1739,16 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if apertureFound:
             aperture.jogging_enabled = False
 
+    def duplicateApertureName(self, proposed_name):
+        # Hack to deal with user accepting default aperture name.
+        if proposed_name == f'ap{self.apertureId - 1:02d}':
+            return False, None, None
+
+        for app in self.getApertureList():
+            if app.name == proposed_name:
+                return True, int(app.xc), int(app.yc)
+        return False, None, None
+
     def apMenuRename(self):
         apertureFound, aperture = self.isMouseInAperture()
         if apertureFound:
@@ -1747,7 +1757,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             appNamerThing.apertureNameEdit.setFocus()
             result = appNamerThing.exec_()
             if result == QDialog.Accepted:
-                aperture.name = appNamerThing.apertureNameEdit.text().strip()
+                proposed_name = appNamerThing.apertureNameEdit.text().strip()
+                duplicate, x, y = self.duplicateApertureName(proposed_name=proposed_name)
+                if not duplicate:
+                    aperture.name = proposed_name
+                else:
+                    self.showMsgPopup(f'That aperture name ({proposed_name}), is already in use by'
+                                      f' the aperture centered at {x},{y}')
 
     def apMenuDelete(self):
         apertureFound, aperture = self.isMouseInAperture()
@@ -2392,8 +2408,18 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.helperThing.textEdit.insertHtml(msg)
 
     def addApertureStack(self):
+        nest_number = 1
+        for app in self.getApertureList():
+            if app.name.startswith('static-nest2'):
+                self.showMsgPopup(f'There are already two static nests in place - that is the limit.')
+                return
+        for app in self.getApertureList():
+            if app.name.startswith('static-nest'):
+                nest_number = 2
+                break
+
         for radius in [2.4, 3.2, 4.0, 4.3, 5.1, 5.7, 6.1, 6.5, 7.2, 8.0]:
-            self.addStaticAperture(askForName=False, radius=radius, name=f'static-nest-{radius:0.1f}')
+            self.addStaticAperture(askForName=False, radius=radius, name=f'static-nest{nest_number}-{radius:0.1f}')
         for app in self.getApertureList():
             if app.color == 'green':
                 app.setRed()
@@ -2401,6 +2427,17 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def addDynamicApertureStack(self):
         if self.image is None:  # Don't add an aperture if there is no image showing yet.
             return
+
+        for app in self.getApertureList():
+            if app.name.startswith('dynamic-nest2'):
+                self.showMsgPopup(f'There are already two dynamic nests in place - that is the limit.')
+                return
+
+        nest_number = 1
+        for app in self.getApertureList():
+            if app.name.startswith('dynamic-nest1'):
+                nest_number = 2
+                break
 
         self.one_time_suppress_stats = True
         aperture = self.addGenericAperture()  # Just calls addApertureAtPosition() with mouse coords
@@ -2413,24 +2450,32 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         bkavg, std, *_ = newRobustMeanStd(img, lunar=self.lunarCheckBox.isChecked())
 
-        sigma_1 = int(np.ceil(std))
-        aperture.thresh = sigma_1 // 2
-        aperture.name = 'dynamic-nest-0.5-sigma'
+        thresh_given, done = QtWidgets.QInputDialog.getInt(self,'Set starting threshold',
+                                                           'Enter starting threshhold - value provided is round(std/2):',
+                                                           value = max(round(std/2), 1), min=1, step=1)
+        if not done:
+            # self.showMsgPopup(f'Operation cancelled by user.')
+            self.removeAperture(aperture)
+            return
 
-        self.one_time_suppress_stats = True
-        aperture = self.addGenericAperture()  # Just calls addApertureAtPosition() with mouse coords
-        aperture.thresh = sigma_1
-        aperture.name = 'dynamic-nest-1-sigma'
+        thresh_step, done = QtWidgets.QInputDialog.getInt(self,'Set threshold increment',
+                                                          'Threshold increment:',
+                                                          value=1, min=1, step=1)
 
-        self.one_time_suppress_stats = True
-        aperture = self.addGenericAperture()  # Just calls addApertureAtPosition() with mouse coords
-        aperture.thresh = 2 * sigma_1
-        aperture.name = 'dynamic-nest-2-sigma'
+        if not done:
+            # self.showMsgPopup(f'Operation cancelled by user.')
+            self.removeAperture(aperture)
+            return
 
-        self.one_time_suppress_stats = True
-        aperture = self.addGenericAperture()  # Just calls addApertureAtPosition() with mouse coords
-        aperture.thresh = 3 * sigma_1
-        aperture.name = 'dynamic-nest-3-sigma'
+        for i in range(5):
+            aperture.thresh = thresh_given
+            aperture.name = f'dynamic-nest{nest_number}-thresh-{thresh_given}'
+            if i == 4:
+                return
+            else:
+                self.one_time_suppress_stats = True
+                aperture = self.addGenericAperture()  # Just calls addApertureAtPosition() with mouse coords
+                thresh_given += thresh_step
 
     def doGammaCorrection(self):
         if self.currentGamma == 1.00:
@@ -4276,6 +4321,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.apertureEditor = EditApertureDialog(
             self.showMsg,
             saver=self.settings,
+            apertureRemover=self.removeAperture,
+            apertureGetList=self.getApertureList,
             dictList=self.appDictList,
             appSize=self.roi_size,
             threshSpinner=self.threshValueEdit,
@@ -5029,15 +5076,20 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         else:
             return ''
 
-    @staticmethod
-    def nameAperture(aperture):
+    def nameAperture(self, aperture):
         appNamerThing = AppNameDialog()
         appNamerThing.apertureNameEdit.setText(aperture.name)
         appNamerThing.apertureNameEdit.setFocus()
         result = appNamerThing.exec_()
 
         if result == QDialog.Accepted:
-            aperture.name = appNamerThing.apertureNameEdit.text().strip()
+            proposed_name = appNamerThing.apertureNameEdit.text().strip()
+            duplicate, x, y = self.duplicateApertureName(proposed_name=proposed_name)
+            if not duplicate:
+                aperture.name = proposed_name
+            else:
+                self.showMsgPopup(f'That name ({proposed_name}), is already in use by the '
+                                  f'aperture centered at {x},{y}')
 
     def setRoiFromComboBox(self):
         self.clearApertures()
@@ -6032,6 +6084,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if yellow_count == 0:
             self.useYellowMaskCheckBox.setChecked(False)
 
+        self.showMsgPopup(f'The displayed apertures have been automatically "marked", including current frame number.')
+
     @pyqtSlot('PyQt_PyObject')
     def handleSetThumbnailSourceSignal(self, aperture):
         for app in self.getApertureList():
@@ -6271,7 +6325,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         target_app = self.addApertureAtPosition(x_calc, y_calc)
         target_app.thresh = self.big_thresh
-        target_app.name = 'target'
+        target_app.name = 'target-from-wcs-calibration'
         target_app.setRed()
         self.one_time_suppress_stats = True
         self.threshValueEdit.setValue(self.big_thresh)  # Causes call to self.changeThreshold()
@@ -6452,6 +6506,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         aperture.background_reading_count = 0
 
         self.apertureId += 1
+
         view = self.frameView.getView()
         view.addItem(aperture)
 
@@ -9101,6 +9156,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         else:
             self.frameView.getView().removeItem(aperture)
 
+        self.saveCurrentState()
+        # self.showMsgPopup(f'The displayed apertures have been automatically "marked", including current frame number.')
+
     def removeOcrBox(self, ocrbox):
         self.frameView.getView().removeItem(ocrbox)
 
@@ -9567,7 +9625,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         target_app = self.addApertureAtPosition(round(x), round(y))
         target_app.thresh = self.big_thresh
-        target_app.name = 'target'
+        target_app.name = 'target-from-wcs-calibration'
         target_app.setRed()
 
         self.one_time_suppress_stats = True
