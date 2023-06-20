@@ -1725,6 +1725,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if proposed_name == f'ap{self.apertureId - 1:02d}':
             return False, None, None
 
+        non_recentering_requested = 'no-rc' in proposed_name or 'no_rc' in proposed_name or 'no rc' in proposed_name
+        if 'psf-star' in proposed_name and non_recentering_requested:
+            self.showMsgDialog('Non-recentering cannot be used on a psf-star')
+            return True, None, None
+
         for app in self.getApertureList():
             if app.name == proposed_name:
                 return True, int(app.xc), int(app.yc)
@@ -1743,8 +1748,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 if not duplicate:
                     aperture.name = proposed_name
                 else:
-                    self.showMsgPopup(f'That aperture name ({proposed_name}), is already in use by'
-                                      f' the aperture centered at {x},{y}')
+                    if x is not None and y is not None:
+                        self.showMsgPopup(f'That aperture name ({proposed_name}), is already in use by'
+                                        f' the aperture centered at {x},{y}')
 
     def apMenuDelete(self):
         apertureFound, aperture = self.isMouseInAperture()
@@ -3143,6 +3149,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def startAnalysisWithNRE(self):
 
+        self.extractionCode = 'AP'
+        self.extractionMode = 'Aperture Photometry'
+
         for app in self.getApertureList():
             if app.name.startswith('psf-star'):
                 ok, msg, _ = self.testForConsistentPsfStarFixedMasks()
@@ -3157,6 +3166,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.startPsfGathering()
                 self.stopAtFrameSpinBox.setValue(saved_stop_frame)
                 self.extractionCode = 'NRE'
+                self.extractionMode = 'Naylor Noise Reduction Extraction'
+
                 self.useOptimalExtraction = True
                 self.showMsg(f'Psf has been estimated. Beginning analysis run')
                 self.clearApertureData()
@@ -5035,8 +5046,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             if not duplicate:
                 aperture.name = proposed_name
             else:
-                self.showMsgPopup(f'That name ({proposed_name}), is already in use by the '
-                                  f'aperture centered at {x},{y}')
+                if x is not None and y is not None:
+                    self.showMsgPopup(f'That name ({proposed_name}), is already in use by the '
+                                    f'aperture centered at {x},{y}')
 
     def setRoiFromComboBox(self):
         self.clearApertures()
@@ -6473,6 +6485,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             for app in self.getApertureList():
                 # After we have found a dealt with the primary yellow, we find and deal with the secondary yellow
                 if app.color == 'yellow' and not app.primary_yellow_aperture:  # This is our secondary yellow
+                    self.one_time_suppress_stats = False
                     xc_roi, yc_roi, xc_world, yc_world, *_ = \
                         self.getApertureStats(app, show_stats=False)
 
@@ -7108,7 +7121,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             processAsNREorNPIX = (self.extractionCode == 'NPIX' or self.extractionCode == 'NRE') \
                                  and not self.target_psf_gathering_in_progress
 
-        if self.use_yellow_mask and self.yellow_mask is not None:
+        if self.use_yellow_mask and self.yellow_mask is not None and not processAsNREorNPIX:
             default_mask_used = False
             appsum = np.sum(self.yellow_mask * thumbnail)
             max_area = int(np.sum(self.yellow_mask))

@@ -29,6 +29,24 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
         self.row = None
         self.menu = None
 
+    def setPrimaryYellow(self):
+        aps = self.apLister()
+        yellow_count = 0
+        for ap in aps:
+            if ap.color == 'yellow':
+                yellow_count += 1
+            else:
+                ap.primary_yellow_aperture = False
+
+        if yellow_count == 0 or yellow_count == 2:
+            return
+
+        # If there is only 1 yellow aperture, make it primary
+        for ap in aps:
+            if ap.color == 'yellow':
+                ap.primary_yellow_aperture = True
+                return
+
     def selectionChange(self):
         row = self.tableWidget.currentRow()
         col = self.tableWidget.currentColumn()
@@ -218,6 +236,9 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
                 return
             aperture.order_number = order
 
+        # In case color changes were made, we need to upate the primary_yellow_aperture flag
+        self.setPrimaryYellow()
+
     def contextMenuEvent(self, event):
         # self.msgRoutine("Got a right-click event")
         self.col = self.tableWidget.currentColumn()
@@ -242,7 +263,6 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
             self.menu.popup(QtGui.QCursor.pos())
         elif self.col == 4:
             self.menu = QMenu()
-            # self.menu = QtGui.QMenu()
 
             setRed = QAction("Set red (standard)", self)
             setRed.triggered.connect(self.setRed)
