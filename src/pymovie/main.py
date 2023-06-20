@@ -208,6 +208,8 @@ class FixedImageExporter(pex.ImageExporter):
 class HelpDialog(QDialog, helpDialog.Ui_Dialog):
     def __init__(self):
         super(HelpDialog, self).__init__()
+        self.setWindowFlags(Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(self.windowFlags() | QtCore.Qt.Dialog)
         self.setupUi(self)
 
 
@@ -10008,6 +10010,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.settings.setValue('6.8 mask', self.radius68radioButton.isChecked())
 
         self.settings.setValue('satPixelLevel', self.satPixelSpinBox.value())
+
+        self.settings.setValue('allowNewVersionPopup', self.allowNewVersionPopupCheckbox.isChecked())
 
         if self.apertureEditor:
             self.apertureEditor.close()
