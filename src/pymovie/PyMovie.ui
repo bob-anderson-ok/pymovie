@@ -390,7 +390,7 @@
             <bool>true</bool>
            </property>
            <property name="currentIndex">
-            <number>8</number>
+            <number>0</number>
            </property>
            <property name="usesScrollButtons">
             <bool>true</bool>
@@ -3372,7 +3372,7 @@ aperture placement.</string>
                     <enum>Qt::RightToLeft</enum>
                    </property>
                    <property name="text">
-                    <string>   current frame</string>
+                    <string> current frame:</string>
                    </property>
                   </widget>
                  </item>
@@ -3445,6 +3445,9 @@ aperture placement.</string>
                      <bold>true</bold>
                     </font>
                    </property>
+                   <property name="toolTip">
+                    <string/>
+                   </property>
                    <property name="layoutDirection">
                     <enum>Qt::RightToLeft</enum>
                    </property>
@@ -3471,7 +3474,37 @@ aperture placement.</string>
                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This box sets the final frame processed during an analysis run (light curve extraction).&lt;/p&gt;&lt;p&gt;If the&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt; stop frame&lt;/span&gt; number is greater than the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;cur frame&lt;/span&gt; number, analysis proceeds in that direction and the data will include that of the stop frame.&lt;/p&gt;&lt;p&gt;If the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;stop frame&lt;/span&gt; number is less than the &lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;cur frame&lt;/span&gt; number, analysis proceeds backwards (toward earlier time) and stops one frame before the given stop at frame. This is to facilate building a light curve by analyzing both forward and backward in time.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
                    <property name="text">
-                    <string>stop frame</string>
+                    <string>:stop frame</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="setLastFrameButton">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>22</height>
+                    </size>
+                   </property>
+                   <property name="maximumSize">
+                    <size>
+                     <width>24</width>
+                     <height>22</height>
+                    </size>
+                   </property>
+                   <property name="font">
+                    <font>
+                     <family>.SF NS Text</family>
+                     <pointsize>13</pointsize>
+                     <bold>false</bold>
+                     <kerning>false</kerning>
+                    </font>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Click this button to place the last frame number in the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;stop frame&lt;/span&gt; spin box (without moving from the current frame)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="text">
+                    <string>E</string>
                    </property>
                   </widget>
                  </item>

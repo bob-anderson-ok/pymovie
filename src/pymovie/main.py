@@ -1243,6 +1243,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.transportMark.clicked.connect(self.saveCurrentState)
         self.transportMark.installEventFilter(self)
 
+        self.setLastFrameButton.installEventFilter(self)
+        self.setLastFrameButton.clicked.connect(self.resetMaxStopAtFrameValue)
+
+        # self.stopAtFrameSpinBox.installEventFilter(self)
+
         self.transportPlot.clicked.connect(self.showLightcurves)
         self.transportPlot.installEventFilter(self)
 
@@ -1553,6 +1558,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         addFixedApp = view.menu.addAction('Add static (fixed circular) mask aperture')  # noqa
         addFixedApp.triggered.connect(self.addNamedStaticAperture)  # noqa
+
+        view.menu.addSeparator()  # noqa
+
+        addAppStack = view.menu.addAction('Add NRE aperture')  # noqa
+        addAppStack.triggered.connect(self.addNREaperture)  # noqa
 
         addAppStack = view.menu.addAction('Add 10 nested radius mask apertures')  # noqa
         addAppStack.triggered.connect(self.addApertureStack)  # noqa
@@ -2395,6 +2405,19 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.helperThing.show()
         self.helperThing.textEdit.clear()
         self.helperThing.textEdit.insertHtml(msg)
+
+    def addNREaperture(self):
+        # Need to test for an already present aperture with name starting with psf-star
+        for app in self.getApertureList():
+            if app.name.startswith('psf-star'):
+                self.showMsgPopup(f'An NRE aperture is already present.\n\n'
+                                  f'There can be only one as it is used to form the instrumental psf that will '
+                                  f'be used for all NRE extractions.\n\n'
+                                  f'You CAN have multiple apertures that have the string "psf-star" (not '
+                                  f'at the beginning) if you want them to have NRE extraction applied. You '
+                                  f'can control that while naming such apertures.')
+                return
+        self.addStaticAperture(askForName=False, name='psf-star-for-NRE')
 
     def addApertureStack(self):
         nest_number = 1
@@ -5115,7 +5138,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.initializeTracking()
 
         currentFrame = self.currentFrameSpinBox.value()
-        # lastFrame = self.stopAtFrameSpinBox.value()
         while not self.playPaused:
             if currentFrame == 0:
                 self.playPaused = True
@@ -7167,6 +7189,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
                 if self.extractionCode == 'NRE':
                     naylor_mean = np.mean(naylor_background)  # noqa # TODO Why not the usual mean?
+                    # TODO Test that this changes the CIRCE measurement
+                    naylor_mean = mean
 
                     # NOTE: aperture_mean is added to aperture stats and used in aperture code to smooth background
                     # using a recursive filter that implements an rc filter. The 'smoothed' value can be retrieved
