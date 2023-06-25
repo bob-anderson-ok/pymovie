@@ -3425,6 +3425,36 @@ aperture placement.</string>
                   <number>0</number>
                  </property>
                  <item>
+                  <widget class="QPushButton" name="setLastFrameButton">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>22</height>
+                    </size>
+                   </property>
+                   <property name="maximumSize">
+                    <size>
+                     <width>24</width>
+                     <height>22</height>
+                    </size>
+                   </property>
+                   <property name="font">
+                    <font>
+                     <family>.SF NS Text</family>
+                     <pointsize>13</pointsize>
+                     <bold>false</bold>
+                     <kerning>false</kerning>
+                    </font>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Click this button to place the last frame number in the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;stop frame&lt;/span&gt; spin box (without moving from the current frame)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="text">
+                    <string>E</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
                   <widget class="QSpinBox" name="stopAtFrameSpinBox">
                    <property name="minimumSize">
                     <size>
@@ -3475,36 +3505,6 @@ aperture placement.</string>
                    </property>
                    <property name="text">
                     <string>:stop frame</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QPushButton" name="setLastFrameButton">
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>22</height>
-                    </size>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>24</width>
-                     <height>22</height>
-                    </size>
-                   </property>
-                   <property name="font">
-                    <font>
-                     <family>.SF NS Text</family>
-                     <pointsize>13</pointsize>
-                     <bold>false</bold>
-                     <kerning>false</kerning>
-                    </font>
-                   </property>
-                   <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Click this button to place the last frame number in the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;stop frame&lt;/span&gt; spin box (without moving from the current frame)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                   </property>
-                   <property name="text">
-                    <string>E</string>
                    </property>
                   </widget>
                  </item>

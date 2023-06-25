@@ -1564,10 +1564,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         addAppStack = view.menu.addAction('Add NRE aperture')  # noqa
         addAppStack.triggered.connect(self.addNREaperture)  # noqa
 
-        addAppStack = view.menu.addAction('Add 10 nested radius mask apertures')  # noqa
+        addAppStack = view.menu.addAction('Add 12 nested fixed radius mask apertures')  # noqa
         addAppStack.triggered.connect(self.addApertureStack)  # noqa
 
-        addAppStack = view.menu.addAction('Add 5 nested dynamic mask apertures')  # noqa
+        addAppStack = view.menu.addAction('Add 6 nested dynamic mask apertures')  # noqa
         addAppStack.triggered.connect(self.addDynamicApertureStack)  # noqa
 
         view.menu.addSeparator()  # noqa
@@ -2430,7 +2430,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 nest_number = 2
                 break
 
-        for radius in [2.4, 3.2, 4.0, 4.3, 5.1, 5.7, 6.1, 6.5, 7.2, 8.0]:
+        for radius in [2.0, 2.4, 3.2, 4.0, 4.3, 5.1, 5.7, 6.1, 6.5, 7.2, 8.0, 8.8]:
             self.addStaticAperture(askForName=False, radius=radius, name=f'static-nest{nest_number}-{radius:0.1f}')
         for app in self.getApertureList():
             if app.color == 'green':
@@ -2479,10 +2479,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.removeAperture(aperture)
             return
 
-        for i in range(5):
+        for i in range(6):
             aperture.thresh = thresh_given
             aperture.name = f'dynamic-nest{nest_number}-thresh-{thresh_given}'
-            if i == 4:
+            if i == 5:
                 return
             else:
                 self.one_time_suppress_stats = True
