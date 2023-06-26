@@ -5070,6 +5070,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             duplicate, x, y = self.duplicateApertureName(proposed_name=proposed_name)
             if not duplicate:
                 aperture.name = proposed_name
+                if 'track' in aperture.name:
+                    self.handleSetYellowSignal(aperture)
             else:
                 if x is not None and y is not None:
                     self.showMsgPopup(f'That name ({proposed_name}), is already in use by the '
@@ -5936,6 +5938,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             current_num_yellow_apertures += 1
         else:
             self.showMsg(f'  !!!!  Only two yellow apertures are allowed at a time !!!!')
+            self.showMsgPopup(f'  !!!!  Only two yellow apertures are allowed at a time !!!!')
 
         if current_num_yellow_apertures == 1 and self.tpathSpecified:
             self.clearTrackingPathParameters()
@@ -9501,10 +9504,17 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             return
 
         # good_mean, sigma, sorted_data, hist_data, window, data_size, left, right = robustMeanStd(self.thumbOneImage)
+        # calced_mean, bkgnd_sigma, sorted_data, my_hist, data.size / 2, data.size, 0, clip_point + 1, bkgnd_values
         good_mean, sigma, _, hist_data, _, _, _, local_right, *_ = newRobustMeanStd(
             self.thumbOneImage, lunar=self.lunarCheckBox.isChecked()
         )
         # self.showMsg(f'{good_mean} {sigma} {window} {data_size} {left}  {right}')
+
+        # TODO This was put here just for testing/development - it is used in newRobustMean()
+        max_area, _, negative_mask, *_ = remove_stars(
+            img=self.thumbOneImage,
+            cut=good_mean + 1 * sigma
+        )
 
         # Start a new plot
         self.plots.append(pg.GraphicsLayoutWidget(title="Robust Mean Calculation"))
@@ -10303,7 +10313,65 @@ def get_mask(
 
     return max_area, mask, t_mask, centroid, cvxhull, blob_count, extent
 
+def remove_stars(
+        img, ksize=(5, 5), cut=None, bkavg=None, min_pixels=5,
+        lunar=False):
+    # cv2.GaussianBlur() cannot deal with big-endian data, probably because it is c++ code
+    # that has been ported.  If we have read a FITS file, there is the
+    # possibility that the image data (and hence img) is big-endian.  Here we test for that and do a
+    # byte swap if img is big-endian  NOTE: as long as operations on the image data are kept in the
+    # numpy world, there is no problem with big-endian data --- those operations adapt as necessary.
 
+    byte_order = img.dtype.byteorder  # Possible returns: '<' '>' '=' '|' (little, big, native, not applicable)
+
+    if byte_order == '>':  # We assume our code will be run on Intel silicon
+        blurred_img = cv2.GaussianBlur(img.byteswap().astype("uint16"), ksize=ksize, sigmaX=1.1)  # noqa
+    else:
+        blurred_img = cv2.GaussianBlur(img.astype("uint16"), ksize=ksize, sigmaX=1.1)  # noqa
+
+    # cut is threshold
+    ret, t_mask = cv2.threshold(blurred_img, cut, 1, cv2.THRESH_BINARY)  # noqa
+    labels = measure.label(t_mask, connectivity=1, background=0)
+    blob_count = np.max(labels)
+
+    centroid = (None, None)
+    max_area = 0
+    cvxhull = 0
+    extent = 0
+    bbox = None
+
+    negative_mask = np.zeros(img.shape, 'int16')
+    negative_mask += 1
+    positive_mask = np.zeros(img.shape, 'int16')
+
+    if blob_count > 0:
+        max_area = 0
+        cvxhull = 0
+        props = measure.regionprops(labels)
+
+        # Next, we find the blob (and the coordinates of its points) that contains the largest signal.
+        for prop in props:
+
+            if prop.area >= min_pixels:
+                for point in prop.coords:
+                    negative_mask[point[0], point[1]] = 0  # Erase star pixel
+                    positive_mask[point[0], point[1]] = 1  # Add star pixel
+
+            if prop.area > max_area:
+                max_area = prop.area
+                bbox = prop.bbox
+
+        # calculate extent
+        if bbox:
+            min_row, min_col, max_row, max_col = bbox
+            extent = max(max_col - min_col, max_row - min_row)
+
+    else:
+        # We get here if number of blobs found was zero
+        negative_mask = np.zeros(img.shape, 'int16')
+        negative_mask += 1
+
+    return max_area, negative_mask, positive_mask, centroid, cvxhull, blob_count, extent
 
 def poisson_mean(data_set, initial_guess, debug=False):
     def fit_function(k, lamb):
@@ -10388,26 +10456,34 @@ def newRobustMeanStd(
     MAD = np.median(stds)
 
     # flat_data = data.flatten()
+
     est_mean = np.median(flat_data)
-    clip_point = est_mean + 4.5 * MAD  # Equivalent to 3 sigma
+    clip_point = est_mean + 4.5 * MAD  # Equivalent to 3 sigma (Does a good job when no stars present)
+
     bkgnd_values = flat_data[np.where(flat_data <= clip_point)]
+
     calced_mean = np.mean(bkgnd_values)  # A backup value in case the poisson fit fails for some reason
-
-    # Remove this if mode is not good - it wasn't good; very noisy and too small for poisson shaped background
-    # distributions
-    # calced_mean = 3 * np.median(bkgnd_values) - 2 * calced_mean  # mode estimatee
-
-    # This 'fit' takes an exorbitant amount of computer time
-    # if len(bkgnd_values) > 0 and calced_mean > 0.0:
-    #     try:
-    #         poisson_mean_value, _ = poisson_mean(bkgnd_values, initial_guess=calced_mean)
-    #         if poisson_mean_value is not None:
-    #             calced_mean = poisson_mean_value
-    #     except ValueError as e:
-    #         print(f'{e}')
-    #         pass
-
     bkgnd_sigma = np.std(bkgnd_values)
+
+    max_area, negative_mask, positive_mask, *_ = remove_stars(
+        img=data,
+        cut=calced_mean + 1 * bkgnd_sigma,
+        bkavg=calced_mean
+    )
+
+    # Now that we know where the stars are (they are now 0 values in the negative_mask that started as all 1)
+    # We replace the star pixels with the median of the data without the stars
+    starless_data = data * negative_mask
+    replacement = round(np.median(starless_data))
+    starless_data += positive_mask * replacement
+
+    flat_data = starless_data.flatten()
+    est_mean = round(np.mean(starless_data))
+    clip_point = est_mean + 3 * bkgnd_sigma
+    bkgnd_values = flat_data[np.where(flat_data <= clip_point)]
+    calced_mean = np.mean(bkgnd_values)
+    bkgnd_sigma = np.std(bkgnd_values)
+
     return calced_mean, bkgnd_sigma, sorted_data, my_hist, data.size / 2, data.size, 0, clip_point + 1, bkgnd_values
 
 
