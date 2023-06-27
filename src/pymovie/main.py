@@ -2417,7 +2417,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                                   f'at the beginning) if you want them to have NRE extraction applied. You '
                                   f'can control that while naming such apertures.')
                 return
-        self.addStaticAperture(askForName=False, name='psf-star-for-NRE')
+
+
+        if self.roi_size < 21:
+            self.showMsgPopup('psf-stars require a minimum aperture size of 21')
+            return
+
+        self.addStaticAperture(askForName=False, name='psf-star-for-NRE', radius=8.0)
+        self.testForConsistentPsfStarFixedMasks()
 
     def addApertureStack(self):
         nest_number = 1
@@ -3075,8 +3082,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.analysisRequested = False
         self.setTransportButtonsEnableState(True)
 
-    # def updateNumPixelsToSum(self):
-    #     self.best_pixel_count_to_sum = self.numPixelsToSumSpinBox.value()
 
     def startGrowthCurveGathering(self):
 
@@ -3145,6 +3150,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         for app in self.getApertureList():
             if app.name.startswith('psf-star'):
                 starts_with_psf_star_count += 1
+                app.default_mask_radius = 8
 
         if not starts_with_psf_star_count == 1:
             return False, f'There can be only one aperture with a name that starts with "psf-star".\n\n' \
@@ -3174,8 +3180,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def startAnalysisWithNRE(self):
 
-        self.extractionCode = 'AP'
-        self.extractionMode = 'Aperture Photometry'
+        if not self.checkForDataAlreadyPresent():
+            self.extractionCode = 'AP'
+            self.extractionMode = 'Aperture Photometry'
 
         for app in self.getApertureList():
             if app.name.startswith('psf-star'):
@@ -3184,18 +3191,20 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 if not ok:
                     self.showMsgPopup(msg)
                     return
-                self.showMsg(f'Gathering data for psf estimation.')
-                # Save the stop frame
-                saved_stop_frame = self.stopAtFrameSpinBox.value()
-                self.stopAtFrameSpinBox.setValue(self.currentFrameSpinBox.value() + self.psfFrameCountSpinBox.value() - 1)
-                self.startPsfGathering()
-                self.stopAtFrameSpinBox.setValue(saved_stop_frame)
-                self.extractionCode = 'NRE'
-                self.extractionMode = 'Naylor Noise Reduction Extraction'
 
-                self.useOptimalExtraction = True
-                self.showMsg(f'Psf has been estimated. Beginning analysis run')
-                self.clearApertureData()
+                if not self.checkForDataAlreadyPresent():
+                    self.showMsg(f'Gathering data for psf estimation.')
+                    # Save the stop frame
+                    saved_stop_frame = self.stopAtFrameSpinBox.value()
+                    self.stopAtFrameSpinBox.setValue(self.currentFrameSpinBox.value() + self.psfFrameCountSpinBox.value() - 1)
+                    self.startPsfGathering()
+                    self.stopAtFrameSpinBox.setValue(saved_stop_frame)
+                    self.extractionCode = 'NRE'
+                    self.extractionMode = 'Naylor Noise Reduction Extraction'
+
+                    self.useOptimalExtraction = True
+                    self.showMsg(f'Psf has been estimated. Beginning analysis run')
+                    self.clearApertureData()
 
         self.startAnalysis()
 
@@ -5072,6 +5081,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 aperture.name = proposed_name
                 if 'track' in aperture.name:
                     self.handleSetYellowSignal(aperture)
+                if 'psf-star' in aperture.name:
+                    if aperture.xsize < 21:
+                        self.showMsgPopup(f'psf-stars require a minimum aperture size of 21')
+                    aperture.thresh = 99999
+                    aperture.default_mask_radius = 8.0
             else:
                 if x is not None and y is not None:
                     self.showMsgPopup(f'That name ({proposed_name}), is already in use by the '
@@ -6235,7 +6249,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.nameAperture(aperture)
 
-        self.computeInitialThreshold(aperture)
+        if not 'psf-star' in aperture.name:
+            self.computeInitialThreshold(aperture)
 
     def addNamedStaticAperture(self):
         self.addStaticAperture(askForName=True)
@@ -7191,8 +7206,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 win_data = centered_masked_data[offset_y:offset_y + w, offset_x:offset_x + w]
 
                 if self.extractionCode == 'NRE':
-                    naylor_mean = np.mean(naylor_background)  # noqa # TODO Why not the usual mean?
-                    # TODO Test that this changes the CIRCE measurement
                     naylor_mean = mean
 
                     # NOTE: aperture_mean is added to aperture stats and used in aperture code to smooth background

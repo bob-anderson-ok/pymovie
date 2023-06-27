@@ -186,7 +186,13 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
             if radius < 2.0:
                 self.msgRoutine(f'In {aperture.name}(def mask radius): {text} cannot be less than 2.0')
                 return
-            aperture.default_mask_radius = radius
+            if 'psf-star' in aperture.name:
+                aperture.default_mask_radius = 8.0
+                self.tableWidget.item(row, 3).setText('8.0')
+                aperture.thresh = 99999
+                self.tableWidget.item(row, 2).setText('99999')
+            else:
+                aperture.default_mask_radius = radius
 
             aperture.defaultMask, aperture.defaultMaskPixelCount, aperture.default_mask_radius = \
                 self.createDefaultMask(radius)
