@@ -9692,7 +9692,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             tvalues = []  # timestamps
             pvalues = []
             for entry in app.data:
-                pvalues.append(entry[7])  # max_area  (num pixels in aperture)
+                pvalues.append(entry[7])  # max_area  (num pixels in mask)
                 tvalues.append(entry[12])
 
             pens = [pg.mkPen('r') if x > 0 else pg.mkPen('k') for x in pvalues]
@@ -9716,11 +9716,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             pvalues = []
             for entry in app.data:
-                pvalues.append(abs(entry[7]))  # max_area  (num pixels in aperture)
+                pvalues.append(abs(entry[7]))  # max_area  (num pixels in mask)
 
             p2 = self.plots[-1].addPlot(
                 row=1, col=0,
-                title="Number of pixels in aperture ",
+                title="Number of pixels in mask ",
                 y=pvalues, x=xvalues,
                 pen=dark_gray  # , symbol='o', symbolSize=self.plot_symbol_size, symbolBrush='k', symbolPen='k'
             )
