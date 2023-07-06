@@ -2427,6 +2427,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.testForConsistentPsfStarFixedMasks()
 
     def addApertureStack(self):
+        # It's ok to add a static mask aperture stack to a "finder" frame
+        # if self.finderFrameBeingDisplayed:
+        #     self.showMsgPopup(f'Aperture stacks cannot be added to "finder" images.\n\n'
+        #                       f'Best practice is to add a single static aperture at the target star position,\n'
+        #                       f'then advance 1 frame to exit the "finder" frame and add any\n'
+        #                       f'additional apertures.')
+        #     return
+
         nest_number = 1
         for app in self.getApertureList():
             if app.name.startswith('static-nest2'):
@@ -2445,6 +2453,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def addDynamicApertureStack(self):
         if self.image is None:  # Don't add an aperture if there is no image showing yet.
+            return
+
+        if self.finderFrameBeingDisplayed:
+            self.showMsgPopup(f'Aperture stacks cannot be added to "finder" images.\n\n'
+                              f'Best practice is to add a single static aperture at the target star position,\n'
+                              f'then advance 1 frame to exit the "finder" frame and add any\n'
+                              f'additional apertures.')
             return
 
         for app in self.getApertureList():
@@ -6244,6 +6259,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if self.image is None:  # Don't add an aperture if there is no image showing yet.
             return
 
+        if self.finderFrameBeingDisplayed:
+            self.showMsgPopup(f'Dynamic mask apertures cannot be added to "finder" images.\n\n'
+                              f'Best practice is to add a single static aperture at the target star position,\n'
+                              f'then advance 1 frame to exit the "finder" frame and add any\n'
+                              f'additional apertures.')
+            return
         self.one_time_suppress_stats = True
         aperture = self.addGenericAperture()  # Just calls addApertureAtPosition() with mouse coords
 
@@ -6393,7 +6414,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.showFrame()
 
     def addApertureAtPosition(self, x, y, custom_default_mask_radius=None):
-        # custom_default_mask_radius is used for 'add stack of 5 apertures' to generate 'russian doll' mask set
+        # custom_default_mask_radius is used for 'add stack of 12 apertures' to generate 'russian doll' mask set
 
         x0 = x - self.roi_center
         y0 = y - self.roi_center
