@@ -430,11 +430,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.secondYellowApertureX = None
         self.secondYellowApertureY = None
 
-        # self.pixel_sums = []
+        self.thumbTwoScaleFactor = 1.0
 
         self.sorted_masked_data = None
 
         self.naylorInShiftedPositions = None
+
+        self.extractionMode = 'Aperture Photometry'
 
         self.target_psf = None
         self.psf_radius_in_use = None
@@ -9544,7 +9546,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         )
         # self.showMsg(f'{good_mean} {sigma} {window} {data_size} {left}  {right}')
 
-        # TODO This was put here just for testing/development - it is used in newRobustMean()
+        # Version 3.7.8
         max_area, _, negative_mask, *_ = remove_stars(
             img=self.thumbOneImage,
             cut=good_mean + 1 * sigma
