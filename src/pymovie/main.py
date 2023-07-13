@@ -3197,7 +3197,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def startAnalysisWithNRE(self):
 
-        if not self.checkForDataAlreadyPresent():
+        if not self.checkForDataAlreadyPresent():  # Returns True if data is already present
+            # If no data collected yet, set default mode to aperture photometry
             self.extractionCode = 'AP'
             self.extractionMode = 'Aperture Photometry'
 
@@ -3209,7 +3210,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.showMsgPopup(msg)
                     return
 
-                if not self.checkForDataAlreadyPresent():
+                self.extractionCode = 'NRE'
+                self.extractionMode = 'Naylor Noise Reduction Extraction'
+
+
+                if not self.checkForDataAlreadyPresent() or self.naylorInShiftedPositions is None:
+                    # If there is no data present, or naylor weights have not been calculated, we start the psf gathering process
                     self.showMsg(f'Gathering data for psf estimation.')
                     # Save the stop frame
                     saved_stop_frame = self.stopAtFrameSpinBox.value()
@@ -5430,8 +5436,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def clearApertureData(self):
         self.analysisInProgress = False
-        # self.transportCalcBackgroundCheckBox.setChecked(False)
-        # self.transportCalcBackgroundCheckBox.setEnabled(False)
         self.transportClearData.setEnabled(False)
         for app in self.getApertureList():
             app.data = []
@@ -7572,6 +7576,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             self.firstFrameInApertureData = None
             self.lastFrameInApertureData = None
+            self.naylorInShiftedPositions = None
 
             self.disableCmosPixelFilterControls()
             self.activateTimestampRemovalButton.setEnabled(True)
@@ -7893,6 +7898,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             self.firstFrameInApertureData = None
             self.lastFrameInApertureData = None
+            self.naylorInShiftedPositions = None
 
             self.disableCmosPixelFilterControls()
             self.activateTimestampRemovalButton.setEnabled(True)
@@ -8124,6 +8130,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             self.firstFrameInApertureData = None
             self.lastFrameInApertureData = None
+            self.naylorInShiftedPositions = None
 
             self.disableCmosPixelFilterControls()
             self.activateTimestampRemovalButton.setEnabled(True)
@@ -10041,6 +10048,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.textOut.ensureCursorVisible()
 
     def closeEvent(self, event):
+
+        self.analysisRequested = False
 
         tabOrderList = []
         numTabs = self.tabWidget.count()
