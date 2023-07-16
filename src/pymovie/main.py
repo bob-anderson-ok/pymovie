@@ -942,6 +942,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.avi_wcs_folder_in_use = False
         self.folder_dir = None
 
+        self.aperturesDir = None
+        self.finderFramesDir = None
+
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.setDoTestFlag)  # noqa
         self.do_test = False
@@ -2583,9 +2586,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.deleteModelDigits()
         self.deleteOcrBoxes()
 
-        f_path = os.path.join(self.folder_dir, 'formatter.txt')
+        # TODO Check that this works
+        # f_path = os.path.join(self.folder_dir, 'formatter.txt')
+        f_path = os.path.join(self.ocrDigitsDir, 'formatter.txt')
         if os.path.exists(f_path):
             os.remove(f_path)
+            # os.removedirs(self.ocrDigitsDir)
 
         f_path = os.path.join(self.homeDir, 'formatter.txt')
         if os.path.exists(f_path):
@@ -2731,12 +2737,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def restoreApertureGroup(self):
 
         # Check the form of saved aperture filenames to see if we need to deal with legacy filenames
-        saved_aperture_groups = glob.glob(self.folder_dir + '/savedApertures*.p')
+        saved_aperture_groups = glob.glob(self.aperturesDir + '/savedApertures*.p')
 
         if not saved_aperture_groups:
 
             # We have no new format aperture groups, so process as old
-            frameFn = self.folder_dir + '/markedFrameNumber.p'
+            frameFn = self.aperturesDir + '/markedFrameNumber.p'
             if os.path.exists(frameFn):
                 savedFrameNumber = pickle.load(open(frameFn, 'rb'))
                 self.showMsg(f'Saved frame number is: {savedFrameNumber}')
@@ -2750,7 +2756,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             self.clearApertures()
 
-            tpathFilename = self.folder_dir + '/trackingPath.p'
+            tpathFilename = self.aperturesDir + '/trackingPath.p'
             if os.path.exists(tpathFilename):
                 tpath_tuple = pickle.load(open(tpathFilename, 'rb'))
 
@@ -2774,7 +2780,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             # aperture that is automatically placed when a WCS solution was present)
             self.clearApertures()
 
-            aperturesFn = self.folder_dir + '/markedApertures.p'
+            aperturesFn = self.aperturesDir + '/markedApertures.p'
             if os.path.exists(aperturesFn):
                 savedApertureDicts = pickle.load(open(aperturesFn, "rb"))
                 self.showMsg(f'Num saved apertures: {len(savedApertureDicts)}')
@@ -2789,7 +2795,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             filename, _ = QFileDialog.getOpenFileName(
                 self,  # parent
                 "Select aperture group",  # title for dialog
-                self.folder_dir,  # starting directory
+                self.aperturesDir,  # starting directory
                 "saved aperture groups (savedApertures*.p)",
                 options=options
             )
@@ -2818,13 +2824,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'file selected: {basefn}  aperture group id: {app_group_id}')
 
             if app_group_id == '<none found>':
-                frameFn = self.folder_dir + '/savedFrameNumber.p'
-                tpathFilename = self.folder_dir + '/trackingPath.p'
-                aperturesFn = self.folder_dir + '/savedApertures.p'
+                frameFn = self.aperturesDir + '/savedFrameNumber.p'
+                tpathFilename = self.aperturesDir + '/trackingPath.p'
+                aperturesFn = self.aperturesDir + '/savedApertures.p'
             else:
-                frameFn = self.folder_dir + f'/savedFrameNumber-{app_group_id}.p'
-                tpathFilename = self.folder_dir + f'/trackingPath-{app_group_id}.p'
-                aperturesFn = self.folder_dir + f'/savedApertures-{app_group_id}.p'
+                frameFn = self.aperturesDir + f'/savedFrameNumber-{app_group_id}.p'
+                tpathFilename = self.aperturesDir + f'/trackingPath-{app_group_id}.p'
+                aperturesFn = self.aperturesDir + f'/savedApertures-{app_group_id}.p'
 
             if not os.path.exists(frameFn):
                 self.showMsg(f'Failed to find {frameFn} file.')
@@ -2956,7 +2962,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         # Get list of already used aperture group tags
         # Do a grep/glob lookup on self.folder_dir + f'/savedApertures-*.p' and then
         # parse out the tag aided by the guarantee that there be only one - and one . in the file name.
-        tags_in_use_files = glob.glob(self.folder_dir + f'/savedApertures-*.p')
+        tags_in_use_files = glob.glob(self.aperturesDir + f'/savedApertures-*.p')
         tags_in_use = []
         for fn in tags_in_use_files:
             p = pathlib.PurePath(fn)
@@ -2999,10 +3005,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             savedApertureDicts.append(my_dict)
 
         # Pickle the saved aperture dictionaries for use during opening of file/folder
-        pickle.dump(savedApertureDicts, open(self.folder_dir + f'/savedApertures-{tag}.p', "wb"))
+        pickle.dump(savedApertureDicts, open(self.aperturesDir + f'/savedApertures-{tag}.p', "wb"))
 
         self.savedStateFrameNumber = self.currentFrameSpinBox.value()
-        pickle.dump(self.savedStateFrameNumber, open(self.folder_dir + f'/savedFrameNumber-{tag}.p', "wb"))
+        pickle.dump(self.savedStateFrameNumber, open(self.aperturesDir + f'/savedFrameNumber-{tag}.p', "wb"))
 
         if self.tpathSpecified:
             tpath_tuple = (
@@ -3017,12 +3023,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.tpathYa,
                 self.tpathYb
             )
-            pickle.dump(tpath_tuple, open(self.folder_dir + f'/trackingPath-{tag}.p', "wb"))
+            pickle.dump(tpath_tuple, open(self.aperturesDir + f'/trackingPath-{tag}.p', "wb"))
             self.showMsg(f'Current aperture group, frame number, and tracking path saved.')
         else:
             # noinspection PyBroadException
             try:
-                os.remove(self.folder_dir + f'/trackingPath-{tag}.p')
+                os.remove(self.aperturesDir + f'/trackingPath-{tag}.p')
             except Exception:
                 pass
             self.showMsg(f'Current aperture group and frame number saved.')
@@ -3875,7 +3881,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             lower_timestamp, lower_time, lower_scores, lower_cum_score
 
     def writeFormatTypeFile(self, format_type):
-        f_path = os.path.join(self.folder_dir, 'formatter.txt')
+        # TODO Check that this works
+        # f_path = os.path.join(self.folder_dir, 'formatter.txt')
+        f_path = os.path.join(self.ocrDigitsDir, 'formatter.txt')
         with open(f_path, 'w') as f:
             f.writelines(f'{format_type}')
 
@@ -4559,7 +4567,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         # Remove an enhanced image with a matching frame number
         try:
-            os.remove(self.folder_dir + enhanced_filename_with_frame_num)
+            os.remove(self.finderFramesDir + enhanced_filename_with_frame_num)
         except FileNotFoundError:
             pass
 
@@ -4644,7 +4652,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             fitsReader=fitsReader,
             serReader=serReader,
             advReader=advReader,
-            avi_location=self.avi_location, out_dir_path=self.folder_dir, bkg_threshold=None,
+            avi_location=self.avi_location, out_dir_path=self.finderFramesDir, bkg_threshold=None,
             hot_pixel_erase=self.applyHotPixelErasureToImg,
             delta_x=dx_dframe,
             delta_y=dy_dframe,
@@ -4654,7 +4662,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.finderMethodEdit.setText('')
 
         # Now that we're back, if we got a new enhanced-image.fit, display it.
-        fullpath = self.folder_dir + enhanced_filename_with_frame_num
+        fullpath = self.finderFramesDir + enhanced_filename_with_frame_num
         if os.path.isfile(fullpath):
             self.clearApertureData()
             self.clearApertures()
@@ -7621,6 +7629,15 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.folder_dir = dir_path
             self.fits_filenames = sorted(glob.glob(dir_path + '/*.fits'))
 
+            self.aperturesDir = os.path.join(self.folder_dir, 'ApertureGroups')
+            if not os.path.exists(self.aperturesDir):
+                os.mkdir(self.aperturesDir)
+
+            # Initialize finder frames directory
+            self.finderFramesDir = os.path.join(self.folder_dir, 'FinderFrames')
+            if not os.path.exists(self.finderFramesDir):
+                os.mkdir(self.finderFramesDir)
+
             if os.path.exists(self.folder_dir + '/pixel-dimensions.p'):
                 self.readPixelDimensions()
             else:
@@ -7664,13 +7681,33 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def checkForSavedApertureGroups(self):
 
-        saved_aperture_groups = glob.glob(self.folder_dir + '/savedApertures*.p')
+        # Check for legacy file structure - aperture group info in self.folder_dir
+        old_saved_aperture_group_files = glob.glob(self.folder_dir + '/savedApertures*.p')
+        if old_saved_aperture_group_files:
+            for fpath in old_saved_aperture_group_files:
+                head, tail = os.path.split(fpath)
+                Path(fpath).rename(os.path.join(head, 'ApertureGroups', tail))
+
+        old_saved_aperture_frame_num_files = glob.glob(self.folder_dir + '/savedFrameNumber*.p')
+        if old_saved_aperture_frame_num_files:
+            for fpath in old_saved_aperture_frame_num_files:
+                head, tail = os.path.split(fpath)
+                Path(fpath).rename(os.path.join(head, 'ApertureGroups', tail))
+
+        old_saved_finder_frame_files = glob.glob(self.folder_dir + '/enhanced-image-*.fit')
+        if old_saved_finder_frame_files:
+            for fpath in old_saved_finder_frame_files:
+                head, tail = os.path.split(fpath)
+                Path(fpath).rename(os.path.join(head, 'FinderFrames', tail))
+
+
+        saved_aperture_groups = glob.glob(self.aperturesDir + '/savedApertures*.p')
 
         if saved_aperture_groups:
             self.restoreApertureState.setEnabled(True)
             return
 
-        saved_aperture_groups = glob.glob(self.folder_dir + '/markedApertures.p')
+        saved_aperture_groups = glob.glob(self.aperturesDir + '/markedApertures.p')
 
         if saved_aperture_groups:
             self.restoreApertureState.setEnabled(True)
@@ -7716,7 +7753,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.filename, _ = QFileDialog.getOpenFileName(
             self,  # parent
             "Select enhanced image",  # title for dialog
-            self.folder_dir,  # starting directory
+            self.finderFramesDir,  # starting directory
             "finder images (*.bmp enhanced*.fit);; all files (*.*)",
             options=options
         )
@@ -8083,14 +8120,18 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.timestampFormatter = format_iota_timestamp
 
     def readFormatTypeFile(self):
-        f_path = os.path.join(self.folder_dir, 'formatter.txt')
+        # TODO Check that this works
+        # f_path = os.path.join(self.folder_dir, 'formatter.txt')
+        f_path = os.path.join(self.ocrDigitsDir, 'formatter.txt')
         if not os.path.exists(f_path):
             f_path = os.path.join(self.homeDir, 'formatter.txt')
             if not os.path.exists(f_path):
                 return None
         with open(f_path, 'r') as f:
             code = f.readline()
-            f_path = os.path.join(self.folder_dir, 'formatter.txt')
+            # TODO Check that this works
+            # f_path = os.path.join(self.folder_dir, 'formatter.txt')
+            f_path = os.path.join(self.ocrDigitsDir, 'formatter.txt')
             with open(f_path, 'w') as g:
                 g.write(code)
             return code
@@ -8350,8 +8391,21 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.showFrame()
 
                     # Initialize ocr related directories
-                    self.ocrDigitsDir = self.folder_dir
-                    self.ocrBoxesDir = self.folder_dir
+                    self.ocrDigitsDir = os.path.join(self.folder_dir, 'OCR')
+                    if not os.path.exists(self.ocrDigitsDir):
+                        os.mkdir(self.ocrDigitsDir)
+
+                    # Initialize apertures directory
+                    self.aperturesDir = os.path.join(self.folder_dir, 'ApertureGroups')
+                    if not os.path.exists(self.aperturesDir):
+                        os.mkdir(self.aperturesDir)
+                    self.ocrBoxesDir = self.ocrDigitsDir
+
+                    # Initialize finder frames directory
+                    self.finderFramesDir = os.path.join(self.folder_dir, 'FinderFrames')
+                    if not os.path.exists(self.finderFramesDir):
+                        os.mkdir(self.finderFramesDir)
+
                     self.currentOcrBox = None
                     self.clearOcrBoxes()  # From any previous ocr setup
 
