@@ -11,3 +11,20 @@ published many years ago.
 This application has fewer 'bells and whistles' than LiMovie and so should be easier
 to use for a newbie.
 
+
+Astrid RAVF support
+====================
+
+This repository is forked from Bob Andersons pymovie repository.
+
+Prior to integration into the main distribution, to install pymovie with RAVF support replace:
+
+	pip install pymovie
+
+in the installation instructions with:
+	
+	pip install "git+https://github.com/ChasinSpin/pymovie.git"
+
+To upgrade an existing installation of pymovie:
+
+	pip install --upgrade --force-reinstall "git+https://github.com/ChasinSpin/pymovie.git"
