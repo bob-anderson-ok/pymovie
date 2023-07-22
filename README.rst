@@ -23,8 +23,13 @@ Prior to integration into the main distribution, to install pymovie with RAVF su
 
 in the installation instructions with:
 	
+	pip install "git+https://github.com/ChasinSpin/ravf.git"
 	pip install "git+https://github.com/ChasinSpin/pymovie.git"
 
 To upgrade an existing installation of pymovie:
 
+	pip install --upgrade --force-reinstall "git+https://github.com/ChasinSpin/ravf.git"
 	pip install --upgrade --force-reinstall "git+https://github.com/ChasinSpin/pymovie.git"
+
+Further information on the RAVF format and the ravf package can be found here:
+	http://www.github.com/ChasinSpin/ravf
