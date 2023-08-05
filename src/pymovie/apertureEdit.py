@@ -50,6 +50,14 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
     def selectionChange(self):
         row = self.tableWidget.currentRow()
         col = self.tableWidget.currentColumn()
+
+        # Lock out changes to TME that can't be tolerated
+        # Get the aperture name so that we can check the name
+        aperture = self.dictList[row]['appRef']
+        if aperture.name.startswith("TME"):
+            if col in [0,2,3]:
+                self.msgRoutine(f'That parameter of a TME aperture cannot be changed after placement')
+            return
         self.cellClicked(row, col)
 
     def cellClicked(self, row, column):
@@ -194,8 +202,9 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
             else:
                 aperture.default_mask_radius = radius
 
-            aperture.defaultMask, aperture.defaultMaskPixelCount, aperture.default_mask_radius = \
-                self.createDefaultMask(radius)
+            if not aperture.name.startswith('TME'):
+                aperture.defaultMask, aperture.defaultMaskPixelCount, aperture.default_mask_radius = \
+                    self.createDefaultMask(radius)
 
             if not aperture.default_mask_radius == radius:
                 self.msgRoutine(f'In {aperture.name}(def mask radius): radius too large for aperture. Setting it to {aperture.default_mask_radius}')

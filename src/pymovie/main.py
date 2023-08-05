@@ -64,6 +64,10 @@ from mpl_toolkits.mplot3d import Axes3D  # noqa  !!!! Don't take me out
 # import matplotlib.pyplot as plt
 
 from more_itertools import sort_together
+from skimage.registration import phase_cross_correlation
+from scipy.ndimage import fourier_shift, center_of_mass
+from time import gmtime, strftime  # for utc
+# import shutil
 
 # TODO Comment these lines out when not investigating memory usage issues
 # from pympler import muppy, summary
@@ -373,7 +377,8 @@ class Qt5MplCanvas(FigureCanvas):
         self.fig = plt.figure()
         # super(FigureCanvas, self).__init__(self.fig)
         # self.ax = self.fig.add_subplot(111, projection='3d')
-        self.ax = self.fig.gca(projection='3d')
+        # self.ax = self.fig.gca(projection='3d')  # Removed because of deprecation warning in version 3.8.2
+        self.ax = plt.axes(projection='3d')
 
         self.ax.set_xlabel('x', fontsize=20)
         self.ax.set_ylabel('y', fontsize=20)
@@ -405,6 +410,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.lastRightClickYPosition = None
         self.lastRightClickXPosition = None
 
+        self.apertureInThumbnails = None
+
+        # The are filled in by getApertureStats and made available globally.
+        self.bkavg = None
+        self.bkstd = None
+
         self.extractionCode = ''
 
         # Change pyqtgraph plots to be black on white
@@ -435,6 +446,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.sorted_masked_data = None
 
         self.naylorInShiftedPositions = None
+
+        self.tmeSearchGridSize = None
 
         self.extractionMode = 'Aperture Photometry'
 
@@ -472,6 +485,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.cascadeCheckBox.setChecked(self.settings.value('cascade', False) == 'true')
         self.plotSymbolSizeSpinBox.setValue(int(self.settings.value('plot_symbol_size', 4)))
 
+        self.redactLinesTopEdit.setText(self.settings.value('redactTop', ''))
+        self.redactLinesBottomEdit.setText(self.settings.value('redactBottom', ''))
+        self.numFramesToStackEdit.setText(self.settings.value('numFramesToStack', ''))
+
         self.defAppSize51RadioButton.setChecked(self.settings.value('appSize51', False) == 'true')
         self.defAppSize41RadioButton.setChecked(self.settings.value('appSize41', False) == 'true')
         self.defAppSize31RadioButton.setChecked(self.settings.value('appSize31', False) == 'true')
@@ -483,12 +500,24 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.threeSigmaRadioButton.setChecked(self.settings.value('threeSigma', False) == 'true')
 
         self.radius20radioButton.setChecked(self.settings.value('2.0 mask', False) == 'true')
-        self.radius28radioButton.setChecked(self.settings.value('2.8 mask', False) == 'true')
+        self.radius24radioButton.setChecked(self.settings.value('2.4 mask', False) == 'true')
         self.radius32radioButton.setChecked(self.settings.value('3.2 mask', False) == 'true')
         self.radius40radioButton.setChecked(self.settings.value('4.0 mask', False) == 'true')
         self.radius45radioButton.setChecked(self.settings.value('4.5 mask', False) == 'true')
         self.radius53radioButton.setChecked(self.settings.value('5.3 mask', False) == 'true')
         self.radius68radioButton.setChecked(self.settings.value('6.8 mask', False) == 'true')
+
+        self.tmeSearch1x1radioButton.setChecked(self.settings.value('TME1x1search', False) == 'true')
+        self.tmeSearch3x3radioButton.setChecked(self.settings.value('TME3x3search', False) == 'true')
+        self.tmeSearch5x5radioButton.setChecked(self.settings.value('TME5x5search', False) == 'true')
+        self.tmeSearch7x7radioButton.setChecked(self.settings.value('TME7x7search', False) == 'true')
+
+        self.tmeSearch1x1radioButton.clicked.connect(self.getTMEsearchGridSize)
+        self.tmeSearch3x3radioButton.clicked.connect(self.getTMEsearchGridSize)
+        self.tmeSearch5x5radioButton.clicked.connect(self.getTMEsearchGridSize)
+        self.tmeSearch7x7radioButton.clicked.connect(self.getTMEsearchGridSize)
+
+        self.getTMEsearchGridSize()
 
         self.satPixelSpinBox.setValue(int(self.settings.value('satPixelLevel', 156)))
 
@@ -574,6 +603,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.thresh_inc_1.setChecked(True)
 
         self.vtiSelectLabel.installEventFilter(self)
+
+        self.thumbTwoView.installEventFilter(self)
 
         allowNewVersionPopup = self.settings.value('allowNewVersionPopup', 'true')
         if allowNewVersionPopup == 'true':
@@ -839,6 +870,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.sharpCapTimestampPresent = False
 
         self.finderFrameBeingDisplayed = False
+        self.fourierFinderBeingDisplayed = False
 
         self.stackXtrack = []
         self.stackYtrack = []
@@ -1084,6 +1116,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.alignWithTwoPointTrackInfoButton.installEventFilter(self)
         self.alignWithTwoPointTrackInfoButton.clicked.connect(self.showAlignWithTwoPointTrackHelp)
 
+        self.fourierAlignButton.installEventFilter(self)
+        self.fourierAlignButton.clicked.connect(self.computeFourierFinder)
+
+        self.fourierAlignHelpButton.clicked.connect(self.showFourierAlignHelp)
+        self.fourierAlignHelpButton.installEventFilter(self)
+
         self.transportMaxLeft.installEventFilter(self)
         self.transportMaxLeft.clicked.connect(self.seekMaxLeft)
 
@@ -1310,6 +1348,262 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     #         print(" ")
     #         summary.print_(summary_one)
     #         print(" ")
+
+    def computeFourierFinder(self):
+        if not (self.avi_wcs_folder_in_use or self.fits_folder_in_use):
+            self.showMsgPopup( f'This function can only be performed in the context of an AVI/SER/ADV/AAV-WCS or FITS folder.')
+            return
+
+        # Deal with timestamp redaction first.
+        # Get a robust mean from near the center of the current image
+        y0 = int(self.image.shape[0] / 2)
+        x0 = int(self.image.shape[1] / 2)
+        ny = 51
+        nx = 51
+        thumbnail = self.image[y0:y0 + ny, x0:x0 + nx]
+        mean, *_ = newRobustMeanStd(thumbnail)
+
+        image_height = self.image.shape[0]  # number of rows
+        image_width = self.image.shape[1]  # number of columns
+
+        early_exit = False
+
+        valid_entries, num_top, num_bottom = self.getRedactLineParameters()
+
+        if not valid_entries:
+            early_exit = True
+
+        if not self.numFramesToStackEdit.text():
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Question)
+            msg.setText(f'Please specify the number of frames to stack. '
+                        f'\n\nA number in the range of 100 to 400 would be usual.')
+            msg.setWindowTitle('Please fill in num frames')
+            msg.setStandardButtons(QMessageBox.Ok)
+            msg.exec()
+            early_exit = True
+
+        if early_exit:
+            return
+
+        if num_bottom + num_top > image_height - 4:
+            self.showMsgPopup(f'{num_bottom + num_top} is an unreasonable number of lines to redact.\n\n'
+                              f'Operation aborted')
+            return
+
+        redacted_image = self.image[:, :].astype('uint16')
+
+        if num_bottom > 0:
+            for i in range(image_height - num_bottom, image_height):
+                for j in range(0, image_width):
+                    redacted_image[i, j] = mean
+
+        if num_top > 0:
+            for i in range(0, num_top):
+                for j in range(0, image_width):
+                    redacted_image[i, j] = mean
+
+        self.image = redacted_image
+        self.frameView.setImage(self.image)
+        if self.levels:
+            self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
+
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Question)
+        msg.setText('Is the timestamp data completely removed?')
+        msg.setWindowTitle('Is timestamp removed')
+        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        retval = msg.exec_()
+        ready_for_submission = retval == QMessageBox.Yes
+
+        if not ready_for_submission:
+            self.showFrame()
+            return
+
+        # Start the stacking process
+        first_frame = self.currentFrameSpinBox.value()
+
+        txt = '<empty>'
+        try:
+            txt = self.numFramesToStackEdit.text()
+            num_frames_to_stack = int(txt)
+        except ValueError:
+            self.showMsgPopup(f'" {txt} " is an invalid specification of number of frames to stack')
+            return
+
+        if num_frames_to_stack > 1000:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Question)
+            msg.setText(f'{num_frames_to_stack} is rather large.'
+                        f'\n\nDo you wish to proceed anyway?')
+            msg.setWindowTitle('Num frames to stack ok')
+            msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            retval = msg.exec_()
+            if retval == QMessageBox.No:
+                return
+
+        last_frame = first_frame + num_frames_to_stack - 1
+        last_frame = min(last_frame, self.stopAtFrameSpinBox.maximum())
+        num_frames = last_frame - first_frame + 1
+
+        frameReader = None
+        if self.fits_folder_in_use:
+            frameReader = self.getFitsFrame
+
+        if self.ser_file_in_use:
+            frameReader = self.getSerFrame
+
+        if self.adv_file_in_use or self.aav_file_in_use:
+            frameReader = self.getAdvFrame
+
+        if frameReader is None and self.cap is not None:
+            frameReader = self.getAviFrame
+
+        if frameReader is None:
+            self.showMsgPopup(f'Could not setup a frame reader!')
+            return
+
+        first_timestamp_free_row = num_top
+
+        last_timestamp_free_row = image_height - num_bottom
+
+        ref_image, start_frame_top_timestamp, start_frame_bottom_timestamp = \
+            self.getNextFrame(frameReader, first_frame, first_timestamp_free_row, last_timestamp_free_row)
+
+        cum_image = np.zeros(shape=ref_image.shape, dtype=np.float64)
+
+        frames_processed = 0
+        shift = (0, 0)
+        shifted_image = None
+
+        self.finderMethodEdit.setText(f'Finder being stacked using Fourier Cross Correlation')
+        for frame_num in range(first_frame, last_frame + 1):
+
+            # Progress calculation and display
+            fraction_done = frames_processed / num_frames
+            self.stackerProgressBar.setValue(int(fraction_done * 100))
+            frames_processed += 1
+            QtGui.QGuiApplication.processEvents()
+
+            next_image, top_timestamp, bottom_timestamp = \
+                self.getNextFrame(frameReader, frame_num, first_timestamp_free_row, last_timestamp_free_row)
+            if next_image is None:
+                print(f'At frame {frame_num} next_image is None')
+                continue
+
+            # subpixel precision (0.1 pixel)
+            scale_factor = 10
+            try:
+                shift = (0,0)
+                shift, error, diffphase = phase_cross_correlation(ref_image, next_image, upsample_factor=scale_factor)
+            except Exception as e:
+                self.showMsgPopup(f'In computeFourierFinder() at phase: {e}')
+
+            # The shift corresponds to the pixel offset relative to the reference image
+            try:
+                shifted_image = None
+                shifted_image = fourier_shift(np.fft.fftn(next_image), shift)
+                shifted_image = np.fft.ifftn(shifted_image)
+            except Exception as e:
+                self.showMsgPopup(f'In computeFourierFinder() at shift: {e}')
+
+            cum_image = cum_image + shifted_image.real
+
+        self.finderMethodEdit.setText(f'')
+
+        integrated_image = cum_image // num_frames
+        integrated_image = np.clip(integrated_image, 0, np.max(integrated_image))
+        self.stackerProgressBar.setValue(0)
+
+        if start_frame_bottom_timestamp is not None:
+            start_frame_bottom_timestamp = start_frame_bottom_timestamp.astype(np.float64)
+            integrated_image = np.concatenate((integrated_image, start_frame_bottom_timestamp), axis=0)
+
+        if start_frame_top_timestamp is not None:
+            start_frame_top_timestamp = start_frame_top_timestamp.astype(np.float64)
+            integrated_image = np.concatenate((start_frame_top_timestamp, integrated_image), axis=0)
+
+        height, width = integrated_image.shape
+
+        self.image = integrated_image
+
+        avi_location = self.filename  # This just gets put in the meta-data
+        finder_name = f'fourier-{first_frame:05d}.fit'
+        outfile = os.path.join(self.finderFramesDir, finder_name)
+        self.writeFitFile(image=integrated_image, outfile=outfile, avi_location=avi_location,
+                     first_frame=first_frame, last_frame=last_frame,
+                     width=width, height=height)
+
+        # Now that we're back, if we got a new fourier fit file, display it.
+        fullpath = outfile
+        if os.path.isfile(fullpath):
+            self.finderMethodEdit.setText(f'Fourier aligned finder being displayed: {finder_name}')
+            self.fourierFinderBeingDisplayed = True
+            self.finderFrameBeingDisplayed = True
+            self.clearApertureData()
+            self.clearApertures()
+            self.openFitsImageFile(fullpath)
+            self.restoreSavedState()
+            if self.levels:
+                self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
+                self.thumbOneView.setLevels(min=self.levels[0], max=self.levels[1])
+                # Version 3.4.1 added
+                self.thumbTwoView.setLevels(min=self.levels[0], max=self.levels[1])
+
+    def writeFitFile(self, image, outfile, avi_location, first_frame, last_frame, width, height):
+        outlist = pyfits.PrimaryHDU(image)
+
+        # Provide a new date stamp
+        file_time = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+
+        # Compose the FITS header
+        outhdr = outlist.header
+
+        # Add the REQUIRED elements in the REQUIRED order
+        outhdr['SIMPLE'] = True
+        outhdr['NAXIS'] = 2
+        outhdr['NAXIS1'] = width
+        outhdr['NAXIS2'] = height
+        # End of required elements
+
+        outhdr['DATE'] = file_time
+        outhdr['FILE'] = avi_location
+        outhdr['COMMENT'] = f'{last_frame - first_frame + 1} frames were stacked'
+        outhdr['COMMENT'] = f'Initial frame number: {first_frame}'
+        outhdr['COMMENT'] = f'Final frame number: {last_frame}'
+
+        # Write the fits file
+        try:
+            outlist.writeto(outfile, overwrite=True)
+        except Exception as e:
+            self.showMsgPopup(f'In writeFitFile() === {e}')
+
+    @staticmethod
+    def getNextFrame(avi_reader, frame_num, first_free_row, last_free_row):
+        # success, frame = avi_reader.read()
+        frame = avi_reader(frame_num)
+
+        if frame is None:
+            return None, None, None
+
+        if len(frame.shape) == 3:
+            full_image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            image = full_image[first_free_row:last_free_row, :]
+        else:
+            full_image = frame
+            image = frame[first_free_row:last_free_row, :]
+
+        if first_free_row == 0:
+            top_timestamp = None
+        else:
+            top_timestamp = full_image[0:first_free_row, :]
+
+        if last_free_row == 0:
+            bottom_timestamp = None
+        else:
+            bottom_timestamp = full_image[last_free_row:frame.shape[0], :]
+
+        return image, top_timestamp, bottom_timestamp
 
     def clearOptimalExtractionVariables(self):
         self.target_psf = None
@@ -1566,6 +1860,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         view.menu.addSeparator()  # noqa
 
+        addAppStack = view.menu.addAction('Add TME aperture (snap to center)')  # noqa
+        addAppStack.triggered.connect(self.addCenteredTMEaperture)  # noqa
+
+        addAppStack = view.menu.addAction('Add TME aperture (no snap)')  # noqa
+        addAppStack.triggered.connect(self.addUncenteredTMEaperture)  # noqa
+
+        view.menu.addSeparator()  # noqa
+
         addAppStack = view.menu.addAction('Add NRE aperture')  # noqa
         addAppStack.triggered.connect(self.addNREaperture)  # noqa
 
@@ -1701,6 +2003,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def apMenuSetApertureWhite(self):
         apertureFound, aperture = self.isMouseInAperture()
         if apertureFound:
+            if aperture.name.startswith('TME'):
+                self.showMsgPopup(f'TME apertures can not be turned white.')
+                return
             aperture.pen = pg.mkPen('w')
             aperture.color = 'white'
             aperture.primary_yellow_aperture = False
@@ -1749,7 +2054,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         for app in self.getApertureList():
             if app.name == proposed_name:
-                return True, int(app.xc), int(app.yc)
+                xc, yc = app.getCenter()
+                return True, xc, yc
         return False, None, None
 
     def apMenuRename(self):
@@ -1761,6 +2067,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             result = appNamerThing.exec_()
             if result == QDialog.Accepted:
                 proposed_name = appNamerThing.apertureNameEdit.text().strip()
+                if proposed_name.startswith('TME'):
+                    self.showMsgPopup(f'TME (Tight Mask Extraction) apertures can only be created by\n'
+                                      f'placing them directly on the image, not by renaming.\n\n'
+                                      f'This is because the extra information needed for a TME aperture\n'
+                                      f'is gathered at that time. A "rename" would bypass that process.')
+                    return
                 duplicate, x, y = self.duplicateApertureName(proposed_name=proposed_name)
                 if not duplicate:
                     aperture.name = proposed_name
@@ -2186,6 +2498,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def showAlignStarHelp(self):
         self.showHelp(self.alignWithStarInfoButton)
 
+    def showFourierAlignHelp(self):
+        self.showHelp(self.fourierAlignHelpButton)
+
     # def showAlignWithFourierCorrHelp(self):
     #     self.showHelp(self.alignWithFourierCorrInfoButton)
 
@@ -2411,6 +2726,128 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.helperThing.textEdit.clear()
         self.helperThing.textEdit.insertHtml(msg)
 
+    def addUncenteredTMEaperture(self):
+        self.addTMEaperture(centering_wanted=False)
+
+    def addCenteredTMEaperture(self):
+        self.addTMEaperture(centering_wanted=True)
+
+    def addTMEaperture(self, centering_wanted):
+        if not self.finderFrameBeingDisplayed:
+            self.showMsgPopup(f'TME (tight mask extraction) apertures can only be added to '
+                              f'finder frames. Fourier aligned finder frames are to be preferred.')
+            return
+
+        # We construct an aperture with a default name. That will be changed if user provides a custom tag
+        TMEaperture = self.addStaticAperture(askForName=False, name=f'TME-{self.apertureId:02d}', radius=10)
+        TMEaperture.jogging_enabled = False
+
+        # Grab the image data from the current position of the aperture
+        bbox = TMEaperture.getBbox()  # Get the specs of the bounding box (upper left corner and size)
+        x0, y0, nx, ny = bbox
+        TMEaperture.TMEimage = self.image[y0:y0 + ny, x0:x0 + nx]
+
+        if centering_wanted:
+            # We would want the TME aperture to automatically 'snap' to the center. As this is a "finder" image, it is
+            # reasonable to snap to the brightest pixel, so we find that by using the
+            # brightest_pixel() routine with 5 pixels (which clobbers the image it is given, so only a copy should
+            # be given!).
+            xc_roi, yc_roi = brightest_pixel(TMEaperture.TMEimage.copy() * TMEaperture.defaultMask, nPxls=5)  # NOTE the copy() !!!
+            # xc_roi, yc_roi = center_of_mass(TMEaperture.TMEimage - np.median(TMEaperture.TMEimage))
+            self.trackCentroid(TMEaperture, xc_roi, yc_roi)
+
+            # Grab the image data from the new position of the aperture
+            bbox = TMEaperture.getBbox()  # Get the specs of the new bounding box (upper left corner and size)
+            x0, y0, nx, ny = bbox
+            TMEaperture.TMEimage = self.image[y0:y0 + ny, x0:x0 + nx]
+
+        while True:
+            tag_given, done = QtWidgets.QInputDialog.getText(self, 'Aperture tag', 'Aperture tag to use:', text='')
+
+            if not done:  # User opted to not provide a tag - use apertureId as default tag
+                continue
+            else:
+                proposed_name = f'TME-{tag_given}'
+                duplicate, x, y = self.duplicateApertureName(proposed_name=proposed_name)
+                if not duplicate:
+                    TMEaperture.name = proposed_name
+                    break
+                else:
+                    if x is not None and y is not None:
+                        self.showMsgDialog(f'The aperture name: {proposed_name} is already in use by'
+                                          f' the aperture centered at {x},{y}' )
+
+        # We make this call to update the thumbnail displays
+        self.one_time_suppress_stats = False  # This was set to True by the add aperture routine
+        self.getApertureStats(TMEaperture, show_stats=True)
+
+        # The default mask at this point is a large (10?) radius circular mask. We need to save it because
+        # the TMEaperture.defaultMask gets modified by every call to calcTMEmask()
+        saved_default_mask = TMEaperture.defaultMask.copy()
+
+        # TODO Why this arbitrary value? How should this really be chosen
+        threshold = np.ceil(self.bkstd)
+        snr_list = []
+        thresh_list = []
+        pixel_count_list = []
+        max_snr = 0
+        max_thresh = 0
+        max_pixel_count = 0
+        max_signal = 0
+        while True:
+            while True:
+                mask_cut_value, mask_pixel_count, signal = self.calcTMEmask(TMEaperture, saved_default_mask,
+                                                                            threshold)
+                # If threshold has gotten large enough, the mask will contain no pixels and the loop
+                # can be terminated
+                if mask_pixel_count == 0:
+                    break
+
+                TMEaperture.defaultMaskPixelCount = mask_pixel_count
+
+                snr = signal / np.sqrt(mask_pixel_count)
+                snr_list.append(snr)                      # Saved for possible plots (TBD)
+                thresh_list.append(mask_cut_value)        # Saved for possible plots (TBD)
+                pixel_count_list.append(mask_pixel_count) # Saved for possible plots (TBD)
+
+                if snr > max_snr:
+                    max_snr = snr
+                    max_thresh = threshold
+                    max_pixel_count = mask_pixel_count
+                    max_signal = signal
+
+                threshold += 1
+
+            print(f'{TMEaperture.name}  max_snr: {max_snr:0.2f}  max_thresh: {max_thresh}  max_signal: {max_signal:0.2f}  max_pixel_count: {max_pixel_count}')
+
+            # Build TME mask at best threshold found in the loop above
+            mask_cut_value, mask_pixel_count, signal = self.calcTMEmask(TMEaperture, saved_default_mask,
+                                                                        max_thresh)
+            # We make this call to update the thumbnail displays
+            TMEaperture.defaultMaskPixelCount = mask_pixel_count
+            self.one_time_suppress_stats = False  # This was set to True by the add aperture routine
+            self.getApertureStats(TMEaperture, show_stats=True)
+            break
+
+        _ = None  # breakpoint target
+
+    def calcTMEmask(self, TMEaperture, saved_default_mask, threshold):
+        TMEaperture.defaultMask = saved_default_mask.copy()
+        # Calculate default mask (TME mask)
+        mask_cut_value = self.bkavg + threshold
+        mask_pixel_count = 0
+        signal = 0
+        coord_list = []  # This will be used to determine 'adjacency/connectedness' of thresholded mask
+        for i in range(TMEaperture.xsize):
+            for j in range(TMEaperture.xsize):
+                if TMEaperture.TMEimage[i, j] >= mask_cut_value and TMEaperture.defaultMask[i, j] == 1:
+                    # TMEaperture.defaultMask[i, j] = 1
+                    mask_pixel_count += 1
+                    signal += TMEaperture.TMEimage[i, j] - self.bkavg
+                else:
+                    TMEaperture.defaultMask[i, j] = 0
+        return mask_cut_value, mask_pixel_count, signal
+
     def addNREaperture(self):
         # Need to test for an already present aperture with name starting with psf-star
         for app in self.getApertureList():
@@ -2432,13 +2869,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.testForConsistentPsfStarFixedMasks()
 
     def addApertureStack(self):
-        # It's ok to add a static mask aperture stack to a "finder" frame
-        # if self.finderFrameBeingDisplayed:
-        #     self.showMsgPopup(f'Aperture stacks cannot be added to "finder" images.\n\n'
-        #                       f'Best practice is to add a single static aperture at the target star position,\n'
-        #                       f'then advance 1 frame to exit the "finder" frame and add any\n'
-        #                       f'additional apertures.')
-        #     return
 
         nest_number = 1
         for app in self.getApertureList():
@@ -2586,8 +3016,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.deleteModelDigits()
         self.deleteOcrBoxes()
 
-        # TODO Check that this works
-        # f_path = os.path.join(self.folder_dir, 'formatter.txt')
         f_path = os.path.join(self.ocrDigitsDir, 'formatter.txt')
         if os.path.exists(f_path):
             os.remove(f_path)
@@ -3068,6 +3496,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def moveOneFrameLeft(self):
         self.analysisRequested = False  # to suppress data capture while stepping off a finder frame
         self.finderFrameBeingDisplayed = False
+        self.fourierFinderBeingDisplayed = False
+        self.finderMethodEdit.setText('')
+
         self.disableUpdateFrameWithTracking = False
         curFrame = self.currentFrameSpinBox.value()
         curFrame -= 1
@@ -3077,6 +3508,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def moveOneFrameRight(self):
         self.analysisRequested = False  # to suppress data capture while stepping off a finder frame
         self.finderFrameBeingDisplayed = False
+        self.fourierFinderBeingDisplayed = False
+        self.finderMethodEdit.setText('')
+
         self.disableUpdateFrameWithTracking = False
         curFrame = self.currentFrameSpinBox.value()
         curFrame += 1
@@ -3881,8 +4315,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             lower_timestamp, lower_time, lower_scores, lower_cum_score
 
     def writeFormatTypeFile(self, format_type):
-        # TODO Check that this works
-        # f_path = os.path.join(self.folder_dir, 'formatter.txt')
         f_path = os.path.join(self.ocrDigitsDir, 'formatter.txt')
         with open(f_path, 'w') as f:
             f.writelines(f'{format_type}')
@@ -4237,8 +4669,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         result_code = selector.getResult()
 
-        # self.showMsg(f'Selector dialog returned: {result_code}')
-
         # We assume that some change to the profile dictionary may have been made and
         # so simply always re-pickle that dictionary
         my_profile_fn = '/pymovie-ocr-profiles.p'
@@ -4345,7 +4775,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         #     print(f'    csv output order: {entry["outputOrder"]}')
 
         self.apertureEditor = EditApertureDialog(
-            self.showMsg,
+            self.showMsgPopup,
             saver=self.settings,
             apertureRemover=self.removeAperture,
             apertureGetList=self.getApertureList,
@@ -4469,7 +4899,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def generateFinderFrame(self):
         if not (self.avi_wcs_folder_in_use or self.fits_folder_in_use):
-            self.showMsg(
+            self.showMsgPopup(
                 f'This function can only be performed in the context of an AVI/SER/ADV/AAV-WCS or FITS folder.')
             return
 
@@ -4610,6 +5040,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.analysisRequested = True
                 self.analysisPaused = False
                 self.analysisInProgress = False
+
+                self.finderMethodEdit.setText(f'Finder being stacked by star align or 2 pt track')
+
                 self.autoRun()
 
                 self.stopAtFrameSpinBox.setValue(saved_stop_frame)
@@ -4643,6 +5076,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 f'This operation requires a "stack" aperture or a 2 point track')
             self.showMsg(f'Cannot generate finder without either a "stack" aperture or a 2 point track')
             return
+
+        QtGui.QGuiApplication.processEvents()
 
         stacker.frameStacker(
             self.showMsg, self.stackerProgressBar, QtGui.QGuiApplication.processEvents,
@@ -5109,7 +5544,17 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             proposed_name = appNamerThing.apertureNameEdit.text().strip()
             duplicate, x, y = self.duplicateApertureName(proposed_name=proposed_name)
             if not duplicate:
+                if proposed_name.startswith('TME'):
+                    self.showMsgPopup(f'TME (Tight Mask Extraction) apertures can only be created by\n'
+                                      f'placing them directly on the image, not by renaming.\n\n'
+                                      f'This is because the extra information needed for a TME aperture\n'
+                                      f'is gathered at that time. A "rename" would bypass that process.')
+                    aperture.name = f'ap{self.apertureId:02d}'
+                    self.apertureId += 1
+                    return
+
                 aperture.name = proposed_name
+
                 if 'track' in aperture.name:
                     self.handleSetYellowSignal(aperture)
                 if 'psf-star' in aperture.name:
@@ -5117,6 +5562,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         self.showMsgPopup(f'psf-stars require a minimum aperture size of 21')
                     aperture.thresh = 99999
                     aperture.default_mask_radius = 8.0
+
             else:
                 if x is not None and y is not None:
                     self.showMsgPopup(f'That name ({proposed_name}), is already in use by the '
@@ -5255,6 +5701,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     if self.finderFrameBeingDisplayed:
                         self.moveOneFrameRight()
                         self.moveOneFrameLeft()
+                        self.finderFrameBeingDisplayed = False
+                        self.fourierFinderBeingDisplayed = False
+                        self.finderMethodEdit.setText('')
                     # We make this call so that we record the frame data for the current frame.
                     self.recordPsf = True
                     self.showFrame()
@@ -5443,7 +5892,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         return dataAlreadyPresent
 
     def clearApertureData(self):
+
+        # TODO See if the following 3 lines force psf recalc on all data gathering starts  (Nope: this breaks things)
+        self.naylorInShiftedPositions = None
+        self.naylorRescaleFactor = None
+        self.target_psf_gathering_in_progress = True
+
         self.analysisInProgress = False
+        self.analysisRequested = False
         self.transportClearData.setEnabled(False)
         for app in self.getApertureList():
             app.data = []
@@ -5828,8 +6284,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def getDefaultMaskRadius(self):
         if self.radius20radioButton.isChecked():
             return 2.0
-        if self.radius28radioButton.isChecked():
-            return 2.8
+        if self.radius24radioButton.isChecked():
+            return 2.4
         if self.radius32radioButton.isChecked():
             return 3.2
         if self.radius40radioButton.isChecked():
@@ -5842,6 +6298,23 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             return 6.8
 
         return 3.2
+
+    def getTMEsearchGridSize(self):
+        if self.tmeSearch1x1radioButton.isChecked():
+            self.tmeSearchGridSize = 1
+        elif self.tmeSearch3x3radioButton.isChecked():
+            self.tmeSearchGridSize = 3
+        elif self.tmeSearch5x5radioButton.isChecked():
+            self.tmeSearchGridSize = 5
+        elif self.tmeSearch7x7radioButton.isChecked():
+            self.tmeSearchGridSize = 7
+        else:
+            self.showMsgPopup(f'Unexpected configuration of TME search grid radio buttons.\n\n'
+                              f'Defaulting to 3 for the search grid size.')
+            self.tmeSearchGridSize = 3
+
+        # self.showMsgPopup(f'TME search grid size set to {self.tmeSearchGridSize}')
+        return self.tmeSearchGridSize
 
     def getSigmaLevel(self):
         if self.oneSigmaRadioButton.isChecked():
@@ -5915,6 +6388,29 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 return super(PyMovie, self).eventFilter(obj, event)
 
         if event.type() == QtCore.QEvent.Type.MouseButtonPress:
+            if event.button() == Qt.MouseButton.LeftButton:
+                if obj.toolTip() == 'thumbnailTwo' and self.thumbTwoImage is not None:
+                    if not self.finderFrameBeingDisplayed:
+                        self.showMsgPopup(f'Editing of static mask pixels can only be done while a finder '
+                                          f'image is being displayed')
+                        return True
+                    mousePoint = self.thumbTwoView.getView().mapSceneToView(event.localPos())
+                    x = int(mousePoint.x())
+                    y = int(mousePoint.y())
+                    ylim, xlim = self.thumbTwoImage.shape
+                    if 0 <= y < ylim and 0 <= x < xlim:
+                        if not self.apertureInThumbnails.thresh == self.big_thresh:
+                            self.showMsgPopup(f'A dynamic mask cannot be edited as it just gets recalculated.')
+                        else:
+                            # print(f'Left mouse button pressed inside {obj.toolTip()}  @ ({x},{y}) ap name: {self.apertureInThumbnails.name}')
+                            if self.apertureInThumbnails.defaultMask[y, x] == 1:
+                                self.apertureInThumbnails.defaultMaskPixelCount -= 1
+                                self.apertureInThumbnails.defaultMask[y, x] = 0
+                            else:
+                                self.apertureInThumbnails.defaultMaskPixelCount += 1
+                                self.apertureInThumbnails.defaultMask[y, x] = 1
+                            self.getApertureStats(self.apertureInThumbnails)
+
             if event.button() == Qt.MouseButton.RightButton:
                 # We capture and save the mouse position x and y of this right-click event
                 # self.mousex and self.mousey are updated every time the mouse cursor is moved
@@ -5947,6 +6443,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     @pyqtSlot('PyQt_PyObject')
     def handleSetGreenSignal(self, aperture):
+        if aperture.name.startswith('TME'):
+            self.showMsgPopup(f'The color of a TME aperture cannot be changed.')
+            return
         for app in self.getApertureList():
             if app.color == 'green':
                 app.setRed()
@@ -6279,6 +6778,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                               f'then advance 1 frame to exit the "finder" frame and add any\n'
                               f'additional apertures.')
             return
+
         self.one_time_suppress_stats = True
         aperture = self.addGenericAperture()  # Just calls addApertureAtPosition() with mouse coords
 
@@ -6304,6 +6804,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.nameAperture(aperture)
         elif name is not None:
             aperture.name = name
+
+        return aperture
 
     def addOcrAperture(self, fieldbox, boxnum, position):
 
@@ -6481,7 +6983,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if not self.finderFrameBeingDisplayed:
             self.showFrame()
 
-        self.showMsg(f'The aperture just added is joggable.  All others have jogging disabled.')
+        # self.showMsg(f'The aperture just added is joggable.  All others have jogging disabled.')
 
         return aperture
 
@@ -6780,13 +7282,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 except Exception as e:
                     self.showMsg(f'while attempting to addData: {repr(e)}')
 
-    @staticmethod
-    def jogApertureAndXcYc(app, delta_xc, delta_yc):
+    def jogApertureAndXcYc(self, app, delta_xc, delta_yc):
         # jog the aperture frame, then set the new center coordinates
         jogAperture(app, delta_xc, delta_yc)
         new_xc, new_yc = app.getCenter()
         app.xc = new_xc
         app.yc = new_yc
+        self.getApertureStats(app)
 
     def centerAperture(self, aperture, show_stats=False):
         # Quietly get the stats for this aperture placement.  We are interested in
@@ -6890,6 +7392,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         self.pointed_at_aperture = aperture_to_point_at
                         if self.analysisPaused:
                             self.getApertureStats(self.pointed_at_aperture)
+                            # TODO Test that this helps and does no harm - to solve the needed to mouse in twice
+                            self.getApertureStats(self.pointed_at_aperture)
                 else:
                     # Cursor is not in any aperture so reset pointed_at_aperture
                     self.pointed_at_aperture = None
@@ -6985,12 +7489,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.statusbar.showMessage(f'x={x} y={y}')
 
     @staticmethod
-    def roll_count(target, value, interval):
-        delta = target - value
-        return round((delta - int(delta)) / interval)
-
-    @staticmethod
     def nonRecenteringAperture(aperture):
+        if aperture.name.startswith('TME'):
+            # This may be over-ridden if TME search grid size has been set to 1x1 (in getApertureStats())
+            return True
         name_to_test: object = aperture.name.lower()
         if "no-rc" in name_to_test:
             return True
@@ -7109,6 +7611,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             try:
                 mass_centroid = brightest_pixel(masked_data.copy(), 5)  # 5 is the number of brightest pixels to use
+                # mass_centroid = center_of_mass(masked_data)
                 if PRINT_TRACKING_DATA:
                     print(f'getApertureStats() pt3: mass_centroid is {mass_centroid}')
                 x_coord = round(mass_centroid[0])
@@ -7138,6 +7641,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.mask_size = w
 
                 centered_masked_data = self.getCenteredVersionOfData(masked_data, mass_centroid, aperture.xsize)
+                # centered_masked_data = masked_data
 
                 # upper left corner coordinate is at x,y = offset_x, offset+y
                 offset_x = (masked_data.shape[0] // 2 - w // 2)  # starting column
@@ -7187,8 +7691,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     mask = np.roll(mask, x_center_delta, axis=1)  # column axis
                     mask = np.roll(mask, y_center_delta, axis=0)  # row axis
 
-        if show_stats:
-            self.displayThumbnails(aperture, mask, thumbnail)
+        # if show_stats:
+        #     self.displayThumbnails(aperture, mask, thumbnail)
 
         frame_num = float(self.currentFrameSpinBox.text())
 
@@ -7208,7 +7712,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             signal = 0
 
             if processAsNREorNPIX:  # because psf-star is in the aperture name
-                centered_data = self.getCenteredVersionOfData(thumbnail, mass_centroid, aperture.xsize)
+                centered_data = self.getCenteredVersionOfData(thumbnail.copy(), mass_centroid, aperture.xsize)
+
                 centered_masked_data = centered_data * aperture.defaultMask
 
                 reverse_mask = np.copy(aperture.defaultMask)
@@ -7227,11 +7732,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
                 if self.extractionCode == 'NRE':
                     np.random.seed(1)   # To make repeat runs under same conditions reproducible
-                    # TODO Evaluate if this is even necessary - the normal mean from robustBackground should be correct
                     naylor_background = np.zeros((w,w))
                     for i in range(w):
                         for j in range(w):
                             naylor_background[i,j] = np.random.choice(bkgnd_pixels, size=1, replace=True)
+
+                    naylor_empty = self.calcNaylorIntensity(naylor_background - mean) * self.naylorRescaleFactor
+                    # print(f'naylor_empty: {naylor_empty}  robust mean: {mean}')
 
                 # upper left corner coordinate is at x,y = offset_x, offset+y
                 offset_x = (masked_data.shape[0] // 2 - w // 2) # starting column
@@ -7241,13 +7748,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 win_data = centered_masked_data[offset_y:offset_y + w, offset_x:offset_x + w]
 
                 if self.extractionCode == 'NRE':
-                    naylor_mean = mean
-
                     # NOTE: aperture_mean is added to aperture stats and used in aperture code to smooth background
                     # using a recursive filter that implements an rc filter. The 'smoothed' value can be retrieved
                     # for an aperture by aperture.smoothed_background
                     aperture_mean = mean  # Used for background smoothing
-                    naylor_signal = self.calcNaylorIntensity((win_data - naylor_mean)) * self.naylorRescaleFactor
+                    naylor_signal = self.calcNaylorIntensity((win_data - mean)) * self.naylorRescaleFactor - naylor_empty
                     signal = naylor_signal
 
                 reference_background = aperture.smoothed_background
@@ -7258,9 +7763,41 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
                 appsum = signal + mean * aperture.defaultMaskPixelCount
             else: # Aperture photometry in use
-                mean, std, _, _, _, _, _, _, bkgnd_pixels = newRobustMeanStd(thumbnail, lunar=self.lunarCheckBox.isChecked())
-                masked_data = mask * thumbnail
-                appsum = np.sum(masked_data)
+                mean, std, _, _, _, _, _, _, bkgnd_pixels = newRobustMeanStd(thumbnail,
+                                                                             lunar=self.lunarCheckBox.isChecked())
+                if aperture.name.startswith('TME'):
+
+                    # Process Tight Mask Extraction
+                    TME_search_radius = self.tmeSearchGridSize
+                    try:
+                        appsum, col_used, image_best, row_used = \
+                            self.calcTMEIntensity(aperture, thumbnail.copy(), N=TME_search_radius)
+                        # Note: the thumbnail is now showing the centered image, not the original image
+                        mask = aperture.defaultMask.copy()
+                        # Move the mask to where the signal was highest
+                        mask = np.roll(mask, (-row_used, -col_used), (0, 1))
+                    except Exception as e:
+                        self.showMsgPopup(f'While processing TME aperture: {e}')
+
+                    if TME_search_radius > 1:  # We need to calculate the 'hunt correction' value
+                        np.random.seed(1)  # To make repeat runs under same conditions reproducible
+                        w = aperture.xsize
+                        tme_background = np.zeros((w, w))
+                        for i in range(w):
+                            for j in range(w):
+                                tme_background[i, j] = np.random.choice(bkgnd_pixels, size=1, replace=True)
+
+                        tme_empty, col_used, image_best, row_used = \
+                            self.calcTMEIntensity(aperture, tme_background - mean, N=TME_search_radius)
+                        tme_empty_per_pixel = tme_empty / aperture.defaultMaskPixelCount
+                        mean += tme_empty_per_pixel
+
+                else:
+                    masked_data = mask * thumbnail
+                    appsum = np.sum(masked_data)
+
+            if show_stats:
+                self.displayThumbnails(aperture, mask, thumbnail)
 
             if aperture.color == 'white':
                 signal = appsum
@@ -7271,7 +7808,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     if aperture.smoothed_background == 0:  # We're in startup for the smoothed background
                         signal = appsum - int(np.round(max_area * mean))
                     else:
-                        signal = appsum - int(np.round(max_area * aperture.smoothed_background))
+                        # TODO Finish removal of background averaging feature
+                        # signal = appsum - int(np.round(max_area * aperture.smoothed_background))
+                        signal = appsum - int(np.round(max_area * mean))
+
 
         if not centroid == (None, None):
             xc_roi = centroid[1]  # from dynamic mask calculation
@@ -7296,9 +7836,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             xpos = int(round(xc_world))
             ypos = int(round(yc_world))
 
-            self.showMsg(f'{name}:{comment}  frame:{frame_num:0.1f}', blankLine=False)
-            self.showMsg(f'   signal    appsum    bkavg    bkstd  mskth  mskpx  xpos  ypos minpx maxpx',
-                         blankLine=False)
+            # TODO Make sure this condition doesn't mess anything else up
+            if aperture.auto_display:
+                self.showMsg(f'{name}:{comment}  frame:{frame_num:0.1f}', blankLine=False)
+                self.showMsg(f'   signal    appsum    bkavg    bkstd  mskth  mskpx  xpos  ypos minpx maxpx',
+                             blankLine=False)
 
             if xpos is not None:
                 line = '%9d%10d%9.2f%9.2f%7d%7d%6d%6d%6d%6d' % \
@@ -7306,7 +7848,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             else:
                 line = '%9d%10d%9.2f%9.2f%7d%7d%6s%6s%6d%6d' % \
                        (signal, appsum, mean, std, threshold, max_area, '    NA', '    NA', minpx, maxpx)
-            self.showMsg(line)
+
+            # TODO Make sure this condition doesn't mess anything else up
+            if aperture.auto_display:
+                self.showMsg(line)
 
         # xc_roi and yc_roi are used by centerAperture() to recenter the aperture
         # The remaining outputs are used in writing the lightcurve information
@@ -7388,51 +7933,110 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             if self.avi_timestamp:
                 timestamp = self.avi_timestamp
 
+        self.bkavg = mean
+        self.bkstd = std
+
         return (xc_roi, yc_roi, xc_world, yc_world, signal,
                 appsum, mean, max_area, frame_num, cvxhull, maxpx, std, timestamp,
                 aperture_mean, 0)  # These last two are for background smoothing
 
+    def calcTMEIntensity(self, aperture, img, N):
+        # Search NxN grid for max appsum
+        appsum, row_used, col_used, best_image = self.bestNxNappsum(aperture, image=img, N=N)
+        return appsum, col_used, best_image, row_used
+
+    def bestNxNappsum(self, aperture, image, N=5):
+
+        # Find the highest appsum in a N x M search grid
+        max_appsum = None
+        max_row_change = max_col_change = None
+        if N == 5:
+            change_list = [-2, -1, 0, 1, 2]
+        elif N == 3:
+            change_list = [-1, 0, 1]
+        elif N == 1:
+            change_list = [0]
+        elif N == 7:
+            change_list = [-3, -2, -1, 0, 1, 2, 3]
+        else:
+            self.showMsgPopup(f'Invalid size of {N} in bestNxNappsum. Defaulting to 5')
+            change_list = [-2, -1, 0, 1, 2]
+
+        # This test suppresses mask movement while a finder is being displayed
+        # so that editing of the mask works
+        if self.finderFrameBeingDisplayed:
+            current_appsum = np.sum(image * aperture.defaultMask)
+            return current_appsum, 0, 0, image
+
+        for row_change in change_list:
+            for col_change in change_list:
+                new_image = np.roll(image, (row_change, col_change), (0,1))
+                # We move (roll) the image under a stationary mask and measure appsum
+                new_appsum = np.sum(new_image * aperture.defaultMask)
+                if max_appsum is None or new_appsum > max_appsum:
+                    max_appsum = new_appsum
+                    max_row_change = row_change
+                    max_col_change = col_change
+                    imageNxN_used = new_image
+
+        return max_appsum, max_row_change, max_col_change, imageNxN_used
+
     def displayThumbnails(self, aperture, mask, thumbnail):
+
+        self.apertureInThumbnails = aperture
+
         maxThumbnailPixel = np.max(thumbnail)
         minThumbnailPixel = np.min(thumbnail)
-        if self.pointed_at_aperture is not None:
-            if aperture == self.pointed_at_aperture:
-                self.thumbnail_one_aperture_name = aperture.name
-                self.thumbOneImage = thumbnail
-                # Version 3.4.1 added following line
-                self.thumbOneView.setImage(thumbnail,
-                                           levels=(minThumbnailPixel, maxThumbnailPixel))
-                self.thumbnailOneLabel.setText(aperture.name)
-                # Version 3.4.1 added levels parameter
-                self.thumbTwoView.setImage(mask, levels=(minThumbnailPixel, maxThumbnailPixel))
-        else:
-            priority_aperture_present = False
-            for app in self.getApertureList():
-                if app.thumbnail_source:
-                    priority_aperture_present = True
-                    break
 
-            if priority_aperture_present:
-                if aperture.thumbnail_source:
+        # This test deals with a thumbnail that has every pixel equal (usually to zero). That causes a "display range"
+        # exception to be thrown  when max==min - we avoid that with the code below...
+        if maxThumbnailPixel == minThumbnailPixel:
+            # print(f'Found maxThumbnailPixel==minThumbnailPixel = {minThumbnailPixel}')
+            maxThumbnailPixel += 1
+
+        # This "try" turned out not to be needed as the expection that was ocurring is taken care of by the code above.
+        try:
+            if self.pointed_at_aperture is not None:
+                if aperture == self.pointed_at_aperture:
                     self.thumbnail_one_aperture_name = aperture.name
                     self.thumbOneImage = thumbnail
                     # Version 3.4.1 added following line
                     self.thumbOneView.setImage(thumbnail,
-                                               levels=(minThumbnailPixel, minThumbnailPixel))
+                                               levels=(minThumbnailPixel, maxThumbnailPixel))
+                    self.thumbnailOneLabel.setText(aperture.name)
+                    # Version 3.4.1 added levels parameter
+                    self.thumbTwoView.setImage(mask, levels=(minThumbnailPixel, maxThumbnailPixel))
+            else:
+                priority_aperture_present = False
+                for app in self.getApertureList():
+                    if app.thumbnail_source:
+                        priority_aperture_present = True
+                        break
+
+                if priority_aperture_present:
+                    if aperture.thumbnail_source:
+                        self.thumbnail_one_aperture_name = aperture.name
+                        self.thumbOneImage = thumbnail
+                        # Version 3.4.1 added following line
+                        self.thumbOneView.setImage(thumbnail,
+                                                   levels=(minThumbnailPixel, minThumbnailPixel))
+                        self.thumbnailOneLabel.setText(aperture.name)
+                        # Version 3.4.1 added levels parameter
+                        self.thumbTwoView.setImage(mask,
+                                                   levels=(minThumbnailPixel, maxThumbnailPixel))
+                else:
+                    self.thumbnail_one_aperture_name = aperture.name
+                    self.thumbOneImage = thumbnail
+                    # Version 3.4.1 added following line
+                    self.thumbOneView.setImage(thumbnail,
+                                               levels=(minThumbnailPixel, maxThumbnailPixel))
                     self.thumbnailOneLabel.setText(aperture.name)
                     # Version 3.4.1 added levels parameter
                     self.thumbTwoView.setImage(mask,
                                                levels=(minThumbnailPixel, maxThumbnailPixel))
-            else:
-                self.thumbnail_one_aperture_name = aperture.name
-                self.thumbOneImage = thumbnail
-                # Version 3.4.1 added following line
-                self.thumbOneView.setImage(thumbnail,
-                                           levels=(minThumbnailPixel, maxThumbnailPixel))
-                self.thumbnailOneLabel.setText(aperture.name)
-                # Version 3.4.1 added levels parameter
-                self.thumbTwoView.setImage(mask,
-                                           levels=(minThumbnailPixel, maxThumbnailPixel))
+        except Exception as e:
+            print(f'{e}  min pixel: {minThumbnailPixel}   max pixel: {maxThumbnailPixel}')
+
         self.hair1.setPos((0, self.roi_size))
         self.hair2.setPos((0, 0))
         satPixelValue = self.satPixelSpinBox.value() - 1
@@ -7442,21 +8046,27 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             (255, 0, 0)  # red
         ]
         thumb2_colors = [
-            (255, 255, 128),  # yellow for aperture 'surround'
-            (255, 255, 128),  # yellow for aperture 'surround'
+            (255, 165, 0),    # orange for aperture 'surround'  yellow=(255, 255, 128
+            (255, 165, 0),    # orange for aperture 'surround'
             (0, 0, 0),        # black
             (255, 255, 255),  # white
             (255, 0, 0)       # red  (or may have white substituted)
         ]
-        red_cusp = satPixelValue / maxThumbnailPixel
-        if red_cusp >= 1.0:
-            red_cusp = 1.0
-            thumb1_colors[2] = (255, 255, 255)  # white (no saturated pixel in thumbnail)
-        cmap_thumb1 = pg.ColorMap([0.0, red_cusp, 1.0], color=thumb1_colors)
-        thumbOneImage = thumbnail.astype('int32')
-        self.thumbOneView.setImage(thumbOneImage,
-                                   levels=(minThumbnailPixel, maxThumbnailPixel))
-        self.thumbOneView.setColorMap(cmap_thumb1)
+
+        # This "try" turned out not to be needed as the expection that was ocurring is taken care of by earlier code.
+        try:
+            red_cusp = satPixelValue / maxThumbnailPixel
+            if red_cusp >= 1.0:
+                red_cusp = 1.0
+                thumb1_colors[2] = (255, 255, 255)  # white (no saturated pixel in thumbnail)
+            cmap_thumb1 = pg.ColorMap([0.0, red_cusp, 1.0], color=thumb1_colors)
+            thumbOneImage = thumbnail.astype('int32')
+            self.thumbOneView.setImage(thumbOneImage,
+                                       levels=(minThumbnailPixel, maxThumbnailPixel))
+            self.thumbOneView.setColorMap(cmap_thumb1)
+        except Exception as e:
+            print(f'Point 2  {e}  min pixel: {minThumbnailPixel}   max pixel: {maxThumbnailPixel}')
+
         # Show the pixels included by the mask
         if self.use_yellow_mask and self.yellow_mask is not None:
             self.thumbTwoImage = self.yellow_mask * thumbnail
@@ -7514,22 +8124,24 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         y_centroid = mass_centroid[1]
         x_centroid = mass_centroid[0]
-        y_roll_count = self.roll_count(target_center, y_centroid, 1)
-        x_roll_count = self.roll_count(target_center, x_centroid, 1)
+        row_roll_count = target_center - round(y_centroid)
+        col_roll_count = target_center - round(x_centroid)
         # This is new: we are limiting the roll count to avoid wrapping when mask passes the aperture edge
         max_roll_count = int(data.shape[0] - apertureSize // 2)
-        # print(f'max_roll_count in getZoomed...: {max_roll_count}')
-        if abs(x_roll_count) > max_roll_count:
-            x_roll_count = max_roll_count * np.sign(x_roll_count)
-        if abs(y_roll_count) > max_roll_count:
-            y_roll_count = max_roll_count * np.sign(y_roll_count)
+        if abs(col_roll_count) > max_roll_count:
+            col_roll_count = max_roll_count * np.sign(col_roll_count)
+        if abs(row_roll_count) > max_roll_count:
+            row_roll_count = max_roll_count * np.sign(row_roll_count)
 
         row_axis = 0
         col_axis = 1
-        # roll count is positive to the right
-        data = np.roll(data, y_roll_count, axis=row_axis)
-        data = np.roll(data, x_roll_count, axis=col_axis)
-        return data
+        rolled_data = np.roll(data, (row_roll_count, col_roll_count), (row_axis, col_axis))
+        new_centroid = brightest_pixel(rolled_data.copy(), 5)
+        # new_centroid = center_of_mass(rolled_data)
+        # if not round(new_centroid[0]) == target_center or not round(new_centroid[1]) == target_center:
+        #     print(f'original mass_centroid: {mass_centroid}  new: {new_centroid}  '
+        #           f'row_roll_count: {row_roll_count}  col_roll_count: {col_roll_count}')
+        return rolled_data
 
     def clearApertures(self):
         # Remove measurement apertures (if any)
@@ -7592,7 +8204,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             _, fn = os.path.split(dir_path)
             self.fileInUseEdit.setText(fn)
 
-            # self.finderThresholdEdit.setText('')
             self.clearTrackingPathParameters()
 
             self.lunarCheckBox.setChecked(False)
@@ -7720,16 +8331,18 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         msg_box.exec()
 
     def showMsgPopup(self, msg):
-        self.helperThing.textEdit.clear()
-        self.helperThing.textEdit.setText(msg)
-        self.helperThing.raise_()
-        self.helperThing.show()
+        # self.helperThing.textEdit.clear()
+        # self.helperThing.textEdit.setText(msg)
+        # self.helperThing.raise_()
+        # self.helperThing.show()
+        self.showMsgDialog(msg)
 
     def openFitsImageFile(self, fpath):
-        self.image = pyfits.getdata(fpath, 0)
-        self.showMsg(f'finder image type: {self.image.dtype}')
+        with open(fpath,'rb') as file:
+            self.image = pyfits.getdata(file, 0, ignore_missing_simple=True)
+            self.showMsg(f'finder image type: {self.image.dtype}')
 
-        hdr = pyfits.getheader(fpath, 0)
+            hdr = pyfits.getheader(file, 0)
         msg = repr(hdr)
         self.showMsg(f'############### Finder image FITS meta-data ###############')
         self.showMsg(msg)
@@ -7744,7 +8357,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                           self.avi_wcs_folder_in_use or self.fits_folder_in_use
 
         if not some_video_open:
-            self.showMsg(f'A video file must be open before a "finder" file can be loaded.')
+            self.showMsgPopup(f'A video file must be open before a "finder" file can be loaded.')
             return
 
         options = QFileDialog.Options()
@@ -7752,9 +8365,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.filename, _ = QFileDialog.getOpenFileName(
             self,  # parent
-            "Select enhanced image",  # title for dialog
+            "Select finder image",  # title for dialog
             self.finderFramesDir,  # starting directory
-            "finder images (*.bmp enhanced*.fit);; all files (*.*)",
+            "finder images (*.bmp *.fit);; all files (*.*)",
             options=options
         )
 
@@ -7769,13 +8382,21 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             # remove the apertures (possibly) left from previous file
             # self.clearApertures()  Removed in version 2.2.6
 
-            self.finderFrameBeingDisplayed = True  # Added in version 2.2.6
 
             self.apertureId = 0
             self.num_yellow_apertures = 0
 
             dirpath, basefn = os.path.split(self.filename)
             rootfn, ext = os.path.splitext(basefn)
+
+            if basefn.startswith('enhanced'):
+                self.finderFrameBeingDisplayed = True  # Added in version 2.2.6
+                self.fourierFinderBeingDisplayed = False
+                self.finderMethodEdit.setText(f'Star aligned finder being displayed: {basefn}')
+            elif basefn.startswith('fourier'):
+                self.finderFrameBeingDisplayed = True  # Added in version 2.2.6
+                self.fourierFinderBeingDisplayed = True
+                self.finderMethodEdit.setText(f'Fourier aligned finder being displayed: {basefn}')
 
             # Now we extract the frame number from the filename
             rootfn_parts = rootfn.split('-')
@@ -7792,6 +8413,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.settings.sync()
 
             self.showMsg(f'Opened: {self.filename}')
+            # display_file = os.path.join(dirpath, 'display_file')
+            # os.remove(display_file)
+            # shutil.copy2(self.filename, display_file)
 
             # If selected filename ends in .fit we use our FITS reader, otherwise we use cv2 (it handles .bmp)
             if ext == '.fit':
@@ -8120,8 +8744,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.timestampFormatter = format_iota_timestamp
 
     def readFormatTypeFile(self):
-        # TODO Check that this works
-        # f_path = os.path.join(self.folder_dir, 'formatter.txt')
         f_path = os.path.join(self.ocrDigitsDir, 'formatter.txt')
         if not os.path.exists(f_path):
             f_path = os.path.join(self.homeDir, 'formatter.txt')
@@ -8129,8 +8751,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 return None
         with open(f_path, 'r') as f:
             code = f.readline()
-            # TODO Check that this works
-            # f_path = os.path.join(self.folder_dir, 'formatter.txt')
             f_path = os.path.join(self.ocrDigitsDir, 'formatter.txt')
             with open(f_path, 'w') as g:
                 g.write(code)
@@ -8732,6 +9352,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'shape of upper_field: {self.upper_field.shape}')
             self.showMsg(f'in createImageFields: {e}')
 
+
+    def getAviFrame(self, frame_to_read):
+        success, frame = self.cap.read()
+        if success:
+            return frame
+        else:
+            return None
+
     # This routine is only used by the frame stacker program --- it is passed as a parameter
     def getFitsFrame(self, frame_to_read):
         try:
@@ -8954,13 +9582,18 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                             self.showMsg(f'The following timestamp used highly suspect partial GPS data',
                                          blankLine=False)
 
-                        if len(parts) == 2:
-                            self.showMsg(f'Timestamp found: {parts[0]} @ {parts[1]}')
-                        else:
-                            self.showMsg(f'Invalid format for timestamp: {date_time}')
+                        # if len(parts) == 2:
+                        #     self.showMsg(f'Timestamp found: {parts[0]} @ {parts[1]}')
+                        # else:
+                        #     self.showMsg(f'Invalid format for timestamp: {date_time}')
                         # We only want to save the date from the first file (to add to the csv file)...
                         if self.initialFrame:
                             self.fits_date = parts[0]
+                            # We only want to show the timestamp once in the log file
+                            if len(parts) == 2:
+                                self.showMsg(f'Timestamp found: {parts[0]} @ {parts[1]}')
+                            else:
+                                self.showMsg(f'Invalid format for timestamp: {date_time}')
 
                         # ...but we need the time from every new frame.
                         self.fits_timestamp = f'[{parts[1]}]'
@@ -8991,7 +9624,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 if self.avi_wcs_folder_in_use and self.timestampReadingEnabled:
                     if self.timestampFormatter is not None:
                         self.upperTimestamp, time1, score1, _, self.lowerTimestamp, time2, score2, _ = \
-                            self.extractTimestamps()
+                            self.extractTimestamps(printresults=False)
             except Exception as e5:
                 self.showMsg(f'The following exception occurred while trying to read timestamp:',
                              blankLine=False)
@@ -9729,7 +10362,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         # Trap users asking for plots before there are even any apertures
         if len(appList) == 0:
-            self.showMsg(f'There are no measurement apertures defined yet.')
+            self.showMsgPopup(f'There are no measurement apertures defined yet.')
             return
 
         cascadePosition = 50
@@ -9749,7 +10382,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         for app in reorderedAppList:
             # Trap user asking for plots before data is present
             if len(app.data) == 0:
-                self.showMsg(f'There is no data available to plot.')
+                self.showMsgPopup(f'There is no data available to plot.')
                 return
 
             app.data.sort(key=sortOnFrame)
@@ -10115,6 +10748,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.settings.setValue('tablist', tabOrderList)
 
+        self.settings.setValue('redactTop', self.redactLinesTopEdit.text())
+        self.settings.setValue('redactBottom', self.redactLinesBottomEdit.text())
+        self.settings.setValue('numFramesToStack', self.numFramesToStackEdit.text())
+
         # Capture the close request and update 'sticky' settings
         self.settings.setValue('size', self.size())
         self.settings.setValue('pos', self.pos())
@@ -10135,12 +10772,17 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.settings.setValue('threeSigma', self.threeSigmaRadioButton.isChecked())
 
         self.settings.setValue('2.0 mask', self.radius20radioButton.isChecked())
-        self.settings.setValue('2.8 mask', self.radius28radioButton.isChecked())
+        self.settings.setValue('2.4 mask', self.radius24radioButton.isChecked())
         self.settings.setValue('3.2 mask', self.radius32radioButton.isChecked())
         self.settings.setValue('4.0 mask', self.radius40radioButton.isChecked())
         self.settings.setValue('4.5 mask', self.radius45radioButton.isChecked())
         self.settings.setValue('5.3 mask', self.radius53radioButton.isChecked())
         self.settings.setValue('6.8 mask', self.radius68radioButton.isChecked())
+
+        self.settings.setValue('TME1x1search', self.tmeSearch1x1radioButton.isChecked())
+        self.settings.setValue('TME3x3search', self.tmeSearch3x3radioButton.isChecked())
+        self.settings.setValue('TME5x5search', self.tmeSearch5x5radioButton.isChecked())
+        self.settings.setValue('TME7x7search', self.tmeSearch7x7radioButton.isChecked())
 
         self.settings.setValue('satPixelLevel', self.satPixelSpinBox.value())
 
@@ -10535,7 +11177,7 @@ def newRobustMeanStd(
 
     if sorted_data.dtype == '>f4':
         my_hist = np.bincount(sorted_data.astype('int', casting='unsafe'))
-    elif sorted_data.dtype == '>f8':
+    elif sorted_data.dtype == '>f8' or sorted_data.dtype == 'float64':
         my_hist = np.bincount(sorted_data.astype('int', casting='unsafe'))
     else:
         my_hist = np.bincount(sorted_data)

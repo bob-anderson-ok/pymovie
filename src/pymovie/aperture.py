@@ -58,6 +58,9 @@ class MeasurementAperture(pg.GraphicsObject):
         self.default_mask_radius = 3.0
         self.order_number = 0
         self.defaultMask = None
+        self.TMEimage = None       # Tight Mask instrumental psf
+        self.TMEmask = None        # Tight Mask binary mask
+        self.TMEthreshold = None   # threshold that converted self.TMEimage into self.TMEmask
         self.defaultMaskPixelCount = None
 
         self.theta = None   # Holds angle to yellow #1 (if present)
