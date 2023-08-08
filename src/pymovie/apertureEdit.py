@@ -56,14 +56,28 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
         aperture = self.dictList[row]['appRef']
         if aperture.name.startswith("TME"):
             if col in [0,2,3]:
-                self.msgRoutine(f'That parameter of a TME aperture cannot be changed after placement')
-            return
+                # self.msgRoutine(f'That parameter of a TME aperture cannot be changed after placement')
+                self.tableWidget.clearFocus()
+                return
         self.cellClicked(row, col)
+
+    def cellEntered(self, row, col):
+        self.msgRoutine(f'row {row}  col {col} entered')
 
     def cellClicked(self, row, column):
         if self.ignoreCellClick:
             self.ignoreCellClick = False
             return
+
+        row = self.tableWidget.currentRow()
+        col = self.tableWidget.currentColumn()
+        aperture = self.dictList[row]['appRef']
+        if aperture.name.startswith("TME"):
+            if col in [0, 2, 3]:
+                self.msgRoutine(f'That parameter of a TME aperture cannot be changed after placement')
+                self.tableWidget.clearFocus()
+                return
+
         # self.msgRoutine( f'row {row} column {column} was clicked')
         aperture = self.dictList[row]['appRef']
         self.writeTable()
