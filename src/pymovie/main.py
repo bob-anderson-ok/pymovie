@@ -2844,7 +2844,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
                 threshold += 1
 
-            print(f'{TMEaperture.name}  max_snr: {max_snr:0.2f}  max_thresh: {max_thresh}  max_signal: {max_signal:0.2f}  max_pixel_count: {max_pixel_count}')
+            # print(f'{TMEaperture.name}  max_snr: {max_snr:0.2f}  max_thresh: {max_thresh}  max_signal: {max_signal:0.2f}  max_pixel_count: {max_pixel_count}')
 
             # Build TME mask at best threshold found in the loop above
             mask_cut_value, mask_pixel_count, signal = self.calcTMEmask(TMEaperture, saved_default_mask,
