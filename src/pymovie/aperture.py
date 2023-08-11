@@ -106,14 +106,19 @@ class MeasurementAperture(pg.GraphicsObject):
         new_background_value = data_tuple[13]  # Pick up new_mean from the tuple output from getApertureStats()
         smoothing_count = data_tuple[14]       # Pick up the smoothing count from the tuple
         self.background_reading_count += 1
-        if not smoothing_count == 0:
-            b1 = np.exp(-1/smoothing_count)
+        if not smoothing_count == 0:  # We are asked to do smoothing
+            if smoothing_count > self.background_reading_count:
+                # This allows a rapid warmup that follows early values, then slowly starts the major smoothing
+                b1 = np.exp(-1/self.background_reading_count)
+            else:
+                b1 = np.exp(-1/smoothing_count)
         else:
             b1 = 0.0
         a0 = 1.0 - b1
         if self.smoothed_background == 0:  # Detect startup and jump to the first value given
             self.smoothed_background = new_background_value
         else:
+            # Update the smoothed background value
             self.smoothed_background = a0 * new_background_value + b1 * self.smoothed_background
 
         # Debug print
