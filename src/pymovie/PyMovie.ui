@@ -3752,7 +3752,11 @@ aperture placement.</string>
          <item>
           <layout class="QVBoxLayout" name="verticalLayout_2">
            <item>
-            <widget class="ImageView" name="thumbOneView"/>
+            <widget class="ImageView" name="thumbOneView">
+             <property name="toolTip">
+              <string>thumbnailOne</string>
+             </property>
+            </widget>
            </item>
            <item>
             <widget class="QLabel" name="thumbnailOneLabel">

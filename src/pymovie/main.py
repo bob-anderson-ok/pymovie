@@ -611,6 +611,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.vtiSelectLabel.installEventFilter(self)
 
         self.thumbTwoView.installEventFilter(self)
+        self.thumbOneView.installEventFilter(self)
 
         allowNewVersionPopup = self.settings.value('allowNewVersionPopup', 'true')
         if allowNewVersionPopup == 'true':
@@ -6422,12 +6423,18 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         if event.type() == QtCore.QEvent.Type.MouseButtonPress:
             if event.button() == Qt.MouseButton.LeftButton:
-                if obj.toolTip() == 'thumbnailTwo' and self.thumbTwoImage is not None:
+                thumb_one_left_clicked = obj.toolTip() == 'thumbnailOne' and self.thumbOneImage is not None
+                thumb_two_left_clicked = obj.toolTip() == 'thumbnailTwo' and self.thumbTwoImage is not None
+                if thumb_one_left_clicked or thumb_two_left_clicked:
                     if not self.finderFrameBeingDisplayed:
                         self.showMsgPopup(f'Editing of static mask pixels can only be done while a finder '
                                           f'image is being displayed')
                         return True
-                    mousePoint = self.thumbTwoView.getView().mapSceneToView(event.localPos())
+                    if thumb_two_left_clicked:
+                        mousePoint = self.thumbTwoView.getView().mapSceneToView(event.localPos())
+                    else:
+                        mousePoint = self.thumbOneView.getView().mapSceneToView(event.localPos())
+
                     x = int(mousePoint.x())
                     y = int(mousePoint.y())
                     ylim, xlim = self.thumbTwoImage.shape
