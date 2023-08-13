@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>734</width>
-    <height>425</height>
+    <width>722</width>
+    <height>408</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -25,44 +25,68 @@
   <property name="windowTitle">
    <string>Enter desired aperture name</string>
   </property>
-  <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="0">
-    <layout class="QVBoxLayout" name="verticalLayout">
-     <item>
-      <widget class="QLabel" name="label">
-       <property name="text">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enter name for aperture...&lt;/p&gt;&lt;p&gt;Apertures that are given a name containing 'track' will automatically be placed as yellow tracking&lt;br/&gt;apertures. The default circular mask size will be taken from the entry in the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Pref.&lt;/span&gt; tab.&lt;/p&gt;&lt;p&gt;If you want to base NRE on this star, begin the name with 'psf-star' (without the quotes) or click&lt;br/&gt;on the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;add NRE aperture&lt;/span&gt; menu item.&lt;br/&gt;&lt;br/&gt;A star/aperture so named will be the one used in estimating the instrumental psf when the&lt;br/&gt;generate NRE psf' button is pressed.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;Of course, only a single aperture with a name starting with 'psf-star' is allowed, but if you want other stars&lt;br/&gt;to use NRE, put the string 'psf-star' somewhere in the name. (Usually the psf would be &lt;br/&gt;determined from the target star, but you can control this by appropriate naming.)&lt;/p&gt;&lt;p&gt;&lt;br/&gt;If you want to suppress the re-centering of static masks within an aperture, put the string &lt;br/&gt;'no-rc' (or 'no_rc' or 'no rc') somewhere in the name. (Dynamic masks must relocate to do their job, &lt;br/&gt;so the presence of a 'no-rc' will be ignored.)&lt;/p&gt;&lt;p&gt;&lt;br/&gt;Apertures named 'empty' or 'no-star', or 'no_star' or 'no star' are treated as though they contain &lt;br/&gt;the 'no-rc' string - this is because the N-brightest-pixel-mass-centroid re-centering of static circular masks,&lt;br/&gt;if allowed to 'hunt' within the aperture, will find opportunistic clumps of pixels that are a little brighter &lt;br/&gt;than other clumps and thus generate a tiny, but false, signal - disabling recentering prevents this.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLineEdit" name="apertureNameEdit">
-       <property name="font">
-        <font>
-         <pointsize>13</pointsize>
-        </font>
-       </property>
-       <property name="focusPolicy">
-        <enum>Qt::StrongFocus</enum>
-       </property>
-       <property name="maxLength">
-        <number>80</number>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
-   <item row="0" column="1">
-    <widget class="QDialogButtonBox" name="buttonBox">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-     </property>
-    </widget>
-   </item>
-  </layout>
+  <widget class="QDialogButtonBox" name="buttonBox">
+   <property name="geometry">
+    <rect>
+     <x>630</x>
+     <y>10</y>
+     <width>80</width>
+     <height>40</height>
+    </rect>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Vertical</enum>
+   </property>
+   <property name="standardButtons">
+    <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+   </property>
+  </widget>
+  <widget class="QWidget" name="">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>60</y>
+     <width>702</width>
+     <height>331</height>
+    </rect>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QLabel" name="label">
+      <property name="minimumSize">
+       <size>
+        <width>500</width>
+        <height>300</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>500</width>
+        <height>300</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enter name for aperture...&lt;/p&gt;&lt;p&gt;Apertures that are given a name containing 'track' will automatically be placed as yellow tracking&lt;br/&gt;apertures. The default circular mask size will be taken from the entry in the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Pref.&lt;/span&gt; tab.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;If you want to suppress the re-centering of static masks within an aperture, put the string &lt;br/&gt;'no-rc' (or 'no_rc' or 'no rc') somewhere in the name. (Dynamic masks must relocate to do their job, &lt;br/&gt;so the presence of a 'no-rc' will be ignored.)&lt;/p&gt;&lt;p&gt;&lt;br/&gt;Apertures named 'empty' or 'no-star', or 'no_star' or 'no star' are treated as though they contain &lt;br/&gt;the 'no-rc' string - this is because the N-brightest-pixel-mass-centroid re-centering of static circular masks and&lt;br/&gt;the NxN search grid of TME masks, if allowed to 'hunt' within the aperture, will find opportunistic clumps of pixels &lt;br/&gt;that are a little brighter than other clumps and thus generate a tiny, but false, signal - disabling recentering prevents this.&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLineEdit" name="apertureNameEdit">
+      <property name="font">
+       <font>
+        <pointsize>13</pointsize>
+       </font>
+      </property>
+      <property name="focusPolicy">
+       <enum>Qt::StrongFocus</enum>
+      </property>
+      <property name="maxLength">
+       <number>80</number>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
  </widget>
  <resources/>
  <connections>

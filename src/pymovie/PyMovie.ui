@@ -761,7 +761,7 @@
                <item>
                 <widget class="QPushButton" name="createHotPixelListButton">
                  <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;Click this button after placing dynamic mask apertures on each hot pixel group present in the image that you want removed.  Remember, the hot-pixel constellation may be different from frame to frame, so step through several frames to find and mark all the hot pixels you want removed.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;Perform the above sequentially for each hot pixel group. When done with all hot pixel groups, press the &lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica'; font-weight:600; color:#fc0107;&quot;&gt;Add to hot-pixel list... &lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;button&lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;. You will need to set a threshold that gives the intensity level above which a pixel is considered 'hot'. A judicious use of the Plot Robust Mean button will give you a way to estimate an appropriate value to use.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;Clicking the &lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica'; font-weight:600; color:#fc0107;&quot;&gt;Add to hot-pixel list... &lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;button also removes the apertures. You can place another set and repeat the process - the additional hot-pixel list will be appended to that already gathered. This may be a useful procedure if the hot-pixel threshold must be set differently for different hot-pixel groups.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;Hot pixels are 'removed' by replacing their value with that of the average background, determined from the center of the image using a default size aperture.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;This list will be used to remove those hot pixels from each frame in the video. This is desirable in the creation of a &amp;quot;finder&amp;quot; image because hot pixels, which do not move, often produce annoying streaks or false/spurious stars in the &amp;quot;finder&amp;quot; images.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;Even when hot-pixels don't produce streaks (guidance of the telescope has to be very good in such a case) it is also useful to remove hot pixel groups so that they don't add confusing asterisms --- it's easier to correlate a finder image without spurious 'stars' that don't appear in a sky chart.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;Use the &lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica'; font-weight:600; color:#fc0107;&quot;&gt;load/save/delete hot-pixels profiles&lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt; button below the &lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica'; font-weight:600; color:#fc0107;&quot;&gt;Add to hot-pixel list... &lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;button if you want to name and save this list into a hot-pixel list database for future use. Since the hot pixel constellation for a given camera/camera setting will change, either slowly with time or when different gain or integration levels are used, such saved profiles can be quickly recalled and will often be sufficient for hot pixel removal. At the very least, it will serve as good starting point.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;Click this button after placing &lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica'; text-decoration: underline; color:#000000;&quot;&gt;static&lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt; mask apertures on each hot pixel group present in the image that you want removed.  Remember, the hot-pixel constellation may be different from frame to frame, so step through several frames to find and mark all the hot pixels you want removed.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;Perform the above sequentially for each hot pixel group. When done with all hot pixel groups, press the &lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica'; font-weight:600; color:#fc0107;&quot;&gt;Add to hot-pixel list... &lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;button. You will need to set a threshold that gives the intensity level above which a pixel is considered 'hot'. A judicious use of the Plot Robust Mean button will give you a way to estimate an appropriate value to use.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;Clicking the &lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica'; font-weight:600; color:#fc0107;&quot;&gt;Add to hot-pixel list... &lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;button also removes the apertures. You can place another set and repeat the process - the additional hot-pixel list will be appended to that already gathered. This may be a useful procedure if the hot-pixel threshold must be set differently for different hot-pixel groups.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;Hot pixels are 'removed' by replacing their value with that of the average background, determined from the center of the image using a default size aperture.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;This list will be used to remove those hot pixels from each frame in the video. This is desirable in the creation of a &amp;quot;finder&amp;quot; image because hot pixels, which do not move, often produce annoying streaks or false/spurious stars in the &amp;quot;finder&amp;quot; images.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;Even when hot-pixels don't produce streaks (guidance of the telescope has to be very good in such a case) it is also useful to remove hot pixel groups so that they don't add confusing asterisms --- it's easier to correlate a finder image without spurious 'stars' that don't appear in a sky chart.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;Use the &lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica'; font-weight:600; color:#fc0107;&quot;&gt;load/save/delete hot-pixels profiles&lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt; button below the &lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica'; font-weight:600; color:#fc0107;&quot;&gt;Add to hot-pixel list... &lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica'; color:#000000;&quot;&gt;button if you want to name and save this list into a hot-pixel list database for future use. Since the hot pixel constellation for a given camera/camera setting will change, either slowly with time or when different gain or integration levels are used, such saved profiles can be quickly recalled and will often be sufficient for hot pixel removal. At the very least, it will serve as good starting point.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                  </property>
                  <property name="text">
                   <string>Add to hot-pixel list from aperture(s) placed</string>
@@ -2483,69 +2483,7 @@ aperture placement.</string>
                             <property name="spacing">
                              <number>4</number>
                             </property>
-                            <item>
-                             <widget class="QLabel" name="psfFrameCountLabel">
-                              <property name="maximumSize">
-                               <size>
-                                <width>16777215</width>
-                                <height>20</height>
-                               </size>
-                              </property>
-                              <property name="font">
-                               <font>
-                                <family>.SF NS Text</family>
-                                <pointsize>13</pointsize>
-                                <bold>false</bold>
-                               </font>
-                              </property>
-                              <property name="toolTip">
-                               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The number of frames that are used to determine the instrumental psf of a star is controlled by the number in this spin box.&lt;/p&gt;&lt;p&gt;The number needed is amazingly uncritical, so we default to a large enough number to sample well an integrated composite video. &lt;/p&gt;&lt;p&gt;The minimum is 2 and that number is also almost always enough. &lt;/p&gt;&lt;p&gt;You can change the number used if you have a special case that requires experimentation, but it is not sticky between runs.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                              </property>
-                              <property name="text">
-                               <string>psf frame count:</string>
-                              </property>
-                             </widget>
-                            </item>
-                            <item>
-                             <widget class="QSpinBox" name="psfFrameCountSpinBox">
-                              <property name="maximumSize">
-                               <size>
-                                <width>50</width>
-                                <height>16777215</height>
-                               </size>
-                              </property>
-                              <property name="font">
-                               <font>
-                                <family>.SF NS Text</family>
-                                <pointsize>13</pointsize>
-                                <bold>true</bold>
-                               </font>
-                              </property>
-                              <property name="minimum">
-                               <number>2</number>
-                              </property>
-                              <property name="maximum">
-                               <number>1000</number>
-                              </property>
-                              <property name="value">
-                               <number>16</number>
-                              </property>
-                             </widget>
-                            </item>
                            </layout>
-                          </item>
-                          <item>
-                           <spacer name="horizontalSpacer_18">
-                            <property name="orientation">
-                             <enum>Qt::Horizontal</enum>
-                            </property>
-                            <property name="sizeHint" stdset="0">
-                             <size>
-                              <width>40</width>
-                              <height>20</height>
-                             </size>
-                            </property>
-                           </spacer>
                           </item>
                          </layout>
                         </item>
@@ -2588,7 +2526,7 @@ aperture placement.</string>
                   <item>
                    <widget class="QCheckBox" name="allowNewVersionPopupCheckbox">
                     <property name="toolTip">
-                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This splash screen can be disabled on the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Misc.&lt;/span&gt; tab.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;What's new with this version:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-weight:700; color:#ff0000;&quot;&gt;1)&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt; Centering/tracking of fixed radius masks (in static apertures) now finds the center position of the mass centroid calculated using the nThBrightPixel algorithm conceived and tested by A. G. Basden (reported in &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; color:#ff0000;&quot;&gt;Centroids using Brightest Pixel Algorithm by A. G. Basden, et al, MNRAS, 2011&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;) rather than centering on the brightest pixel. This operates by finding the n brightest pixels in the mask, setting all other pixel values to zero, and calculating the x,y centroid of the remaining ‘mass’.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-weight:700; color:#ff0000;&quot;&gt;2) Noise Reduction Extraction has been added:&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;&lt;br/&gt;&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:12pt;&quot;&gt;&lt;br/&gt;&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-weight:700;&quot;&gt;Background: &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;Optimal extraction for imaging photometry was introduced by Tim Naylor in his 1998 paper titled: &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-weight:700; color:#ff0000;&quot;&gt;An optimal extraction algorithm for imaging photometry. [ Mon. Not. R. Astron. Soc. 296, 339-346 (1998)]&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; color:#000000;&quot;&gt;.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; color:#000000;&quot;&gt;Naylor's algorithm utilizes a two-dimensional gaussian as an approximation to the psf of stars in the image and demonstrates that this is an effective approximation in practice. Using this analytic psf, the paper describes how to calculate a weighted mask that lowers the noise in a star intensity measurement by giving a larger weight to those pixel that have a higher SNR and a lower weight to dimmer, noisier pixels - &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-weight:700; color:#000000;&quot;&gt;this is the core idea in all optimal extraction schemes&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; color:#000000;&quot;&gt;.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;PyMovie uses the Naylor algorithm in the form that is optimal for sky-limited observations - i.e., dim targets - and can be used for occultations where the target completely disappears.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; color:#000000;&quot;&gt;The NRE algorithm implemented here is very robust and will usually produce acceptable results. It is a good starting point for marginal observations.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-weight:700; color:#ff0000;&quot;&gt;3)&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; color:#000000;&quot;&gt; This version adds the ability for the user to place a nested set of 12 static apertures in a single operation. This supports the time-honored technique of trying fixed circular masks from very small to quite large to see which provides the best extraction metrics. PyOTE 5.2.6 introduced a set of tools to make processing multiple lightcurves and recording the fit-metrics easy.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-weight:700; color:#ff0000;&quot;&gt;4)&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; color:#000000;&quot;&gt; This version also adds the ability for the user to place a nested set of 6 dynamic mask aperture in a single operation. The starting threshold and the step size for subsequent apertures are settable by a simple dialog exchange with the user. As above, this is a way to quickly find which dynamic mask threshold setting provides the best extraction metrics. PyOTE 5.2.6 introduced a set of tools to make processing multiple lightcurves and recording the fit-metrics easy&lt;/span&gt;.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt; font-weight:700; color:#ff0000;&quot;&gt;Important tip:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt;&quot;&gt;Before doing an analysis, be sure to set the csv order in which the aperture data columns will be output to the csv file. This is easily done by clicking on the &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt; font-weight:700; color:#0000ff;&quot;&gt;Examine/change aperture settings&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt;&quot;&gt; button. In the panel that appears, the rightmost column is titled &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt; font-weight:700; color:#0000ff;&quot;&gt;csv output order&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt;&quot;&gt;. Use that column to set the expected best aperture for the target to 0 - this is because when PyOTE reads this file, it will be the first lightcurve displayed. With the latest version of PyOTE, all the other data sets/lightcurves will be accessible through a drop-down list and the order of items in this list are controlled by their order in the csv file, so set the csv order to make this list order be convenient for you.&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:12pt;&quot;&gt;&lt;br/&gt;&lt;br/&gt;&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;This splash screen can be disabled on the &lt;/span&gt;&lt;span style=&quot; font-size:10pt; font-weight:700; color:#0000ff;&quot;&gt;Misc.&lt;/span&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt; tab.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt; font-weight:700; color:#ff0000;&quot;&gt;1)&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt;&quot;&gt; Added a new (and superior) method of generating ‘finder’ frames. This method uses a Fourier transform based image to image correlation calculation to determine frame alignments to 0.1 pixel resolution. This does not require a ‘stacking star’ to be designated and so is easier and quicker to use. This method should be used wherever possible to generate ‘finder’ frames as they are better formed and more accurately identify star positions. This is the preferred ‘finder’ to be used for the new (described below) Tight Mask Extraction (TME) light-curve generator.&lt;br/&gt;&lt;br/&gt;If there are dominant hot-pixels in the video, the fourier aligner may lock onto the hot-pixel constellation rather than the star field and cause the ‘finder’ process to fail. In this case, reverting to a ‘stacking star’ or a 2 point track will be necessary.&lt;br/&gt;&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt; font-weight:700; color:#ff0000;&quot;&gt;2)&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt;&quot;&gt; A new and very promising method of light-curve extraction has been added. It is called Tight Mask Extraction (TME) and leverages the improved fourier-aligned ‘finder’ frame process described above.&lt;br/&gt;&lt;br/&gt;When a TME aperture is placed on a star while a ‘finder’ image (fourier-aligned ‘finder’ is preferred) is being displayed, the instrumental psf for that star is used to calculate an optimally tight mask. That mask is determined using the growth-curve method: starting with the brightest pixel in the psf an SNR metric is calculated. Then the next brightest pixel is included, which causes the signal to increase, as well as the noise. A new SNR metric is calculated. That metric will get better (larger) as additional pixels are included in the mask, but eventually the metric will stop increasing. At that point the optimally tight mask has been determined (see the ‘editing’ possibility described below).&lt;br/&gt;&lt;br/&gt;The optimally tight mask determined above is treated as a static mask (in that no re-calculations are performed) during the analysis process.&lt;br/&gt;&lt;br/&gt;It is reasonable to think of a TME sampling mask as an optimal non-circular static mask.&lt;br/&gt;&lt;br/&gt;That mask is applied to pixel locations controlled by a search grid (size is selectable on the &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt; font-weight:700; color:#0070c0;&quot;&gt;Median/Misc&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt;&quot;&gt; tab) for each frame to find the maximum signal for that frame – a form of optimal alignment of the sampling mask with respect to the image – it ‘hunts’ for the largest signal in that search grid. This ‘hunting’ behavior can be suppressed by including the string &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt; font-weight:700; color:#ff0000;&quot;&gt;no-rc&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt;&quot;&gt; in the aperture name. This makes it possible to place two TME apertures on a target, one that ‘hunts’ and one that doesn’t.&lt;br/&gt;&lt;br/&gt;Testing indicates that this method reduces baseline noise (sigmaB), sometimes significantly.&lt;br/&gt;&lt;br/&gt;It is now possible to edit a static mask when a ‘finder’ image is being displayed. Simply left click on any pixel being shown in Thumbnail Two or Thumbnail One to toggle that mask pixel on or off. This can be used to either slightly modify static masks, or to experiment with mask designs of your own. The modified masks can be preserved by saving them as part of an aperture group.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt; font-weight:700; color:#ff0000;&quot;&gt;3) Noise Reduction Extraction has been removed:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt; color:#000000;&quot;&gt;Extensive testing was done to determine if there was any value in keeping the NRE aperture. The conclusion was that NRE is rarely the best aperture (and when best, TME is equivalent) and so has been moth balled.&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;&lt;br/&gt;&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:12pt;&quot;&gt;&lt;br/&gt;&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt; font-weight:700; color:#ff0000;&quot;&gt;Important tip:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt;&quot;&gt;Before doing an analysis, be sure to set the csv order in which the aperture data columns will be output to the csv file. This is easily done by clicking on the &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt; font-weight:700; color:#0000ff;&quot;&gt;Examine/change aperture settings&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt;&quot;&gt; button. In the panel that appears, the rightmost column is titled &lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt; font-weight:700; color:#0000ff;&quot;&gt;csv output order&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:10pt;&quot;&gt;. Use that column to set the expected best aperture for the target to 0 - this is because when PyOTE reads this file, it will be the first lightcurve displayed. With the latest version of PyOTE, all the other data sets/lightcurves will be accessible through a drop-down list and the order of items in this list are controlled by their order in the csv file, so set the csv order to make this list order be convenient for you.&lt;/span&gt;&lt;span style=&quot; font-family:'Arial','sans-serif'; font-size:12pt;&quot;&gt;&lt;br/&gt;&lt;br/&gt;&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                     </property>
                     <property name="text">
                      <string>show &quot;new version&quot; info</string>
@@ -2599,19 +2537,6 @@ aperture placement.</string>
                    <layout class="QHBoxLayout" name="horizontalLayout_42"/>
                   </item>
                  </layout>
-                </item>
-                <item>
-                 <widget class="QRadioButton" name="tmeSearch1x1radioButton">
-                  <property name="maximumSize">
-                   <size>
-                    <width>200</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="text">
-                   <string>TME 1x1 search grid</string>
-                  </property>
-                 </widget>
                 </item>
                 <item>
                  <widget class="QRadioButton" name="tmeSearch3x3radioButton">
@@ -3259,38 +3184,6 @@ aperture placement.</string>
                  </property>
                  <property name="text">
                   <string>pause</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="transportContinue">
-                 <property name="enabled">
-                  <bool>false</bool>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>120</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>120</width>
-                   <height>16777215</height>
-                  </size>
-                 </property>
-                 <property name="font">
-                  <font>
-                   <family>.SF NS Text</family>
-                   <pointsize>13</pointsize>
-                   <bold>true</bold>
-                  </font>
-                 </property>
-                 <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial','sans-serif';&quot;&gt;If you have paused the analysis run for some reason and wish to restart without calculating a new instrumental psf (only relevant if an aperture with a name starting with psf-star was present), click this button.&lt;br/&gt;&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                 </property>
-                 <property name="text">
-                  <string>continue</string>
                  </property>
                 </widget>
                </item>

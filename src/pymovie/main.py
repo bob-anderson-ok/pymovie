@@ -513,12 +513,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.radius53radioButton.setChecked(self.settings.value('5.3 mask', False) == 'true')
         self.radius68radioButton.setChecked(self.settings.value('6.8 mask', False) == 'true')
 
-        self.tmeSearch1x1radioButton.setChecked(self.settings.value('TME1x1search', False) == 'true')
         self.tmeSearch3x3radioButton.setChecked(self.settings.value('TME3x3search', False) == 'true')
         self.tmeSearch5x5radioButton.setChecked(self.settings.value('TME5x5search', False) == 'true')
         self.tmeSearch7x7radioButton.setChecked(self.settings.value('TME7x7search', False) == 'true')
 
-        self.tmeSearch1x1radioButton.clicked.connect(self.getTMEsearchGridSize)
         self.tmeSearch3x3radioButton.clicked.connect(self.getTMEsearchGridSize)
         self.tmeSearch5x5radioButton.clicked.connect(self.getTMEsearchGridSize)
         self.tmeSearch7x7radioButton.clicked.connect(self.getTMEsearchGridSize)
@@ -621,7 +619,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.allowNewVersionPopupCheckbox.installEventFilter(self)
 
-        self.psfFrameCountLabel.installEventFilter(self)
+        # self.psfFrameCountLabel.installEventFilter(self)
+        self.numFramesToIncludeInNREpsf = 64  # An arbitrary (but useful) default value for the moth balled NRE feature
 
         self.satPixelLabel.installEventFilter(self)
 
@@ -1149,8 +1148,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.transportAnalyze.installEventFilter(self)
         self.transportAnalyze.clicked.connect(self.startAnalysisWithNRE)
 
-        self.transportContinue.installEventFilter(self)
-        self.transportContinue.clicked.connect(self.startAnalysis)
+        # self.transportContinue.installEventFilter(self)
+        # self.transportContinue.clicked.connect(self.startAnalysis)
 
         self.transportPlayRight.installEventFilter(self)
         self.transportPlayRight.clicked.connect(self.playRight)
@@ -1892,8 +1891,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         view.menu.addSeparator()  # noqa
 
-        addAppStack = view.menu.addAction('Add NRE aperture')  # noqa
-        addAppStack.triggered.connect(self.addNREaperture)  # noqa
+        # addAppStack = view.menu.addAction('Add NRE aperture')  # noqa
+        # addAppStack.triggered.connect(self.addNREaperture)  # noqa
 
         addAppStack = view.menu.addAction('Add 12 nested fixed radius mask apertures')  # noqa
         addAppStack.triggered.connect(self.addApertureStack)  # noqa
@@ -2876,6 +2875,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     TMEaperture.defaultMask[i, j] = 0
         return mask_cut_value, mask_pixel_count, signal
 
+    # addNREaperture is no longer used, but we leave it in in case we ever resurrect NRE for common use.
     def addNREaperture(self):
         # Need to test for an already present aperture with name starting with psf-star
         for app in self.getApertureList():
@@ -3692,7 +3692,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.showMsg(f'Gathering data for psf estimation.')
                     # Save the stop frame
                     saved_stop_frame = self.stopAtFrameSpinBox.value()
-                    self.stopAtFrameSpinBox.setValue(self.currentFrameSpinBox.value() + self.psfFrameCountSpinBox.value() - 1)
+                    self.stopAtFrameSpinBox.setValue(self.currentFrameSpinBox.value() + self.numFramesToIncludeInNREpsf - 1)
                     self.startPsfGathering()
                     self.stopAtFrameSpinBox.setValue(saved_stop_frame)
                     self.extractionCode = 'NRE'
@@ -5485,7 +5485,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.transportPlayLeft.setEnabled(state)
         self.transportPause.setEnabled(state)
         self.transportAnalyze.setEnabled(state)
-        self.transportContinue.setEnabled(state)
+        # self.transportContinue.setEnabled(state)
 
         self.transportPlayRight.setEnabled(state)
         self.transportPlusOneFrame.setEnabled(state)
@@ -6334,9 +6334,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         return 3.2
 
     def getTMEsearchGridSize(self):
-        if self.tmeSearch1x1radioButton.isChecked():
-            self.tmeSearchGridSize = 1
-        elif self.tmeSearch3x3radioButton.isChecked():
+        if self.tmeSearch3x3radioButton.isChecked():
             self.tmeSearchGridSize = 3
         elif self.tmeSearch5x5radioButton.isChecked():
             self.tmeSearchGridSize = 5
@@ -10870,7 +10868,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.settings.setValue('5.3 mask', self.radius53radioButton.isChecked())
         self.settings.setValue('6.8 mask', self.radius68radioButton.isChecked())
 
-        self.settings.setValue('TME1x1search', self.tmeSearch1x1radioButton.isChecked())
         self.settings.setValue('TME3x3search', self.tmeSearch3x3radioButton.isChecked())
         self.settings.setValue('TME5x5search', self.tmeSearch5x5radioButton.isChecked())
         self.settings.setValue('TME7x7search', self.tmeSearch7x7radioButton.isChecked())
