@@ -8389,7 +8389,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 head, tail = os.path.split(fpath)
                 Path(fpath).rename(os.path.join(head, 'FinderFrames', tail))
 
-
         saved_aperture_groups = glob.glob(self.aperturesDir + '/savedApertures*.p')
 
         if saved_aperture_groups:
@@ -9140,6 +9139,17 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.clearOcrBoxes()  # From any previous ocr setup
                 self.viewFieldsCheckBox.setChecked(False)
                 self.viewFieldsCheckBox.setEnabled(False)
+
+                # Initialize apertures directory
+                self.aperturesDir = os.path.join(self.folder_dir, 'ApertureGroups')
+                if not os.path.exists(self.aperturesDir):
+                    os.mkdir(self.aperturesDir)
+                self.ocrBoxesDir = self.ocrDigitsDir
+
+                # Initialize finder frames directory
+                self.finderFramesDir = os.path.join(self.folder_dir, 'FinderFrames')
+                if not os.path.exists(self.finderFramesDir):
+                    os.mkdir(self.finderFramesDir)
 
                 frame_count = self.ser_meta_data['FrameCount']
                 self.showMsg(f'There are {frame_count} frames in the SER file.')
