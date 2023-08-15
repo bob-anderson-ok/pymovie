@@ -2763,6 +2763,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                               f'finder frames. Fourier aligned finder frames are to be preferred.')
             return
 
+        if self.roi_size < 21:
+            self.showMsgPopup(f'A TME aperture must be size 21 or larger.')
+            return
+
         # We construct an aperture with a default name. That will be changed if user provides a custom tag
         TMEaperture = self.addStaticAperture(askForName=False, name=f'TME-{self.apertureId:02d}', radius=10)
         TMEaperture.jogging_enabled = False
