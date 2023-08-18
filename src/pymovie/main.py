@@ -495,6 +495,45 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.redactLinesBottomEdit.setText(self.settings.value('redactBottom', ''))
         self.numFramesToStackEdit.setText(self.settings.value('numFramesToStack', ''))
 
+        self.dfHelpButton.installEventFilter(self)
+        self.dfHelpButton.clicked.connect(self.darkFlatHelp)
+
+        self.dfTopRedactSpinBox.setValue(int(self.settings.value('dfRedactTop', '0')))
+        self.dfBottomRedactSpinBox.setValue(int(self.settings.value('dfRedactBottom', '0')))
+
+        self.dfLeftRedactSpinBox.setValue(int(self.settings.value('dfRedactLeft', '0')))
+        self.dfRightRedactSpinBox.setValue(int(self.settings.value('dfRedactRight', '0')))
+
+        self.dfDarkStdSpinBox.setValue(float(self.settings.value('dfDarkStd', 2.0)))
+        self.dfGainStdSpinBox.setValue(float(self.settings.value('dfGainStd', 2.0)))
+
+        self.dfShowRedactLinesCheckBox.clicked.connect(self.move_dfRedactLines)
+        self.dfShowVerticalRedactLinesCheckBox.clicked.connect(self.move_dfRedactLines)
+
+        self.cmosShowRedactionLinesCheckBox.clicked.connect(self.toggleCMOSredactLines)
+
+        self.dfRedactTopLinesLabel.installEventFilter(self)
+        self.dfRedactBottomLinesLabel.installEventFilter(self)
+
+        self.dfSelectDarkVideoButton.clicked.connect(self.darkVideoSelect)
+        self.dfSelectFlatVideoButton.clicked.connect(self.flatVideoSelect)
+        self.dfProcessDarkButton.clicked.connect(self.buildDarkFrame)
+        self.dfProcessDarkButton.installEventFilter(self)
+        self.dfProcessFlatButton.clicked.connect(self.buildFlatFrame)
+        self.dfProcessFlatButton.installEventFilter(self)
+        self.dfAnalyzeDarkFlatPairButton.clicked.connect(self.calculateGainFrame)
+        self.dfAnalyzeDarkFlatPairButton.installEventFilter(self)
+        self.dfSaveAvailableFramesButton.clicked.connect(self.saveAvailableFrames)
+        self.dfRestoreAvailableFramesButton.clicked.connect(self.restoreAvailableFrames)
+        self.dfShowGainDefectFrameButton.clicked.connect(self.showGainDefectFrame)
+        self.dfShowGainFrameButton.clicked.connect(self.showGainFrame)
+        self.dfShowDarkFrameButton.clicked.connect(self.showDarkFrame)
+        self.dfShowDarkDefectFrameButton.clicked.connect(self.showDarkDefectFrame)
+        self.dfShowFlatFrameButton.clicked.connect(self.showFlatFrame)
+
+        self.dfDarkStdSpinBox.valueChanged.connect(self.buildAndShowDarkDefectFrame)
+        self.dfGainStdSpinBox.valueChanged.connect(self.buildAndShowGainDefectFrame)
+
         self.defAppSize51RadioButton.setChecked(self.settings.value('appSize51', False) == 'true')
         self.defAppSize41RadioButton.setChecked(self.settings.value('appSize41', False) == 'true')
         self.defAppSize31RadioButton.setChecked(self.settings.value('appSize31', False) == 'true')
@@ -670,8 +709,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.lowerHorizontalLine = None
         self.upperHorizontalLine = None
 
-        self.lowerPixelHorizontalLine = None
-        self.upperPixelHorizontalLine = None
+        self.dfLowerPixelHorizontalLine = None  # Used in Dark/Flat tab
+        self.dfUpperPixelHorizontalLine = None  # Used in Dark/Flat tab
+
+        self.dfLeftPixelVerticalLine = None   # Used in Dark/Flat tab
+        self.dfRightPixelVerticalLine = None  # Used in Dark/Flat tab
+
+        self.lowerPixelHorizontalLine = None  # Used in CMOS tab
+        self.upperPixelHorizontalLine = None  # Used in CMOS tab
 
         self.vLineLeft = None
         self.vLineRight = None
@@ -689,6 +734,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.lowerTimestampPixelSpinBox.valueChanged.connect(self.movePixelTimestampLine)
         self.lowerTimestampPixelLabel.installEventFilter(self)
+
+        self.dfTopRedactSpinBox.valueChanged.connect(self.move_dfRedactLines)
+        self.dfBottomRedactSpinBox.valueChanged.connect(self.move_dfRedactLines)
+
+        self.dfLeftRedactSpinBox.valueChanged.connect(self.move_dfRedactLines)
+        self.dfRightRedactSpinBox.valueChanged.connect(self.move_dfRedactLines)
 
         self.lineNoiseFilterCheckBox.clicked.connect(self.startLineFilter)
         self.lineNoiseFilterCheckBox.installEventFilter(self)
@@ -1031,8 +1082,16 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.thumbOneImage = None
         self.thumbTwoImage = None
 
-        self.noiseFrame = None
+        self.noiseFrame = None  # Used in CMOS tab
         self.darkFrame = None
+        self.darkMean = None
+        self.darkStd = None
+        self.gainFrame = None
+        self.flatFrame = None
+        self.flatMean = None
+        self.flatStd = None
+        self.darkDefectFrame = None
+        self.gainDefectFrame = None
 
         # A True/False to indicate when a first frame has been read and displayed.  This
         # is used in self.showFrame() and set in self.readFitsFile() and self.readAviFile()
@@ -1353,6 +1412,422 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     #         print(" ")
     #         summary.print_(summary_one)
     #         print(" ")
+
+    def TBD(self):
+        self.showMsgPopup('TBD')
+
+    def findFrameBorders(self, frame, border_value, title):
+
+        def is_row_in_border(row_to_test):
+            for col in range(w):
+                if not frame[row_to_test, col] == border_value:
+                    return False
+            return True
+
+        def is_col_in_border(col_to_test):
+            for row in range(h):
+                if not frame[row, col_to_test] == border_value:
+                    return False
+            return True
+
+        if frame is None:
+            self.showMsgPopup(f'findFrameBorder() given None for frame.')
+            return
+
+        h, w = frame.shape
+
+        row_num = 0  # Find border rows at the top
+        while is_row_in_border(row_to_test=row_num):
+            if row_num < h -1:
+                row_num += 1  # Move down 1 row
+            else:
+                break
+        n_top = row_num
+
+        row_num = h - 1  # Find border rows at the bottom (start with bottom row)
+        while is_row_in_border(row_to_test=row_num):
+            if row_num > 1:
+                row_num -= 1  # Move up 1 row
+            else:
+                break
+        n_bottom = h - row_num - 1
+
+        col_num = 0  # Find border columns at the left
+        while is_col_in_border(col_to_test=col_num):
+            if col_num < w - 1:
+                col_num += 1  # Move right 1 column
+            else:
+                break
+        n_left = col_num
+
+        col_num = w - 1  # Find border columns at the right (start at right edge)
+        while is_col_in_border(col_to_test=col_num):
+            if col_num > 1:
+                col_num -= 1
+            else:
+                break
+        n_right = w - col_num - 1
+
+        self.showMsg(f'{title} ROI:  n_top: {n_top}  n_bottom: {n_bottom}  n_left: {n_left}  n_right: {n_right}')
+        return n_top, n_bottom, n_left, n_right
+
+    def meanFrameROI(self, frame, n_top, n_bottom, n_left, n_right):
+        if frame is None:
+            self.showMsgPopup(f'meanFrameROI() given None for frame.')
+            return
+
+        h, w = frame.shape
+        return np.mean(frame[n_top:h-n_bottom,n_left:w-n_right])
+
+    def stdFrameROI(self, frame, n_top, n_bottom, n_left, n_right):
+        if frame is None:
+            self.showMsgPopup(f'stdFrameROI() given None for frame.')
+            return
+
+        h, w = frame.shape
+        return np.std(frame[n_top:h - n_bottom, n_left:w - n_right])
+
+    def fillFrameBorder(self, fill_value, frame, n_top, n_bottom, n_left, n_right):
+        if frame is None:
+            self.showMsgPopup(f'fillFrameBorder() given None for frame.')
+            return
+
+        h, w = frame.shape
+        for row in range(n_top):           # fill n_top top rows
+            for col in range(w):
+                frame[row,col] = fill_value
+        for row in range(h-n_bottom,h):    # fill n_bottom bottom rows
+            for col in range(w):
+                frame[row,col] = fill_value
+        for col in range(n_left):          # fill n_left left columns
+            for row in range(h):
+                frame[row,col] = fill_value
+        for col in range(w-n_right, w):    # fill n_right right columns
+            for row in range(h):
+                frame[row,col] = fill_value
+
+    def calculateGainFrame(self):
+        if self.darkFrame is None:
+            self.showMsgPopup(f'There is no dark frame available.')
+
+        if self.flatFrame is None:
+            self.showMsgPopup(f'There is no flat frame available.')
+
+        if not self.darkFrame.shape == self.flatFrame.shape:
+            self.showMsgPopup(f'The dark frame and the flat frame do not have the same shape.')
+            return
+
+        n_top = self.dfTopRedactSpinBox.value()
+        n_bottom = self.dfBottomRedactSpinBox.value()
+        n_left = self.dfLeftRedactSpinBox.value()
+        n_right = self.dfRightRedactSpinBox.value()
+
+        self.gainFrame = np.zeros_like(self.darkFrame)
+
+        normal_delta = self.flatMean - self.darkMean
+
+        if normal_delta <= 0.0:
+            self.showMsgPopup(f'flat mean is less than dark mean.')
+            return
+
+        for i in range(self.darkFrame.shape[0]):
+            for j in range(self.darkFrame.shape[1]):
+                delta = self.flatFrame[i,j] - self.darkFrame[i,j]
+                if delta <= 0.0:
+                    self.gainFrame[i,j] = 0.25  # This value should trigger a gain defect pixel at this point
+                else:
+                    gain_needed = normal_delta / delta
+                    if gain_needed > 2.0:
+                        gain_needed = 2.0
+                    if gain_needed < 0.5:
+                        gain_needed = 0.5
+                    self.gainFrame[i,j] = gain_needed
+
+        self.fillFrameBorder(1.0, self.gainFrame, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right)
+
+        self.showGainFrame()
+        self.buildGainDefectFrame()
+
+    def toggleCMOSredactLines(self):
+        if self.cmosShowRedactionLinesCheckBox.isChecked():
+            # self.showMsgPopup(f'We are going to turn redact lines on.')
+            view = self.frameView.getView()
+            if self.image is not None:
+                h, w = self.image.shape
+            else:
+                self.showMsgDialog('There is no image displayed.')
+                return
+
+            upperRowOffset = self.upperTimestampPixelSpinBox.value()
+            lowerRowOffset = self.lowerTimestampPixelSpinBox.value()
+            if upperRowOffset > h - lowerRowOffset:
+                upperRowOffset -= upperRowOffset - (h - lowerRowOffset)
+                self.upperTimestampPixelSpinBox.setValue(upperRowOffset)
+            self.upperPixelHorizontalLine = HorizontalLine(upperRowOffset, h, w, 'r')  # Make a red line at very top
+            self.lowerPixelHorizontalLine = HorizontalLine(h - lowerRowOffset, h, w,
+                                                           'y')  # Make a yellow line at very bottom
+            view.addItem(self.upperPixelHorizontalLine)
+            view.addItem(self.lowerPixelHorizontalLine)
+        else:
+            # self.showMsgPopup(f'We are going to remove redact lines.')
+            if self.image is None:
+                self.showMsgDialog('There is no image displayed.')
+                return
+            view = self.frameView.getView()
+            view.removeItem(self.upperPixelHorizontalLine)
+            view.removeItem(self.lowerPixelHorizontalLine)
+
+    def saveAvailableFrames(self):
+        self.darksFlatsDir = os.path.join(self.homeDir, 'DARKS-FLATS')
+        if not os.path.exists(self.darksFlatsDir):
+            os.mkdir(self.darksFlatsDir)
+
+        frames_available = self.darkFrame is not None or self.darkDefectFrame is not None or\
+            self.gainFrame is not None or self.gainDefectFrame is not None or self.flatFrame is not None
+
+        if not frames_available:
+            self.showMsgPopup(f'There are no frames to save.')
+            return
+
+        frame_roi = []
+        self.showMsg(f'\nDuring preprocessing frames for saving, these border values were found ========')
+        if self.darkFrame is not None:
+            frame_roi.append(self.findFrameBorders(self.darkFrame, border_value=0.0, title='Dark frame'))
+        if self.flatFrame is not None:
+            frame_roi.append(self.findFrameBorders(self.flatFrame, border_value=0.0, title='Flat frame'))
+        if self.gainFrame is not None:
+            frame_roi.append(self.findFrameBorders(self.gainFrame, border_value=1.0, title='Gain frame'))
+
+        sample_roi = frame_roi[0]
+        for roi in frame_roi:
+            if not sample_roi == roi:
+                self.showMsgPopup(f'The frames available for saving have inconsistent borders (ROI)\n\n'
+                                  f'Saving such a set is prohibited.')
+                return
+
+
+
+        std_settings = [self.dfDarkStdSpinBox.value(), self.dfGainStdSpinBox.value()]
+
+        tag_given, done = QtWidgets.QInputDialog.getText(self, 'Dark/Flat dir', 'Dark/Flat dir name to use:', text='')
+        if tag_given:
+            destDir = os.path.join(self.darksFlatsDir, tag_given)
+            if not os.path.exists(destDir):
+                os.mkdir(destDir)
+
+            # We need to save the std settings so that they can be restored along with the frames (otherwise
+            # showing any defect frame would cause it to be recalculated).
+            pickle.dump(std_settings, open(os.path.join(destDir, 'stdSettings.p'), "wb"))
+            msg = f'std settings saved\n\n'
+
+            # Next we write the available frames to destDir
+            msg += f'Frames saved:\n\n'
+            if self.darkFrame is not None:
+                pickle.dump(self.darkFrame, open(os.path.join(destDir, 'darkFrame.p'), "wb"))
+                msg += f'darkFrame\n'
+            if self.darkDefectFrame is not None:
+                pickle.dump(self.darkDefectFrame, open(os.path.join(destDir, 'darkDefectFrame.p'), "wb"))
+                msg += f'darkDefectFrame\n'
+            if self.flatFrame is not None:
+                pickle.dump(self.flatFrame, open(os.path.join(destDir, 'flatFrame.p'), "wb"))
+                msg += f'flatFrame\n'
+            if self.gainFrame is not None:
+                pickle.dump(self.gainFrame, open(os.path.join(destDir, 'gainFrame.p'), "wb"))
+                msg += f'gainFrame\n'
+            if self.gainDefectFrame is not None:
+                pickle.dump(self.gainDefectFrame, open(os.path.join(destDir, 'gainDefectFrame.p'), "wb"))
+                msg += f'gainDefectFrame\n'
+            self.showMsgPopup(msg)
+        else:
+            self.showMsgPopup(f'Operation cancelled by user. No frames saved.')
+
+    def enableDisableDarkFlatRoiControls(self, state):
+        self.dfTopRedactSpinBox.setEnabled(state)
+        self.dfBottomRedactSpinBox.setEnabled(state)
+        self.dfLeftRedactSpinBox.setEnabled(state)
+        self.dfRightRedactSpinBox.setEnabled(state)
+
+    def restoreAvailableFrames(self):
+        self.darksFlatsDir = os.path.join(self.homeDir, 'DARKS-FLATS')
+        if not os.path.exists(self.darksFlatsDir):
+            self.showMsgPopup(f'There is no DARKS-FLATS directory.')
+            return
+
+        options = QFileDialog.Options()
+        options |= QFileDialog.ShowDirsOnly
+        # options |= QFileDialog.DontUseNativeDialog
+        dir_path = QFileDialog.getExistingDirectory(
+            self,
+            "Select folder containing desired dark/flat frames",
+            self.settings.value(self.darksFlatsDir, "./DARKS-FLATS"),  # starting directory,
+            options=options
+        )
+
+        if dir_path:
+            comparison_roi = None
+            msg = f'Files found:\n'
+            file_wanted = os.path.join(dir_path, 'stdSettings.p')
+            if os.path.exists(file_wanted):
+                msg += f'\nstdSettings\n'
+                std_settings = pickle.load(open(file_wanted, 'rb'))
+                self.dfDarkStdSpinBox.setValue(std_settings[0])
+                self.dfGainStdSpinBox.setValue(std_settings[1])
+
+            file_wanted = os.path.join(dir_path, 'darkFrame.p')
+            if os.path.exists(file_wanted):
+                msg += f'\ndarkFrame\n'
+                self.darkFrame = pickle.load(open(file_wanted, 'rb'))
+                roi = self.findFrameBorders(self.darkFrame, border_value=0.0, title='Dark frame')
+                if comparison_roi is None:
+                    comparison_roi = roi
+                elif not roi == comparison_roi:
+                    self.showMsgPopup(f'Inconsistent frame ROI found.')
+                    return
+                self.darkMean = self.meanFrameROI(
+                    self.darkFrame, n_top=roi[0], n_bottom=roi[1], n_left=roi[2], n_right=roi[3]
+                )
+
+                self.darkStd = self.stdFrameROI(
+                    self.darkFrame, n_top=roi[0], n_bottom=roi[1], n_left=roi[2], n_right=roi[3]
+                )
+                self.dfTopRedactSpinBox.setValue(roi[0])
+                self.dfBottomRedactSpinBox.setValue(roi[1])
+                self.dfLeftRedactSpinBox.setValue(roi[2])
+                self.dfRightRedactSpinBox.setValue(roi[3])
+                self.enableDisableDarkFlatRoiControls(False)
+
+            file_wanted = os.path.join(dir_path, 'darkDefectFrame.p')
+            if os.path.exists(file_wanted):
+                msg += f'darkDefectFrame\n'
+                self.darkDefectFrame = pickle.load(open(file_wanted, 'rb'))
+
+            file_wanted = os.path.join(dir_path, 'flatFrame.p')
+            if os.path.exists(file_wanted):
+                msg += f'\nflatFrame\n'
+                self.flatFrame = pickle.load(open(file_wanted, 'rb'))
+                roi = self.findFrameBorders(self.flatFrame, border_value=0.0, title='Flat frame')
+                if comparison_roi is None:
+                    comparison_roi = roi
+                elif not roi == comparison_roi:
+                    self.showMsgPopup(f'Inconsistent frame ROI found.')
+                    return
+                self.flatMean = self.meanFrameROI(
+                    self.flatFrame, n_top=roi[0], n_bottom=roi[1], n_left=roi[2], n_right=roi[3]
+                )
+
+                self.flatStd = self.stdFrameROI(
+                    self.flatFrame, n_top=roi[0], n_bottom=roi[1], n_left=roi[2], n_right=roi[3]
+                )
+                self.dfTopRedactSpinBox.setValue(roi[0])
+                self.dfBottomRedactSpinBox.setValue(roi[1])
+                self.dfLeftRedactSpinBox.setValue(roi[2])
+                self.dfRightRedactSpinBox.setValue(roi[3])
+                self.enableDisableDarkFlatRoiControls(False)
+
+            file_wanted = os.path.join(dir_path, 'gainFrame.p')
+            if os.path.exists(file_wanted):
+                msg += f'\ngainFrame\n'
+                self.gainFrame = pickle.load(open(file_wanted, 'rb'))
+                roi = self.findFrameBorders(self.gainFrame, border_value=1.0, title='Gain frame')
+                if comparison_roi is None:
+                    comparison_roi = roi
+                elif not roi == comparison_roi:
+                    self.showMsgPopup(f'Inconsistent frame ROI found.')
+                    return
+                self.gainMean = self.meanFrameROI(
+                    self.gainFrame, n_top=roi[0], n_bottom=roi[1], n_left=roi[2], n_right=roi[3]
+                )
+
+                self.gainStd = self.stdFrameROI(
+                    self.gainFrame, n_top=roi[0], n_bottom=roi[1], n_left=roi[2], n_right=roi[3]
+                )
+                self.dfTopRedactSpinBox.setValue(roi[0])
+                self.dfBottomRedactSpinBox.setValue(roi[1])
+                self.dfLeftRedactSpinBox.setValue(roi[2])
+                self.dfRightRedactSpinBox.setValue(roi[3])
+                self.enableDisableDarkFlatRoiControls(False)
+
+            file_wanted = os.path.join(dir_path, 'gainDefectFrame.p')
+            if os.path.exists(file_wanted):
+                msg += f'gainDefectFrame'
+                self.gainDefectFrame = pickle.load(open(file_wanted, 'rb'))
+
+            self.showMsgPopup(msg)
+
+    def showDarkFrame(self):
+        if self.darkFrame is None:
+            self.showMsgPopup(f'No dark frame is available to show.')
+            return
+        self.image = np.copy(self.darkFrame)
+        self.showMsg(f'The "dark frame" is being displayed.')
+        self.findFrameBorders(self.darkFrame, border_value=0.0, title='Dark frame')
+        self.displayImageAtCurrentZoomPanState()
+
+    def showFlatFrame(self):
+        if self.flatFrame is None:
+            self.showMsgPopup(f'No flat frame is available to show.')
+            return
+        self.image = np.copy(self.flatFrame)
+        self.showMsg(f'The "flat frame" is being displayed.')
+        self.findFrameBorders(self.flatFrame, border_value=0.0, title='Flat frame')
+        self.displayImageAtCurrentZoomPanState()
+
+    def showGainFrame(self):
+        if self.gainFrame is None:
+            self.showMsgPopup(f'No gain frame is available to show.')
+            return
+        self.image = np.copy(self.gainFrame)
+        self.showMsg(f'The "gain frame" is being displayed.')
+        self.findFrameBorders(self.gainFrame, border_value=1.0, title = 'Gain frame')
+        self.displayImageAtCurrentZoomPanState()
+
+    def showGainDefectFrame(self):
+        if self.gainDefectFrame is None:
+            self.showMsgPopup(f'No gain defect frame is available to show.')
+            return
+        self.image = np.copy(self.gainDefectFrame)
+        self.showMsg(f'The "gain defect frame" is being displayed.')
+        # We have to use the gainFrame ROI because rows and columns of a defect frame are commonly all zero ...
+        # ... but the ROI of the gainDefectFrame will never differ from its source (self.gainFrame)
+        self.findFrameBorders(self.gainFrame, border_value=1.0, title='Gain defect frame')
+        self.displayImageAtCurrentZoomPanState()
+
+    def showDarkDefectFrame(self):
+        if self.darkFrame is None:
+            self.showMsgPopup(f'No dark frame is available to work from.')
+            return
+        self.buildDarkDefectFrame()
+        self.image = np.copy(self.darkDefectFrame)
+        self.showMsg(f'The "dark defect frame" is being displayed.')
+        # We have to use the gainFrame ROI because rows and columns of a defect frame are commonly all zero ...
+        # ... but the ROI of the darkDefectFrame will never differ from its source (self.darkFrame)
+        self.findFrameBorders(self.darkFrame, border_value=0.0, title='Dark defect frame')
+        self.displayImageAtCurrentZoomPanState()
+
+    def darkVideoSelect(self):
+        if self.dfAviSerTypeFileRadioButton.isChecked():
+            self.readAviSerAdvAavFile()
+            if not (self.avi_in_use or self.ser_file_in_use or self.aav_file_in_use):
+                return
+        else:
+            self.selectFitsFolder()
+            if not self.fits_folder_in_use:
+                return
+        self.dfProcessDarkButton.setEnabled(True)
+        self.enableDisableDarkFlatRoiControls(True)
+
+    def flatVideoSelect(self):
+        if self.dfAviSerTypeFileRadioButton.isChecked():
+            self.readAviSerAdvAavFile()
+            if not (self.avi_in_use or self.ser_file_in_use or self.aav_file_in_use):
+                return
+        else:
+            self.selectFitsFolder()
+            if not self.fits_folder_in_use:
+                return
+        self.dfProcessFlatButton.setEnabled(True)
+        self.enableDisableDarkFlatRoiControls(True)
+
 
     def computeFourierFinder(self):
         if not (self.avi_wcs_folder_in_use or self.fits_folder_in_use):
@@ -2136,7 +2611,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.showMsgDialog(f'There is no dark frame stack to process.')
             return
 
-        self.image = self.darkFrame
+        self.image = np.copy(self.darkFrame)
         self.showMsg(f'The "dark frame" is being displayed.')
         self.displayImageAtCurrentZoomPanState()
         self.plotImagePixelDistribution('Dark frame pixel distribution', kind='DarkAndBright')
@@ -2146,41 +2621,45 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.showMsgDialog(f'There is no noise frame stack to process.')
             return
 
-        self.image = self.noiseFrame
+        self.image = np.copy(self.noiseFrame)
         self.showMsg(f'The "read noise frame" is being displayed.')
 
         self.displayImageAtCurrentZoomPanState()
         self.plotImagePixelDistribution('Read noise frame pixel distribution', kind='NoisyAndDead')
 
-    def buildDarkAndNoiseFrames(self):
+    def buildDarkAndNoiseFrames(self):  # This is used only by the CMOS tab !!!!
         if self.filename is None:
             self.showMsgDialog(f'There are no frames to process. No file has been read.')
             return
 
-        try:
-            startFrame = int(self.startFrameEdit.text())
-        except ValueError:
-            self.showMsgDialog(f'"{self.startFrameEdit.text()}" is not a valid integer.')
-            return
+        # TODO This changes how CMOS Pixels Tool tab Build dark frame ... button works - probably ok
+        # try:
+        #     startFrame = int(self.startFrameEdit.text())
+        # except ValueError:
+        #     self.showMsgDialog(f'"{self.startFrameEdit.text()}" is not a valid integer.')
+        #     return
 
-        try:
-            stopFrame = int(self.stopFrameEdit.text())
-        except ValueError:
-            self.showMsgDialog(f'"{self.stopFrameEdit.text()}" is not a valid integer.')
-            return
+        # try:
+        #     stopFrame = int(self.stopFrameEdit.text())
+        # except ValueError:
+        #     self.showMsgDialog(f'"{self.stopFrameEdit.text()}" is not a valid integer.')
+        #     return
 
-        if startFrame >= stopFrame:
-            self.showMsgDialog(f'The start-frame number must be less than the stop-fame number')
-            return
+        # if startFrame >= stopFrame:
+        #     self.showMsgDialog(f'The start-frame number must be less than the stop-frame number')
+        #     return
 
-        if startFrame < 0 or stopFrame < 0:
-            self.showMsgDialog(f'frame numbers cannot be negative.')
-            return
+        # if startFrame < 0 or stopFrame < 0:
+        #     self.showMsgDialog(f'frame numbers cannot be negative.')
+        #     return
 
-        maxFrame = self.stopAtFrameSpinBox.maximum()
-        if stopFrame > maxFrame:
-            self.showMsgDialog(f'{stopFrame} is larger than the last frame (which is {maxFrame}).')
-            return
+        # maxFrame = self.stopAtFrameSpinBox.maximum()
+        # if stopFrame > maxFrame:
+        #     self.showMsgDialog(f'{stopFrame} is larger than the last frame (which is {maxFrame}).')
+        #     return
+
+        startFrame = self.currentFrameSpinBox.value()
+        stopFrame = self.stopAtFrameSpinBox.value()
 
         noiseFrame = np.zeros(self.image.shape, dtype='float')
         darkFrame = np.zeros(self.image.shape, dtype='float')
@@ -2190,13 +2669,214 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             noiseFrame = np.maximum(noiseFrame, self.image)
             darkFrame += self.image
 
+        self.currentFrameSpinBox.setValue(startFrame)
+
+        # final_dark_frame = np.copy(self.image)
+
         numFrames = stopFrame - startFrame + 1
         self.darkFrame = darkFrame / numFrames
         self.noiseFrame = noiseFrame
+        try:
+            topRedactionRowCount = self.dfTopRedactSpinBox.value()
+        except ValueError as e:
+            self.showMsgPopup(f'In top timestamp redaction edit: {e}')
+            return
 
-        self.image = self.darkFrame
+        try:
+            bottomRedactionRowCount = self.dfBottomRedactSpinBox.value()
+        except ValueError as e:
+            self.showMsgPopup(f'In bottom timestamp redaction edit: {e}')
+            return
+
+        if topRedactionRowCount < 0 or bottomRedactionRowCount < 0:
+            self.showMsgPopup(f'redaction row counts must be positive.')
+            return
+
+        dark_frame_height = self.darkFrame.shape[0]
+        dark_frame_width = self.darkFrame.shape[1]
+
+        # self.showMsgPopup(f'H: {dark_frame_height}  W: {dark_frame_width}')
+
+        if topRedactionRowCount + bottomRedactionRowCount >= dark_frame_height:
+            self.showMsgPopup(f'redaction row counts are too large.')
+            return
+
+        for i in range(topRedactionRowCount):
+            for j in range(dark_frame_width):
+                self.darkFrame[i,j] = 0.0
+
+        for i in range(dark_frame_height - bottomRedactionRowCount, dark_frame_height):
+            for j in range(dark_frame_width):
+                self.darkFrame[i,j] = 0.0
+
+        self.image = np.copy(self.darkFrame)
         self.showMsg(f'The "dark frame" just built is now being displayed.')
         self.displayImageAtCurrentZoomPanState()
+        self.buildDarkDefectFrame()
+
+    def buildDarkFrame(self):  # This is used only by the Dark/Flat tab !!!!
+        if self.filename is None:
+            self.showMsgDialog(f'There are no frames to process. No file has been read.')
+            return
+
+        startFrame = self.currentFrameSpinBox.value()
+        stopFrame = self.stopAtFrameSpinBox.value()
+
+        darkFrame = np.zeros(self.image.shape, dtype='float')
+        for frame in range(startFrame, stopFrame + 1):
+            self.currentFrameSpinBox.setValue(frame)
+            QtGui.QGuiApplication.processEvents()
+            darkFrame += self.image
+
+        self.currentFrameSpinBox.setValue(startFrame)
+
+        numFrames = stopFrame - startFrame + 1
+        self.darkFrame = darkFrame / numFrames
+
+        n_top = self.dfTopRedactSpinBox.value()
+        n_bottom = self.dfBottomRedactSpinBox.value()
+        n_left = self.dfLeftRedactSpinBox.value()
+        n_right = self.dfRightRedactSpinBox.value()
+
+        self.dfProcessDarkButton.setEnabled(False)
+        self.gainFrame = None
+        self.gainDefectFrame = None
+        self.enableDisableDarkFlatRoiControls(True)
+
+        self.fillFrameBorder(0.0, self.darkFrame, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right)
+
+        self.image = np.copy(self.darkFrame)
+        self.showMsg(f'The "dark frame" just built is now being displayed.')
+        self.displayImageAtCurrentZoomPanState()
+        self.buildDarkDefectFrame()
+
+    def buildFlatFrame(self):
+        if self.filename is None:
+            self.showMsgDialog(f'There are no frames to process. No file has been read.')
+            return
+
+        startFrame = self.currentFrameSpinBox.value()
+        stopFrame = self.stopAtFrameSpinBox.value()
+
+        flatFrame = np.zeros(self.image.shape, dtype='float')
+        for frame in range(startFrame, stopFrame + 1):
+            self.currentFrameSpinBox.setValue(frame)
+            QtGui.QGuiApplication.processEvents()
+            flatFrame += self.image
+
+        self.currentFrameSpinBox.setValue(startFrame)
+
+        numFrames = stopFrame - startFrame + 1
+        self.flatFrame = flatFrame / numFrames
+
+        n_top = self.dfTopRedactSpinBox.value()
+        n_bottom = self.dfBottomRedactSpinBox.value()
+        n_left = self.dfLeftRedactSpinBox.value()
+        n_right = self.dfRightRedactSpinBox.value()
+
+        self.dfProcessFlatButton.setEnabled(False)
+        self.gainFrame = None
+        self.gainDefectFrame = None
+        self.enableDisableDarkFlatRoiControls(True)
+
+
+        self.fillFrameBorder(0.0, self.flatFrame, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right)
+
+        self.flatMean = self.meanFrameROI(
+            self.flatFrame, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right
+        )
+
+        self.flatStd = self.stdFrameROI(
+            self.flatFrame, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right
+        )
+
+        self.showMsg(f'Flat frame   mean: {self.flatMean:0.2f}   std: {self.flatStd:0.2f}')
+
+        self.image = np.copy(self.flatFrame)
+        self.showMsg(f'The "flat frame" just built is now being displayed.')
+        self.displayImageAtCurrentZoomPanState()
+
+
+    def buildAndShowDarkDefectFrame(self):
+        if self.darkFrame is None:
+            return
+        self.buildDarkDefectFrame()
+        self.image = np.copy(self.darkDefectFrame)
+        self.showMsg(f'The recalculated "dark defect frame" is now being displayed.')
+        self.displayImageAtCurrentZoomPanState()
+
+    def buildAndShowGainDefectFrame(self):
+        if self.gainFrame is None:
+            return
+        self.buildGainDefectFrame()
+        self.image = np.copy(self.gainDefectFrame)
+        self.showMsg(f'The recalculated "gain defect frame" is now being displayed.')
+        self.displayImageAtCurrentZoomPanState()
+
+    def buildDarkDefectFrame(self):
+        if self.darkFrame is None:
+            return
+
+        n_top = self.dfTopRedactSpinBox.value()
+        n_bottom = self.dfBottomRedactSpinBox.value()
+        n_left = self.dfLeftRedactSpinBox.value()
+        n_right = self.dfRightRedactSpinBox.value()
+
+        self.darkMean = self.meanFrameROI(
+            self.darkFrame, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right
+        )
+
+        self.darkStd = self.stdFrameROI(
+            self.darkFrame, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right
+        )
+        # self.showMsgPopup(f'dark_mean: {self.darkMean:0.2f}  dark_std: {self.darkStd:0.2f}')
+
+        std_thresh = self.dfDarkStdSpinBox.value() * self.darkStd
+        self.showMsg(f'Dark frame  mean: {self.darkMean:0.2f}  std: {self.darkStd:0.2f}  '
+                     f'defect if > {std_thresh+self.darkMean:0.2f}')
+        baddies = np.where(self.darkFrame > (self.darkMean + std_thresh))
+        rows = baddies[0]
+        cols = baddies[1]
+        self.darkDefectFrame = np.zeros(self.darkFrame.shape, dtype=np.uint16)
+        for i in range(len(rows)):
+            self.darkDefectFrame[rows[i], cols[i]] = 1
+
+    def buildGainDefectFrame(self):
+        if self.gainFrame is None:
+            return
+
+        n_top = self.dfTopRedactSpinBox.value()
+        n_bottom = self.dfBottomRedactSpinBox.value()
+        n_left = self.dfLeftRedactSpinBox.value()
+        n_right = self.dfRightRedactSpinBox.value()
+
+        self.gainMean = self.meanFrameROI(
+            self.gainFrame, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right
+        )
+
+        self.gainStd = self.stdFrameROI(
+            self.gainFrame, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right
+        )
+
+        std_thresh = self.dfGainStdSpinBox.value() * self.gainStd
+        self.showMsg(f'Gain frame  mean: {self.gainMean:0.2f}  std: {self.gainStd:0.2f}  '
+                     f'pixel has gain defect if gain_adjust > {self.gainMean + std_thresh:0.2f} or '
+                     f'or if gain_adjust < {self.gainMean - std_thresh:0.2f}')
+        self.gainDefectFrame = np.zeros(self.gainFrame.shape, dtype=np.uint16)
+
+        baddies = np.where(self.gainFrame > (self.gainMean + std_thresh))
+        rows = baddies[0]
+        cols = baddies[1]
+        for i in range(len(rows)):
+            self.gainDefectFrame[rows[i], cols[i]] = 1
+
+        baddies = np.where(self.gainFrame < (self.gainMean - std_thresh))
+        rows = baddies[0]
+        cols = baddies[1]
+        for i in range(len(rows)):
+            self.gainDefectFrame[rows[i], cols[i]] = 1
+
+        self.fillFrameBorder(0, self.gainDefectFrame, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right)
 
     def showMedianProfile(self):
         if len(self.horizontalMedianData) > 0:
@@ -2376,10 +3056,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.upperPixelHorizontalLine = HorizontalLine(upperRowOffset, h, w, 'r')  # Make a red line at very top
         self.lowerPixelHorizontalLine = HorizontalLine(h - lowerRowOffset, h, w,
                                                        'y')  # Make a yellow line at very bottom
-        view.addItem(self.upperPixelHorizontalLine)
-        view.addItem(self.lowerPixelHorizontalLine)
+        if self.cmosShowRedactionLinesCheckBox.isChecked():
+            view.addItem(self.upperPixelHorizontalLine)
+            view.addItem(self.lowerPixelHorizontalLine)
 
-    def movePixelTimestampLine(self):
+    def movePixelTimestampLine(self):    # Used by CMOS tab
         view = self.frameView.getView()
 
         try:
@@ -2397,8 +3078,76 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.upperPixelHorizontalLine = HorizontalLine(upperRowOffset, h, w, 'r')  # Make a red line at very top
         self.lowerPixelHorizontalLine = HorizontalLine(h - lowerRowOffset, h, w,
                                                        'y')  # Make a yellow line at very bottom
-        view.addItem(self.upperPixelHorizontalLine)
-        view.addItem(self.lowerPixelHorizontalLine)
+
+        if self.cmosShowRedactionLinesCheckBox.isChecked():
+            view.addItem(self.upperPixelHorizontalLine)
+            view.addItem(self.lowerPixelHorizontalLine)
+
+    def move_dfRedactLines(self):  # Used by Dark/Flat tab
+        if self.image is None:
+            return
+
+        if self.dfShowRedactLinesCheckBox.isChecked():
+
+            view = self.frameView.getView()
+
+            try:
+                view.removeItem(self.dfUpperPixelHorizontalLine)
+                view.removeItem(self.dfLowerPixelHorizontalLine)
+            except Exception:
+                pass
+            h, w = self.image.shape
+            upperRowOffset = self.dfTopRedactSpinBox.value()
+            lowerRowOffset = self.dfBottomRedactSpinBox.value()
+            if upperRowOffset > h - lowerRowOffset:
+                upperRowOffset = h - lowerRowOffset
+                self.dfTopRedactSpinBox.setValue(upperRowOffset)
+                return
+            self.dfUpperPixelHorizontalLine = HorizontalLine(upperRowOffset, h, w, 'r')  # Make a red line at very top
+            self.dfLowerPixelHorizontalLine = HorizontalLine(h - lowerRowOffset, h, w,
+                                                           'y')  # Make a yellow line at very bottom
+            view.addItem(self.dfUpperPixelHorizontalLine)
+            view.addItem(self.dfLowerPixelHorizontalLine)
+        else:
+            view = self.frameView.getView()
+
+            try:
+                view.removeItem(self.dfUpperPixelHorizontalLine)
+                view.removeItem(self.dfLowerPixelHorizontalLine)
+            except Exception:
+                pass
+
+
+        if self.dfShowVerticalRedactLinesCheckBox.isChecked():
+            view = self.frameView.getView()
+
+            try:
+                view.removeItem(self.dfRightPixelVerticalLine)
+                view.removeItem(self.dfLeftPixelVerticalLine)
+            except Exception:
+                pass
+            h, w = self.image.shape
+            leftColOffset = self.dfLeftRedactSpinBox.value()
+            rightColOffset = self.dfRightRedactSpinBox.value()
+            if rightColOffset > w - leftColOffset:
+                rightColOffset = w - leftColOffset
+                self.dfRightRedactSpinBox.setValue(rightColOffset)
+                return
+            upperMax = 1000
+            self.dfLeftPixelVerticalLine = pg.InfiniteLine(pos=leftColOffset, angle=90, bounds=[0, upperMax],
+                                                           movable=False, pen=pg.mkPen([0, 255, 0], width=1))
+            self.dfRightPixelVerticalLine = pg.InfiniteLine(pos=w - rightColOffset, angle=90, bounds=[0, upperMax],
+                                                            movable=False, pen=pg.mkPen([255, 0, 0], width=1))
+            view.addItem(self.dfLeftPixelVerticalLine)
+            view.addItem(self.dfRightPixelVerticalLine)
+        else:
+            view = self.frameView.getView()
+
+            try:
+                view.removeItem(self.dfRightPixelVerticalLine)
+                view.removeItem(self.dfLeftPixelVerticalLine)
+            except Exception:
+                pass
 
     def moveUpperTimestampLine(self):
         view = self.frameView.getView()
@@ -2746,6 +3495,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def vtiHelp(self):
         msg = self.vtiHelpButton.toolTip()
+        self.helperThing.raise_()
+        self.helperThing.show()
+        self.helperThing.textEdit.clear()
+        self.helperThing.textEdit.insertHtml(msg)
+    def darkFlatHelp(self):
+        msg = self.dfHelpButton.toolTip()
         self.helperThing.raise_()
         self.helperThing.show()
         self.helperThing.textEdit.clear()
@@ -5449,7 +6204,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.applyPixelCorrectionsToCurrentImageButton.setEnabled(False)
 
         self.noiseFrame = None
-        self.darkFrame = None
+        # TODO Fix the fact that DarkFlat tab uses same name
+        # self.darkFrame = None
 
     def enableCmosPixelFilterControls(self):
         self.buildDarkAndNoiseFramesButton.setEnabled(True)
@@ -10844,6 +11600,16 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.settings.setValue('redactTop', self.redactLinesTopEdit.text())
         self.settings.setValue('redactBottom', self.redactLinesBottomEdit.text())
         self.settings.setValue('numFramesToStack', self.numFramesToStackEdit.text())
+
+        self.settings.setValue('dfRedactTop', self.dfTopRedactSpinBox.value())
+        self.settings.setValue('dfRedactBottom', self.dfBottomRedactSpinBox.value())
+
+        self.settings.setValue('dfRedactLeft', self.dfLeftRedactSpinBox.value())
+        self.settings.setValue('dfRedactRight', self.dfRightRedactSpinBox.value())
+
+        self.settings.setValue('dfDarkStd', self.dfDarkStdSpinBox.value())
+        self.settings.setValue('dfGainStd', self.dfGainStdSpinBox.value())
+
 
         # Capture the close request and update 'sticky' settings
         self.settings.setValue('size', self.size())
