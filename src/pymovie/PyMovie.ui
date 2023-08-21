@@ -872,7 +872,7 @@
                </property>
                <property name="sizeHint" stdset="0">
                 <size>
-                 <width>192</width>
+                 <width>141</width>
                  <height>20</height>
                 </size>
                </property>
@@ -904,7 +904,7 @@
                     </size>
                    </property>
                    <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Dark videos (a recording where no light is allowed on the sensor) and Flat videos (a recording where a constant light level is presented at the sensor sufficient to reach about 75% of max linear intensity) can be used for two purposes: sensor quality control (locating misbehaving pixels); correction for pixel to pixel variations in black level and responsivity to light (gain differences) to reduce light curve noise from these sources.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;The expected work flow is:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;1) Click &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Select &amp;quot;dark&amp;quot; video&lt;/span&gt; - this will open the file and enable the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Calc dark frame&lt;/span&gt; button.&lt;/p&gt;&lt;p&gt;2) Set the desired start and stop frame numbers.&lt;/p&gt;&lt;p&gt;3) Click the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;show&lt;/span&gt; checkboxes to activate lines that designate the ROI (region of interest) - elimination of timestamp information is the primary purpose for the selection, but removing a couple of rows at the top and a couple of columns at the left and right edges is useful to deal with edge effects that are frequently present. The spinners for positioning the ROI lines can be clicked, or edited, or if your mouse has a wheel, spin that wheel while the mouse pointer is in the widget.&lt;/p&gt;&lt;p&gt;4) Whatever settings for the ROI are chosen MUST be used for both the dark and flat frame generation. This is enforced during the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Save Dark/Flat frames&lt;/span&gt; process.&lt;/p&gt;&lt;p&gt;5) Click the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Calc dark frame&lt;/span&gt; button to finally form the dark frame.&lt;/p&gt;&lt;p&gt;6) Click the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Show dark defects&lt;/span&gt; button to view 'dark defects' - the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;dark std&lt;/span&gt; spinner sets the threshold (in multiples of the dark noise found) - any dark frame pixels above this threshold are considered defective.&lt;/p&gt;&lt;p&gt;7) Click &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Select &amp;quot;flat&amp;quot; video&lt;/span&gt; - this will open the file and enable the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Calc flat frame&lt;/span&gt; button.&lt;/p&gt;&lt;p&gt;8) Click the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Calc gain frame from dark/flat pair&lt;/span&gt; button.&lt;/p&gt;&lt;p&gt;9) Use the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;dark std&lt;/span&gt; and &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;gain std&lt;/span&gt; spinners to calculate dark defects and gain defects frames (these are multipliers applied to the dark frame noise and the gain frame noise.&lt;/p&gt;&lt;p&gt;10) Click the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Save Dark/Flat frames&lt;/span&gt; button and give the directory a name that reflects accurately the camera used and the settings used for the recordings.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;Calculations performed for gain frame:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;reference_signal = flatMean - darkMean&lt;/p&gt;&lt;p&gt;repeat for all pixels (i is the index):&lt;/p&gt;&lt;p&gt;delta = flat[i] - dark[i]&lt;/p&gt;&lt;p&gt;if delta &amp;lt;= 0.0 then gain[i] = 0.25  goto_next_pixel&lt;/p&gt;&lt;p&gt;gain_needed = reference_signal / delta&lt;/p&gt;&lt;p&gt;if gain_needed &amp;gt; 2.0 then gain[i] = 2.0 else if gain_needed &amp;lt; 0.5 then gain[i] = 0.5 else gain[i] = gain_needed&lt;/p&gt;&lt;p&gt;goto_next_pixel&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Dark videos (a recording where no light is allowed on the sensor) and Flat videos (a recording where a constant light level is presented at the sensor sufficient to reach about 75% of max linear intensity) can be used for two purposes: sensor quality control (locating misbehaving pixels); correction for pixel to pixel variations in black level and responsivity to light (gain differences) to reduce light curve noise from these sources.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;The expected work flow is:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;1) Click &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Select &amp;quot;dark&amp;quot; video&lt;/span&gt; - this will open the file and enable the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Calc darkFrame&lt;/span&gt; button.&lt;/p&gt;&lt;p&gt;2) Set the desired start and stop frame numbers.&lt;/p&gt;&lt;p&gt;3) Click the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;show&lt;/span&gt; checkboxes to activate lines that designate the ROI (region of interest) - elimination of timestamp information is the primary purpose for the selection, but removing a couple of rows at the top and a couple of columns at the left and right edges is useful to deal with edge effects that are frequently present. The spinners for positioning the ROI lines can be clicked, or edited, or if your mouse has a wheel, spin that wheel while the mouse pointer is in the widget.&lt;/p&gt;&lt;p&gt;4) Whatever settings for the ROI are chosen MUST be used for both the dark and flat frame generation. This is enforced during the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Save Dark/Flat frames&lt;/span&gt; process.&lt;/p&gt;&lt;p&gt;5) Click the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Calc darkFrame&lt;/span&gt; button to finally form the dark frame.&lt;/p&gt;&lt;p&gt;6) Click the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Show dark defects&lt;/span&gt; button to view 'dark defects' - the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;dark thresh&lt;/span&gt; spinner sets the threshold (in ADU units) - any dark frame pixels above this threshold are considered defective, relative to the median value.&lt;/p&gt;&lt;p&gt;7) Click &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Select &amp;quot;flat&amp;quot; video&lt;/span&gt; - this will open the file and enable the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Calc flatFrame&lt;/span&gt; button. Click on that button to form the flat frame.&lt;/p&gt;&lt;p&gt;8) Click the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Calc gain frame from dark/flat pair&lt;/span&gt; button.&lt;/p&gt;&lt;p&gt;9) Use the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;dark thresh&lt;/span&gt; and &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;gain thresh&lt;/span&gt; spinners to calculate dark defects and gain defects frames.&lt;/p&gt;&lt;p&gt;10) Click the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Save Dark/Flat frames&lt;/span&gt; button and give the directory a name that reflects accurately the camera used and the settings used for the recordings.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;Calculations performed to form the gain frame:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;reference_signal = flatMedian - darkMedian&lt;/p&gt;&lt;p&gt;repeat for all pixels (i is the index):&lt;/p&gt;&lt;p&gt;delta = flat[i] - dark[i]&lt;/p&gt;&lt;p&gt;if delta &amp;lt;= 0.0 then gain[i] = 0.25 goto_next_pixel&lt;/p&gt;&lt;p&gt;gain_needed = reference_signal / delta&lt;/p&gt;&lt;p&gt;if gain_needed &amp;gt; 3.0 then gain[i] = 3.0 else if gain_needed &amp;lt; 0.33 then gain[i] = 0.33 else gain[i] = gain_needed&lt;/p&gt;&lt;p&gt;goto_next_pixel&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;Use of the gain frame (defined above) and the dark frame to correct pixel non-uniformities during frame reading:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;As each frame is read, the following correction is made:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;repeat for all pixels in the frame:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;corrected_pixel[i] = (pixel[i] - dark[i]) * gain[i] + darkMedian&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;Dark/Flat repository structure:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;In your home directory (which is shown in the message window when PyMovie is started) the follwing file/directory structure is maintained:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#00aa00;&quot;&gt;DARKS-FLATS&lt;/span&gt;&lt;span style=&quot; color:#000000;&quot;&gt; (folder)&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;=== &lt;/span&gt;&lt;span style=&quot; font-weight:700; color:#00aa00;&quot;&gt;UserNamedCamera1&lt;/span&gt;&lt;span style=&quot; color:#000000;&quot;&gt; (sub-folder holding dark/flat files)&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;=== &lt;/span&gt;&lt;span style=&quot; font-weight:700; color:#00aa00;&quot;&gt;UserNamedCamera2 &lt;/span&gt;&lt;span style=&quot; color:#000000;&quot;&gt;(sub-folder holding dark/flat files)&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;Note:&lt;/span&gt;&lt;span style=&quot; color:#000000;&quot;&gt; The names of the sub-folders inside the DARK-FLATS folder are provided by the user when the &lt;/span&gt;&lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Save Dark/Flat frames&lt;/span&gt;&lt;span style=&quot; color:#000000;&quot;&gt; button is clicked.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
                    <property name="text">
                     <string>Help</string>
@@ -1098,8 +1098,11 @@
                      <height>16777215</height>
                     </size>
                    </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The &lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;darkFrame&lt;/span&gt; is formed by summing the frames in the range set by the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;current frame:&lt;/span&gt; edit box and the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;stop frame:&lt;/span&gt; edit box. It is a simple average.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
                    <property name="text">
-                    <string>Calc dark frame</string>
+                    <string>Calc darkFrame</string>
                    </property>
                   </widget>
                  </item>
@@ -1131,8 +1134,11 @@
                      <height>16777215</height>
                     </size>
                    </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The &lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;flat&lt;/span&gt;&lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;Frame&lt;/span&gt; is formed by summing the frames in the range set by the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;current frame:&lt;/span&gt; edit box and the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;stop frame:&lt;/span&gt; edit box. It is a simple average.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
                    <property name="text">
-                    <string>Calc flat frame</string>
+                    <string>Calc flatFrame</string>
                    </property>
                   </widget>
                  </item>
@@ -1147,14 +1153,17 @@
                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This button will be active only when both a &amp;quot;dark&amp;quot; video and a &amp;quot;flat&amp;quot; video have been read.&lt;/p&gt;&lt;p&gt;The analysis consists of:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;1)&lt;/span&gt; locating excessively noisy pixels (using &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;noise std&lt;/span&gt; threshold below)&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;2)&lt;/span&gt; Calculating a gain matrix:  gain[i] = (mean_flat_intensity - mean_dark_intensity) / (flat[i] - dark[i])&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;3)&lt;/span&gt; Locating defective pixels by gain deviation (using &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;gain std&lt;/span&gt; threshold below)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                  </property>
                  <property name="text">
-                  <string>Calc gain frame from dark/flat pair</string>
+                  <string>Calc gainFrame from darkFrame/flatFrame pair</string>
                  </property>
                 </widget>
                </item>
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_45">
                  <item>
-                  <widget class="QDoubleSpinBox" name="dfDarkStdSpinBox">
+                  <widget class="QDoubleSpinBox" name="dfDarkThreshSpinBox">
+                   <property name="maximum">
+                    <double>9999.000000000000000</double>
+                   </property>
                    <property name="singleStep">
                     <double>0.500000000000000</double>
                    </property>
@@ -1166,10 +1175,10 @@
                  <item>
                   <widget class="QLabel" name="dfDarkStdLabel">
                    <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This value sets the threshold (expressed in standard deviations) above which a pixel is considered defective due to high dark level (hot pixel).&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This value sets the ADU value above the median value for which a pixel is considered defective due to high dark level (hot pixel).&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
                    <property name="text">
-                    <string>dark std</string>
+                    <string>dark thresh</string>
                    </property>
                   </widget>
                  </item>
@@ -1187,9 +1196,15 @@
                   </spacer>
                  </item>
                  <item>
-                  <widget class="QDoubleSpinBox" name="dfGainStdSpinBox">
+                  <widget class="QDoubleSpinBox" name="dfGainThreshSpinBox">
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This sets the deviation from median gain above or below which a pixel is considered a defect pixel becuase it requires and excessive gain correction compared to its neighbors..&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="maximum">
+                    <double>10.000000000000000</double>
+                   </property>
                    <property name="singleStep">
-                    <double>0.500000000000000</double>
+                    <double>0.050000000000000</double>
                    </property>
                    <property name="value">
                     <double>2.000000000000000</double>
@@ -1202,7 +1217,7 @@
                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This value sets the threshold (expressed in standard deviations) above which a pixel is considered defective due to gain error.&lt;/p&gt;&lt;p&gt;The comparison is against the median gain.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
                    <property name="text">
-                    <string>gain std</string>
+                    <string>gain thresh</string>
                    </property>
                   </widget>
                  </item>
@@ -1220,21 +1235,21 @@
                  <item>
                   <widget class="QPushButton" name="dfShowFlatFrameButton">
                    <property name="text">
-                    <string>Show flat</string>
+                    <string>    Show flatFrame    </string>
                    </property>
                   </widget>
                  </item>
                  <item>
                   <widget class="QPushButton" name="dfShowGainFrameButton">
                    <property name="text">
-                    <string>Show gain</string>
+                    <string>   Show gainFrame    </string>
                    </property>
                   </widget>
                  </item>
                  <item>
                   <widget class="QPushButton" name="dfShowGainDefectFrameButton">
                    <property name="text">
-                    <string>Show gain defects</string>
+                    <string>   Show gain defects    </string>
                    </property>
                   </widget>
                  </item>
@@ -1245,7 +1260,7 @@
                  <item>
                   <widget class="QPushButton" name="dfShowDarkFrameButton">
                    <property name="text">
-                    <string>Show dark</string>
+                    <string>Show darkFrame</string>
                    </property>
                   </widget>
                  </item>
@@ -1267,7 +1282,7 @@
                </property>
                <property name="sizeHint" stdset="0">
                 <size>
-                 <width>193</width>
+                 <width>142</width>
                  <height>20</height>
                 </size>
                </property>
@@ -3561,6 +3576,22 @@ aperture placement.</string>
                <property name="spacing">
                 <number>0</number>
                </property>
+               <item>
+                <widget class="QCheckBox" name="applyDarkFlatCorrectionsCheckBox">
+                 <property name="maximumSize">
+                  <size>
+                   <width>80</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When this box is checked, if there is a set of dark and gain frames (see the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Dark/Flat&lt;/span&gt; tab) that is compatible in shape with the current video file, each pixel in a frame will be corrected so that it's light sensing behavior will be more closely matched to that of its neighbors. The correction applied is described by the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Help&lt;/span&gt; button on the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Dark/Flat&lt;/span&gt; tab.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;Note:&lt;/span&gt; Correction should be enabled only when a dark video was recorded either immediately before the event recording (but with enough time for the camera temperature to stabilize) or immediately after the event recording. The issue here is that the black level of a pixel depends on the temperature of the pixel - it is important that pixel temperatures during the dark video is closely matched to the pixel temperaturesduring the event recording.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>Apply corr</string>
+                 </property>
+                </widget>
+               </item>
                <item>
                 <widget class="QToolButton" name="transportMaxLeft">
                  <property name="font">

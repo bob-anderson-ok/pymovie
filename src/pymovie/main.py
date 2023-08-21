@@ -49,6 +49,7 @@ in the IPython console while in src/pymovie directory
 #     print(entry)
 
 import matplotlib
+import scipy.signal
 # import scipy.signal
 from Adv2.Adv2File import Adv2reader  # Adds support for reading AstroDigitalVideo Version 2 files (.adv)
 
@@ -504,8 +505,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.dfLeftRedactSpinBox.setValue(int(self.settings.value('dfRedactLeft', '0')))
         self.dfRightRedactSpinBox.setValue(int(self.settings.value('dfRedactRight', '0')))
 
-        self.dfDarkStdSpinBox.setValue(float(self.settings.value('dfDarkStd', 2.0)))
-        self.dfGainStdSpinBox.setValue(float(self.settings.value('dfGainStd', 2.0)))
+        self.dfDarkThreshSpinBox.setValue(float(self.settings.value('dfDarkThresh', 2.0)))
+        self.dfGainThreshSpinBox.setValue(float(self.settings.value('dfGainThresh', 2.0)))
 
         self.dfShowRedactLinesCheckBox.clicked.connect(self.move_dfRedactLines)
         self.dfShowVerticalRedactLinesCheckBox.clicked.connect(self.move_dfRedactLines)
@@ -514,6 +515,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.dfRedactTopLinesLabel.installEventFilter(self)
         self.dfRedactBottomLinesLabel.installEventFilter(self)
+
+        self.applyDarkFlatCorrectionsCheckBox.installEventFilter(self)
 
         self.dfSelectDarkVideoButton.clicked.connect(self.darkVideoSelect)
         self.dfSelectFlatVideoButton.clicked.connect(self.flatVideoSelect)
@@ -531,8 +534,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.dfShowDarkDefectFrameButton.clicked.connect(self.showDarkDefectFrame)
         self.dfShowFlatFrameButton.clicked.connect(self.showFlatFrame)
 
-        self.dfDarkStdSpinBox.valueChanged.connect(self.buildAndShowDarkDefectFrame)
-        self.dfGainStdSpinBox.valueChanged.connect(self.buildAndShowGainDefectFrame)
+        self.dfDarkThreshSpinBox.valueChanged.connect(self.buildAndShowDarkDefectFrame)
+        self.dfGainThreshSpinBox.valueChanged.connect(self.buildAndShowGainDefectFrame)
 
         self.defAppSize51RadioButton.setChecked(self.settings.value('appSize51', False) == 'true')
         self.defAppSize41RadioButton.setChecked(self.settings.value('appSize41', False) == 'true')
@@ -1085,10 +1088,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.noiseFrame = None  # Used in CMOS tab
         self.darkFrame = None
         self.darkMean = None
+        self.darkMedian = None
         self.darkStd = None
         self.gainFrame = None
         self.flatFrame = None
         self.flatMean = None
+        self.flatMedian = None
         self.flatStd = None
         self.darkDefectFrame = None
         self.gainDefectFrame = None
@@ -1416,6 +1421,18 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def TBD(self):
         self.showMsgPopup('TBD')
 
+    def applyDarkFlatCorrect(self, frame):
+
+        if self.gainFrame is None or self.darkFrame is None:
+            return False, 'gainFrame and/or darkFrame is not available', frame
+
+        if not frame.shape == self.gainFrame.shape:
+            return False, 'Input frame shape does not match dark/flat frame shape.', frame
+
+        corrected_frame = (frame - self.darkFrame) * self.gainFrame + self.darkMedian
+
+        return True, 'Correction performed', corrected_frame
+
     def findFrameBorders(self, frame, border_value, title):
 
         def is_row_in_border(row_to_test):
@@ -1471,21 +1488,38 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.showMsg(f'{title} ROI:  n_top: {n_top}  n_bottom: {n_bottom}  n_left: {n_left}  n_right: {n_right}')
         return n_top, n_bottom, n_left, n_right
 
-    def meanFrameROI(self, frame, n_top, n_bottom, n_left, n_right):
+    def meanFrameROI(self, frame, n_top, n_bottom, n_left, n_right, inner_margin=2):
+        # inner_margin is used to deal with edge effects from median filter operations.
+        # The default value of 2 is good enough to deal with edge artifacts from a 5x5 median filter
         if frame is None:
             self.showMsgPopup(f'meanFrameROI() given None for frame.')
             return
 
         h, w = frame.shape
-        return np.mean(frame[n_top:h-n_bottom,n_left:w-n_right])
+        return np.mean(frame[n_top + inner_margin:h - n_bottom - inner_margin,
+                       n_left + inner_margin:w - n_right - inner_margin])
 
-    def stdFrameROI(self, frame, n_top, n_bottom, n_left, n_right):
+    def medianFrameROI(self, frame, n_top, n_bottom, n_left, n_right, inner_margin=2):
+        # inner_margin is used to deal with edge effects from median filter operations.
+        # The default value of 2 is good enough to deal with edge artifacts from a 5x5 median filter
+        if frame is None:
+            self.showMsgPopup(f'medianFrameROI() given None for frame.')
+            return
+
+        h, w = frame.shape
+        return np.median(frame[n_top + inner_margin:h - n_bottom - inner_margin,
+                       n_left + inner_margin:w - n_right - inner_margin])
+
+    def stdFrameROI(self, frame, n_top, n_bottom, n_left, n_right, inner_margin=2):
+        # inner_margin is used to deal with edge effects from median filter operations.
+        # The default value of 2 is good enough to deal with edge artifacts from a 5x5 median filter
         if frame is None:
             self.showMsgPopup(f'stdFrameROI() given None for frame.')
             return
 
         h, w = frame.shape
-        return np.std(frame[n_top:h - n_bottom, n_left:w - n_right])
+        return np.std(frame[n_top + inner_margin:h - n_bottom - inner_margin,
+                      n_left + inner_margin:w - n_right - inner_margin])
 
     def fillFrameBorder(self, fill_value, frame, n_top, n_bottom, n_left, n_right):
         if frame is None:
@@ -1505,6 +1539,27 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         for col in range(w-n_right, w):    # fill n_right right columns
             for row in range(h):
                 frame[row,col] = fill_value
+
+    def clearDefectFrameEdges(self, frame, n_top, n_bottom, n_left, n_right, inner_margin=2):
+        # inner_margin is used to deal with edge effects from median filter operations.
+        # The default value of 2 is good enough to deal with edge artifacts from a 5x5 median filter
+        if frame is None:
+            self.showMsgPopup(f'cleanDefectInnerBorder() given None for frame.')
+            return
+
+        h, w = frame.shape
+        for row in range(n_top + inner_margin):
+            for col in range(w):
+                frame[row,col] = 0
+        for row in range(h - n_bottom - inner_margin,h):
+            for col in range(w):
+                frame[row,col] = 0
+        for col in range(n_left + inner_margin):
+            for row in range(h):
+                frame[row,col] = 0
+        for col in range(w - n_right - inner_margin, w):
+            for row in range(h):
+                frame[row,col] = 0
 
     def calculateGainFrame(self):
         if self.darkFrame is None:
@@ -1533,14 +1588,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         for i in range(self.darkFrame.shape[0]):
             for j in range(self.darkFrame.shape[1]):
                 delta = self.flatFrame[i,j] - self.darkFrame[i,j]
-                if delta <= 0.0:
+                if delta <= 0.0:  # a very hot pixel
                     self.gainFrame[i,j] = 0.25  # This value should trigger a gain defect pixel at this point
                 else:
                     gain_needed = normal_delta / delta
-                    if gain_needed > 2.0:
-                        gain_needed = 2.0
-                    if gain_needed < 0.5:
-                        gain_needed = 0.5
+                    if gain_needed > 3.0:
+                        gain_needed = 3.0
+                    if gain_needed < 0.33:
+                        gain_needed = 0.33
                     self.gainFrame[i,j] = gain_needed
 
         self.fillFrameBorder(1.0, self.gainFrame, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right)
@@ -1607,7 +1662,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
 
 
-        std_settings = [self.dfDarkStdSpinBox.value(), self.dfGainStdSpinBox.value()]
+        thresh_settings = [self.dfDarkThreshSpinBox.value(), self.dfGainThreshSpinBox.value()]
 
         tag_given, done = QtWidgets.QInputDialog.getText(self, 'Dark/Flat dir', 'Dark/Flat dir name to use:', text='')
         if tag_given:
@@ -1617,8 +1672,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             # We need to save the std settings so that they can be restored along with the frames (otherwise
             # showing any defect frame would cause it to be recalculated).
-            pickle.dump(std_settings, open(os.path.join(destDir, 'stdSettings.p'), "wb"))
-            msg = f'std settings saved\n\n'
+            pickle.dump(thresh_settings, open(os.path.join(destDir, 'threshSettings.p'), "wb"))
+            msg = f'thresh settings saved\n\n'
 
             # Next we write the available frames to destDir
             msg += f'Frames saved:\n\n'
@@ -1666,12 +1721,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if dir_path:
             comparison_roi = None
             msg = f'Files found:\n'
-            file_wanted = os.path.join(dir_path, 'stdSettings.p')
+            file_wanted = os.path.join(dir_path, 'threshSettings.p')
             if os.path.exists(file_wanted):
-                msg += f'\nstdSettings\n'
-                std_settings = pickle.load(open(file_wanted, 'rb'))
-                self.dfDarkStdSpinBox.setValue(std_settings[0])
-                self.dfGainStdSpinBox.setValue(std_settings[1])
+                msg += f'\nthreshSettings\n'
+                thresh_settings = pickle.load(open(file_wanted, 'rb'))
+                self.dfDarkThreshSpinBox.setValue(thresh_settings[0])
+                self.dfGainThreshSpinBox.setValue(thresh_settings[1])
 
             file_wanted = os.path.join(dir_path, 'darkFrame.p')
             if os.path.exists(file_wanted):
@@ -1712,6 +1767,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.showMsgPopup(f'Inconsistent frame ROI found.')
                     return
                 self.flatMean = self.meanFrameROI(
+                    self.flatFrame, n_top=roi[0], n_bottom=roi[1], n_left=roi[2], n_right=roi[3]
+                )
+
+                self.flatMedian = self.medianFrameROI(
                     self.flatFrame, n_top=roi[0], n_bottom=roi[1], n_left=roi[2], n_right=roi[3]
                 )
 
@@ -1756,28 +1815,40 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def showDarkFrame(self):
         if self.darkFrame is None:
-            self.showMsgPopup(f'No dark frame is available to show.')
+            self.showMsgPopup(f'No darkFrame is available to show.')
             return
         self.image = np.copy(self.darkFrame)
-        self.showMsg(f'The "dark frame" is being displayed.')
+
+        self.setRoiConstraints()
+
+        self.showMsg(f'The "darkFrame" is being displayed.')
         self.findFrameBorders(self.darkFrame, border_value=0.0, title='Dark frame')
         self.displayImageAtCurrentZoomPanState()
 
+    def setRoiConstraints(self):
+        height, width = self.image.shape
+        # The following variables are used by MeasurementAperture to limit
+        # aperture placement so that it stays within the image at all times
+        self.roi_max_x = width - self.roi_size
+        self.roi_max_y = height - self.roi_size
+
     def showFlatFrame(self):
         if self.flatFrame is None:
-            self.showMsgPopup(f'No flat frame is available to show.')
+            self.showMsgPopup(f'No flatFrame is available to show.')
             return
         self.image = np.copy(self.flatFrame)
-        self.showMsg(f'The "flat frame" is being displayed.')
+        self.setRoiConstraints()
+        self.showMsg(f'The "flatFrame" is being displayed.')
         self.findFrameBorders(self.flatFrame, border_value=0.0, title='Flat frame')
         self.displayImageAtCurrentZoomPanState()
 
     def showGainFrame(self):
         if self.gainFrame is None:
-            self.showMsgPopup(f'No gain frame is available to show.')
+            self.showMsgPopup(f'No gainFrame is available to show.')
             return
         self.image = np.copy(self.gainFrame)
-        self.showMsg(f'The "gain frame" is being displayed.')
+        self.setRoiConstraints()
+        self.showMsg(f'The "gainFrame" is being displayed.')
         self.findFrameBorders(self.gainFrame, border_value=1.0, title = 'Gain frame')
         self.displayImageAtCurrentZoomPanState()
 
@@ -1786,6 +1857,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.showMsgPopup(f'No gain defect frame is available to show.')
             return
         self.image = np.copy(self.gainDefectFrame)
+        self.setRoiConstraints()
         self.showMsg(f'The "gain defect frame" is being displayed.')
         # We have to use the gainFrame ROI because rows and columns of a defect frame are commonly all zero ...
         # ... but the ROI of the gainDefectFrame will never differ from its source (self.gainFrame)
@@ -1794,10 +1866,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def showDarkDefectFrame(self):
         if self.darkFrame is None:
-            self.showMsgPopup(f'No dark frame is available to work from.')
+            self.showMsgPopup(f'No darkFrame is available to process into a dark defect frame.')
             return
         self.buildDarkDefectFrame()
         self.image = np.copy(self.darkDefectFrame)
+        self.setRoiConstraints()
         self.showMsg(f'The "dark defect frame" is being displayed.')
         # We have to use the gainFrame ROI because rows and columns of a defect frame are commonly all zero ...
         # ... but the ROI of the darkDefectFrame will never differ from its source (self.darkFrame)
@@ -2076,8 +2149,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         except Exception as e:
             self.showMsgPopup(f'In writeFitFile() === {e}')
 
-    @staticmethod
-    def getNextFrame(avi_reader, frame_num, first_free_row, last_free_row):
+    def getNextFrame(self, avi_reader, frame_num, first_free_row, last_free_row):
         # success, frame = avi_reader.read()
         frame = avi_reader(frame_num)
 
@@ -2086,9 +2158,19 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         if len(frame.shape) == 3:
             full_image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            if self.applyDarkFlatCorrectionsCheckBox.isChecked():
+                success, msg, full_image = self.applyDarkFlatCorrect(full_image)
+                if not success:
+                    self.showMsgPopup(f'Dark/Flat correction failed: {msg}')
+                    self.applyDarkFlatCorrectionsCheckBox.setChecked(False)
             image = full_image[first_free_row:last_free_row, :]
         else:
             full_image = frame
+            if self.applyDarkFlatCorrectionsCheckBox.isChecked():
+                success, msg, full_image = self.applyDarkFlatCorrect(full_image)
+                if not success:
+                    self.showMsgPopup(f'Dark/Flat correction failed: {msg}')
+                    self.applyDarkFlatCorrectionsCheckBox.setChecked(False)
             image = frame[first_free_row:last_free_row, :]
 
         if first_free_row == 0:
@@ -2826,20 +2908,33 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.darkFrame, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right
         )
 
-        self.darkStd = self.stdFrameROI(
+        self.darkMedian = self.medianFrameROI(
             self.darkFrame, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right
         )
-        # self.showMsgPopup(f'dark_mean: {self.darkMean:0.2f}  dark_std: {self.darkStd:0.2f}')
 
-        std_thresh = self.dfDarkStdSpinBox.value() * self.darkStd
-        self.showMsg(f'Dark frame  mean: {self.darkMean:0.2f}  std: {self.darkStd:0.2f}  '
-                     f'defect if > {std_thresh+self.darkMean:0.2f}')
-        baddies = np.where(self.darkFrame > (self.darkMean + std_thresh))
+        defect_target = self.darkFrame - scipy.signal.medfilt2d(self.darkFrame, 5) + self.darkMedian
+
+        self.darkStd = self.stdFrameROI(
+            defect_target, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right
+        )
+
+        dark_thresh = self.dfDarkThreshSpinBox.value()
+        self.showMsg(f'Dark frame  median: {self.darkMedian:0.2f}   '
+                     f'defect if > {dark_thresh + self.darkMedian:0.2f}')
+        baddies = np.where(defect_target > (self.darkMedian + dark_thresh))
+
+        self.darkDefectPixelRowLocations = baddies[0]
+        self.darkDefectPixelColLocations = baddies[1]
+
         rows = baddies[0]
         cols = baddies[1]
         self.darkDefectFrame = np.zeros(self.darkFrame.shape, dtype=np.uint16)
         for i in range(len(rows)):
             self.darkDefectFrame[rows[i], cols[i]] = 1
+
+        # This call removes defects inside the ROI (default is 2 ros/cols)
+        self.clearDefectFrameEdges(self.darkDefectFrame, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right)
+
 
     def buildGainDefectFrame(self):
         if self.gainFrame is None:
@@ -2854,29 +2949,62 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.gainFrame, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right
         )
 
+        # TODO Check to see if this value is still in use anywhere
         self.gainStd = self.stdFrameROI(
             self.gainFrame, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right
         )
 
-        std_thresh = self.dfGainStdSpinBox.value() * self.gainStd
-        self.showMsg(f'Gain frame  mean: {self.gainMean:0.2f}  std: {self.gainStd:0.2f}  '
-                     f'pixel has gain defect if gain_adjust > {self.gainMean + std_thresh:0.2f} or '
-                     f'or if gain_adjust < {self.gainMean - std_thresh:0.2f}')
+        self.gainMedian = self.medianFrameROI(
+            self.gainFrame, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right
+        )
+
+        defect_target = self.gainFrame - scipy.signal.medfilt2d(self.gainFrame, 5) + self.gainMedian
+        defect_median = self.medianFrameROI(
+            defect_target, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right
+        )
+
+        gain_thresh = self.dfGainThreshSpinBox.value()
+        upper_gain = defect_median + gain_thresh
+        if upper_gain >= 3.0:
+            upper_gain = 3.0
+            self.dfGainThreshSpinBox.setValue(upper_gain - defect_median)
+        lower_gain = max(0.33, defect_median - gain_thresh)
+        self.showMsg(f'Gain frame  median: {defect_median:0.2f}  '
+                     f'pixel has gain defect if gain_adjust > {upper_gain:0.2f} or '
+                     f'or if gain_adjust < {lower_gain:0.2f}')
+
+        # defect_target = self.gainFrame - scipy.signal.medfilt2d(self.gainFrame, 5) + self.gainMedian
+        # defect_median = self.medianFrameROI(
+        #     defect_target, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right
+        # )
+
         self.gainDefectFrame = np.zeros(self.gainFrame.shape, dtype=np.uint16)
 
-        baddies = np.where(self.gainFrame > (self.gainMean + std_thresh))
+        baddies = np.where(defect_target > upper_gain)
+        # baddies = np.where(defect_target > (defect_median + gain_thresh))
+
+        self.gainDefectPixelRowLocations = baddies[0]
+        self.gainDefectPixelColLocations = baddies[1]
+
         rows = baddies[0]
         cols = baddies[1]
         for i in range(len(rows)):
             self.gainDefectFrame[rows[i], cols[i]] = 1
 
-        baddies = np.where(self.gainFrame < (self.gainMean - std_thresh))
+        baddies = np.where(defect_target < lower_gain)
+        # baddies = np.where(defect_target < (defect_median - gain_thresh))
+
+        # TODO Remove these - not needed
+        self.gainDefectPixelRowLocations = np.concatenate((self.gainDefectPixelRowLocations, baddies[0]))
+        self.gainDefectPixelColLocations = np.concatenate((self.gainDefectPixelColLocations, baddies[1]))
+
         rows = baddies[0]
         cols = baddies[1]
         for i in range(len(rows)):
             self.gainDefectFrame[rows[i], cols[i]] = 1
 
-        self.fillFrameBorder(0, self.gainDefectFrame, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right)
+        # This call removes defects inside the ROI (default is 2 ros/cols)
+        self.clearDefectFrameEdges(self.gainDefectFrame, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right)
 
     def showMedianProfile(self):
         if len(self.horizontalMedianData) > 0:
@@ -6957,7 +7085,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
                 for name in names:
                     f.write(f',appsum-{name},avgbkg-{name},stdbkg-{name},nmaskpx-{name},'
-                            f'maxpx-{name},xcentroid-{name},ycentroid-{name}')
+                            f'maxpx-{name},xcentroid-{name},ycentroid-{name},hit-defect-{name}')
 
                 f.write('\n')
 
@@ -6980,12 +7108,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         maxpx = appdata[k][i][10]
                         xcentroid = appdata[k][i][2]
                         ycentroid = appdata[k][i][3]
+                        hit_defect_flag = appdata[k][i][15]
 
                         f.write(f',{appsum:0.2f},{bkgnd:0.2f},{std:0.2f},{nmskpx},{maxpx}')
                         if xcentroid is not None:
-                            f.write(f',{xcentroid:0.2f},{ycentroid:0.2f}')
+                            f.write(f',{xcentroid:0.2f},{ycentroid:0.2f},{hit_defect_flag:0d}')
                         else:
-                            f.write(f',,')
+                            f.write(f',,{hit_defect_flag:0d}')
 
                     f.write('\n')
                     f.flush()
@@ -8346,6 +8475,15 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         x0, y0, nx, ny = bbox
         name = aperture.name
 
+        # Grab darkDefects
+        defect_thumbnail = None
+        if self.darkDefectFrame is not None:
+            defect_thumbnail = self.darkDefectFrame[y0:y0 + ny, x0:x0 + nx]
+        if self.gainDefectFrame is not None:
+            gain_defect_thumbnail = self.gainDefectFrame[y0:y0 + ny, x0:x0 + nx]
+            if defect_thumbnail is not None:
+                defect_thumbnail += gain_defect_thumbnail
+
         # thumbnail is the portion of the main image that is covered by the aperture bounding box
         thumbnail = self.image[y0:y0 + ny, x0:x0 + nx]
         mean, std, sorted_data, _, _, _, _, _, bkgnd_pixels = newRobustMeanStd(thumbnail,
@@ -8380,7 +8518,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     print(f'getApertureStats() pt1: firstYellowAperture: {x_coord},{y_coord}')
                 self.firstYellowApertureX = x_coord
                 self.firstYellowApertureY = y_coord
-                # pass
             elif not max_area == 0:
                 x_coord = round(centroid[1])  # noqa
                 y_coord = round(centroid[0])  # noqa
@@ -8629,6 +8766,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             if aperture.color == 'white':
                 signal = appsum
+                hit_defect_flag = 0
             else:  # Subtract background
                 if not self.target_psf_gathering_in_progress and self.useOptimalExtraction and 'psf-star' in aperture.name:
                     pass  # signal is already calculated
@@ -8639,6 +8777,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         # TODO Finish removal of background averaging feature
                         # signal = appsum - int(np.round(max_area * aperture.smoothed_background))
                         signal = appsum - int(np.round(max_area * mean))
+
+                # If we have a defect_thumbnail, we calculate the number of defect pixels covered by the mask
+                # that was used for calculating the signal. We do this for all non-white apertures
+                if defect_thumbnail is not None:
+                    hit_defect_flag = np.sum(mask * defect_thumbnail)
 
 
         if not centroid == (None, None):
@@ -8715,24 +8858,24 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.field1_data = (xc_roi, yc_roi, xc_world, yc_world,
                                     top_signal, top_appsum, mean_top, top_mask_pixel_count,
                                     frame_num, cvxhull, maxpx, std, timestamp,
-                                    aperture_mean, self.smoothingCount)
+                                    aperture_mean, self.smoothingCount, hit_defect_flag)
                 timestamp = self.lowerTimestamp
                 self.field2_data = (xc_roi, yc_roi, xc_world, yc_world,
                                     bottom_signal, bottom_appsum, mean_bot, bottom_mask_pixel_count,
                                     frame_num + 0.5, cvxhull, maxpx, std, timestamp,
-                                    aperture_mean, self.smoothingCount)
+                                    aperture_mean, self.smoothingCount, hit_defect_flag)
             else:
                 timestamp = self.lowerTimestamp
                 self.field1_data = (xc_roi, yc_roi, xc_world, yc_world,
                                     bottom_signal, bottom_appsum, mean_bot, bottom_mask_pixel_count,
                                     frame_num, cvxhull, maxpx, std, timestamp,
-                                    aperture_mean, self.smoothingCount
+                                    aperture_mean, self.smoothingCount, hit_defect_flag
                                     )
                 timestamp = self.upperTimestamp
                 self.field2_data = (xc_roi, yc_roi, xc_world, yc_world,
                                     top_signal, top_appsum, mean_top, top_mask_pixel_count,
                                     frame_num + 0.5, cvxhull, maxpx, std, timestamp,
-                                    aperture_mean, self.smoothingCount
+                                    aperture_mean, self.smoothingCount, hit_defect_flag
                                     )
 
         if not (self.avi_in_use or self.aav_file_in_use):
@@ -8743,7 +8886,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             elif self.adv_file_in_use:
                 timestamp = self.adv_timestamp
             else:
-                self.showMsg(f'Unexpected folder type in use.')
+                # TODO the following 2 changes are so that dark-flats be shown and worked on before an observation
+                # file has been selected
+                timestamp = ''
+                # self.showMsg(f'Unexpected folder type in use.')
         else:
             if self.topFieldFirstRadioButton.isChecked():
                 if self.upperTimestamp:
@@ -8764,9 +8910,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.statsPrintWanted = True
 
+        # Pick hits randomly to provide test set for PyOTE development.
+        # sample_set = np.array([0,0,1,0,0])
+        # hit_defect_flag = np.random.choice(sample_set)
+
         return (xc_roi, yc_roi, xc_world, yc_world, signal,
                 appsum, mean, max_area, frame_num, cvxhull, maxpx, std, timestamp,
-                aperture_mean, self.smoothingCount)  # These last two are for background smoothing
+                aperture_mean, self.smoothingCount, hit_defect_flag)  # These last two are for background smoothing
 
     def calcTMEIntensity(self, aperture, img, N):
         # Search NxN grid for max appsum
@@ -10217,6 +10367,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def showFrame(self):
 
+        # TODO Test if this solves problem with dark-flat frame display before video is selected
+        if self.filename is None:
+            return
+
         if PRINT_TRACKING_DATA:
             print(f'\n===== entering showFrame() =====')
         try:
@@ -10448,6 +10602,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 except Exception:
                     self.showMsg(f'Cannot convert image to uint16 safely')
                     return
+
+            if self.applyDarkFlatCorrectionsCheckBox.isChecked():
+                success, msg, self.image = self.applyDarkFlatCorrect(self.image)
+                if not success:
+                    self.showMsgPopup(f'Dark/Flat correction failed: {msg}')
+                    self.applyDarkFlatCorrectionsCheckBox.setChecked(False)
 
             if self.viewFieldsCheckBox.isChecked():
                 self.createImageFields()
@@ -11607,8 +11767,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.settings.setValue('dfRedactLeft', self.dfLeftRedactSpinBox.value())
         self.settings.setValue('dfRedactRight', self.dfRightRedactSpinBox.value())
 
-        self.settings.setValue('dfDarkStd', self.dfDarkStdSpinBox.value())
-        self.settings.setValue('dfGainStd', self.dfGainStdSpinBox.value())
+        self.settings.setValue('dfDarkThresh', self.dfDarkThreshSpinBox.value())
+        self.settings.setValue('dfGainThresh', self.dfGainThreshSpinBox.value())
 
 
         # Capture the close request and update 'sticky' settings
