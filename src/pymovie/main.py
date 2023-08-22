@@ -68,7 +68,7 @@ from more_itertools import sort_together
 from skimage.registration import phase_cross_correlation
 from scipy.ndimage import fourier_shift, center_of_mass
 from time import gmtime, strftime  # for utc
-# import shutil
+import shutil
 
 # TODO Comment these lines out when not investigating memory usage issues
 # from pympler import muppy, summary
@@ -743,6 +743,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.dfLeftRedactSpinBox.valueChanged.connect(self.move_dfRedactLines)
         self.dfRightRedactSpinBox.valueChanged.connect(self.move_dfRedactLines)
+
+        self.dfClearFrameDataButton.clicked.connect(self.clearDarkFlatFrames)
+        self.dfClearFrameDataButton.installEventFilter(self)
 
         self.lineNoiseFilterCheckBox.clicked.connect(self.startLineFilter)
         self.lineNoiseFilterCheckBox.installEventFilter(self)
@@ -1421,6 +1424,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def TBD(self):
         self.showMsgPopup('TBD')
 
+    def clearDarkFlatFrames(self):
+        self.darkFrame = None
+        self.darkDefectFrame = None
+        self.flatFrame = None
+        self.gainFrame = None
+        self.gainDefectFrame = None
+        self.showMsgPopup(f'All dark/flat frames have been cleared.')
+        self.showMsg(f'All dark/flat frames have been cleared.')
     def applyDarkFlatCorrect(self, frame):
 
         if self.gainFrame is None or self.darkFrame is None:
@@ -1660,8 +1671,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                                   f'Saving such a set is prohibited.')
                 return
 
-
-
         thresh_settings = [self.dfDarkThreshSpinBox.value(), self.dfGainThreshSpinBox.value()]
 
         tag_given, done = QtWidgets.QInputDialog.getText(self, 'Dark/Flat dir', 'Dark/Flat dir name to use:', text='')
@@ -1670,31 +1679,45 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             if not os.path.exists(destDir):
                 os.mkdir(destDir)
 
-            # We need to save the std settings so that they can be restored along with the frames (otherwise
-            # showing any defect frame would cause it to be recalculated).
-            pickle.dump(thresh_settings, open(os.path.join(destDir, 'threshSettings.p'), "wb"))
-            msg = f'thresh settings saved\n\n'
-
-            # Next we write the available frames to destDir
-            msg += f'Frames saved:\n\n'
-            if self.darkFrame is not None:
-                pickle.dump(self.darkFrame, open(os.path.join(destDir, 'darkFrame.p'), "wb"))
-                msg += f'darkFrame\n'
-            if self.darkDefectFrame is not None:
-                pickle.dump(self.darkDefectFrame, open(os.path.join(destDir, 'darkDefectFrame.p'), "wb"))
-                msg += f'darkDefectFrame\n'
-            if self.flatFrame is not None:
-                pickle.dump(self.flatFrame, open(os.path.join(destDir, 'flatFrame.p'), "wb"))
-                msg += f'flatFrame\n'
-            if self.gainFrame is not None:
-                pickle.dump(self.gainFrame, open(os.path.join(destDir, 'gainFrame.p'), "wb"))
-                msg += f'gainFrame\n'
-            if self.gainDefectFrame is not None:
-                pickle.dump(self.gainDefectFrame, open(os.path.join(destDir, 'gainDefectFrame.p'), "wb"))
-                msg += f'gainDefectFrame\n'
+            msg = self.writeDarkFlatFramesToDir(destDir, thresh_settings)
             self.showMsgPopup(msg)
+
+            if self.folder_dir is not None:
+                destDir = os.path.join(self.folder_dir, 'DARKS-FLATS')
+                if not os.path.exists(destDir):
+                    os.mkdir(destDir)
+                else:
+                    # Remove all previous files from folder directory
+                    shutil.rmtree(destDir)
+                    os.mkdir(destDir)
+                self.writeDarkFlatFramesToDir(destDir, thresh_settings)
+                self.showMsgPopup(f'dark/flat frame data copied to your folder directory:\n\n{self.folder_dir}')
         else:
             self.showMsgPopup(f'Operation cancelled by user. No frames saved.')
+
+    def writeDarkFlatFramesToDir(self, destDir, thresh_settings):
+        # We need to save the std settings so that they can be restored along with the frames (otherwise
+        # showing any defect frame would cause it to be recalculated).
+        pickle.dump(thresh_settings, open(os.path.join(destDir, 'threshSettings.p'), "wb"))
+        msg = f'thresh settings saved\n\n'
+        # Next we write the available frames to destDir
+        msg += f'Frames saved:\n\n'
+        if self.darkFrame is not None:
+            pickle.dump(self.darkFrame, open(os.path.join(destDir, 'darkFrame.p'), "wb"))
+            msg += f'darkFrame\n'
+        if self.darkDefectFrame is not None:
+            pickle.dump(self.darkDefectFrame, open(os.path.join(destDir, 'darkDefectFrame.p'), "wb"))
+            msg += f'darkDefectFrame\n'
+        if self.flatFrame is not None:
+            pickle.dump(self.flatFrame, open(os.path.join(destDir, 'flatFrame.p'), "wb"))
+            msg += f'flatFrame\n'
+        if self.gainFrame is not None:
+            pickle.dump(self.gainFrame, open(os.path.join(destDir, 'gainFrame.p'), "wb"))
+            msg += f'gainFrame\n'
+        if self.gainDefectFrame is not None:
+            pickle.dump(self.gainDefectFrame, open(os.path.join(destDir, 'gainDefectFrame.p'), "wb"))
+            msg += f'gainDefectFrame\n'
+        return msg
 
     def enableDisableDarkFlatRoiControls(self, state):
         self.dfTopRedactSpinBox.setEnabled(state)
@@ -1711,24 +1734,24 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         options = QFileDialog.Options()
         options |= QFileDialog.ShowDirsOnly
         # options |= QFileDialog.DontUseNativeDialog
-        dir_path = QFileDialog.getExistingDirectory(
+        dir_chosen = QFileDialog.getExistingDirectory(
             self,
             "Select folder containing desired dark/flat frames",
             self.settings.value(self.darksFlatsDir, "./DARKS-FLATS"),  # starting directory,
             options=options
         )
 
-        if dir_path:
+        if dir_chosen:
             comparison_roi = None
             msg = f'Files found:\n'
-            file_wanted = os.path.join(dir_path, 'threshSettings.p')
+            file_wanted = os.path.join(dir_chosen, 'threshSettings.p')
             if os.path.exists(file_wanted):
                 msg += f'\nthreshSettings\n'
                 thresh_settings = pickle.load(open(file_wanted, 'rb'))
                 self.dfDarkThreshSpinBox.setValue(thresh_settings[0])
                 self.dfGainThreshSpinBox.setValue(thresh_settings[1])
 
-            file_wanted = os.path.join(dir_path, 'darkFrame.p')
+            file_wanted = os.path.join(dir_chosen, 'darkFrame.p')
             if os.path.exists(file_wanted):
                 msg += f'\ndarkFrame\n'
                 self.darkFrame = pickle.load(open(file_wanted, 'rb'))
@@ -1751,12 +1774,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.dfRightRedactSpinBox.setValue(roi[3])
                 self.enableDisableDarkFlatRoiControls(False)
 
-            file_wanted = os.path.join(dir_path, 'darkDefectFrame.p')
+            file_wanted = os.path.join(dir_chosen, 'darkDefectFrame.p')
             if os.path.exists(file_wanted):
                 msg += f'darkDefectFrame\n'
                 self.darkDefectFrame = pickle.load(open(file_wanted, 'rb'))
 
-            file_wanted = os.path.join(dir_path, 'flatFrame.p')
+            file_wanted = os.path.join(dir_chosen, 'flatFrame.p')
             if os.path.exists(file_wanted):
                 msg += f'\nflatFrame\n'
                 self.flatFrame = pickle.load(open(file_wanted, 'rb'))
@@ -1783,7 +1806,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.dfRightRedactSpinBox.setValue(roi[3])
                 self.enableDisableDarkFlatRoiControls(False)
 
-            file_wanted = os.path.join(dir_path, 'gainFrame.p')
+            file_wanted = os.path.join(dir_chosen, 'gainFrame.p')
             if os.path.exists(file_wanted):
                 msg += f'\ngainFrame\n'
                 self.gainFrame = pickle.load(open(file_wanted, 'rb'))
@@ -1806,12 +1829,23 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.dfRightRedactSpinBox.setValue(roi[3])
                 self.enableDisableDarkFlatRoiControls(False)
 
-            file_wanted = os.path.join(dir_path, 'gainDefectFrame.p')
+            file_wanted = os.path.join(dir_chosen, 'gainDefectFrame.p')
             if os.path.exists(file_wanted):
                 msg += f'gainDefectFrame'
                 self.gainDefectFrame = pickle.load(open(file_wanted, 'rb'))
 
             self.showMsgPopup(msg)
+
+            if self.folder_dir is not None:
+                destDir = os.path.join(self.folder_dir, 'DARKS-FLATS')
+                if not os.path.exists(destDir):
+                    os.mkdir(destDir)
+                else:
+                    # Remove all previous files from folder directory
+                    shutil.rmtree(destDir)
+                    os.mkdir(destDir)
+                self.writeDarkFlatFramesToDir(destDir, thresh_settings)
+                self.showMsgPopup(f'dark/flat frame data copied to your folder directory:\n\n{self.folder_dir}')
 
     def showDarkFrame(self):
         if self.darkFrame is None:
@@ -1878,12 +1912,15 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.displayImageAtCurrentZoomPanState()
 
     def darkVideoSelect(self):
+        saved_folder_dir = self.folder_dir
         if self.dfAviSerTypeFileRadioButton.isChecked():
             self.readAviSerAdvAavFile()
+            self.folder_dir = saved_folder_dir
             if not (self.avi_in_use or self.ser_file_in_use or self.aav_file_in_use):
                 return
         else:
             self.selectFitsFolder()
+            self.folder_dir = saved_folder_dir
             if not self.fits_folder_in_use:
                 return
         self.dfProcessDarkButton.setEnabled(True)
@@ -9275,6 +9312,36 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.processTargetAperturePlacementFiles()
 
             self.checkForSavedApertureGroups()
+            self.checkForDarkFlats()
+
+    def checkForDarkFlats(self):
+        darkFlatDir = os.path.join(self.folder_dir, 'DARKS-FLATS')
+        if os.path.exists(darkFlatDir):
+            threshSettingsFn = os.path.join(darkFlatDir, 'threshSettings.p')
+            if os.path.exists(threshSettingsFn):
+                thresh_settings = pickle.load(open(threshSettingsFn, 'rb'))
+                self.dfDarkThreshSpinBox.setValue(thresh_settings[0])
+                self.dfGainThreshSpinBox.setValue(thresh_settings[1])
+
+            darkFrameFn = os.path.join(darkFlatDir, 'darkFrame.p')
+            if os.path.exists(darkFrameFn):
+                self.darkFrame = pickle.load(open(darkFrameFn, "rb"))
+
+            flatFrameFn = os.path.join(darkFlatDir, 'flatFrame.p')
+            if os.path.exists(flatFrameFn):
+                self.flatFrame = pickle.load(open(flatFrameFn, "rb"))
+
+            darkDefectFrameFn = os.path.join(darkFlatDir, 'darkDefectFrame.p')
+            if os.path.exists(darkDefectFrameFn):
+                self.darkDefectFrame = pickle.load(open(darkDefectFrameFn, "rb"))
+
+            gainDefectFrameFn = os.path.join(darkFlatDir, 'gainDefectFrame.p')
+            if os.path.exists(gainDefectFrameFn):
+                self.gainDefectFrame = pickle.load(open(gainDefectFrameFn, "rb"))
+
+            gainFrameFn = os.path.join(darkFlatDir, 'gainFrame.p')
+            if os.path.exists(gainFrameFn):
+                self.gainFrame = pickle.load(open(gainFrameFn, "rb"))
 
     def checkForSavedApertureGroups(self):
 
@@ -10019,6 +10086,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.processTargetAperturePlacementFiles()
 
                     self.checkForSavedApertureGroups()
+                    self.checkForDarkFlats()
 
                     self.startTimestampReading()
                     self.showFrame()  # So that we get the first frame timestamp (if possible)
@@ -10067,6 +10135,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.processTargetAperturePlacementFiles()
 
                 self.checkForSavedApertureGroups()
+                self.checkForDarkFlats()
 
                 # This will get our image display initialized with default pan/zoom state
                 self.initialFrame = True
@@ -10114,6 +10183,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.processTargetAperturePlacementFiles()
 
                 self.checkForSavedApertureGroups()
+                self.checkForDarkFlats()
 
                 # This will get our image display initialized with default pan/zoom state
                 self.initialFrame = True

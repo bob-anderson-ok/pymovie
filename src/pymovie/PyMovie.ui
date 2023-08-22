@@ -890,6 +890,16 @@
                   </widget>
                  </item>
                  <item>
+                  <widget class="QPushButton" name="dfClearFrameDataButton">
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clearing all frame data is useful when an observation folder is in use. The problem is that opening an observation folder that contains dark/flat frame files already will fill dark/flat frames from those files. Without clearing all of that dark/flat frame data, it would be impossible to get rid of unwanted dark/flat files from that folder.&lt;/p&gt;&lt;p&gt;Click this button to create a 'clean sheet' for creating a new set of dark/flat frame data. Then, a subsequent click on the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Save Dark/Flat frames&lt;/span&gt; button will save a completely new set of dark/flat frame files to the observation folder.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="text">
+                    <string>Clear all frames</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
                   <widget class="QPushButton" name="dfHelpButton">
                    <property name="minimumSize">
                     <size>
