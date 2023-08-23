@@ -517,6 +517,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.dfRedactBottomLinesLabel.installEventFilter(self)
 
         self.applyDarkFlatCorrectionsCheckBox.installEventFilter(self)
+        self.applyDarkFlatCorrectionsCheckBox.clicked.connect(self.initializeDarkFlatCorrection)
+
 
         self.dfSelectDarkVideoButton.clicked.connect(self.darkVideoSelect)
         self.dfSelectFlatVideoButton.clicked.connect(self.flatVideoSelect)
@@ -1088,7 +1090,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.thumbOneImage = None
         self.thumbTwoImage = None
 
-        self.noiseFrame = None  # Used in CMOS tab
+        self.noiseFrame = None     # Used in CMOS tab
+        self.cmosDarkFrame = None  # Used in CMOS tab
         self.darkFrame = None
         self.darkMean = None
         self.darkMedian = None
@@ -1424,6 +1427,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def TBD(self):
         self.showMsgPopup('TBD')
 
+    def initializeDarkFlatCorrection(self):
+        if self.applyDarkFlatCorrectionsCheckBox.isChecked():
+            self.showDarkDefectFrame()
     def clearDarkFlatFrames(self):
         self.darkFrame = None
         self.darkDefectFrame = None
@@ -1441,6 +1447,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             return False, 'Input frame shape does not match dark/flat frame shape.', frame
 
         corrected_frame = (frame - self.darkFrame) * self.gainFrame + self.darkMedian
+        # A 'corrected' pixel could become negative. Here we clip such values to 0.0
+        corrected_frame = np.clip(corrected_frame, 0.0, None)
 
         return True, 'Correction performed', corrected_frame
 
@@ -1696,7 +1704,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.showMsgPopup(f'Operation cancelled by user. No frames saved.')
 
     def writeDarkFlatFramesToDir(self, destDir, thresh_settings):
-        # We need to save the std settings so that they can be restored along with the frames (otherwise
+        # We need to save the thresh settings so that they can be restored along with the frames (otherwise
         # showing any defect frame would cause it to be recalculated).
         pickle.dump(thresh_settings, open(os.path.join(destDir, 'threshSettings.p'), "wb"))
         msg = f'thresh settings saved\n\n'
@@ -1820,9 +1828,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.gainFrame, n_top=roi[0], n_bottom=roi[1], n_left=roi[2], n_right=roi[3]
                 )
 
-                self.gainStd = self.stdFrameROI(
-                    self.gainFrame, n_top=roi[0], n_bottom=roi[1], n_left=roi[2], n_right=roi[3]
-                )
+                # self.gainStd = self.stdFrameROI(
+                #     self.gainFrame, n_top=roi[0], n_bottom=roi[1], n_left=roi[2], n_right=roi[3]
+                # )
+
                 self.dfTopRedactSpinBox.setValue(roi[0])
                 self.dfBottomRedactSpinBox.setValue(roi[1])
                 self.dfLeftRedactSpinBox.setValue(roi[2])
@@ -1927,17 +1936,19 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.enableDisableDarkFlatRoiControls(True)
 
     def flatVideoSelect(self):
+        saved_folder_dir = self.folder_dir
         if self.dfAviSerTypeFileRadioButton.isChecked():
             self.readAviSerAdvAavFile()
+            self.folder_dir = saved_folder_dir
             if not (self.avi_in_use or self.ser_file_in_use or self.aav_file_in_use):
                 return
         else:
             self.selectFitsFolder()
+            self.folder_dir = saved_folder_dir
             if not self.fits_folder_in_use:
                 return
         self.dfProcessFlatButton.setEnabled(True)
         self.enableDisableDarkFlatRoiControls(True)
-
 
     def computeFourierFinder(self):
         if not (self.avi_wcs_folder_in_use or self.fits_folder_in_use):
@@ -2726,11 +2737,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.displayImageAtCurrentZoomPanState()
 
     def processDarkFrameStack(self):
-        if self.darkFrame is None:
+        if self.cmosDarkFrame is None:
             self.showMsgDialog(f'There is no dark frame stack to process.')
             return
 
-        self.image = np.copy(self.darkFrame)
+        self.image = np.copy(self.cmosDarkFrame)
         self.showMsg(f'The "dark frame" is being displayed.')
         self.displayImageAtCurrentZoomPanState()
         self.plotImagePixelDistribution('Dark frame pixel distribution', kind='DarkAndBright')
@@ -2793,7 +2804,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         # final_dark_frame = np.copy(self.image)
 
         numFrames = stopFrame - startFrame + 1
-        self.darkFrame = darkFrame / numFrames
+        self.cmosDarkFrame = darkFrame / numFrames
         self.noiseFrame = noiseFrame
         try:
             topRedactionRowCount = self.dfTopRedactSpinBox.value()
@@ -2987,9 +2998,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         )
 
         # TODO Check to see if this value is still in use anywhere
-        self.gainStd = self.stdFrameROI(
-            self.gainFrame, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right
-        )
+        # self.gainStd = self.stdFrameROI(
+        #     self.gainFrame, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right
+        # )
 
         self.gainMedian = self.medianFrameROI(
             self.gainFrame, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right
@@ -3020,8 +3031,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         baddies = np.where(defect_target > upper_gain)
         # baddies = np.where(defect_target > (defect_median + gain_thresh))
 
-        self.gainDefectPixelRowLocations = baddies[0]
-        self.gainDefectPixelColLocations = baddies[1]
+        # self.gainDefectPixelRowLocations = baddies[0]
+        # self.gainDefectPixelColLocations = baddies[1]
 
         rows = baddies[0]
         cols = baddies[1]
@@ -3032,8 +3043,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         # baddies = np.where(defect_target < (defect_median - gain_thresh))
 
         # TODO Remove these - not needed
-        self.gainDefectPixelRowLocations = np.concatenate((self.gainDefectPixelRowLocations, baddies[0]))
-        self.gainDefectPixelColLocations = np.concatenate((self.gainDefectPixelColLocations, baddies[1]))
+        # self.gainDefectPixelRowLocations = np.concatenate((self.gainDefectPixelRowLocations, baddies[0]))
+        # self.gainDefectPixelColLocations = np.concatenate((self.gainDefectPixelColLocations, baddies[1]))
 
         rows = baddies[0]
         cols = baddies[1]
@@ -6369,8 +6380,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.applyPixelCorrectionsToCurrentImageButton.setEnabled(False)
 
         self.noiseFrame = None
-        # TODO Fix the fact that DarkFlat tab uses same name
-        # self.darkFrame = None
+        # This is the fix to the fact that DarkFlat tab used self.darkFrame
+        self.cmosDarkFrame = None
 
     def enableCmosPixelFilterControls(self):
         self.buildDarkAndNoiseFramesButton.setEnabled(True)
@@ -8160,12 +8171,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         # if self.use_yellow_mask is true, we want to jog the seciond yellow aperture identically
                         # to the first yellow apertue
                         # so that translations are followed, and we can get a good angle calculation.
-                        # if self.use_yellow_mask:
-                        #     delta_xc_2 = self.roi_center - self.firstYellowApertureX
-                        #     delta_yc_2 = self.roi_center - self.firstYellowApertureY
-                        # else:
-                        #     delta_xc_2 = self.roi_center - self.secondYellowApertureX
-                        #     delta_yc_2 = self.roi_center - self.secondYellowApertureY
                         delta_xc_2 = self.roi_center - self.secondYellowApertureX
                         delta_yc_2 = self.roi_center - self.secondYellowApertureY
 
@@ -8923,7 +8928,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             elif self.adv_file_in_use:
                 timestamp = self.adv_timestamp
             else:
-                # TODO the following 2 changes are so that dark-flats be shown and worked on before an observation
+                # The following 2 changes are so that dark-flats be shown and worked on before an observation
                 # file has been selected
                 timestamp = ''
                 # self.showMsg(f'Unexpected folder type in use.')
@@ -10437,7 +10442,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def showFrame(self):
 
-        # TODO Test if this solves problem with dark-flat frame display before video is selected
         if self.filename is None:
             return
 
@@ -12262,6 +12266,9 @@ def newRobustMeanStd(
         last_index = mean_at
 
         return lower_mean, MAD, sorted_data, sorted_data, window, data.size, first_index, last_index
+
+    # This clip is not needed when there is a clip in the calculation of the correct_frame
+    # sorted_data = np.clip(sorted_data, 0, None)
 
     if sorted_data.dtype == '>f4':
         my_hist = np.bincount(sorted_data.astype('int', casting='unsafe'))
