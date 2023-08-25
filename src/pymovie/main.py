@@ -1748,7 +1748,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         dir_chosen = QFileDialog.getExistingDirectory(
             self,
             "Select folder containing desired dark/flat frames",
-            self.settings.value(self.darksFlatsDir, "./DARKS-FLATS"),  # starting directory,
+            self.darksFlatsDir,  # starting directory
             options=options
         )
 
