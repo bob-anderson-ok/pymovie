@@ -8827,6 +8827,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 # that was used for calculating the signal. We do this for all non-white apertures
                 if defect_thumbnail is not None:
                     hit_defect_flag = np.sum(mask * defect_thumbnail)
+                else:
+                    hit_defect_flag = 0
 
 
         if not centroid == (None, None):
