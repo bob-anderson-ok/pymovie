@@ -1183,7 +1183,7 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QLabel" name="dfDarkStdLabel">
+                  <widget class="QLabel" name="dfDarkThreshLabel">
                    <property name="toolTip">
                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This value sets the ADU value above the median value for which a pixel is considered defective due to high dark level (hot pixel).&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
@@ -1222,9 +1222,9 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QLabel" name="dfGainStdLabel">
+                  <widget class="QLabel" name="dfGainThreshLabel">
                    <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This value sets the threshold (expressed in standard deviations) above which a pixel is considered defective due to gain error.&lt;/p&gt;&lt;p&gt;The comparison is against the median gain.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This value sets the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;gain_delta&lt;/span&gt; above or below which a pixel is considered defective due to a gain error.&lt;/p&gt;&lt;p&gt;The comparison is against the median gain. That is, if the needed gain is outside the range &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;median_gain&lt;/span&gt; +/- &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;gain_delta&lt;/span&gt;, then the pixel is defective due to a need for excessive gain correction.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
                    <property name="text">
                     <string>gain thresh</string>

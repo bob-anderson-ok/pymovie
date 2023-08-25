@@ -746,6 +746,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.dfLeftRedactSpinBox.valueChanged.connect(self.move_dfRedactLines)
         self.dfRightRedactSpinBox.valueChanged.connect(self.move_dfRedactLines)
 
+        self.dfDarkThreshLabel.installEventFilter(self)
+        self.dfGainThreshLabel.installEventFilter(self)
+
         self.dfClearFrameDataButton.clicked.connect(self.clearDarkFlatFrames)
         self.dfClearFrameDataButton.installEventFilter(self)
 
