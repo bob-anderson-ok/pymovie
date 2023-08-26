@@ -12257,6 +12257,8 @@ def newRobustMeanStd(
         mean_at = np.where(sorted_data >= mean)[0][0]
         lower_mean = np.mean(sorted_data[0:mean_at])
 
+        bkgnd_values = sorted_data[np.where(sorted_data <= lower_mean)]
+
         # print(f'mean: {mean} @ {mean_at}')
         # upper_mean = np.mean(sorted_data[mean_at:])
         # print(f'lower_mean: {lower_mean}  upper_mean: {upper_mean}')
@@ -12270,7 +12272,7 @@ def newRobustMeanStd(
         first_index = 0
         last_index = mean_at
 
-        return lower_mean, MAD, sorted_data, sorted_data, window, data.size, first_index, last_index
+        return lower_mean, MAD, sorted_data, sorted_data, window, data.size, first_index, last_index, bkgnd_values
 
     # This clip is not needed when there is a clip in the calculation of the correct_frame
     # sorted_data = np.clip(sorted_data, 0, None)
