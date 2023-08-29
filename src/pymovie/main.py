@@ -8515,6 +8515,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.one_time_suppress_stats = False
             return None
 
+        hit_defect_flag = 0
+
         # Grab the properties that we need from the aperture object
         bbox = aperture.getBbox()
         x0, y0, nx, ny = bbox
@@ -8706,6 +8708,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             appsum = np.sum(self.yellow_mask * thumbnail)
             max_area = int(np.sum(self.yellow_mask))
             signal = appsum - int(round(max_area * mean))
+            if show_stats:
+                self.displayThumbnails(aperture, self.yellow_mask, thumbnail)
         else:
             masked_data = thumbnail * mask
             signal = 0
@@ -12257,8 +12261,6 @@ def newRobustMeanStd(
         mean_at = np.where(sorted_data >= mean)[0][0]
         lower_mean = np.mean(sorted_data[0:mean_at])
 
-        bkgnd_values = sorted_data[np.where(sorted_data <= lower_mean)]
-
         # print(f'mean: {mean} @ {mean_at}')
         # upper_mean = np.mean(sorted_data[mean_at:])
         # print(f'lower_mean: {lower_mean}  upper_mean: {upper_mean}')
@@ -12267,6 +12269,9 @@ def newRobustMeanStd(
         MAD = np.median(np.abs(sorted_data[0:mean_at] - lower_mean))
         if assume_gaussian:
             MAD = MAD * 1.486  # sigma(gaussian) can be proved to equal 1.486*MAD
+
+        # TODO Check that this MAD adjustment is valid
+        bkgnd_values = sorted_data[np.where(sorted_data <= lower_mean + MAD)]
 
         window = 0
         first_index = 0
