@@ -10827,7 +10827,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         image_name_list = []
         for aperture in apertures:
             if 'archive' in aperture.name:
-                image_name_list.append(aperture.name)
+                xc, yc = aperture.getCenter()
+                image_name_list.append(f'@ (x,y)=({xc:4d},{yc:4d}): {aperture.name}')
                 image_row = self.addApertureImageToImageRow(aperture, image_row)
 
         if not image_name_list:
@@ -10871,7 +10872,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         aperture_number = 0
         for image_name in image_name_list:
-            outhdr['COMMENT'] = f'aperture {aperture_number} name: {image_name}'
+            outhdr['COMMENT'] = f'aperture {aperture_number} {image_name}'
             aperture_number += 1
 
         frame_name = f'frame-{frame_number:06d}.fits'
