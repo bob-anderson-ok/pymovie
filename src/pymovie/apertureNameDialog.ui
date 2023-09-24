@@ -41,7 +41,7 @@
     <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
    </property>
   </widget>
-  <widget class="QWidget" name="">
+  <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
      <x>10</x>
@@ -66,7 +66,7 @@
        </size>
       </property>
       <property name="text">
-       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enter name for aperture...&lt;/p&gt;&lt;p&gt;Apertures that are given a name containing 'track' will automatically be placed as yellow tracking&lt;br/&gt;apertures. The default circular mask size will be taken from the entry in the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Pref.&lt;/span&gt; tab.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;If you want to suppress the re-centering of static masks within an aperture, put the string &lt;br/&gt;'no-rc' (or 'no_rc' or 'no rc') somewhere in the name. (Dynamic masks must relocate to do their job, &lt;br/&gt;so the presence of a 'no-rc' will be ignored.)&lt;/p&gt;&lt;p&gt;&lt;br/&gt;Apertures named 'empty' or 'no-star', or 'no_star' or 'no star' are treated as though they contain &lt;br/&gt;the 'no-rc' string - this is because the N-brightest-pixel-mass-centroid re-centering of static circular masks and&lt;br/&gt;the NxN search grid of TME masks, if allowed to 'hunt' within the aperture, will find opportunistic clumps of pixels &lt;br/&gt;that are a little brighter than other clumps and thus generate a tiny, but false, signal - disabling recentering prevents this.&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enter name for aperture...&lt;/p&gt;&lt;p&gt;Apertures that are given a name containing 'track' will automatically be placed as yellow tracking&lt;br/&gt;apertures. The default circular mask size will be taken from the entry in the &lt;span style=&quot; font-weight:700; color:#0000ff;&quot;&gt;Pref.&lt;/span&gt; tab.&lt;/p&gt;&lt;p&gt;Apertures that contain the string 'archive' will be automatically written to an archive folder as &lt;br/&gt;a series of FITS files. It is recommended that a mininum aperture size of 31x31 be used to facilitate&lt;br/&gt;possible future reporocessing using the archive data.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;If you want to suppress the re-centering of static masks within an aperture, put the string &lt;br/&gt;'no-rc' (or 'no_rc' or 'no rc') somewhere in the name. (Dynamic masks must relocate to do their job, &lt;br/&gt;so the presence of a 'no-rc' will be ignored.)&lt;/p&gt;&lt;p&gt;&lt;br/&gt;Apertures named 'empty' or 'no-star', or 'no_star' or 'no star' are treated as though they contain &lt;br/&gt;the 'no-rc' string - this is because the N-brightest-pixel-mass-centroid re-centering of static circular masks and&lt;br/&gt;the NxN search grid of TME masks, if allowed to 'hunt' within the aperture, will find opportunistic clumps of pixels &lt;br/&gt;that are a little brighter than other clumps and thus generate a tiny, but false, signal - disabling recentering prevents this.&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
      </widget>
     </item>

@@ -1118,6 +1118,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.fits_date = None
 
         self.avi_timestamp = ''
+        self.archive_timestamp = None
 
         # This 'state' variable controls the writing of reference star data files
         # during manual WCS calibration. The method handleSetRaDecSignal uses this
@@ -3705,6 +3706,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         TMEaperture = self.addStaticAperture(askForName=False, name=f'TME-{self.apertureId:02d}', radius=10)
         TMEaperture.jogging_enabled = False
 
+
         # Grab the image data from the current position of the aperture
         bbox = TMEaperture.getBbox()  # Get the specs of the bounding box (upper left corner and size)
         x0, y0, nx, ny = bbox
@@ -3734,6 +3736,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 duplicate, x, y = self.duplicateApertureName(proposed_name=proposed_name)
                 if not duplicate:
                     TMEaperture.name = proposed_name
+                    if 'track' in TMEaperture.name:
+                        self.handleSetYellowSignal(TMEaperture)
                     break
                 else:
                     if x is not None and y is not None:
@@ -6077,6 +6081,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.openFitsImageFile(fullpath)
             self.finderFrameBeingDisplayed = True
             self.restoreSavedState()
+            self.displayImageAtCurrentZoomPanState()
             if self.levels:
                 self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
                 self.thumbOneView.setLevels(min=self.levels[0], max=self.levels[1])
@@ -6666,6 +6671,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             if self.analysisInProgress:
                 pass
             else:
+                if not self.archiveAperturesPresent():
+                    self.showMsgPopup(f'There are no apertures marked for archiving')
                 self.analysisInProgress = True
                 if self.viewFieldsCheckBox.isChecked():
                     # This toggles the checkbox and so causes a call to self.showFrame()
@@ -6881,6 +6888,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.stackXtrack = []
         self.stackYtrack = []
         self.stackFrame = []
+        self.deleteTEMPfolder()
+
+    def deleteTEMPfolder(self):
+        archive_dir = os.path.join(self.folder_dir, "TEMP")
+
+        if os.path.exists(archive_dir):
+            shutil.rmtree(archive_dir)
 
     def prepareAutorunPyoteFile(self, csv_file):
         with open(self.folder_dir + '/auto_run_pyote.py', "w") as f:
@@ -7001,9 +7015,34 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'##### PyOTE is starting up --- this takes a few seconds #####')
 
     def writeCsvFile(self):
-
         def sortOnFrame(val):
             return val[8]
+
+
+        if self.archiveAperturesPresent:
+            head, tail = os.path.split(self.folder_dir)
+            name_given, done = QtWidgets.QInputDialog.getText(
+                self,
+                'Archive name entry',
+                'Enter archive folder name to use:                                             ',
+                text=tail + '_Archive'
+            )
+            if done:
+                # self.showMsgPopup(f'{name_given} will be used as archive folder name')
+                source = os.path.join(self.folder_dir, 'TEMP')
+                dest = os.path.join(self.folder_dir, name_given)
+                if os.path.exists(dest):
+                    answer = QMessageBox.question(self, "Archive folder already exists!",
+                                                  "Do you wish to overwrite this existing archive?")
+                    if answer == QMessageBox.Yes:
+                        # self.showMsgPopup('Yes - overwrite')
+                        shutil.rmtree(dest)
+                        os.rename(source, dest)
+                    else:
+                        # self.showMsgPopup('DO NOT OVERWRITE')
+                        pass
+                else:
+                    os.rename(source, dest)
 
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
@@ -8259,6 +8298,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         # Version 3.6.9
         # Now we add the new adjustment of masks in static apertures
         if self.analysisRequested:
+            # TODO Aperture archive code
+            self.writeApertureArchiveFrame(frame_number=self.currentFrameSpinBox.value())
             for aperture in self.getApertureList():
                 try:
                     self.statsPrintWanted = False
@@ -8956,6 +8997,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             if self.avi_timestamp:
                 timestamp = self.avi_timestamp
 
+        # TODO Archive code adder
+        self.archive_timestamp = timestamp[1:-1]  # Remove the [ ] enclosing brackets
+
         self.bkavg = mean
         self.bkstd = std
 
@@ -9221,6 +9265,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         if dir_path:
             self.folder_dir = dir_path
+            self.deleteTEMPfolder()
+
             self.fits_filenames = sorted(glob.glob(dir_path + '/*.fits'))
             if not self.fits_filenames:
                 self.showMsgPopup(f'No files with extension .fits were found.\n\n'
@@ -9899,6 +9945,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.settings.sync()
             self.folder_dir = dir_path
 
+            self.deleteTEMPfolder()
+
             self.clearTextBox()
             self.readPixelDimensions()
 
@@ -10504,6 +10552,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     image_width = self.ser_meta_data['ImageWidth']
                     image_height = self.ser_meta_data['ImageHeight']
                     little_endian = self.ser_meta_data['LittleEndian']
+                    self.restoreSavedState()
                     self.image = SER.getSerImage(
                         self.ser_file_handle, frame_to_show,
                         bytes_per_pixel, image_width, image_height, little_endian
@@ -10622,7 +10671,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         self.showMsg(f'While reading image data from FITS file: {e3}')
                         self.image = None
 
-                    # hdr = pyfits.getheader(self.fits_filenames[frame_to_show], 0)
                     # Check for QHY in use
                     QHYinUse = False
                     try:
@@ -10664,10 +10712,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                             self.showMsg(f'The following timestamp used highly suspect partial GPS data',
                                          blankLine=False)
 
-                        # if len(parts) == 2:
-                        #     self.showMsg(f'Timestamp found: {parts[0]} @ {parts[1]}')
-                        # else:
-                        #     self.showMsg(f'Invalid format for timestamp: {date_time}')
                         # We only want to save the date from the first file (to add to the csv file)...
                         if self.initialFrame:
                             self.fits_date = parts[0]
@@ -10770,6 +10814,88 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         except Exception as e0:
             self.showMsg(repr(e0))
             self.showMsg(f'There are no frames to display.  Have you read a file?')
+
+    def archiveAperturesPresent(self):
+        apertures = self.getApertureList()
+        for aperture in apertures:
+            if 'archive' in aperture.name:
+                return True
+        return False
+    def writeApertureArchiveFrame(self, frame_number):
+        apertures = self.getApertureList()
+        image_row = None
+        image_name_list = []
+        for aperture in apertures:
+            if 'archive' in aperture.name:
+                image_name_list.append(aperture.name)
+                image_row = self.addApertureImageToImageRow(aperture, image_row)
+
+        if not image_name_list:
+            return
+
+        self.writeImageRowFrame(frame_number, image_row, image_name_list)
+
+    def writeImageRowFrame(self, frame_number, image_row, image_name_list):
+        outlist = pyfits.PrimaryHDU(image_row)
+        file_time = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+
+        # Compose the FITS header
+        outhdr = outlist.header
+
+        # Add the REQUIRED elements in the REQUIRED order
+        outhdr['SIMPLE'] = True
+        outhdr['NAXIS'] = 2
+        outhdr['NAXIS1'] = image_row.shape[1]  # width  (number of columns)
+        outhdr['NAXIS2'] = image_row.shape[0]  # height (number of rows)
+        # End of required elements
+
+        outhdr['DATE'] = file_time
+
+        # Figure out what date to use
+        if self.fits_folder_in_use:
+            date = self.fits_date
+        elif self.ser_file_in_use:
+            date = self.ser_date
+        elif self.adv_file_in_use:
+            date = self.adv_file_date
+        elif self.avi_in_use:
+            if not self.avi_date == '':
+                date = self.avi_date
+            else:
+                date = '0000-00-00'
+        else:
+            self.showMsgPopup(f'Cannot determine what folder type in writeImageRowFrame()')
+
+        outhdr['DATE-OBS'] = f'{date}T{self.archive_timestamp}'
+        outhdr['FILE'] = self.filename
+
+        aperture_number = 0
+        for image_name in image_name_list:
+            outhdr['COMMENT'] = f'aperture {aperture_number} name: {image_name}'
+            aperture_number += 1
+
+        frame_name = f'frame-{frame_number:06d}.fits'
+        archive_dir = os.path.join(self.folder_dir, "TEMP")
+        if not os.path.exists(archive_dir):
+            os.mkdir(archive_dir)
+        outfile = os.path.join(archive_dir, frame_name)
+        try:
+            outlist.writeto(outfile, overwrite=True)
+        except Exception as e:
+            self.showMsgPopup(f'In writeImageRowFrame() === {e}')
+
+    def addApertureImageToImageRow(self, aperture, image_row):
+
+        # Grab the properties that we need from the aperture object
+        bbox = aperture.getBbox()
+        x0, y0, nx, ny = bbox
+
+        if image_row is None:
+            image_row = self.image[y0:y0 + ny, x0:x0 + nx]
+        else:
+            next_image = self.image[y0:y0 + ny, x0:x0 + nx]
+            image_row = np.concatenate((image_row, next_image), axis=1)
+        return image_row
 
     def processYellowApertures(self,frame_num):
         if PRINT_TRACKING_DATA:
