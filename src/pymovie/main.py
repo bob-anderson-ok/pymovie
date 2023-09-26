@@ -7019,7 +7019,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             return val[8]
 
 
-        if self.archiveAperturesPresent:
+        if self.archiveAperturesPresent():
             head, tail = os.path.split(self.folder_dir)
             name_given, done = QtWidgets.QInputDialog.getText(
                 self,
