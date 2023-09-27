@@ -7030,19 +7030,23 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             if done:
                 # self.showMsgPopup(f'{name_given} will be used as archive folder name')
                 source = os.path.join(self.folder_dir, 'TEMP')
-                dest = os.path.join(self.folder_dir, name_given)
-                if os.path.exists(dest):
-                    answer = QMessageBox.question(self, "Archive folder already exists!",
-                                                  "Do you wish to overwrite this existing archive?")
-                    if answer == QMessageBox.Yes:
-                        # self.showMsgPopup('Yes - overwrite')
-                        shutil.rmtree(dest)
-                        os.rename(source, dest)
-                    else:
-                        # self.showMsgPopup('DO NOT OVERWRITE')
-                        pass
+                if not os.path.exists(source):
+                    self.showMsgPopup(f'The archive data has already been written to a folder.')
                 else:
-                    os.rename(source, dest)
+                    dest = os.path.join(self.folder_dir, name_given)
+                    if os.path.exists(dest):
+                        answer = QMessageBox.question(self, "That Archive folder already exists!",
+                                                      "Do you wish to overwrite that existing archive?")
+                        if answer == QMessageBox.Yes:
+                            try:
+                                shutil.rmtree(dest)
+                                os.rename(source, dest)
+                            except Exception as e:
+                                self.showMsgPopup(f'{e}\n\n'
+                                                  f'Either choose another archive folder name, or manually delete\n'
+                                                  f'the folder.')
+                    else:
+                        os.rename(source, dest)
 
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
@@ -10819,6 +10823,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         apertures = self.getApertureList()
         for aperture in apertures:
             if 'archive' in aperture.name:
+                self.archive_file_time = strftime("%Y-%m-%d %H:%M:%S", gmtime())
                 return True
         return False
     def writeApertureArchiveFrame(self, frame_number):
@@ -10828,7 +10833,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         for aperture in apertures:
             if 'archive' in aperture.name:
                 xc, yc = aperture.getCenter()
-                image_name_list.append(f'@ (x,y)=({xc:4d},{yc:4d}): {aperture.name}')
+                image_name_list.append(f'{aperture.name} @ ({xc:4d},{yc:4d})')
                 image_row = self.addApertureImageToImageRow(aperture, image_row)
 
         if not image_name_list:
@@ -10838,7 +10843,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def writeImageRowFrame(self, frame_number, image_row, image_name_list):
         outlist = pyfits.PrimaryHDU(image_row)
-        file_time = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+
+        # file_time = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+        file_time = self.archive_file_time
 
         # Compose the FITS header
         outhdr = outlist.header
@@ -10863,17 +10870,22 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             if not self.avi_date == '':
                 date = self.avi_date
             else:
-                date = '0000-00-00'
+                date = '2000-01-01'
         else:
             self.showMsgPopup(f'Cannot determine what folder type in writeImageRowFrame()')
 
         outhdr['DATE-OBS'] = f'{date}T{self.archive_timestamp}'
-        outhdr['FILE'] = self.filename
 
         aperture_number = 0
         for image_name in image_name_list:
-            outhdr['COMMENT'] = f'aperture {aperture_number} {image_name}'
+            outhdr[f'AP-{aperture_number}'] = f'{image_name}'
             aperture_number += 1
+
+        outhdr['FILE'] = self.filename
+
+
+        # TODO This hack is to satisfy Tangra. It's a wrong number sometimes, but timestamps override
+        outhdr['EXPOSURE'] = f'0.0400'
 
         frame_name = f'frame-{frame_number:06d}.fits'
         archive_dir = os.path.join(self.folder_dir, "TEMP")
