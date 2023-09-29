@@ -1,4 +1,5 @@
 PyQt5~=5.15.7
+ravf >= 1.0.0
 pyqtgraph~=0.12.4
 numpy~=1.23.1
 opencv-python~=4.6.0.66

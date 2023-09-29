@@ -53,6 +53,9 @@ import scipy.signal
 # import scipy.signal
 from Adv2.Adv2File import Adv2reader  # Adds support for reading AstroDigitalVideo Version 2 files (.adv)
 
+# Adds support for reading RawAstroVideoFormat files (.ravf)
+from ravf import RavfReader, RavfImageUtils, RavfImageFormat, RavfColorType
+
 matplotlib.use('Qt5Agg')
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -1082,6 +1085,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.adv2_reader = None
         self.adv_file_date = ''
 
+        # If a ravf file was selected, these variables come into play
+        self.ravf_file_in_use = False
+        self.ravf_meta_data = {}
+        self.ravf_timestamps = []
+        self.ravf_timestamp = ''  # Holds timestamp of current frame
+        self.ravf_date = ''
+        self.ravf_file_handle = None
+
         # If a FITS file folder was selected, this variable gets filled with a list
         # of the filenames ending in .fits found within the selected FITS folder.
         self.fits_filenames = []
@@ -1272,10 +1283,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.openFinderPushButton.clicked.connect(self.readFinderImage)
         self.openFinderPushButton.installEventFilter(self)
 
-        self.readAviFileButton.clicked.connect(self.readAviSerAdvAavFile)
+        self.readAviFileButton.clicked.connect(self.readAviSerAdvAavRavfFile)
         self.readAviFileButton.installEventFilter(self)
 
-        self.selectAviWcsFolderButton.clicked.connect(self.selectAviSerAdvAavFolder)
+        self.selectAviWcsFolderButton.clicked.connect(self.selectAviSerAdvAavRavfFolder)
         self.selectAviWcsFolderButton.installEventFilter(self)
 
         self.currentFrameSpinBox.valueChanged.connect(self.updateFrameWithTracking)
@@ -1929,7 +1940,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if self.dfAviSerTypeFileRadioButton.isChecked():
             self.readAviSerAdvAavFile()
             self.folder_dir = saved_folder_dir
-            if not (self.avi_in_use or self.ser_file_in_use or self.aav_file_in_use):
+            if not (self.avi_in_use or self.ser_file_in_use or self.aav_file_in_use or self.ravf_file_in_use):
                 return
         else:
             self.selectFitsFolder()
@@ -1944,7 +1955,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if self.dfAviSerTypeFileRadioButton.isChecked():
             self.readAviSerAdvAavFile()
             self.folder_dir = saved_folder_dir
-            if not (self.avi_in_use or self.ser_file_in_use or self.aav_file_in_use):
+            if not (self.avi_in_use or self.ser_file_in_use or self.aav_file_in_use or self.ravf_file_in_use):
                 return
         else:
             self.selectFitsFolder()
@@ -2065,6 +2076,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if self.adv_file_in_use or self.aav_file_in_use:
             frameReader = self.getAdvFrame
 
+        if self.ravf_file_in_use:
+            frameReader = self.getRavfFrame
+
         if frameReader is None and self.cap is not None:
             frameReader = self.getAviFrame
 
@@ -2126,6 +2140,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.finderMethodEdit.setText(f'')
 
         integrated_image = cum_image / num_frames
+
+        # This rescaling is needed because the fourier_shift changes the pixel amplitudes and can cause pixel
+        # values greater than the expected 16 bit max of 65535
+        max_pixel = np.max(integrated_image)
+        if max_pixel > 65535:
+            integrated_image *= 65535 / max_pixel
+
         integrated_image = np.clip(integrated_image, 0, np.max(integrated_image))
         integrated_image = np.round(integrated_image).astype('uint16')
 
@@ -3942,7 +3963,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.currentGamma = self.gammaSettingOfCamera.value()
 
         if not (self.avi_in_use or self.fits_folder_in_use or
-                self.ser_file_in_use or self.adv_file_in_use or self.aav_file_in_use):
+                self.ser_file_in_use or self.adv_file_in_use or self.aav_file_in_use or self.ravf_file_in_use):
             if self.currentGamma == 1.0:
                 return
             self.showMsg(f'gamma changes are accepted ONLY when an image file has been selected.')
@@ -3971,7 +3992,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         [gammaUtils.gammaDecode16bit(i, gamma=self.currentGamma) for i in range(65536)]).astype(
                         'uint16')
                     self.showMsg(f'A 16 bit correction table for gamma={self.currentGamma:0.2f} has been calculated.')
-            elif self.adv_file_in_use or self.aav_file_in_use:
+            elif self.adv_file_in_use or self.aav_file_in_use or self.ravf_file_in_use:
                 # Compute a 16 bit lookup table
                 self.gammaLut = np.array(
                     [gammaUtils.gammaDecode16bit(i, gamma=self.currentGamma) for i in range(65536)]).astype('uint16')
@@ -4821,7 +4842,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 shortcut.write()
 
             self.acceptAviFolderDirectoryWithoutUserIntervention = True
-            self.selectAviSerAdvAavFolder()
+            self.selectAviSerAdvAavRavfFolder()
         else:
             self.showMsg(f'Operation was cancelled.')
 
@@ -5877,7 +5898,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def generateFinderFrame(self):
         if not (self.avi_wcs_folder_in_use or self.fits_folder_in_use):
             self.showMsgPopup(
-                f'This function can only be performed in the context of an AVI/SER/ADV/AAV-WCS or FITS folder.')
+                f'This function can only be performed in the context of an AVI/SER/ADV/AAV-WCS/RAVF or FITS folder.')
             return
 
         # Deal with timestamp redaction first.
@@ -5993,6 +6014,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         else:
             advReader = None
 
+        if self.ravf_file_in_use:
+            ravfReader = self.getRavfFrame
+        else:
+            ravfReader = None
+
         stack_aperture_present = False
         app_list = self.getApertureList()
         for app in app_list:
@@ -6064,6 +6090,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             fitsReader=fitsReader,
             serReader=serReader,
             advReader=advReader,
+            ravfReader=ravfReader,
             avi_location=self.avi_location, out_dir_path=self.finderFramesDir, bkg_threshold=None,
             hot_pixel_erase=self.applyHotPixelErasureToImg,
             delta_x=dx_dframe,
@@ -6105,7 +6132,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             return image
         else:
             return None
-
+    def getRavfFrame(self, frameNum):
+        err, image, _, _ = self.ravf_reader.getPymovieMainImageAndStatusData(file_handle=self.ravf_file_handle,
+                                                                             frame_to_show=frameNum)
+        if not err:
+            return image
+        else:
+            return None
     def clearCoordinatesEdit(self):
         self.coordinatesEdit.setText('')
 
@@ -6603,6 +6636,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if self.adv_file_in_use or self.aav_file_in_use:
             self.showAdvMetaData()
 
+        if self.ravf_file_in_use:
+            self.showRavfMetaData()
+
     def autoPlayLeft(self):
         self.setTransportButtonsEnableState(False)
         self.transportPause.setEnabled(True)
@@ -6978,6 +7014,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     f.write(f'# date at frame 0: {self.adv_file_date}\n')
                     for meta_key in self.adv_meta_data:
                         f.write(f'#{meta_key}: {self.adv_meta_data[meta_key]}\n')
+                elif self.ravf_file_in_use:
+                    f.write(f'# date at frame 0: {self.ravf_date}\n')
+                    lines = self.formatRavfMetaData()
+                    for line in lines:
+                        f.write(f'{line}\n')
                 else:
                     f.write(f'# error: unexpected folder type encountered\n')
 
@@ -7158,6 +7199,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         f.write(f'# date at frame 0: {self.adv_file_date}\n')
                         for meta_key in self.adv_meta_data:
                             f.write(f'#{meta_key}: {self.adv_meta_data[meta_key]}\n')
+                    elif self.ravf_file_in_use:
+                        f.write(f'# date at frame 0: {self.ravf_date}\n')
+                        for meta_key in self.ravf_meta_data:
+                            f.write(f'#{meta_key}: {self.ravf_meta_data[meta_key]}\n')
                     else:
                         f.write(f'# error: unexpected folder type encountered\n')
 
@@ -8981,6 +9026,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 timestamp = self.ser_timestamp
             elif self.adv_file_in_use:
                 timestamp = self.adv_timestamp
+            elif self.ravf_file_in_use:
+                timestamp = self.ravf_timestamp
             else:
                 # The following 2 changes are so that dark-flats be shown and worked on before an observation
                 # file has been selected
@@ -9320,6 +9367,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             # self.apertureId = 0
             self.num_yellow_apertures = 0
             self.avi_in_use = False
+            # TODO See if this fixes problem
+            self.ravf_file_in_use = False
             self.showMsg(f'Opened FITS folder: {dir_path}', blankLine=False)
             self.settings.setValue('fitsdir', dir_path)  # Make dir 'sticky'"
             self.settings.sync()
@@ -9469,7 +9518,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def readFinderImage(self):
 
         some_video_open = self.ser_file_in_use or self.avi_in_use or \
-                          self.avi_wcs_folder_in_use or self.fits_folder_in_use
+                          self.avi_wcs_folder_in_use or self.fits_folder_in_use or self.ravf_file_in_use
 
         if not some_video_open:
             self.showMsgPopup(f'A video file must be open before a "finder" file can be loaded.')
@@ -9633,6 +9682,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'{meta_key}: {self.adv_meta_data[meta_key]}', blankLine=False)
         self.showMsg('', blankLine=False)
 
+    def showRavfMetaData(self):
+        for meta_key in self.ravf_meta_data.keys():
+            self.showMsg(f'{meta_key}: {self.ravf_meta_data[meta_key]}', blankLine=False)
+        self.showMsg('', blankLine=False)
+
     def showFrameIntegrationInfo(self):
         self.showMsg(f'AAV-VERSION: {self.adv_meta_data["AAV-VERSION"]}', blankLine=False)
         effective_frame_rate = float(self.adv_meta_data["EFFECTIVE-FRAME-RATE"])
@@ -9645,7 +9699,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             # It makes no sense to treat an integrated aav in field mode
             self.processAsFieldsCheckBox.setEnabled(False)
 
-    def readAviSerAdvAavFile(self, skipDialog=False):
+    def readAviSerAdvAavRavfFile(self, skipDialog=False):
 
         self.lineNoiseFilterCheckBox.setChecked(False)
 
@@ -9657,9 +9711,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             self.filename, _ = QFileDialog.getOpenFileName(
                 self,  # parent
-                "Select avi/ser/adv file",  # title for dialog
+                "Select avi/ser/adv/ravf file",  # title for dialog
                 self.settings.value('avidir', "./"),  # starting directory
-                "avi/mov/ser/adv files (*.avi *.mov *.ser *.adv *.aav);;all files (*.*)",
+                "avi/mov/ser/adv files (*.avi *.mov *.ser *.adv *.aav *.ravf);;all files (*.*)",
                 options=options
             )
 
@@ -9697,8 +9751,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             # Test for AAV file in use
             self.aav_file_in_use = Path(self.filename).suffix == '.aav'
 
+            # Test for RAVF file in use
+            self.ravf_file_in_use = Path(self.filename).suffix == '.ravf'
+
             # Set avi in use otherwise
-            self.avi_in_use = not (self.ser_file_in_use or self.adv_file_in_use or self.aav_file_in_use)
+            self.avi_in_use = not (self.ser_file_in_use or self.adv_file_in_use or self.aav_file_in_use or
+                                   self.ravf_file_in_use)
 
             if self.adv_file_in_use or self.aav_file_in_use:
                 try:
@@ -9723,6 +9781,23 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             else:
                 self.ser_meta_data = {}
                 self.ser_timestamps = []
+
+            if self.ravf_file_in_use:
+                self.ravf_file_handle = open(self.filename, 'rb')
+                self.ravf_reader = RavfReader(self.ravf_file_handle)
+                self.ravf_timestamps = self.ravf_reader.timestamps()
+                self.ravf_meta_data = {}
+                for entry in self.ravf_reader.metadata():
+                    self.ravf_meta_data[entry[0]] = entry[1]
+
+                # self.showMsg('RAVF Version: %d' % self.ravf_reader.version())
+                # self.showMsg('Metadata: %s' % str(self.ravf_meta_data))
+                # self.showMsg('Timestamps: %s' % str(self.ravf_timestamps))
+                frame_count = self.ravf_reader.frame_count()
+                # self.showMsg('Frame Count: %d' % frame_count)
+            else:
+                self.ravf_meta_data = {}
+                self.ravf_timestamps = []
 
             self.clearTrackingPathParameters()
 
@@ -9806,8 +9881,15 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.showMsg(f'There are {frame_count} frames in the ADV/AAV file.')
                 if self.aav_file_in_use:
                     self.showFrameIntegrationInfo()
+            elif self.ravf_file_in_use:
+                frame_count = self.ravf_reader.frame_count()
+                self.enableControlsForAviData()
+                self.showMsg(f'Opened: {self.filename}')
+                self.showRavfMetaData()
+                self.saveApertureState.setEnabled(False)
+                self.showMsg(f'There are {frame_count} frames in the RAVF file.')
             else:
-                raise IOError('Unimplemented file type on readAviSerAdvFile()')
+                raise IOError('Unimplemented file type on readAviSerAdvRavfFile()')
 
             self.currentOcrBox = None
 
@@ -9869,7 +9951,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 g.write(code)
             return code
 
-    def selectAviSerAdvAavFolder(self):
+    def selectAviSerAdvAavRavfFolder(self):
 
         self.lineNoiseFilterCheckBox.setChecked(False)
 
@@ -9978,14 +10060,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             else:
                 linux, macOS, windows = False, False, True
 
-            # Find an .avi or .mov or .ser file or reference to an .avi or .mov or .ser
+            # Find an .avi or .mov or .ser or .ravf file or reference to an .avi or .mov or .ser
             # Note: this picks up alias (mac) and shortcut (Windows) files too.
             avi_filenames = glob.glob(dir_path + '/*.avi*')
             if len(avi_filenames) == 0:
                 avi_filenames = glob.glob(dir_path + '/*.mov*')
 
             if len(avi_filenames) == 0:
-                # If no avi or mov files, look for .ser files
+                # If no avi or mov files, look for .ser, then .adv, then .aav, then .ravf files
                 avi_filenames = glob.glob(dir_path + '/*.ser*')
                 if avi_filenames:
                     self.loadCustomProfilesButton.setEnabled(False)
@@ -9994,6 +10076,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.avi_in_use = False
                     self.adv_file_in_use = False
                     self.aav_file_in_use = False
+                    self.ravf_file_in_use = False
                 else:
                     avi_filenames = glob.glob(dir_path + '/*.adv*')
                     if avi_filenames:
@@ -10003,6 +10086,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         self.avi_in_use = False
                         self.adv_file_in_use = True
                         self.aav_file_in_use = False
+                        self.ravf_file_in_use = False
+
                     else:
                         avi_filenames = glob.glob(dir_path + '/*.aav*')
                         if avi_filenames:
@@ -10012,14 +10097,27 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                             self.avi_in_use = False
                             self.adv_file_in_use = False
                             self.aav_file_in_use = True
+                            self.ravf_file_in_use = False
+                        else:
+                            avi_filenames = glob.glob(dir_path + '/*.ravf*')
+                            if avi_filenames:
+                                self.loadCustomProfilesButton.setEnabled(False)
+                                self.clearOcrDataButton.setEnabled(False)
+                                self.ser_file_in_use = False
+                                self.avi_in_use = False
+                                self.adv_file_in_use = False
+                                self.aav_file_in_use = False
+                                self.ravf_file_in_use = True
+
             else:
                 self.avi_in_use = True
                 self.ser_file_in_use = False
                 self.adv_file_in_use = False
                 self.aav_file_in_use = False
+                self.ravf_file_in_use = False
 
             if len(avi_filenames) == 0:
-                self.showMsg(f'No avi/mov/ser/adv files or references were found in that folder.')
+                self.showMsg(f'No avi/mov/ser/adv/ravf files or references were found in that folder.')
                 self.avi_in_use = False
                 self.ser_file_in_use = False
                 return
@@ -10039,7 +10137,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     else:
                         if filename.endswith('.avi') or filename.endswith('.ser') or \
                                 filename.endswith('.adv') or filename.endswith('.aav') or \
-                                filename.endswith('.mov'):
+                                filename.endswith('.mov') or filename.endswith('.ravf'):
                             # self.showMsg(f'{filename} is an avi/ser file')
                             file_to_use = avi_location
 
@@ -10064,7 +10162,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 file_to_use = avi_filenames[0]
 
             if file_to_use is None:
-                self.showMsg(f'No avi/ser/adv/aav files or references were found in that folder.')
+                self.showMsg(f'No avi/ser/adv/aav/ravf files or references were found in that folder.')
                 self.avi_in_use = False
                 self.ser_file_in_use = False
                 return
@@ -10085,6 +10183,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.ser_timestamps = []
 
             self.adv_meta_data = {}
+
+            self.ravf_meta_data = {}
 
             if self.avi_in_use:
                 self.showMsg(f'Opened: {self.avi_location}')
@@ -10206,6 +10306,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 # This will get our image display initialized with default pan/zoom state
                 self.initialFrame = True
                 self.showFrame()
+
             elif self.adv_file_in_use or self.aav_file_in_use:
                 try:
                     self.adv2_reader = Adv2reader(self.filename)
@@ -10254,8 +10355,58 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 # This will get our image display initialized with default pan/zoom state
                 self.initialFrame = True
                 self.showFrame()
+            elif self.ravf_file_in_use:
+                try:
+                    self.ravf_file_handle = open(self.filename, 'rb')
+                    self.ravf_reader = RavfReader(self.ravf_file_handle)
+                    # print('RAVF Version:', self.ravf_reader.version())
+                    # print('Metadata:', self.ravf_reader.metadata())
+                    # print('Timestamps:', self.ravf_reader.timestamps())
+                    # print('Frame Count:', self.ravf_reader.frame_count())
+                except Exception as ex:
+                    self.showMsg(repr(ex))
+                    return
+
+                # Initialize apertures directory
+                self.aperturesDir = os.path.join(self.folder_dir, 'ApertureGroups')
+                if not os.path.exists(self.aperturesDir):
+                    os.mkdir(self.aperturesDir)
+                self.ocrBoxesDir = self.ocrDigitsDir
+
+                # Initialize finder frames directory
+                self.finderFramesDir = os.path.join(self.folder_dir, 'FinderFrames')
+                if not os.path.exists(self.finderFramesDir):
+                    os.mkdir(self.finderFramesDir)
+
+                self.ravf_meta_data = {}
+                for entry in self.ravf_reader.metadata():
+                    self.ravf_meta_data[entry[0]] = entry[1]
+                self.enableControlsForAviData()
+                frame_count = self.ravf_reader.frame_count()
+                if self.ravf_file_in_use:
+                    self.disableControlsWhenNoData()
+                    self.enableControlsForFitsData()
+                self.showMsg(f'There are {frame_count} frames in the RAVF file.')
+                self.showMsg(f'Opened: {self.avi_location}')
+                _, fn = os.path.split(self.avi_location)
+                self.fileInUseEdit.setText(fn)
+
+                self.timestampReadingEnabled = False
+                self.viewFieldsCheckBox.setChecked(False)
+                self.viewFieldsCheckBox.setEnabled(False)
+
+                # This will get our image display initialized with default pan/zoom state
+                self.initialFrame = True
+                self.showFrame()
+
+                self.vtiSelectComboBox.setCurrentIndex(0)
+                self.processTargetAperturePlacementFiles()
+
+                self.checkForSavedApertureGroups()
+                self.checkForDarkFlats()
+
             else:
-                raise IOError('Unsupported file type found in selectAviSerAdvFolder()')
+                raise IOError('Unsupported file type found in selectAviSerAdvRavfFolder()')
 
             self.currentFrameSpinBox.setMaximum(frame_count - 1)
             self.currentFrameSpinBox.setValue(0)
@@ -10635,6 +10786,33 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
                 except Exception as e4:
                     self.showMsg(f'{e4}')
+
+            elif self.ravf_file_in_use:
+                try:
+                    err, self.image, frameInfo, status = self.ravf_reader.getPymovieMainImageAndStatusData(
+                        self.ravf_file_handle, frame_to_show)
+                    self.doGammaCorrection()
+
+                    if self.applyPixelCorrectionsCheckBox.isChecked():
+                        self.image = self.scrubImage(self.image)
+                    self.applyHotPixelErasure()
+
+                    if self.lineNoiseFilterCheckBox.isChecked():
+                        self.applyMedianFilterToImage()
+
+                    if self.enableAdvFrameStatusDisplay.isChecked():
+                        for status_key in status.keys():
+                            self.showMsg(f'{status_key}: {status[status_key]}', blankLine=False)
+                        self.showMsg('', blankLine=False)
+
+                    """FRED"""
+                    self.ravf_date = frameInfo['start_timestamp_date']
+                    self.ravf_timestamp = '[' + frameInfo['start_timestamp_time'] + ']'
+
+                    self.showMsg(f'Timestamp found: {self.ravf_date} @ {self.ravf_timestamp}')
+                except Exception as e5:
+                    self.showMsg(f'{e5}')
+
             else:  # We're dealing with FITS files
                 try:
                     hdr = None
@@ -10871,8 +11049,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 date = self.avi_date
             else:
                 date = '2000-01-01'
+        elif self.ravf_file_in_use:
+            # TODO Check to see if we can do better
+            date = '2000-01-01'
         else:
-            self.showMsgPopup(f'Cannot determine what folder type in writeImageRowFrame()')
+            self.showMsgPopup(f'Cannot determine what file type in writeImageRowFrame()')
 
         outhdr['DATE-OBS'] = f'{date}T{self.archive_timestamp}'
 

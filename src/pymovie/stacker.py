@@ -16,11 +16,12 @@ def asinhScale(img, limcut = 0):  # img needs to be float32 type
 
 def frameStacker(pr, progress_bar, event_process,
                  first_frame, last_frame, timestamp_trim_top, timestamp_trim_bottom,
-                 fitsReader, serReader, advReader,
+                 fitsReader, serReader, advReader, ravfReader,
                  avi_location, out_dir_path, bkg_threshold, hot_pixel_erase, delta_x, delta_y, shift_dict):
     # fitsReader is self.getFitsFrame()
     # serReader is self.getSerFrame()
     # advReader is self.getAdvFrame()
+    # ravfReader is self.getRavfFrame()
     # pr is self.showMsg() provided by the caller
     # hot_pixel_erase is self.applyHotPixelErasureToImg
     # progress_bar is a reference to the caller's progress bar item so
@@ -146,6 +147,35 @@ def frameStacker(pr, progress_bar, event_process,
         else:
             return None
 
+
+    def read_ravf_frame(frame_to_read, trim_top=0, trim_bottom=0):
+        try:
+            frame_local = ravfReader(frame_to_read)
+            if frame_local is None:
+                pr(f'Problem reading RAVF file: frame == None returned')
+                return None
+
+            # if not frame_to_read == first_frame:
+            #     cleaned = hot_pixel_erase(frame_local)
+            # else:
+            #     cleaned = frame_local
+
+            cleaned = hot_pixel_erase(frame_local)
+
+            image = cleaned[:, :].astype('float32')
+
+            if trim_bottom:
+                image = image[0:-trim_bottom, :]
+
+            if trim_top:
+                image = image[trim_top:, :]
+
+        except Exception as e:
+            pr(f'Problem reading RAVF file: {e}')
+            return None
+
+        return image
+
     def openAviReader(avi_location_param):
         pr(f'Trying to open: {avi_location_param}')
         cap_local = cv2.VideoCapture(avi_location_param)
@@ -176,7 +206,7 @@ def frameStacker(pr, progress_bar, event_process,
         if err:
             return
 
-    if fitsReader is None and serReader is None and advReader is None:
+    if fitsReader is None and serReader is None and advReader is None and ravfReader is None:
         cap = openAviReader(avi_location_param=avi_location)
         if cap is None:
             return
@@ -191,6 +221,8 @@ def frameStacker(pr, progress_bar, event_process,
         inimage = read_ser_frame(first_frame)
     elif advReader:
         inimage = read_adv_frame(first_frame)
+    elif ravfReader:
+        inimage = read_ravf_frame(first_frame)
     else:
         inimage = read_avi_frame(first_frame)
 
@@ -217,6 +249,8 @@ def frameStacker(pr, progress_bar, event_process,
         inimage = read_ser_frame(first_frame, trim_top=timestamp_trim_top, trim_bottom=timestamp_trim_bottom)
     elif advReader:
         inimage = read_adv_frame(first_frame, trim_top=timestamp_trim_top, trim_bottom=timestamp_trim_bottom)
+    elif ravfReader:
+        inimage = read_ravf_frame(first_frame, trim_top=timestamp_trim_top, trim_bottom=timestamp_trim_bottom)
     else:
         inimage = read_avi_frame(first_frame, trim_top=timestamp_trim_top, trim_bottom=timestamp_trim_bottom)
 
@@ -238,6 +272,8 @@ def frameStacker(pr, progress_bar, event_process,
             inimage = read_ser_frame(next_frame, trim_top=timestamp_trim_top, trim_bottom=timestamp_trim_bottom)
         elif advReader:
             inimage = read_adv_frame(next_frame, trim_top=timestamp_trim_top, trim_bottom=timestamp_trim_bottom)
+        elif ravfReader:
+            inimage = read_ravf_frame(next_frame, trim_top=timestamp_trim_top, trim_bottom=timestamp_trim_bottom)
         else:
             inimage = read_avi_frame(next_frame, trim_top=timestamp_trim_top, trim_bottom=timestamp_trim_bottom)
 
