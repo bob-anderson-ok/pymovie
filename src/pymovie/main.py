@@ -414,6 +414,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.lastRightClickYPosition = None
         self.lastRightClickXPosition = None
 
+        # self.manual_folder_location_selection = False
+
         self.statsPrintWanted = True
         self.applyHuntBiasCorrection = False
 
@@ -488,6 +490,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         # Open (or create) file for holding 'sticky' stuff
         self.settings = QSettings('PyMovie.ini', QSettings.IniFormat)
         self.settings.setFallbacksEnabled(False)
+
+        state = self.settings.value('manualWorkfolderSelection', False) == 'true'
+        self.enableManualWorkFolderSelectionCheckBox.setChecked(state)
+
+        self.enableManualWorkFolderSelectionCheckBox.installEventFilter(self)
 
         # Use 'sticky' settings (from earlier session) to size and position the main screen
         self.resize(self.settings.value('size', QSize(800, 800)))
@@ -3067,10 +3074,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         baddies = np.where(defect_target < lower_gain)
         # baddies = np.where(defect_target < (defect_median - gain_thresh))
 
-        # TODO Remove these - not needed
-        # self.gainDefectPixelRowLocations = np.concatenate((self.gainDefectPixelRowLocations, baddies[0]))
-        # self.gainDefectPixelColLocations = np.concatenate((self.gainDefectPixelColLocations, baddies[1]))
-
         rows = baddies[0]
         cols = baddies[1]
         for i in range(len(rows)):
@@ -4786,65 +4789,79 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         # options |= QFileDialog.DontUseNativeDialog
         options |= QFileDialog.DirectoryOnly
 
-        dirname = QFileDialog.getExistingDirectory(
-            self,  # parent
-            "Select directory where AVI/SER-WCS folder should be placed",  # title for dialog
-            self.settings.value('avidir', "./"),  # starting directory
-            options=options
-        )
-        if dirname:
+        if self.enableManualWorkFolderSelectionCheckBox.isChecked():
+            dirname = QFileDialog.getExistingDirectory(
+                self,  # parent
+                "Select directory where AVI/SER-WCS folder should be placed",  # title for dialog
+                self.settings.value('avidir', "./"),  # starting directory
+                options=options
+            )
+        else:
+            self.createAVIWCSfolderButton.setEnabled(False)
+            dirname = self.settings.value('avidir')
+            base_with_ext = os.path.basename(self.filename)
+            base, _ = os.path.splitext(base_with_ext)
+            full_dir_path = os.path.join(dirname, base)
 
+            if os.path.exists(full_dir_path):
+                self.acceptAviFolderDirectoryWithoutUserIntervention = True
+                self.selectAviSerAdvAavRavfFolder()
+            else:
+                self.makeAVIWCSfolder(base, base_with_ext, dirname, full_dir_path)
+
+            return
+
+        if dirname:
             self.showMsg(f'AVI/SER-WCS folder will be created in: {dirname}', blankLine=False)
             base_with_ext = os.path.basename(self.filename)
             base, _ = os.path.splitext(base_with_ext)
             self.showMsg(f'and the folder will be named {base}')
             full_dir_path = os.path.join(dirname, base)
-
-            msg = f'AVI/SER-WCS folder will be created in: {dirname}\n\n'
-            msg += f'Folder name: {base}'
-            self.showMsgPopup(msg)
-
-            self.settings.setValue('avidir', full_dir_path)  # Make dir 'sticky'"
-            self.settings.sync()
-
-            pathlib.Path(full_dir_path).mkdir(parents=True, exist_ok=True)
-            if sys.platform == 'darwin':
-                ok, file, my_dir, retval, source = alias_lnk_resolver.create_osx_alias_in_dir(
-                    self.filename, full_dir_path)
-                if not ok:
-                    self.showMsg('Failed to create and populate AVI/SER-WCS folder')
-                else:
-                    self.showMsg('AVI/SER-WCS folder created and populated')
-                # self.showMsg(f'  file: {file}\n  dir: {my_dir}\n  retval: {retval}\n  source: {source}')
-
-            elif sys.platform == 'linux':
-                src = self.filename
-                dst = os.path.join(dirname, base, base_with_ext)
-                try:
-                    os.symlink(src, dst)
-                    self.showMsgPopup('AVI/SER-WCS folder created and populated')
-                except OSError as e:
-                    if e.errno == errno.EEXIST:
-                        os.remove(dst)
-                        os.symlink(src, dst)
-                        self.showMsgPopup('AVI/SER-WCS folder created and old symlink overwritten')
-                    else:
-                        self.showMsgPopup('Failed to create and populate AVI/SER-WCS folder')
-
-            else:
-                # Make sure that there is a directory waiting for the shortcut file
-                os.makedirs(full_dir_path, exist_ok=True)
-
-                shortcut = winshell.shortcut(self.filename)
-                base_lnk_name = os.path.basename(shortcut.lnk_filepath)
-                dest_path = os.path.join(full_dir_path, base_lnk_name)
-                shortcut.lnk_filepath = dest_path
-                shortcut.write()
-
-            self.acceptAviFolderDirectoryWithoutUserIntervention = True
-            self.selectAviSerAdvAavRavfFolder()
+            self.makeAVIWCSfolder(base, base_with_ext, dirname, full_dir_path)
         else:
             self.showMsg(f'Operation was cancelled.')
+
+    def makeAVIWCSfolder(self, base, base_with_ext, dirname, full_dir_path):
+        msg = f'AVI/SER-WCS folder will be created in: {dirname}\n\n'
+        msg += f'Folder name: {base}'
+        self.showMsgPopup(msg)
+        self.settings.setValue('avidir', full_dir_path)  # Make dir 'sticky'"
+        self.settings.sync()
+        pathlib.Path(full_dir_path).mkdir(parents=True, exist_ok=True)
+        if sys.platform == 'darwin':
+            ok, file, my_dir, retval, source = alias_lnk_resolver.create_osx_alias_in_dir(
+                self.filename, full_dir_path)
+            if not ok:
+                self.showMsg('Failed to create and populate AVI/SER-WCS folder')
+            else:
+                self.showMsg('AVI/SER-WCS folder created and populated')
+            # self.showMsg(f'  file: {file}\n  dir: {my_dir}\n  retval: {retval}\n  source: {source}')
+
+        elif sys.platform == 'linux':
+            src = self.filename
+            dst = os.path.join(dirname, base, base_with_ext)
+            try:
+                os.symlink(src, dst)
+                self.showMsgPopup('AVI/SER-WCS folder created and populated')
+            except OSError as e:
+                if e.errno == errno.EEXIST:
+                    os.remove(dst)
+                    os.symlink(src, dst)
+                    self.showMsgPopup('AVI/SER-WCS folder created and old symlink overwritten')
+                else:
+                    self.showMsgPopup('Failed to create and populate AVI/SER-WCS folder')
+
+        else:
+            # Make sure that there is a directory waiting for the shortcut file
+            os.makedirs(full_dir_path, exist_ok=True)
+
+            shortcut = winshell.shortcut(self.filename)
+            base_lnk_name = os.path.basename(shortcut.lnk_filepath)
+            dest_path = os.path.join(full_dir_path, base_lnk_name)
+            shortcut.lnk_filepath = dest_path
+            shortcut.write()
+        self.acceptAviFolderDirectoryWithoutUserIntervention = True
+        self.selectAviSerAdvAavRavfFolder()
 
     def readSavedOcrProfiles(self):
 
@@ -6708,7 +6725,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 pass
             else:
                 if not self.archiveAperturesPresent():
-                    self.showMsgPopup(f'There are no apertures marked for archiving')
+                    _, tail = os.path.split(self.folder_dir)
+                    if not 'rchive' in tail:
+                        self.showMsgPopup(f'There are no apertures marked for archiving')
                 self.analysisInProgress = True
                 if self.viewFieldsCheckBox.isChecked():
                     # This toggles the checkbox and so causes a call to self.showFrame()
@@ -6929,8 +6948,15 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def deleteTEMPfolder(self):
         archive_dir = os.path.join(self.folder_dir, "TEMP")
 
-        if os.path.exists(archive_dir):
+        if not os.path.exists(archive_dir):
+            return
+
+        try:
             shutil.rmtree(archive_dir)
+        except Exception as e:
+            self.showMsgPopup(f'{e}\n\n'
+                              f'If a permission error is present, you will need to manually delete\n'
+                              f'the folder.')
 
     def prepareAutorunPyoteFile(self, csv_file):
         with open(self.folder_dir + '/auto_run_pyote.py', "w") as f:
@@ -8347,7 +8373,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         # Version 3.6.9
         # Now we add the new adjustment of masks in static apertures
         if self.analysisRequested:
-            # TODO Aperture archive code
             self.writeApertureArchiveFrame(frame_number=self.currentFrameSpinBox.value())
             for aperture in self.getApertureList():
                 try:
@@ -9048,7 +9073,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             if self.avi_timestamp:
                 timestamp = self.avi_timestamp
 
-        # TODO Archive code adder
         self.archive_timestamp = timestamp[1:-1]  # Remove the [ ] enclosing brackets
 
         self.bkavg = mean
@@ -9367,7 +9391,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             # self.apertureId = 0
             self.num_yellow_apertures = 0
             self.avi_in_use = False
-            # TODO See if this fixes problem
             self.ravf_file_in_use = False
             self.showMsg(f'Opened FITS folder: {dir_path}', blankLine=False)
             self.settings.setValue('fitsdir', dir_path)  # Make dir 'sticky'"
@@ -9812,7 +9835,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             self.pixelAspectRatio = None
 
-            self.createAVIWCSfolderButton.setEnabled(True)
+            if self.enableManualWorkFolderSelectionCheckBox.isChecked():
+                self.createAVIWCSfolderButton.setEnabled(True)
+
             if not self.aav_file_in_use:
                 self.vtiSelectComboBox.setEnabled(False)
 
@@ -9911,6 +9936,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.thumbOneView.clear()
             self.thumbnailOneLabel.setText('')
             self.thumbTwoView.clear()
+            self.createAviSerWcsFolder()
 
     def setTimestampFormatter(self):
         self.kiwiInUse = False
@@ -10905,6 +10931,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
                         # ...but we need the time from every new frame.
                         self.fits_timestamp = f'[{parts[1]}]'
+
+                        if not self.initialFrame:
+                            self.showMsg(f'Timestamp found: {parts[0]} @ {parts[1]}')
                     except Exception as e4:
                         self.showMsg(f'{e4}')
                         pass
@@ -12157,6 +12186,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             tabName = self.tabWidget.tabText(i)
             # print(f'{i}: |{tabName}|')
             tabOrderList.append(tabName)
+
+        self.settings.setValue('manualWorkfolderSelection', self.enableManualWorkFolderSelectionCheckBox.isChecked())
 
         self.settings.setValue('tablist', tabOrderList)
 
