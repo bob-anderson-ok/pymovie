@@ -1945,7 +1945,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def darkVideoSelect(self):
         saved_folder_dir = self.folder_dir
         if self.dfAviSerTypeFileRadioButton.isChecked():
-            self.readAviSerAdvAavFile()
+            self.readAviSerAdvAavRavfFile()
             self.folder_dir = saved_folder_dir
             if not (self.avi_in_use or self.ser_file_in_use or self.aav_file_in_use or self.ravf_file_in_use):
                 return
@@ -1960,7 +1960,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def flatVideoSelect(self):
         saved_folder_dir = self.folder_dir
         if self.dfAviSerTypeFileRadioButton.isChecked():
-            self.readAviSerAdvAavFile()
+            self.readAviSerAdvAavRavfFile()
             self.folder_dir = saved_folder_dir
             if not (self.avi_in_use or self.ser_file_in_use or self.aav_file_in_use or self.ravf_file_in_use):
                 return
