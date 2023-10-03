@@ -10372,6 +10372,17 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.viewFieldsCheckBox.setEnabled(True)
                     self.currentOcrBox = None
 
+                # Initialize apertures directory
+                self.aperturesDir = os.path.join(self.folder_dir, 'ApertureGroups')
+                if not os.path.exists(self.aperturesDir):
+                    os.mkdir(self.aperturesDir)
+                self.ocrBoxesDir = self.ocrDigitsDir
+
+                # Initialize finder frames directory
+                self.finderFramesDir = os.path.join(self.folder_dir, 'FinderFrames')
+                if not os.path.exists(self.finderFramesDir):
+                    os.mkdir(self.finderFramesDir)
+
                 self.vtiSelectComboBox.setCurrentIndex(0)
                 self.processTargetAperturePlacementFiles()
 
