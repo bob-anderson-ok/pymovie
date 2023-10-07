@@ -54,7 +54,8 @@ import scipy.signal
 from Adv2.Adv2File import Adv2reader  # Adds support for reading AstroDigitalVideo Version 2 files (.adv)
 
 # Adds support for reading RawAstroVideoFormat files (.ravf)
-from ravf import RavfReader, RavfImageUtils, RavfImageFormat, RavfColorType
+from ravf import RavfReader
+# from ravf import RavfReader, RavfImageUtils, RavfImageFormat, RavfColorType
 
 matplotlib.use('Qt5Agg')
 
@@ -69,7 +70,7 @@ from mpl_toolkits.mplot3d import Axes3D  # noqa  !!!! Don't take me out
 
 from more_itertools import sort_together
 from skimage.registration import phase_cross_correlation
-from scipy.ndimage import fourier_shift, center_of_mass
+from scipy.ndimage import fourier_shift
 from time import gmtime, strftime  # for utc
 import shutil
 
@@ -216,8 +217,9 @@ class FixedImageExporter(pex.ImageExporter):
 class HelpDialog(QDialog, helpDialog.Ui_Dialog):
     def __init__(self):
         super(HelpDialog, self).__init__()
-        self.setWindowFlags(Qt.WindowStaysOnTopHint)
-        self.setWindowFlags(self.windowFlags() | QtCore.Qt.Dialog)
+        # I have not been able to reference WindowStaysOnTopHint or Dialog 'properly', yet things seem to work
+        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)  # noqa unresolved attribute WIndowStaysOnTopHint
+        self.setWindowFlags(self.windowFlags() | QtCore.Qt.Dialog)   # noqa unresolved attribute Dialog
         self.setupUi(self)
 
 
@@ -1842,17 +1844,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.gainFrame = pickle.load(open(file_wanted, 'rb'))
                 roi = self.findFrameBorders(self.gainFrame, border_value=1.0, title='Gain frame')
                 if comparison_roi is None:
-                    comparison_roi = roi
+                    comparison_roi = roi  # noqa  unused  (it's never None when we reach this point)
                 elif not roi == comparison_roi:
                     self.showMsgPopup(f'Inconsistent frame ROI found.')
                     return
                 self.gainMean = self.meanFrameROI(
                     self.gainFrame, n_top=roi[0], n_bottom=roi[1], n_left=roi[2], n_right=roi[3]
                 )
-
-                # self.gainStd = self.stdFrameROI(
-                #     self.gainFrame, n_top=roi[0], n_bottom=roi[1], n_left=roi[2], n_right=roi[3]
-                # )
 
                 self.dfTopRedactSpinBox.setValue(roi[0])
                 self.dfBottomRedactSpinBox.setValue(roi[1])
@@ -1875,7 +1873,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     # Remove all previous files from folder directory
                     shutil.rmtree(destDir)
                     os.mkdir(destDir)
-                self.writeDarkFlatFramesToDir(destDir, thresh_settings)
+                self.writeDarkFlatFramesToDir(destDir, thresh_settings)  # noqa on thresh_settings reference
                 self.showMsgPopup(f'dark/flat frame data copied to your folder directory:\n\n{self.folder_dir}')
 
     def showDarkFrame(self):
@@ -2016,7 +2014,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         # We save this image for use in placing dynamic apertures on finder images. This will be saved
         # together with the finder image, tagged with the correct frame number
-        initial_image = np.copy(self.image)
+        # initial_image = np.copy(self.image)
 
         redacted_image = self.image[:, :].astype('uint16')
 
@@ -2237,7 +2235,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             return None, None, None
 
         if len(frame.shape) == 3:
-            full_image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            full_image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # noqa cvtColor not found (cv2 structure issue)
             if self.applyDarkFlatCorrectionsCheckBox.isChecked():
                 success, msg, full_image = self.applyDarkFlatCorrect(full_image)
                 if not success:
@@ -3029,11 +3027,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.gainFrame, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right
         )
 
-        # TODO Check to see if this value is still in use anywhere
-        # self.gainStd = self.stdFrameROI(
-        #     self.gainFrame, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right
-        # )
-
         self.gainMedian = self.medianFrameROI(
             self.gainFrame, n_top=n_top, n_bottom=n_bottom, n_left=n_left, n_right=n_right
         )
@@ -3784,8 +3777,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         pixel_count_list = []
         max_snr = 0
         max_thresh = 0
-        max_pixel_count = 0
-        max_signal = 0
+        # max_pixel_count = 0
+        # max_signal = 0
         while True:
             while True:
                 mask_cut_value, mask_pixel_count, signal = self.calcTMEmask(TMEaperture, saved_default_mask,
@@ -3805,8 +3798,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 if snr > max_snr:
                     max_snr = snr
                     max_thresh = threshold
-                    max_pixel_count = mask_pixel_count
-                    max_signal = signal
+                    # max_pixel_count = mask_pixel_count
+                    # max_signal = signal
 
                 threshold += 1
 
@@ -3830,7 +3823,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         mask_cut_value = self.bkavg + threshold
         mask_pixel_count = 0
         signal = 0
-        coord_list = []  # This will be used to determine 'adjacency/connectedness' of thresholded mask
+        # coord_list = []  # This will be used to determine 'adjacency/connectedness' of thresholded mask
         for i in range(TMEaperture.xsize):
             for j in range(TMEaperture.xsize):
                 if TMEaperture.TMEimage[i, j] >= mask_cut_value and TMEaperture.defaultMask[i, j] == 1:
@@ -7042,9 +7035,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         f.write(f'#{meta_key}: {self.adv_meta_data[meta_key]}\n')
                 elif self.ravf_file_in_use:
                     f.write(f'# date at frame 0: {self.ravf_date}\n')
-                    lines = self.formatRavfMetaData()
-                    for line in lines:
-                        f.write(f'{line}\n')
+                    for meta_key in self.ravf_meta_data.keys():
+                        f.write(f'#{meta_key}: {self.ravf_meta_data[meta_key]}\n')
                 else:
                     f.write(f'# error: unexpected folder type encountered\n')
 
@@ -8663,7 +8655,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         threshold = aperture.thresh + background
 
         default_mask_used = False
-        timestamp = None
+        timestamp = None  # noqa
 
         if aperture.color == 'yellow':
 
@@ -8848,6 +8840,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
                 w = 2 * int(aperture.default_mask_radius) + 1
 
+                naylor_empty = None
                 if self.extractionCode == 'NRE':
                     np.random.seed(1)   # To make repeat runs under same conditions reproducible
                     naylor_background = np.zeros((w,w))
@@ -8883,7 +8876,15 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             else: # Aperture photometry in use
                 mean, std, _, _, _, _, _, _, bkgnd_pixels = newRobustMeanStd(thumbnail,
                                                                              lunar=self.lunarCheckBox.isChecked())
-                if aperture.name.startswith('TME'):
+
+                # Growth Curve Extraction is a failure - it is left in if some brain storm wants to change it
+                # into something useful.
+                if aperture.name.startswith('GCE'):  # Process Growth Curve Extraction
+                    signal, num_pixels_used = self.calcGCEintensity(mean, std, mask, thumbnail.copy())
+                    max_area = num_pixels_used
+                    appsum = signal + max_area * mean
+
+                elif aperture.name.startswith('TME'):
 
                     # Process Tight Mask Extraction
                     if self.nonRecenteringAperture(aperture):
@@ -8920,27 +8921,27 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         if self.applyHuntBiasCorrection:
                             mean += aperture.smoothed_background  # This adds the smoothed hunt-bias correction
                         # mean += tme_empty_per_pixel
-
                 else:
-                    masked_data = mask * thumbnail
                     appsum = np.sum(masked_data)
 
             if show_stats:
                 self.displayThumbnails(aperture, mask, thumbnail)
 
             if aperture.color == 'white':
-                signal = appsum
+                signal = appsum  # noqa possible reference before assignment
                 hit_defect_flag = 0
             else:  # Subtract background
                 if not self.target_psf_gathering_in_progress and self.useOptimalExtraction and 'psf-star' in aperture.name:
                     pass  # signal is already calculated
+                elif aperture.name.startswith('GCE'):  # Process Growth Curve Extraction
+                    pass  # signal is already calculated
                 else:
                     if aperture.smoothed_background == 0:  # We're in startup for the smoothed background
-                        signal = appsum - int(np.round(max_area * mean))
+                        signal = appsum - int(np.round(max_area * mean))  # noqa possible reference before assignment
                     else:
                         # TODO Finish removal of background averaging feature
                         # signal = appsum - int(np.round(max_area * aperture.smoothed_background))
-                        signal = appsum - int(np.round(max_area * mean))
+                        signal = appsum - int(np.round(max_area * mean))  # noqa possible reference before assignment
 
                 # If we have a defect_thumbnail, we calculate the number of defect pixels covered by the mask
                 # that was used for calculating the signal. We do this for all non-white apertures
@@ -9093,6 +9094,44 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         appsum, row_used, col_used, best_image = self.bestNxNappsum(aperture, image=img, N=N)
         return appsum, col_used, best_image, row_used
 
+    def calcGCEintensity(self, mean, pixel_std, mask, thumbnail):  # noqa may be static
+        # The thumbnail contains the pixels enclosed by the aperture
+        data_to_be_used = (thumbnail - round(mean)) * mask
+        # flatten and sort for calculating growth curve
+        pixels = data_to_be_used.flatten()
+        signal_pixels = np.sort(pixels)
+        num_pixels_used = 1
+        signal = signal_pixels[-num_pixels_used]
+        snr = signal / pixel_std
+        sig_vec = [signal]
+        snr_vec = [snr]
+        while True:
+            num_pixels_used += 1
+            signal += signal_pixels[-num_pixels_used]
+            sig_vec.append(signal)
+            new_snr = signal / (np.sqrt(num_pixels_used) * pixel_std)
+            snr_vec.append(new_snr)
+            if new_snr < snr:
+                signal -= signal_pixels[-num_pixels_used]
+                num_pixels_used -= 1
+                break
+            else:
+                snr = new_snr
+
+        # max_snr = np.max(snr_vec)
+        # for i in range(len(snr_vec)):
+        #     snr_vec[i] = snr_vec[i] / max_snr
+        # matplotlib.pyplot.plot(snr_vec)
+        # matplotlib.pyplot.show()
+        #
+        # max_sig = np.max(sig_vec)
+        # for i in range(len(snr_vec)):
+        #     sig_vec[i] = sig_vec[i] / max_sig
+        # matplotlib.pyplot.plot(sig_vec)
+        # matplotlib.pyplot.show()
+        pass
+        return signal, num_pixels_used
+
     def bestNxNappsum(self, aperture, image, N=5):
 
         # Find the highest appsum in a N x M search grid
@@ -9127,7 +9166,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     max_col_change = col_change
                     imageNxN_used = new_image
 
-        return max_appsum, max_row_change, max_col_change, imageNxN_used
+        return max_appsum, max_row_change, max_col_change, imageNxN_used  # noqa imageNxN_used reference
 
     def displayThumbnails(self, aperture, mask, thumbnail):
 
@@ -9266,7 +9305,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     #     # calculate the correlation image; note the flipping of one of the images
     #     return scipy.signal.fftconvolve(im1_gray, im2_gray[::-1, ::-1], mode='same')
 
-    def getCenteredVersionOfData(self, data, mass_centroid, apertureSize):
+    @staticmethod
+    def getCenteredVersionOfData(data, mass_centroid, apertureSize):
 
         target_center = data.shape[0] // 2
 
@@ -9284,7 +9324,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         row_axis = 0
         col_axis = 1
         rolled_data = np.roll(data, (row_roll_count, col_roll_count), (row_axis, col_axis))
-        new_centroid = brightest_pixel(rolled_data.copy(), 5)
+        # new_centroid = brightest_pixel(rolled_data.copy(), 5)
         # new_centroid = center_of_mass(rolled_data)
         # if not round(new_centroid[0]) == target_center or not round(new_centroid[1]) == target_center:
         #     print(f'original mass_centroid: {mass_centroid}  new: {new_centroid}  '
@@ -10672,7 +10712,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'in createImageFields: {e}')
 
 
-    def getAviFrame(self, frame_to_read):
+    def getAviFrame(self, frame_to_read):  # noqa on frame_to_read
         success, frame = self.cap.read()
         if success:
             return frame
@@ -11095,7 +11135,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         else:
             self.showMsgPopup(f'Cannot determine what file type in writeImageRowFrame()')
 
-        outhdr['DATE-OBS'] = f'{date}T{self.archive_timestamp}'
+        outhdr['DATE-OBS'] = f'{date}T{self.archive_timestamp}'  # noqa date reference
 
         aperture_number = 0
         for image_name in image_name_list:
@@ -12518,8 +12558,8 @@ def get_mask(
     return max_area, mask, t_mask, centroid, cvxhull, blob_count, extent
 
 def remove_stars(
-        img, ksize=(5, 5), cut=None, bkavg=None, min_pixels=5,
-        lunar=False):
+        img, ksize=(5, 5), cut=None, bkavg=None, min_pixels=5,  # noqa  on bkavg not used
+        lunar=False):  # noqa on lunar not used
     # cv2.GaussianBlur() cannot deal with big-endian data, probably because it is c++ code
     # that has been ported.  If we have read a FITS file, there is the
     # possibility that the image data (and hence img) is big-endian.  Here we test for that and do a
@@ -12665,8 +12705,6 @@ def newRobustMeanStd(
         stds.append(np.std(data[i]))
     MAD = np.median(stds)
 
-    # flat_data = data.flatten()
-
     est_mean = np.median(flat_data)
     clip_point = est_mean + 4.5 * MAD  # Equivalent to 3 sigma (Does a good job when no stars present)
 
@@ -12684,11 +12722,11 @@ def newRobustMeanStd(
     # Now that we know where the stars are (they are now 0 values in the negative_mask that started as all 1)
     # We replace the star pixels with the median of the data without the stars
     starless_data = data * negative_mask
-    replacement = round(np.median(starless_data))
+    replacement = round(np.median(starless_data))  # noqa type expected 'SupportsRound'
     starless_data += positive_mask * replacement
 
     flat_data = starless_data.flatten()
-    est_mean = round(np.mean(starless_data))
+    est_mean = round(np.mean(starless_data))  # noqa type expected 'SupportsRound'
     clip_point = est_mean + 3 * bkgnd_sigma
     bkgnd_values = flat_data[np.where(flat_data <= clip_point)]
     calced_mean = np.mean(bkgnd_values)
