@@ -10784,7 +10784,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     image_width = self.ser_meta_data['ImageWidth']
                     image_height = self.ser_meta_data['ImageHeight']
                     little_endian = self.ser_meta_data['LittleEndian']
-                    self.restoreSavedState()
+                    # self.restoreSavedState()  Removed in 3.9.8  I don't know how this line got here, but it breaks SER
                     self.image = SER.getSerImage(
                         self.ser_file_handle, frame_to_show,
                         bytes_per_pixel, image_width, image_height, little_endian
