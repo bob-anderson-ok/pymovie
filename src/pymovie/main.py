@@ -160,6 +160,8 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 PRINT_TRACKING_DATA = False
 
+TEMPFILENAME = 'hw)yy(3vp-dp!_!'
+
 class CustomViewBox(pg.ViewBox):
     def __init__(self, *args, **kwds):
         pg.ViewBox.__init__(self, *args, **kwds)
@@ -6939,7 +6941,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.deleteTEMPfolder()
 
     def deleteTEMPfolder(self):
-        archive_dir = os.path.join(self.folder_dir, "TEMP")
+        archive_dir = os.path.join(self.folder_dir, TEMPFILENAME)
 
         if not os.path.exists(archive_dir):
             return
@@ -7088,7 +7090,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             )
             if done:
                 # self.showMsgPopup(f'{name_given} will be used as archive folder name')
-                source = os.path.join(self.folder_dir, 'TEMP')
+                source = os.path.join(self.folder_dir, TEMPFILENAME)
                 if not os.path.exists(source):
                     self.showMsgPopup(f'The archive data has already been written to a folder.')
                 else:
@@ -11149,7 +11151,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         outhdr['EXPOSURE'] = f'0.0400'
 
         frame_name = f'frame-{frame_number:06d}.fits'
-        archive_dir = os.path.join(self.folder_dir, "TEMP")
+        archive_dir = os.path.join(self.folder_dir, TEMPFILENAME)
         if not os.path.exists(archive_dir):
             os.mkdir(archive_dir)
         outfile = os.path.join(archive_dir, frame_name)
