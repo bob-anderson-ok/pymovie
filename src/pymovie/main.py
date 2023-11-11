@@ -4798,9 +4798,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             base, _ = os.path.splitext(base_with_ext)
             full_dir_path = os.path.join(dirname, base)
 
+            # If the folder for this file already exists, we just want to open that folder
             if os.path.exists(full_dir_path):
                 self.acceptAviFolderDirectoryWithoutUserIntervention = True
-                self.selectAviSerAdvAavRavfFolder()
+                self.selectAviSerAdvAavRavfFolder(obs_folder=full_dir_path)
             else:
                 self.makeAVIWCSfolder(base, base_with_ext, dirname, full_dir_path)
 
@@ -9978,7 +9979,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.thumbOneView.clear()
             self.thumbnailOneLabel.setText('')
             self.thumbTwoView.clear()
+
+            # This routine will need to deal with an 'already created' folder by simply switching to it as though
+            # the user had selected the folder originally
             self.createAviSerWcsFolder()
+
 
     def setTimestampFormatter(self):
         self.kiwiInUse = False
@@ -10019,7 +10024,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 g.write(code)
             return code
 
-    def selectAviSerAdvAavRavfFolder(self):
+    def selectAviSerAdvAavRavfFolder(self, obs_folder=None):
 
         self.lineNoiseFilterCheckBox.setChecked(False)
 
@@ -10045,7 +10050,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.showMsg(f'User cancelled')
                 return
         else:
-            dir_path = self.settings.value('avidir', "./")
+            if obs_folder is not None:
+                dir_path = obs_folder
+            else:
+                self.showMsgPopup(msg=f'Program error: select...Folder called without a folder given.')
+                return
             self.acceptAviFolderDirectoryWithoutUserIntervention = False
 
         if dir_path:
