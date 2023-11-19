@@ -2675,6 +2675,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def apMenuEnableThumbnailSource(self):
         apertureFound, aperture = self.isMouseInAperture()
         if apertureFound:
+            for app in self.getApertureList():
+                app.thumbnail_source = False
             aperture.thumbnail_source = True
 
     def apMenuDisableThumbnailSource(self):
@@ -4857,7 +4859,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             shortcut.lnk_filepath = dest_path
             shortcut.write()
         self.acceptAviFolderDirectoryWithoutUserIntervention = True
-        self.selectAviSerAdvAavRavfFolder()
+        self.selectAviSerAdvAavRavfFolder(obs_folder=full_dir_path)
 
     def readSavedOcrProfiles(self):
 
