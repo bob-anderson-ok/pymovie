@@ -53,6 +53,8 @@ import scipy.signal
 # import scipy.signal
 from Adv2.Adv2File import Adv2reader  # Adds support for reading AstroDigitalVideo Version 2 files (.adv)
 
+from astropyStarExtractionBackgound import starsRemovedBkgd
+
 # Adds support for reading RawAstroVideoFormat files (.ravf)
 from ravf import RavfReader
 # from ravf import RavfReader, RavfImageUtils, RavfImageFormat, RavfColorType
@@ -641,24 +643,28 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.thumbTwoView.ui.histogram.hide()
 
         # The initial value must be coordinated with instance variable initiation
-        self.roiComboBox.addItem("91")
-        self.roiComboBox.addItem("71")
-        self.roiComboBox.addItem("51")
-        self.roiComboBox.addItem("41")
-        self.roiComboBox.addItem("31")
-        self.roiComboBox.addItem("21")
-        self.roiComboBox.addItem("11")
+        self.roiComboBox.addItem("171")  # 0
+        self.roiComboBox.addItem("151")  # 1
+        self.roiComboBox.addItem("131")  # 2
+        self.roiComboBox.addItem("111")  # 3
+        self.roiComboBox.addItem("91")   # 4
+        self.roiComboBox.addItem("71")   # 5
+        self.roiComboBox.addItem("51")   # 6
+        self.roiComboBox.addItem("41")   # 7
+        self.roiComboBox.addItem("31")   # 8
+        self.roiComboBox.addItem("21")   # 9
+        self.roiComboBox.addItem("11")   # 10
 
         if self.defAppSize51RadioButton.isChecked():
-            self.roiComboBox.setCurrentIndex(2)
-        elif self.defAppSize41RadioButton.isChecked():
-            self.roiComboBox.setCurrentIndex(3)
-        elif self.defAppSize31RadioButton.isChecked():
-            self.roiComboBox.setCurrentIndex(4)
-        elif self.defAppSize21RadioButton.isChecked():
-            self.roiComboBox.setCurrentIndex(5)
-        elif self.defAppSize11RadioButton.isChecked():
             self.roiComboBox.setCurrentIndex(6)
+        elif self.defAppSize41RadioButton.isChecked():
+            self.roiComboBox.setCurrentIndex(7)
+        elif self.defAppSize31RadioButton.isChecked():
+            self.roiComboBox.setCurrentIndex(8)
+        elif self.defAppSize21RadioButton.isChecked():
+            self.roiComboBox.setCurrentIndex(9)
+        elif self.defAppSize11RadioButton.isChecked():
+            self.roiComboBox.setCurrentIndex(10)
         else:
             self.showMsg(f'!!! Found no app size radio button checked !!!')
 
@@ -4088,23 +4094,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 xsize = app['xsize']
                 ysize = app['ysize']
 
+                self.setRoiComboBox(xsize)
+
                 # Set the aperture size selection to match the incoming aperture group.
-                if xsize == 51:
-                    self.roiComboBox.setCurrentIndex(2)
-                elif xsize == 41:
-                    self.roiComboBox.setCurrentIndex(3)
-                elif xsize == 31:
-                    self.roiComboBox.setCurrentIndex(4)
-                elif xsize == 21:
-                    self.roiComboBox.setCurrentIndex(5)
-                elif xsize == 11:
-                    self.roiComboBox.setCurrentIndex(6)
-                elif xsize == 71:
-                    self.roiComboBox.setCurrentIndex(1)
-                elif xsize == 91:
-                    self.roiComboBox.setCurrentIndex(7)
-                else:
-                    self.showMsg(f'Unexpected aperture size of {xsize} in restored aperture group')
 
                 bbox = (x0, y0, xsize, ysize)
                 name = app['name']
@@ -4158,6 +4150,32 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         # Because an average background was not supplied as an argument in the following call,
         # it will automatically extract one from the center of the current image
         # self.applyHotPixelErasure()
+
+    def setRoiComboBox(self, xsize):
+        if xsize == 171:
+            self.roiComboBox.setCurrentIndex(0)
+        elif xsize == 151:
+            self.roiComboBox.setCurrentIndex(1)
+        elif xsize == 131:
+            self.roiComboBox.setCurrentIndex(2)
+        elif xsize == 111:
+            self.roiComboBox.setCurrentIndex(3)
+        elif xsize == 91:
+            self.roiComboBox.setCurrentIndex(4)
+        elif xsize == 71:
+            self.roiComboBox.setCurrentIndex(5)
+        elif xsize == 51:
+            self.roiComboBox.setCurrentIndex(6)
+        elif xsize == 41:
+            self.roiComboBox.setCurrentIndex(7)
+        elif xsize == 31:
+            self.roiComboBox.setCurrentIndex(8)
+        elif xsize == 21:
+            self.roiComboBox.setCurrentIndex(9)
+        elif xsize == 11:
+            self.roiComboBox.setCurrentIndex(10)
+        else:
+            self.showMsg(f'Unexpected aperture size of {xsize} in restored aperture group')
 
     def restoreApertureGroup(self):
 
@@ -4299,24 +4317,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 xsize = aperture_dict['xsize']
                 ysize = aperture_dict['ysize']
 
-                # Set the aperture size selection to match the incoming aperture group.
-                if xsize == 51:
-                    self.roiComboBox.setCurrentIndex(2)
-                elif xsize == 41:
-                    self.roiComboBox.setCurrentIndex(3)
-                elif xsize == 31:
-                    self.roiComboBox.setCurrentIndex(4)
-                elif xsize == 21:
-                    self.roiComboBox.setCurrentIndex(5)
-                elif xsize == 11:
-                    self.roiComboBox.setCurrentIndex(6)
-                elif xsize == 71:
-                    self.roiComboBox.setCurrentIndex(1)
-                elif xsize == 91:
-                    self.roiComboBox.setCurrentIndex(0)
-                else:
-                    self.showMsg(f'Unexpected aperture size of {xsize} in restored aperture group')
-
+                self.setRoiComboBox(xsize)
 
                 bbox = (x0, y0, xsize, ysize)
                 name = aperture_dict['name']
@@ -8653,6 +8654,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         mean_top, *_ = newRobustMeanStd(thumbnail[0::2, :], lunar=self.lunarCheckBox.isChecked())
         mean_bot, *_ = newRobustMeanStd(thumbnail[1::2, :], lunar=self.lunarCheckBox.isChecked())
 
+        if aperture.name.endswith('X'):  # For this aperture, we will use the photutils background and std calculator
+            new_mean, new_std = starsRemovedBkgd(thumbnail)
+            mean = new_mean
+            std = new_std
+            # print(f"{aperture.name} new_mean: {new_mean:0.4f}  old_mean: {mean:0.4f}  "
+            #       f"new_std: {new_std:0.4f}  old_std: {std:0.4f}")
+            # pass
+
         # We computed the initial aperture.thresh as an offset from the background value present
         # in the frame used for the initial threshold determination.  Now we add the current
         # value of the background so that we can respond to a general change in background dynamically.
@@ -8881,6 +8890,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             else: # Aperture photometry in use
                 mean, std, _, _, _, _, _, _, bkgnd_pixels = newRobustMeanStd(thumbnail,
                                                                              lunar=self.lunarCheckBox.isChecked())
+
+                if aperture.name.endswith('X'):
+                    # For this aperture, we will use the photutils background and std calculator
+                    new_mean, new_std = starsRemovedBkgd(thumbnail)
+                    mean = new_mean
+                    std = new_std
 
                 # Growth Curve Extraction is a failure - it is left in if some brain storm wants to change it
                 # into something useful.
@@ -12663,7 +12678,7 @@ def poisson_mean(data_set, initial_guess, debug=False):
     return parameters[0], hist
 
 def newRobustMeanStd(
-        data: np.ndarray, max_pts: int = 20000,
+        data: np.ndarray, max_pts: int = 200000,
         assume_gaussian: bool = True, lunar: bool = False):
     assert data.size <= max_pts, "data.size > max_pts in newRobustMean()"
 
@@ -12719,11 +12734,11 @@ def newRobustMeanStd(
     MAD = np.median(stds)
 
     est_mean = np.median(flat_data)
-    clip_point = est_mean + 4.5 * MAD  # Equivalent to 3 sigma (Does a good job when no stars present)
+    clip_point = est_mean + 4.5 * MAD  # 3 sigma (arbitrary, but commonly used)
 
     bkgnd_values = flat_data[np.where(flat_data <= clip_point)]
 
-    calced_mean = np.mean(bkgnd_values)  # A backup value in case the poisson fit fails for some reason
+    calced_mean = np.mean(bkgnd_values)
     bkgnd_sigma = np.std(bkgnd_values)
 
     max_area, negative_mask, positive_mask, *_ = remove_stars(

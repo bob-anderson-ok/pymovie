@@ -146,6 +146,9 @@
                <property name="toolTip">
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This drop-down selection box changes the measurement aperture size.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#fc0107;&quot;&gt;Note:&lt;/span&gt; it is a reqirement that all apertures be the same size during a lightcurve extraction, so changing the aperture size will automatically remove all existing apertures.&lt;/p&gt;&lt;p&gt;If there is substantial wind shake in the video, you should select an aperture size sufficent to contain the 'wanderings' of the star you have selected for tracking or, if there is no tracking star, then the target star itself.&lt;/p&gt;&lt;p&gt;If there is no significant wind shake, use of a smaller aperture (like 31) may be more useful in dealing with dense star fields.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
+               <property name="editable">
+                <bool>false</bool>
+               </property>
                <property name="currentText">
                 <string/>
                </property>
@@ -153,7 +156,7 @@
                 <number>-1</number>
                </property>
                <property name="maxVisibleItems">
-                <number>3</number>
+                <number>9</number>
                </property>
               </widget>
              </item>

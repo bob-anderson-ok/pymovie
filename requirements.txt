@@ -1,5 +1,5 @@
 PyQt5~=5.15.7
-ravf >= 1.0.0
+ravf~=1.0.1
 pyqtgraph~=0.12.4
 numpy~=1.23.1
 opencv-python~=4.6.0.66
@@ -42,3 +42,4 @@ pyparsing~=3.0.9
 pyrsistent~=0.18.1
 kiwisolver~=1.4.4
 winshell~=0.6
+photutils~=1.10.0
