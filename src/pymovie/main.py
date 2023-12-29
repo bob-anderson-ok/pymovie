@@ -53,7 +53,7 @@ import scipy.signal
 # import scipy.signal
 from Adv2.Adv2File import Adv2reader  # Adds support for reading AstroDigitalVideo Version 2 files (.adv)
 
-from astropyStarExtractionBackgound import starsRemovedBkgd
+from pymovie.astropyStarExtractionBackgound import starsRemovedBkgd
 
 # Adds support for reading RawAstroVideoFormat files (.ravf)
 from ravf import RavfReader
