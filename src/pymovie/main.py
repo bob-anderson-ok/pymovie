@@ -5737,7 +5737,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def fillApertureDictionaries(self):
         # This will become a list of dictionaries, one for each aperture.  The customer
-        # for this list is fillApertureTable()
+        # for this list is editApertures()
         self.appDictList = []
         for app in self.getApertureList():
             appDict = dict(

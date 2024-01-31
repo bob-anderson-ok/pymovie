@@ -71,6 +71,19 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
 
         row = self.tableWidget.currentRow()
         col = self.tableWidget.currentColumn()
+        self.row = row
+        self.col = col
+        if 5 <= col <= 7:
+            # Invert the True/False
+            if self.tableWidget.item(row, col).text() == 'False':
+                self.setTrue()
+                self.ignoreCellClick = True
+                return
+            elif self.tableWidget.item(row, col).text() == 'True':
+                self.setFalse()
+                self.ignoreCellClick = True
+                return
+
         aperture = self.dictList[row]['appRef']
         if aperture.name.startswith("TME"):
             if col in [0, 2, 3]:
@@ -84,9 +97,9 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
         showDefaultMaskInThumbnailTwo = column == 3
         self.setThumbnails(aperture, showDefaultMaskInThumbnailTwo)
         # The xy position may have changed because of 'snap' when threshold is changed.
-        self.ignoreCellClick = True
         xc, yc = aperture.getCenter()
         item = QTableWidgetItem(str(f'({xc},{yc})'))
+        self.ignoreCellClick = True  # Suppresses a second entry to this routine (setItem creates a click event)
         self.tableWidget.setItem(row, 1, item)
 
     def writeTable(self):
@@ -278,7 +291,7 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
             return
         # self.msgRoutine(f'row: {self.row}  column: {self.col} items: {items[0]}')
 
-        if 5 <= self.col <= 7:
+        if 5 <= self.col <= 7:  # Columns 5, 6, and 7 are all True/False
             self.menu = QMenu()
             # self.menu = QtGui.QMenu()
             doTrue = QAction("Set True", self)
@@ -334,15 +347,18 @@ class EditApertureDialog(QDialog, apertureEditDialog.Ui_Dialog):
             for row in range(self.tableWidget.rowCount()):
                 item = QTableWidgetItem('False')
                 item.setFlags(item.flags() ^ QtCore.Qt.ItemFlag.ItemIsEditable)
+                self.ignoreCellClick = True  # Needed because next line cause a cell click event
                 self.tableWidget.setItem(row, self.col, item)
 
         item = QTableWidgetItem('True')
         item.setFlags(item.flags() ^ QtCore.Qt.ItemFlag.ItemIsEditable)
+        self.ignoreCellClick = True  # Needed because next line cause a cell click event
         self.tableWidget.setItem(self.row, self.col, item)
 
     def setFalse(self):
         item = QTableWidgetItem('False')
         item.setFlags(item.flags() ^ QtCore.Qt.ItemFlag.ItemIsEditable)
+        self.ignoreCellClick = True  # Needed because next line cause a cell click event
         self.tableWidget.setItem(self.row, self.col, item)
 
     def setRed(self):
