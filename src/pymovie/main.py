@@ -53,7 +53,7 @@ import scipy.signal
 # import scipy.signal
 from Adv2.Adv2File import Adv2reader  # Adds support for reading AstroDigitalVideo Version 2 files (.adv)
 
-from pymovie.astropyStarExtractionBackgound import starsRemovedBkgd
+# from pymovie.astropyStarExtractionBackgound import starsRemovedBkgd
 
 # Adds support for reading RawAstroVideoFormat files (.ravf)
 from ravf import RavfReader
@@ -8654,10 +8654,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         mean_top, *_ = newRobustMeanStd(thumbnail[0::2, :], lunar=self.lunarCheckBox.isChecked())
         mean_bot, *_ = newRobustMeanStd(thumbnail[1::2, :], lunar=self.lunarCheckBox.isChecked())
 
-        if aperture.name.endswith('X'):  # For this aperture, we will use the photutils background and std calculator
-            new_mean, new_std = starsRemovedBkgd(thumbnail)
-            mean = new_mean
-            std = new_std
+        # if aperture.name.endswith('X'):  # For this aperture, we will use the photutils background and std calculator
+        #     new_mean, new_std = starsRemovedBkgd(thumbnail)
+        #     mean = new_mean
+        #     std = new_std
             # print(f"{aperture.name} new_mean: {new_mean:0.4f}  old_mean: {mean:0.4f}  "
             #       f"new_std: {new_std:0.4f}  old_std: {std:0.4f}")
             # pass
@@ -8891,11 +8891,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 mean, std, _, _, _, _, _, _, bkgnd_pixels = newRobustMeanStd(thumbnail,
                                                                              lunar=self.lunarCheckBox.isChecked())
 
-                if aperture.name.endswith('X'):
-                    # For this aperture, we will use the photutils background and std calculator
-                    new_mean, new_std = starsRemovedBkgd(thumbnail)
-                    mean = new_mean
-                    std = new_std
+                # if aperture.name.endswith('X'):
+                #     For this aperture, we will use the photutils background and std calculator
+                #     new_mean, new_std = starsRemovedBkgd(thumbnail)
+                #     mean = new_mean
+                #     std = new_std
 
                 # Growth Curve Extraction is a failure - it is left in if some brain storm wants to change it
                 # into something useful.
@@ -9546,19 +9546,22 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if old_saved_aperture_group_files:
             for fpath in old_saved_aperture_group_files:
                 head, tail = os.path.split(fpath)
-                Path(fpath).rename(os.path.join(head, 'ApertureGroups', tail))
+                apertureGroupsPath = pathlib.PurePath(head + 'ApertureGroups' +tail)
+                Path(fpath).rename(apertureGroupsPath)
 
         old_saved_aperture_frame_num_files = glob.glob(self.folder_dir + '/savedFrameNumber*.p')
         if old_saved_aperture_frame_num_files:
             for fpath in old_saved_aperture_frame_num_files:
                 head, tail = os.path.split(fpath)
-                Path(fpath).rename(os.path.join(head, 'ApertureGroups', tail))
+                apertureGroupsPath = pathlib.PurePath(head + 'ApertureGroups' + tail)
+                Path(fpath).rename(apertureGroupsPath)
 
         old_saved_finder_frame_files = glob.glob(self.folder_dir + '/enhanced-image-*.fit')
         if old_saved_finder_frame_files:
             for fpath in old_saved_finder_frame_files:
                 head, tail = os.path.split(fpath)
-                Path(fpath).rename(os.path.join(head, 'FinderFrames', tail))
+                apertureGroupsPath = pathlib.PurePath(head + 'ApertureGroups' + tail)
+                Path(fpath).rename(apertureGroupsPath)
 
         saved_aperture_groups = glob.glob(self.aperturesDir + '/savedApertures*.p')
 

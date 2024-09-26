@@ -42,4 +42,3 @@ pyparsing~=3.0.9
 pyrsistent~=0.18.1
 kiwisolver~=1.4.4
 winshell~=0.6
-photutils~=1.10.0
