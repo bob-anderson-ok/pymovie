@@ -12712,8 +12712,7 @@ def newRobustMeanStd(
 
         return lower_mean, MAD, sorted_data, sorted_data, window, data.size, first_index, last_index, bkgnd_values
 
-    # This clip is not needed when there is a clip in the calculation of the correct_frame
-    # sorted_data = np.clip(sorted_data, 0, None)
+    # sorted_data = np.clip(sorted_data, 1, None)  # TODO Remove this code - it sets all zero values to 1
 
     if sorted_data.dtype == '>f4':
         my_hist = np.bincount(sorted_data.astype('int', casting='unsafe'))
@@ -12728,7 +12727,7 @@ def newRobustMeanStd(
         if 0 < my_hist[last] < 5:
             break
 
-    # New code to estimate standard deviation.  The idea is to compute the std of each row in the image
+    # New code to estimate standard deviation before stars are removed.  The idea is to compute the std of each row in the image
     # thumbnail. Next, we assume that stars present in the image will affect only a few rows, so
     # the median of the row-by-row std calculations is a good estimate of std (to be refined in subsequent steps)
     stds = []
@@ -12736,8 +12735,8 @@ def newRobustMeanStd(
         stds.append(np.std(data[i]))
     MAD = np.median(stds)
 
-    est_mean = np.median(flat_data)
-    clip_point = est_mean + 4.5 * MAD  # 3 sigma (arbitrary, but commonly used)
+    est_mean = np.mean(flat_data)  # This includes star pixels, so is bigger than actual background mean
+    clip_point = est_mean + 4.5 * MAD  # 3 sigma (arbitrary but commonly used)
 
     bkgnd_values = flat_data[np.where(flat_data <= clip_point)]
 
@@ -12746,21 +12745,33 @@ def newRobustMeanStd(
 
     max_area, negative_mask, positive_mask, *_ = remove_stars(
         img=data,
-        cut=calced_mean + 1 * bkgnd_sigma,
+        ksize=(5,5),
+        cut=calced_mean + 2 * bkgnd_sigma,  # TODO put this back to 1 sigma
         bkavg=calced_mean
     )
 
     # Now that we know where the stars are (they are now 0 values in the negative_mask that started as all 1)
     # We replace the star pixels with the median of the data without the stars
     starless_data = data * negative_mask
-    replacement = round(np.median(starless_data))  # noqa type expected 'SupportsRound'
-    starless_data += positive_mask * replacement
+    num_star_pixels = np.count_nonzero(negative_mask==0)
+    starless_mean = np.sum(starless_data) / (starless_data.size - num_star_pixels)
+    # replacement = round(np.median(starless_data))  # noqa type expected 'SupportsRound'
+    # starless_data += positive_mask * replacement
 
     flat_data = starless_data.flatten()
     est_mean = round(np.mean(starless_data))  # noqa type expected 'SupportsRound'
     clip_point = est_mean + 3 * bkgnd_sigma
     bkgnd_values = flat_data[np.where(flat_data <= clip_point)]
-    calced_mean = np.mean(bkgnd_values)
+    # calced_mean = np.mean(bkgnd_values)  # TODO put this back
+    # sumy = 0
+    # sumxy = 0
+    # for i, y in enumerate(my_hist[1:10]):
+    #     sumxy += (i + 1) * y
+    #     sumy += y
+    # mode = np.floor(sumxy / sumy)
+    # calced_mean = mode
+    calced_mean = starless_mean
+
     bkgnd_sigma = np.std(bkgnd_values)
 
     return calced_mean, bkgnd_sigma, sorted_data, my_hist, data.size / 2, data.size, 0, clip_point + 1, bkgnd_values
