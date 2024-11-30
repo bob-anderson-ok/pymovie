@@ -3428,6 +3428,65 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.displayImageAtCurrentZoomPanState()
 
+    def applyMedianFilterToFinderImage(self, image):
+        applyHorizontalFilter = applyVerticalFilter = False
+        if self.horizontalRadioButton.isChecked():
+            applyHorizontalFilter = True
+            applyVerticalFilter = False
+
+        if self.verticalRadioButton.isChecked():
+            applyHorizontalFilter = False
+            applyVerticalFilter = True
+
+        if self.bothRadioButton.isChecked():
+            applyHorizontalFilter = True
+            applyVerticalFilter = True
+
+        h, w = image.shape
+        imageDtype = image.dtype
+        if imageDtype == np.dtype('uint16'):
+            maxPixel = 65535
+        elif imageDtype == np.dtype('uint8'):
+            maxPixel = 255
+        else:
+            self.showMsgDialog('Unexpected dtype in applyMedianFilterToFinderImage()')
+            return None
+
+        topRow = self.upperTimestampMedianSpinBox.value()
+        botRow = h - self.lowerTimestampMedianSpinBox.value()
+
+        horMedians = np.zeros(h, imageDtype)
+        horizontalMedianData = np.zeros(h)
+        for i in range(topRow, botRow):
+            medianValue = int(np.median(image[i, :]))
+            horMedians[i] = medianValue
+            horizontalMedianData[i] += medianValue
+
+        vertMedians = np.zeros(w, imageDtype)
+        verticalMedianData = np.zeros(w)
+        for i in range(w):
+            medianValue = int(np.median(image[topRow:botRow, i]))
+            vertMedians[i] = medianValue
+            verticalMedianData[i] += medianValue
+
+        # self.numMedianValues += 1
+
+        if applyHorizontalFilter:
+            midMedian = int(np.median(horMedians))
+            for i in range(h):
+                image[i, :] = np.array(
+                    np.clip(image[i, :].astype(int) + (midMedian - horMedians[i]), 0, maxPixel),
+                    dtype=imageDtype)
+
+        if applyVerticalFilter:
+            midMedian = int(np.median(vertMedians))
+            for i in range(w):
+                image[:, i] = np.array(
+                    np.clip(image[:, i].astype(int) + (midMedian - vertMedians[i]), 0, maxPixel),
+                    dtype=imageDtype)
+
+        return image
+
     def set_thresh_spinner_1(self):
         if self.thresh_inc_1.isChecked():
             self.threshValueEdit.setSingleStep(1)
@@ -6109,6 +6168,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             ravfReader=ravfReader,
             avi_location=self.avi_location, out_dir_path=self.finderFramesDir, bkg_threshold=None,
             hot_pixel_erase=self.applyHotPixelErasureToImg,
+            median_filter=self.applyMedianFilterToFinderImage,
             delta_x=dx_dframe,
             delta_y=dy_dframe,
             shift_dict=shift_dict

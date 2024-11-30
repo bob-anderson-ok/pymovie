@@ -17,13 +17,14 @@ def asinhScale(img, limcut = 0):  # img needs to be float32 type
 def frameStacker(pr, progress_bar, event_process,
                  first_frame, last_frame, timestamp_trim_top, timestamp_trim_bottom,
                  fitsReader, serReader, advReader, ravfReader,
-                 avi_location, out_dir_path, bkg_threshold, hot_pixel_erase, delta_x, delta_y, shift_dict):
+                 avi_location, out_dir_path, bkg_threshold, hot_pixel_erase, median_filter, delta_x, delta_y, shift_dict):
     # fitsReader is self.getFitsFrame()
     # serReader is self.getSerFrame()
     # advReader is self.getAdvFrame()
     # ravfReader is self.getRavfFrame()
     # pr is self.showMsg() provided by the caller
     # hot_pixel_erase is self.applyHotPixelErasureToImg
+    # median_filter is self.applyMedianFilterToFinderImage
     # progress_bar is a reference to the caller's progress bar item so
     # that can update it to show progess
 
@@ -42,6 +43,7 @@ def frameStacker(pr, progress_bar, event_process,
             #     cleaned = frame_local
 
             cleaned = hot_pixel_erase(frame_local)
+            cleaned = median_filter(cleaned)
 
             image = cleaned[:, :].astype('float32')
 
@@ -70,6 +72,7 @@ def frameStacker(pr, progress_bar, event_process,
             #     cleaned = frame_local
 
             cleaned = hot_pixel_erase(frame_local)
+            cleaned = median_filter(cleaned)
 
             image = cleaned[:, :].astype('float32')
 
@@ -98,6 +101,7 @@ def frameStacker(pr, progress_bar, event_process,
             #     cleaned = frame_local
 
             cleaned = hot_pixel_erase(frame_local)
+            cleaned = median_filter(cleaned)
 
             image = cleaned[:, :].astype('float32')
 
@@ -130,6 +134,8 @@ def frameStacker(pr, progress_bar, event_process,
             #     cleaned = frame_local
 
             cleaned = hot_pixel_erase(frame_local)
+
+            cleaned = median_filter(cleaned)
 
             image = cleaned[:, :].astype('float32')
 
