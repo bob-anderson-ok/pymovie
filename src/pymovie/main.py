@@ -508,6 +508,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.cascadeCheckBox.setChecked(self.settings.value('cascade', False) == 'true')
         self.plotSymbolSizeSpinBox.setValue(int(self.settings.value('plot_symbol_size', 4)))
 
+        self.levels = [0.0,100.0]
+        self.levels[0] = float(self.settings.value('contrastMin', 20.0))
+        self.levels[1] = float(self.settings.value('contrastMax', 50.0))
+
+        self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
+
         self.redactLinesTopEdit.setText(self.settings.value('redactTop', ''))
         self.redactLinesBottomEdit.setText(self.settings.value('redactBottom', ''))
         self.numFramesToStackEdit.setText(self.settings.value('numFramesToStack', ''))
@@ -1208,7 +1214,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         # so that we can add that info to the 3D plots
         self.thumbnail_one_aperture_name = None
 
-        self.levels = []
+        # self.levels = []
         self.frame_at_level_set = None
 
         self.apertureEditor = None
@@ -8478,7 +8484,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if self.showImageControlCheckBox.isChecked():
             if self.frame_at_level_set == self.currentFrameSpinBox.value():
                 self.levels = self.frameView.ui.histogram.getLevels()
+                # pass
                 # self.showMsg(f'Detected level change in histogram widget {self.levels}')
+        else:
+            self.saveContrastSettings()
 
     def mouseMovedInFrameView(self, pos):
 
@@ -9459,6 +9468,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.QHYpartialDataWarningMessageShown = False
 
         if dir_path:
+
+            self.restoreContrastSettings()
+
             self.folder_dir = dir_path
             self.deleteTEMPfolder()
 
@@ -9504,7 +9516,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.createAVIWCSfolderButton.setEnabled(False)
             self.vtiSelectComboBox.setEnabled(False)
 
-            self.levels = []
+            # self.levels = []
             # remove the star rectangles (possibly) left from previous file
             self.clearApertures()
             self.filename = dir_path
@@ -9977,7 +9989,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             # self.apertureId = 0
             self.num_yellow_apertures = 0
-            self.levels = []
+            # self.levels = []
 
             if self.avi_in_use:
                 self.showMsg(f'Opened: {self.filename}')
@@ -10138,6 +10150,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.acceptAviFolderDirectoryWithoutUserIntervention = False
 
         if dir_path:
+
+            self.restoreContrastSettings()
 
             self.clearOptimalExtractionVariables()
 
@@ -10334,7 +10348,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             # self.apertureId = 0
             self.num_yellow_apertures = 0
-            self.levels = []
+            # self.levels = []
 
             self.ser_meta_data = {}
             self.ser_timestamps = []
@@ -12329,6 +12343,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             # print(f'{i}: |{tabName}|')
             tabOrderList.append(tabName)
 
+        self.saveContrastSettings()
+
         self.settings.setValue('manualWorkfolderSelection', self.enableManualWorkFolderSelectionCheckBox.isChecked())
 
         self.settings.setValue('tablist', tabOrderList)
@@ -12405,6 +12421,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         print(f"\nThe program has exited normally. Any error messages involving QBasicTimer \n"
               f"that may be printed following this are harmless artifacts "
               f"of the order in which various GUI elements are closed.\n")
+
+    def saveContrastSettings(self):
+        self.settings.setValue("contrastMin", self.levels[0])
+        self.settings.setValue("contrastMax", self.levels[1])
+
+    def restoreContrastSettings(self):
+        self.settings.setValue('contrastMin', self.levels[0])
+        self.settings.setValue('contrastMax', self.levels[1])
 
     def openInfoFile(self):
         infoFilePath = os.path.join(os.path.split(__file__)[0], 'PyMovie-info.pdf')
