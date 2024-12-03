@@ -509,8 +509,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.plotSymbolSizeSpinBox.setValue(int(self.settings.value('plot_symbol_size', 4)))
 
         self.levels = [0.0,100.0]
-        self.levels[0] = float(self.settings.value('contrastMin', 20.0))
-        self.levels[1] = float(self.settings.value('contrastMax', 50.0))
+        self.restoreContrastSettings()
 
         self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
 
@@ -9434,6 +9433,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             for ocrbox in ocrboxes:
                 self.removeOcrBox(ocrbox)
         self.frameView.getView().update()
+        # self.restoreContrastSettings()
 
     def setAllOcrBoxJogging(self, enable, position):
         ocrboxes = self.getOcrBoxList()
@@ -9469,7 +9469,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         if dir_path:
 
-            self.restoreContrastSettings()
+            # self.restoreContrastSettings()
 
             self.folder_dir = dir_path
             self.deleteTEMPfolder()
@@ -10151,7 +10151,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         if dir_path:
 
-            self.restoreContrastSettings()
+            # self.restoreContrastSettings()
 
             self.clearOptimalExtractionVariables()
 
@@ -10843,6 +10843,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             print(f'\n===== entering showFrame() =====')
         try:
             if not self.initialFrame:
+                # self.restoreContrastSettings()
                 # We want to maintain whatever pan/zoom is in effect ...
                 view_box = self.frameView.getView()
                 # ... so we read and save the current state of the view box of our frameView
@@ -10880,6 +10881,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
                         # ...but we need the time from every new frame.
                         self.avi_timestamp = ts
+
+                    # self.restoreContrastSettings()
 
                 except Exception as e1:
                     self.showMsg(f'Problem reading avi file: {e1}')
@@ -12427,8 +12430,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.settings.setValue("contrastMax", self.levels[1])
 
     def restoreContrastSettings(self):
-        self.settings.setValue('contrastMin', self.levels[0])
-        self.settings.setValue('contrastMax', self.levels[1])
+        self.levels[0] = float(self.settings.value('contrastMin', 20.0))
+        self.levels[1] = float(self.settings.value('contrastMax', 50.0))
 
     def openInfoFile(self):
         infoFilePath = os.path.join(os.path.split(__file__)[0], 'PyMovie-info.pdf')
