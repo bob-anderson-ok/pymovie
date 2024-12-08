@@ -508,10 +508,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.cascadeCheckBox.setChecked(self.settings.value('cascade', False) == 'true')
         self.plotSymbolSizeSpinBox.setValue(int(self.settings.value('plot_symbol_size', 4)))
 
-        self.levels = [0.0,100.0]
+        self.levels = [0.0,0.0]
+        self.imageBitDepth = int(self.settings.value('imageBitDepth', 8))
         self.restoreContrastSettings()
 
-        self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
+        # self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
 
         self.redactLinesTopEdit.setText(self.settings.value('redactTop', ''))
         self.redactLinesBottomEdit.setText(self.settings.value('redactBottom', ''))
@@ -6198,6 +6199,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def getSerFrame(self, frameNum):
         bytes_per_pixel = self.ser_meta_data['BytesPerPixel']
+        if bytes_per_pixel == 2:
+            self.imageBitDepth = 16
+        else:
+            self.imageBitDepth = 8
         image_width = self.ser_meta_data['ImageWidth']
         image_height = self.ser_meta_data['ImageHeight']
         little_endian = self.ser_meta_data['LittleEndian']
@@ -6452,8 +6457,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         else:
             self.frame_at_level_set = None
             self.frameView.ui.histogram.hide()
-            self.levels = self.frameView.ui.histogram.getLevels()
+            ans = self.frameView.ui.histogram.getLevels()
+            self.levels[0] = ans[0]
+            self.levels[1] = ans[1]
             self.showMsg(f'New scaling levels: black={self.levels[0]:0.1f}  white={self.levels[1]:0.1f}')
+            self.saveContrastSettings()
 
     def jumpSmallFramesBack(self):
         newFrame = self.currentFrameSpinBox.value() - self.frameJumpSmall
@@ -8482,11 +8490,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def levelChangedInImageControl(self):
         if self.showImageControlCheckBox.isChecked():
             if self.frame_at_level_set == self.currentFrameSpinBox.value():
-                self.levels = self.frameView.ui.histogram.getLevels()
-                # pass
+                ans = self.frameView.ui.histogram.getLevels()
+                self.levels[0] = ans[0]
+                self.levels[1] = ans[1]
                 # self.showMsg(f'Detected level change in histogram widget {self.levels}')
+                # self.saveContrastSettings()
         else:
-            self.saveContrastSettings()
+            pass
+            # self.saveContrastSettings()
 
     def mouseMovedInFrameView(self, pos):
 
@@ -9469,8 +9480,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         if dir_path:
 
-            # self.restoreContrastSettings()
-
             self.folder_dir = dir_path
             self.deleteTEMPfolder()
 
@@ -9572,6 +9581,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             self.setGammaToUnity()
             self.showFrame()
+
+            self.imageBitDepth = 16
+            self.restoreContrastSettings()
 
             self.thumbOneView.clear()
             self.thumbnailOneLabel.setText('')
@@ -9992,6 +10004,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             # self.levels = []
 
             if self.avi_in_use:
+                self.imageBitDepth = 8
+                self.restoreContrastSettings()
                 self.showMsg(f'Opened: {self.filename}')
                 if self.cap:
                     self.cap.release()
@@ -10034,14 +10048,22 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 frame_count = self.ser_meta_data['FrameCount']
                 self.showMsg(f'There are {frame_count} frames in the SER file.')
                 bytes_per_pixel = self.ser_meta_data['BytesPerPixel']
+                if bytes_per_pixel == 2:
+                    self.imageBitDepth = 16
+                else:
+                    self.imageBitDepth = 8
+                self.restoreContrastSettings()
                 self.showMsg(f'Image data is encoded in {bytes_per_pixel} bytes per pixel')
             elif self.adv_file_in_use or self.aav_file_in_use:
                 frame_count = self.adv2_reader.CountMainFrames
+                # self.adv2_reader.getAdvFileMetaData()
                 self.enableControlsForAviData()
                 self.showMsg(f'There are {frame_count} frames in the ADV/AAV file.')
                 if self.aav_file_in_use:
                     self.showFrameIntegrationInfo()
             elif self.ravf_file_in_use:
+                self.imageBitDepth = 16
+                self.restoreContrastSettings()
                 frame_count = self.ravf_reader.frame_count()
                 self.enableControlsForAviData()
                 self.showMsg(f'Opened: {self.filename}')
@@ -10150,8 +10172,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.acceptAviFolderDirectoryWithoutUserIntervention = False
 
         if dir_path:
-
-            # self.restoreContrastSettings()
 
             self.clearOptimalExtractionVariables()
 
@@ -10358,6 +10378,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.ravf_meta_data = {}
 
             if self.avi_in_use:
+                self.imageBitDepth = 8
+                self.restoreContrastSettings()
                 self.showMsg(f'Opened: {self.avi_location}')
 
                 _, fn = os.path.split(self.avi_location)
@@ -10538,6 +10560,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.initialFrame = True
                 self.showFrame()
             elif self.ravf_file_in_use:
+                self.imageBitDepth = 16
+                self.restoreContrastSettings()
                 try:
                     self.ravf_file_handle = open(self.filename, 'rb')
                     self.ravf_reader = RavfReader(self.ravf_file_handle)
@@ -10889,6 +10913,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             elif self.ser_file_in_use:
                 try:
                     bytes_per_pixel = self.ser_meta_data['BytesPerPixel']
+                    if bytes_per_pixel == 2:
+                        self.imageBitDepth = 16
+                    else:
+                        self.imageBitDepth = 8
                     image_width = self.ser_meta_data['ImageWidth']
                     image_height = self.ser_meta_data['ImageHeight']
                     little_endian = self.ser_meta_data['LittleEndian']
@@ -12426,12 +12454,37 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
               f"of the order in which various GUI elements are closed.\n")
 
     def saveContrastSettings(self):
-        self.settings.setValue("contrastMin", self.levels[0])
-        self.settings.setValue("contrastMax", self.levels[1])
+        ans = self.frameView.ui.histogram.getLevels()
+        self.levels[0] = ans[0]
+        self.levels[1] = ans[1]
+        # print(f"\nAt entry to saveContrastSettings found minLevel: {self.levels[0]}, maxLevel: {self.levels[1]}")
+        if self.imageBitDepth == 8:
+            contrastMaxPercent = (self.levels[1] / 256) * 100
+            contrastMinPercent = (self.levels[0] / 256) * 100
+        else:
+            contrastMaxPercent = (self.levels[1] / 65535) * 100
+            contrastMinPercent = (self.levels[0] / 65535) * 100
+        # print(f"Saving from imageBitDepth: {self.imageBitDepth:02d}  contrastMinPercent: {contrastMinPercent:0.1f}  contrastMaxPercent: {contrastMaxPercent:0.1f}")
+
+        self.settings.setValue('imageBitDepth', self.imageBitDepth)
+        self.settings.setValue('contrastMaxPercent', contrastMaxPercent)    # noqa
+        self.settings.setValue('contrastMinPercent', contrastMinPercent)    # noqa
 
     def restoreContrastSettings(self):
-        self.levels[0] = float(self.settings.value('contrastMin', 20.0))
-        self.levels[1] = float(self.settings.value('contrastMax', 50.0))
+        contrastMaxPercent = float(self.settings.value('contrastMaxPercent', 50.0))
+        contrastMinPercent = float(self.settings.value('contrastMinPercent', 50.0))
+        if self.imageBitDepth == 8:
+            maxLevel = contrastMaxPercent / 100.0 * 256
+            minLevel = contrastMinPercent / 100.0 * 256
+        else:
+            maxLevel = contrastMaxPercent / 100.0 * 65535
+            minLevel = contrastMinPercent / 100.0 * 65535
+        self.levels[0] = minLevel
+        self.levels[1] = maxLevel
+        # print(f"\nRestoring imageBitDepth: {self.imageBitDepth:02d}   minLevel: {minLevel:0.3f} ({contrastMinPercent:.1f}%)"
+        #       f"  maxLevel: {maxLevel:0.3f} ({contrastMaxPercent:.1f}%)")
+        self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
+        self.frameView.getView().update()
 
     def openInfoFile(self):
         infoFilePath = os.path.join(os.path.split(__file__)[0], 'PyMovie-info.pdf')
