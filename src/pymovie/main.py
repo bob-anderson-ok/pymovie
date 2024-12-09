@@ -500,6 +500,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         state = self.settings.value('manualWorkfolderSelection', False) == 'true'
         self.enableManualWorkFolderSelectionCheckBox.setChecked(state)
 
+        state = self.settings.value('stickyContrastSettings', False) == 'true'
+        self.stickyContrastCheckbox.setChecked(state)
+        self.stickyContrastCheckbox.installEventFilter(self)
+
         self.enableManualWorkFolderSelectionCheckBox.installEventFilter(self)
 
         # Use 'sticky' settings (from earlier session) to size and position the main screen
@@ -508,11 +512,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.cascadeCheckBox.setChecked(self.settings.value('cascade', False) == 'true')
         self.plotSymbolSizeSpinBox.setValue(int(self.settings.value('plot_symbol_size', 4)))
 
-        self.levels = [0.0,0.0]
+        self.levels = [0.0,128.0]
         self.imageBitDepth = int(self.settings.value('imageBitDepth', 8))
-        self.restoreContrastSettings()
 
-        # self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
+        # self.restoreContrastSettings()
 
         self.redactLinesTopEdit.setText(self.settings.value('redactTop', ''))
         self.redactLinesBottomEdit.setText(self.settings.value('redactBottom', ''))
@@ -620,6 +623,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.frameView.ui.menuBtn.hide()
         self.frameView.ui.roiBtn.hide()
         self.frameView.ui.histogram.hide()
+        # self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
+        self.restoreContrastSettings()
 
         self.buildApertureContextMenu()
 
@@ -12374,7 +12379,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             # print(f'{i}: |{tabName}|')
             tabOrderList.append(tabName)
 
-        self.saveContrastSettings()
+        if self.stickyContrastCheckbox.isChecked():
+            self.saveContrastSettings()
+
+        self.settings.setValue('stickyContrastSettings', self.stickyContrastCheckbox.isChecked())
 
         self.settings.setValue('manualWorkfolderSelection', self.enableManualWorkFolderSelectionCheckBox.isChecked())
 
@@ -12454,6 +12462,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
               f"of the order in which various GUI elements are closed.\n")
 
     def saveContrastSettings(self):
+        if not self.stickyContrastCheckbox.isChecked():
+            return
         ans = self.frameView.ui.histogram.getLevels()
         self.levels[0] = ans[0]
         self.levels[1] = ans[1]
@@ -12471,6 +12481,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.settings.setValue('contrastMinPercent', contrastMinPercent)    # noqa
 
     def restoreContrastSettings(self):
+        if not self.stickyContrastCheckbox.isChecked():
+            return
         contrastMaxPercent = float(self.settings.value('contrastMaxPercent', 50.0))
         contrastMinPercent = float(self.settings.value('contrastMinPercent', 50.0))
         if self.imageBitDepth == 8:
