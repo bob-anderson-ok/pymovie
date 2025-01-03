@@ -4563,8 +4563,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def moveOneFrameLeft(self):
         self.analysisRequested = False  # to suppress data capture while stepping off a finder frame
-        self.finderFrameBeingDisplayed = False
-        self.fourierFinderBeingDisplayed = False
+        # self.finderFrameBeingDisplayed = False     # Removed in 4.1.4
+        # self.fourierFinderBeingDisplayed = False   # Removed in 4.1.4
         self.finderMethodEdit.setText('')
 
         self.disableUpdateFrameWithTracking = False
@@ -4575,8 +4575,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def moveOneFrameRight(self):
         self.analysisRequested = False  # to suppress data capture while stepping off a finder frame
-        self.finderFrameBeingDisplayed = False
-        self.fourierFinderBeingDisplayed = False
+        # self.finderFrameBeingDisplayed = False     # Removed in 4.1.4
+        # self.fourierFinderBeingDisplayed = False   # Removed in 4.1.4
         self.finderMethodEdit.setText('')
 
         self.disableUpdateFrameWithTracking = False
@@ -7512,7 +7512,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         aperture.thresh = thresh - background
         self.one_time_suppress_stats = True
-        self.threshValueEdit.setValue(aperture.thresh)
+        # self.threshValueEdit.setValue(aperture.thresh)  # Removed in 4.1.4
 
     def showHelp(self, obj):
         if obj.toolTip():
@@ -12898,7 +12898,7 @@ def newRobustMeanStd(
     max_area, negative_mask, positive_mask, *_ = remove_stars(
         img=data,
         ksize=(5,5),
-        cut=calced_mean + 2 * bkgnd_sigma,  # TODO put this back to 1 sigma
+        cut=calced_mean + 2 * bkgnd_sigma,
         bkavg=calced_mean
     )
 
