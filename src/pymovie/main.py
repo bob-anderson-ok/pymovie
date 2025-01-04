@@ -9702,7 +9702,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         options = QFileDialog.Options()
         # options |= QFileDialog.DontUseNativeDialog
 
-        self.filename, _ = QFileDialog.getOpenFileName(
+        self.fitsFilename, _ = QFileDialog.getOpenFileName(  # TODO Validate this change 4.1.5
             self,  # parent
             "Select finder image",  # title for dialog
             self.finderFramesDir,  # starting directory
@@ -9712,13 +9712,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         QtGui.QGuiApplication.processEvents()
 
-        if self.filename:
+        if self.fitsFilename:
             self.createAVIWCSfolderButton.setEnabled(False)
             self.clearTextBox()
 
             self.num_yellow_apertures = 0
 
-            dirpath, basefn = os.path.split(self.filename)
+            dirpath, basefn = os.path.split(self.fitsFilename)
             rootfn, ext = os.path.splitext(basefn)
 
             if basefn.startswith('enhanced'):
@@ -9748,13 +9748,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.settings.setValue('bmpdir', dirpath)  # Make dir 'sticky'"
             self.settings.sync()
 
-            self.showMsg(f'Opened: {self.filename}')
+            self.showMsg(f'Opened: {self.fitsFilename}')
             # If selected filename ends in .fit we use our FITS reader, otherwise we use cv2 (it handles .bmp)
             if ext == '.fit':
-                self.openFitsImageFile(self.filename)  # This sets self.image and displays it
+                self.openFitsImageFile(self.fitsFilename)  # This sets self.image and displays it
                 self.finder_image = np.round(self.image).astype(np.uint16)
             else:
-                img = cv2.imread(self.filename)  # noqa
+                img = cv2.imread(self.fitsFilename)  # noqa
                 self.image = img[:, :, 0]
                 self.finder_image = np.round(self.image).astype(np.uint16)
 
