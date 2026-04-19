@@ -32,7 +32,7 @@ dependencies = [
     "numpy==1.23.1",
     "scipy==1.8.1",
     "matplotlib==3.5.2",
-    "opencv-python==4.6.0.66",
+    "opencv-python==4.8.1.78",
     "Pillow==9.2.0",
     "scikit-image==0.19.3",
     "tifffile==2022.5.4",
