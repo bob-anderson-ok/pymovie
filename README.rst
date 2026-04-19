@@ -15,6 +15,28 @@ to use for a newbie.
 Installing
 ==========
 
+Windows: download the executable (easiest)
+------------------------------------------
+
+Windows users can skip the Python toolchain entirely. Go to the
+`latest release <https://github.com/bob-anderson-ok/pymovie/releases/latest>`_
+page and download ``PyMovie.exe`` from the *Assets* section. Double-click to
+run — no installation, no Python setup required. The executable bundles its
+own Python runtime and all dependencies.
+
+The first activation will take extra time because it will be downloading the
+proper version of Python and all the other dependencies. Subsequent activations will
+only tkae a few seconds.
+
+To update later, just download the newer ``PyMovie.exe`` from the release
+page and replace the old one.
+
+If you'd rather run from source (all platforms), follow the uv-based
+instructions below.
+
+Installing from source (any platform)
+-------------------------------------
+
 PyMovie uses `uv <https://docs.astral.sh/uv/>`_ to manage its Python environment.
 You do **not** need Python pre-installed — uv will automatically download the
 correct version (3.10) on first run.
