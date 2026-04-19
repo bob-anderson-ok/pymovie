@@ -5,6 +5,19 @@ __pycache__/
 .gitignore
 gui.py
 setup.cfg
+
+# uv / PyApp build pipeline artifacts
+.venv/
+target/
+
+# CodeGraph index (local tooling)
+.codegraph/
+
+# User-local working files
+src/pymovie/DARKS-FLATS/
+src/pymovie/PyMovie-old.ini
+src/pymovie.egg-info/PKG-INFO.backup
+src/pymovie.egg-info/entry_points.txt
 src/__pycache__/
 src/pymovie.egg-info/dependency_links.txt
 src/pymovie.egg-info/not-zip-safe
