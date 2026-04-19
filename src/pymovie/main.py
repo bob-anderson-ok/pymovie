@@ -48,6 +48,7 @@ in the IPython console while in src/pymovie directory
 # for entry in sys.path:
 #     print(entry)
 
+import math  # We need isnan()
 import matplotlib
 import scipy.signal
 # import scipy.signal
@@ -97,6 +98,7 @@ from astropy import modeling
 # from astropy.time import Time
 import sys
 import os
+import re
 import errno
 import platform
 from datetime import datetime, timedelta
@@ -410,6 +412,14 @@ class Qt5MplCanvas(FigureCanvas):
         FigureCanvas.__init__(self, self.fig)
         # super(FigureCanvas, self).__init__(self.fig)
         self.ax.mouse_init()
+
+
+def _natural_sort_key(path):
+    # Split the file's basename into runs of digits and non-digits so that
+    # numeric chunks compare as integers. Non-numeric chunks compare case-insensitively.
+    # This makes 'frame_2.fits' sort before 'frame_10.fits' regardless of zero-padding.
+    base = os.path.basename(path)
+    return [int(tok) if tok.isdigit() else tok.lower() for tok in re.split(r'(\d+)', base)]
 
 
 # noinspection PyBroadException
@@ -9488,7 +9498,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.folder_dir = dir_path
             self.deleteTEMPfolder()
 
-            self.fits_filenames = sorted(glob.glob(dir_path + '/*.fits'))
+            self.fits_filenames = sorted(glob.glob(dir_path + '/*.fits'), key=_natural_sort_key)
             if not self.fits_filenames:
                 self.showMsgPopup(f'No files with extension .fits were found.\n\n'
                                   f'Are you sure that you selected the proper folder?')
@@ -9543,7 +9553,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.settings.sync()
 
             self.folder_dir = dir_path
-            self.fits_filenames = sorted(glob.glob(dir_path + '/*.fits'))
+            self.fits_filenames = sorted(glob.glob(dir_path + '/*.fits'), key=_natural_sort_key)
 
             self.aperturesDir = os.path.join(self.folder_dir, 'ApertureGroups')
             if not os.path.exists(self.aperturesDir):
@@ -11101,6 +11111,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         if not special_handling:
                             if 'DATE-OBS' in hdr:
                                 date_time = hdr['DATE-OBS']
+                            elif 'MIDTIME' in hdr:
+                                date_time = hdr['MIDTIME']
                             # The form of DATE-OBS is '2018-08-21T05:21:02.4561235' so we can simply 'split' at the T
                             parts = date_time.split('T')
                         else:
@@ -11193,10 +11205,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     # This routine only does something when the user has enabled the special measurements
                     # needed to calibrate rolling shutter cameras.
                     self.processRowSumList()
+                if frame_to_show == 165:
+                    pass
                 self.processYellowApertures(frame_to_show)
                 self.centerAllApertures(xc=self.firstYellowApertureX, yc=self.firstYellowApertureY)
             except Exception as e6:
-                self.showMsg(f'during centerAllApertures(): {repr(e6)} ')
+                self.showMsg(f' during centerAllApertures(): {repr(e6)} ')
             self.frameView.getView().update()
 
             # Find the auto_display (if any).  We do dynamic thumbnail
@@ -12906,7 +12920,12 @@ def newRobustMeanStd(
     # We replace the star pixels with the median of the data without the stars
     starless_data = data * negative_mask
     num_star_pixels = np.count_nonzero(negative_mask==0)
-    starless_mean = np.sum(starless_data) / (starless_data.size - num_star_pixels)
+
+    # TODO This is a 'fix' for Bob Jones flash avi - but is it general?
+    if starless_data.size == num_star_pixels:
+        starless_mean = est_mean
+    else:
+        starless_mean = np.sum(starless_data) / (starless_data.size - num_star_pixels)
     # replacement = round(np.median(starless_data))  # noqa type expected 'SupportsRound'
     # starless_data += positive_mask * replacement
 
@@ -12925,6 +12944,9 @@ def newRobustMeanStd(
     calced_mean = starless_mean
 
     bkgnd_sigma = np.std(bkgnd_values)
+
+    if math.isnan(calced_mean):
+        pass  # TODO Used for debugging
 
     return calced_mean, bkgnd_sigma, sorted_data, my_hist, data.size / 2, data.size, 0, clip_point + 1, bkgnd_values
 

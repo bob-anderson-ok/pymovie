@@ -3632,6 +3632,22 @@ aperture placement.</string>
                 </widget>
                </item>
                <item>
+                <spacer name="horizontalSpacer_applyCorr">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeType">
+                  <enum>QSizePolicy::Fixed</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>25</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item>
                 <widget class="QToolButton" name="transportMaxLeft">
                  <property name="font">
                   <font>
@@ -3955,13 +3971,13 @@ aperture placement.</string>
                    </property>
                    <property name="minimumSize">
                     <size>
-                     <width>50</width>
+                     <width>65</width>
                      <height>0</height>
                     </size>
                    </property>
                    <property name="maximumSize">
                     <size>
-                     <width>50</width>
+                     <width>65</width>
                      <height>16777215</height>
                     </size>
                    </property>
@@ -4027,13 +4043,13 @@ aperture placement.</string>
                   <widget class="QSpinBox" name="stopAtFrameSpinBox">
                    <property name="minimumSize">
                     <size>
-                     <width>50</width>
+                     <width>65</width>
                      <height>0</height>
                     </size>
                    </property>
                    <property name="maximumSize">
                     <size>
-                     <width>50</width>
+                     <width>65</width>
                      <height>16777215</height>
                     </size>
                    </property>
