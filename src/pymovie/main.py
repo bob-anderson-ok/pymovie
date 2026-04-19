@@ -106,7 +106,7 @@ import pickle
 from pathlib import Path
 from urllib.request import urlopen
 from copy import deepcopy
-from pymovie.checkForNewerVersion import getLatestPackageVersion
+from pymovie.checkForNewerVersion import getLatestPackageVersion, isNewerVersion
 from pymovie import starPositionDialog
 from pymovie import aperturesFileTagDialog
 from pymovie import hotPixelDialog
@@ -4834,31 +4834,20 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
     def checkForNewerVersion(self):
         latestVersion = getLatestPackageVersion('pymovie')
-        if latestVersion == 'none':
-            self.showMsg(f"No connection to PyPI could be made. Possible Internet problem??")
-            return
-        gotVersion = True if len(latestVersion) > 2 else False
-        if not gotVersion:
-            self.showMsg(f"Diagnostic: PyPI returned |{latestVersion}| as latest version of PyMovie")
-            return
 
         if latestVersion.startswith('Failed'):
             self.showMsg(latestVersion)
             return
 
-        if gotVersion:
-            if latestVersion <= version.version():
-                # self.showMsg(f'Found the latest version is: {latestVersion}')
-                self.showMsg('You are running the most recent version of PyMovie')
-            else:
-                self.showMsg('Version ' + latestVersion + ' is available.  To get it:', blankLine=True)
-                self.showMsg(f"====  in a command window type: "
-                             f"pip install pymovie=={latestVersion} (note double = symbols)",
-                             blankLine=True)
-                # self.showMsg(f"==== for pipenv based installations, execute the ChangePymovieVersion.bat file.",
-                #              blankLine=True)
+        if not isNewerVersion(latestVersion, version.version()):
+            self.showMsg('You are running the most recent version of PyMovie')
         else:
-            self.showMsg(f'latestVersion found: {latestVersion}')
+            self.showMsg(f'Version {latestVersion} is available.  To get it:', blankLine=True)
+            self.showMsg('====  Download the new PyMovie.exe from: '
+                         'https://github.com/bob-anderson-ok/pymovie/releases/latest',
+                         blankLine=True)
+            self.showMsg(f'====  Or, for pip / uv installs:  pip install --upgrade pymovie=={latestVersion}',
+                         blankLine=True)
 
 
 
