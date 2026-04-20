@@ -696,14 +696,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.thumbTwoView.installEventFilter(self)
         self.thumbOneView.installEventFilter(self)
 
-        allowNewVersionPopup = self.settings.value('allowNewVersionPopup', 'true')
-        if allowNewVersionPopup == 'true':
-            self.allowNewVersionPopupCheckbox.setChecked(True)
-        else:
-            self.allowNewVersionPopupCheckbox.setChecked(False)
-
-        self.allowNewVersionPopupCheckbox.installEventFilter(self)
-
         # self.psfFrameCountLabel.installEventFilter(self)
         self.numFramesToIncludeInNREpsf = 64  # An arbitrary (but useful) default value for the moth balled NRE feature
 
@@ -1354,9 +1346,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.enableAdvFrameStatusDisplay.installEventFilter(self)
 
-        self.infoButton.clicked.connect(self.showInfo)
-        self.infoButton.installEventFilter(self)
-
         self.documentationPushButton.clicked.connect(self.showDocumentation)
         self.documentationPushButton.installEventFilter(self)
 
@@ -1440,10 +1429,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         QtGui.QGuiApplication.processEvents()
         self.checkForNewerVersion()
-
-        if self.allowNewVersionPopupCheckbox.isChecked():
-            QtGui.QGuiApplication.processEvents()
-            self.showHelp(self.allowNewVersionPopupCheckbox)
 
         # self.copy_desktop_icon_file_to_home_directory()
 
@@ -11416,9 +11401,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         return self.ocrBoxList
 
-    def showInfo(self):
-        self.openInfoFile()
-
     def showDocumentation(self):
         self.openDocFile()
 
@@ -12438,8 +12420,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.settings.setValue('satPixelLevel', self.satPixelSpinBox.value())
 
-        self.settings.setValue('allowNewVersionPopup', self.allowNewVersionPopupCheckbox.isChecked())
-
         if self.apertureEditor:
             self.apertureEditor.close()
 
@@ -12500,16 +12480,6 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         #       f"  maxLevel: {maxLevel:0.3f} ({contrastMaxPercent:.1f}%)")
         self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
         self.frameView.getView().update()
-
-    def openInfoFile(self):
-        infoFilePath = os.path.join(os.path.split(__file__)[0], 'PyMovie-info.pdf')
-
-        url = QtCore.QUrl.fromLocalFile(infoFilePath)
-        fileOpened = QtGui.QDesktopServices.openUrl(url)
-
-        if not fileOpened:
-            self.showMsg('Failed to open PyMovie version-info file', blankLine=False)
-            self.showMsg('Location of PyMovie version-info file: ' + infoFilePath)
 
     def openDocFile(self):
         docFilePath = os.path.join(os.path.split(__file__)[0], 'PyMovie-doc.pdf')
@@ -12950,6 +12920,15 @@ def main():
     PyQt5.QtWidgets.QApplication.setStyle('fusion')
     # QtGui.QApplication.setStyle('fusion')
     # app = QtGui.QApplication(sys.argv)
+
+    # Enable Qt's high-DPI scaling so fixed-pixel widget sizes track the
+    # Windows display scale (100/125/150/200%). Without this, point-based
+    # fonts scale with DPI but pixel-based widgets don't, causing text to
+    # overflow fixed-width controls at higher scaling factors. Must be set
+    # before QApplication is constructed.
+    QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+    QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
+
     app = PyQt5.QtWidgets.QApplication(sys.argv)
 
     os.environ['QT_MAC_WANTS_LAYER'] = '1'  # This line needed when Mac updated to Big Sur
