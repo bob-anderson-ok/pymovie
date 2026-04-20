@@ -25,9 +25,15 @@ classifiers = [
     "Topic :: Scientific/Engineering",
 ]
 dependencies = [
-    "PyQt5==5.15.7",
-    "PyQt5-Qt5==5.15.2;   platform_system=='Windows'",
-    "PyQt5-sip==12.11.0",
+    # PyQt5 5.15.7 has no macOS arm64 wheel; bump to 5.15.10+ on Darwin so
+    # Apple Silicon users get prebuilt wheels (no qmake / source build).
+    # Windows stays pinned to the known-working 5.15.7 + 5.15.2 + 12.11.0
+    # combination that the PyApp single-exe build depends on.
+    "PyQt5==5.15.7;        platform_system != 'Darwin'",
+    "PyQt5>=5.15.10;       platform_system == 'Darwin'",
+    "PyQt5-Qt5==5.15.2;    platform_system == 'Windows'",
+    "PyQt5-sip==12.11.0;   platform_system != 'Darwin'",
+    "PyQt5-sip>=12.13;     platform_system == 'Darwin'",
     "pyqtgraph==0.12.4",
     "numpy==1.23.1",
     "scipy==1.8.1",

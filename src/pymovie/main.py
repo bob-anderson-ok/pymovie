@@ -52,7 +52,11 @@ import math  # We need isnan()
 import matplotlib
 import scipy.signal
 # import scipy.signal
-from Adv2.Adv2File import Adv2reader  # Adds support for reading AstroDigitalVideo Version 2 files (.adv)
+# Adv2 is imported lazily inside the two .adv/.aav open paths — its bundled
+# native library (libAdvCore.dylib) is x86_64-only as of Adv2 1.2.0 and fails
+# to load at import time on Apple Silicon. Deferring the import lets PyMovie
+# start normally on arm64 Macs; the user only sees the error if they actually
+# try to open an .adv or .aav file.
 
 # from pymovie.astropyStarExtractionBackgound import starsRemovedBkgd
 
@@ -9919,6 +9923,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             if self.adv_file_in_use or self.aav_file_in_use:
                 try:
+                    from Adv2.Adv2File import Adv2reader
                     self.adv2_reader = Adv2reader(self.filename)
                 except Exception as ex:
                     self.showMsg(repr(ex))
@@ -10491,6 +10496,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             elif self.adv_file_in_use or self.aav_file_in_use:
                 try:
+                    from Adv2.Adv2File import Adv2reader
                     self.adv2_reader = Adv2reader(self.filename)
                 except Exception as ex:
                     self.showMsg(repr(ex))
