@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'src/pymovie/PyMovie.ui'
+# Form implementation generated from reading ui file 'PyMovie.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.7
 #
@@ -148,6 +148,21 @@ class Ui_MainWindow(object):
         self.stickyContrastCheckbox = QtWidgets.QCheckBox(self.layoutWidget)
         self.stickyContrastCheckbox.setObjectName("stickyContrastCheckbox")
         self.verticalLayout_15.addWidget(self.stickyContrastCheckbox)
+        self.horizontalLayout_autoStretch = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_autoStretch.setObjectName("horizontalLayout_autoStretch")
+        self.autoStretchCheckBox = QtWidgets.QCheckBox(self.layoutWidget)
+        self.autoStretchCheckBox.setObjectName("autoStretchCheckBox")
+        self.horizontalLayout_autoStretch.addWidget(self.autoStretchCheckBox)
+        self.autoStretchContrastSpinBox = QtWidgets.QSpinBox(self.layoutWidget)
+        self.autoStretchContrastSpinBox.setMinimum(1)
+        self.autoStretchContrastSpinBox.setMaximum(6)
+        self.autoStretchContrastSpinBox.setProperty("value", 6)
+        self.autoStretchContrastSpinBox.setObjectName("autoStretchContrastSpinBox")
+        self.horizontalLayout_autoStretch.addWidget(self.autoStretchContrastSpinBox)
+        self.autoStretchContrastLabel = QtWidgets.QLabel(self.layoutWidget)
+        self.autoStretchContrastLabel.setObjectName("autoStretchContrastLabel")
+        self.horizontalLayout_autoStretch.addWidget(self.autoStretchContrastLabel)
+        self.verticalLayout_15.addLayout(self.horizontalLayout_autoStretch)
         self.horizontalLayout_26 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_26.setObjectName("horizontalLayout_26")
         self.satPixelSpinBox = QtWidgets.QSpinBox(self.layoutWidget)
@@ -1737,6 +1752,10 @@ class Ui_MainWindow(object):
         self.showImageControlCheckBox.setText(_translate("MainWindow", "Show image contrast control"))
         self.stickyContrastCheckbox.setToolTip(_translate("MainWindow", "<html><head/><body><p>If this box is checked, the current settings of the contrast control will be saved and applied the next time the app is run.</p><p>The \'saving\' happens when the app is closed and also when the control is closed.</p><p>Some images are 8 bit and some are 16 bit. When switching between images of different bit depths, the contrast control may appear strange. Right click on the control and select <span style=\" font-weight:700; color:#0000ff;\">View Al</span><span style=\" font-weight:700;\">l</span> and make adjustments appropriately</p><p>You can also right click on the control and select <span style=\" font-weight:700; color:#0000ff;\">Y axis</span> and set the min/max strecth values directly in the edit boxes at the top (and enable <span style=\" font-weight:700; color:#0000ff;\">Manual</span>).</p></body></html>"))
         self.stickyContrastCheckbox.setText(_translate("MainWindow", "Make contrast setting \"sticky\""))
+        self.autoStretchCheckBox.setToolTip(_translate("MainWindow", "<html><head/><body><p>When checked, the black and white display levels are recomputed on every frame from a 100x100 sample patch at the center of the image. The sky background peak is located, a symmetric window is grown around it until it encloses 75% of the patch pixels (giving a pseudo standard deviation), and the display is stretched from peak-stdWidth to peak+contrast*stdWidth.</p><p>This only changes what you <span style=\" font-style:italic;\">see</span>. The pixel data used for photometry is not altered.</p></body></html>"))
+        self.autoStretchCheckBox.setText(_translate("MainWindow", "Auto contrast stretch"))
+        self.autoStretchContrastSpinBox.setToolTip(_translate("MainWindow", "<html><head/><body><p>Stretch asymmetry factor (1-6). Higher values place the white endpoint farther above the background peak, which compresses the white end and produces a brighter display of faint stars.</p></body></html>"))
+        self.autoStretchContrastLabel.setText(_translate("MainWindow", "stretch contrast (1-6)"))
         self.satPixelLabel.setToolTip(_translate("MainWindow", "<html><head/><body><p>This value controls the coloring of pixels in ThumbNail One  and Thumbnail Two.</p><p>Pixels that are at or above this level will be colored in shades of red to give a visual clue that such pixels are at or near saturation.</p><p>Pixels that are below this level are shown in the usual gray scale.</p><p>Thumbnail Two shows the parts of the aperture that are \'masked off\' in yellow and allows the display of the pixels that are included by the mask to be shown as their actual values.</p></body></html>"))
         self.satPixelLabel.setText(_translate("MainWindow", "sat. pixel value"))
         self.demoMeanPushButton.setToolTip(_translate("MainWindow", "<html><head/><body><p>The \'robust\' calculation of the background average and the \'robust\' estimation of the dispersion (noise) in the background is an important factor in the calculation of signal intensities.</p><p>This button demonstrates with a detailed plot the calculation as it was performed for the current \'thumbnail\'.</p><p>This is meant primarily for education purposes but may be useful in special cases to confirm (or not) that the \'robust\' calculations are reasonable.</p><p>The algorithm works by calculating a histogram of the pixels present in an aperture. The \'background\' pixels show up in the prominent \'hump\' in that histogram at the left (low pixel values). The \'hump\' is analyzed to determine where the righthand tail ends.  A red line is drawn on the histogram to show where this demarcation is. Then, all the points to the left of this demarcation are used to calculate the mean and standard deviation of those points in the usual manner.</p></body></html>"))

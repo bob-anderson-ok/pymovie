@@ -518,6 +518,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.stickyContrastCheckbox.setChecked(state)
         self.stickyContrastCheckbox.installEventFilter(self)
 
+        state = self.settings.value('autoStretchEnabled', False) == 'true'
+        self.autoStretchCheckBox.setChecked(state)
+        self.autoStretchCheckBox.installEventFilter(self)
+        self.autoStretchContrastSpinBox.setValue(int(self.settings.value('autoStretchContrast', 6)))
+        self.autoStretchCheckBox.clicked.connect(self.onAutoStretchToggled)
+        self.autoStretchContrastSpinBox.valueChanged.connect(self.onAutoStretchContrastChanged)
+
         self.enableManualWorkFolderSelectionCheckBox.installEventFilter(self)
 
         # Use 'sticky' settings (from earlier session) to size and position the main screen
@@ -11131,6 +11138,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.showMsgPopup(f'Dark/Flat correction failed: {msg}')
                     self.applyDarkFlatCorrectionsCheckBox.setChecked(False)
 
+            self.applyAutoStretch()
+
             if self.viewFieldsCheckBox.isChecked():
                 self.createImageFields()
                 self.frameView.setImage(self.image_fields)
@@ -12375,6 +12384,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.settings.setValue('stickyContrastSettings', self.stickyContrastCheckbox.isChecked())
 
+        self.settings.setValue('autoStretchEnabled', self.autoStretchCheckBox.isChecked())
+        self.settings.setValue('autoStretchContrast', self.autoStretchContrastSpinBox.value())
+
         self.settings.setValue('manualWorkfolderSelection', self.enableManualWorkFolderSelectionCheckBox.isChecked())
 
         self.settings.setValue('tablist', tabOrderList)
@@ -12486,6 +12498,82 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         #       f"  maxLevel: {maxLevel:0.3f} ({contrastMaxPercent:.1f}%)")
         self.frameView.setLevels(min=self.levels[0], max=self.levels[1])
         self.frameView.getView().update()
+
+    def computeAutoStretchLevels(self, image, contrast):
+        # Estimate sky-background peak and spread from a 100x100 centered patch,
+        # then return (black, white) display endpoints for a linear stretch of
+        # [peak - stdWidth, peak + contrast * stdWidth]. Returns None if the
+        # image is unsuitable (non-2D, empty, or degenerate histogram).
+        if image is None or image.ndim != 2 or image.size == 0:
+            return None
+
+        if image.dtype == np.uint8:
+            max_val = 255
+        elif image.dtype == np.uint16:
+            max_val = 65535
+        else:
+            observed_max = int(image.max())
+            if observed_max <= 0:
+                return None
+            max_val = observed_max
+
+        h, w = image.shape
+        patch = min(100, h, w)
+        if patch < 4:
+            return None
+        r0 = h // 2 - patch // 2
+        c0 = w // 2 - patch // 2
+        sample = image[r0:r0 + patch, c0:c0 + patch]
+
+        flat = sample.ravel()
+        if flat.dtype != np.int64:
+            flat = flat.astype(np.int64, copy=False)
+        hist = np.bincount(flat, minlength=max_val + 1).tolist()
+
+        required = sample.size * 75 // 100
+        peak = int(np.argmax(hist))
+        left = right = peak
+        enclosed = hist[peak]
+        while enclosed <= required:
+            moved = False
+            if left > 0:
+                left -= 1
+                enclosed += hist[left]
+                moved = True
+            if right < max_val:
+                right += 1
+                enclosed += hist[right]
+                moved = True
+            if not moved:
+                break
+
+        std_w = max(right - left, 2)
+        black = max(peak - std_w, 0)
+        white = min(peak + contrast * std_w, max_val)
+        if black >= white:
+            return None
+        return float(black), float(white)
+
+    def applyAutoStretch(self):
+        if not self.autoStretchCheckBox.isChecked():
+            return
+        if self.image is None:
+            return
+        result = self.computeAutoStretchLevels(
+            self.image, self.autoStretchContrastSpinBox.value()
+        )
+        if result is None:
+            return
+        self.levels[0], self.levels[1] = result
+
+    def onAutoStretchToggled(self, _checked):
+        if self.playPaused and self.filename is not None:
+            self.showFrame()
+
+    def onAutoStretchContrastChanged(self, _value):
+        if (self.playPaused and self.filename is not None
+                and self.autoStretchCheckBox.isChecked()):
+            self.showFrame()
 
     def openDocFile(self):
         docFilePath = os.path.join(os.path.split(__file__)[0], 'PyMovie-doc.pdf')

@@ -329,6 +329,43 @@
               </widget>
              </item>
              <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_autoStretch">
+               <item>
+                <widget class="QCheckBox" name="autoStretchCheckBox">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When checked, the black and white display levels are recomputed on every frame from a 100x100 sample patch at the center of the image. The sky background peak is located, a symmetric window is grown around it until it encloses 75% of the patch pixels (giving a pseudo standard deviation), and the display is stretched from peak-stdWidth to peak+contrast*stdWidth.&lt;/p&gt;&lt;p&gt;This only changes what you &lt;span style=&quot; font-style:italic;&quot;&gt;see&lt;/span&gt;. The pixel data used for photometry is not altered.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>Auto contrast stretch</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QSpinBox" name="autoStretchContrastSpinBox">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Stretch asymmetry factor (1-6). Higher values place the white endpoint farther above the background peak, which compresses the white end and produces a brighter display of faint stars.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="minimum">
+                  <number>1</number>
+                 </property>
+                 <property name="maximum">
+                  <number>6</number>
+                 </property>
+                 <property name="value">
+                  <number>6</number>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="autoStretchContrastLabel">
+                 <property name="text">
+                  <string>stretch contrast (1-6)</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
               <layout class="QHBoxLayout" name="horizontalLayout_26">
                <item>
                 <widget class="QSpinBox" name="satPixelSpinBox">
