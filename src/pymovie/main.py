@@ -92,7 +92,6 @@ try:
 except ImportError:
     pyote_available = False
 
-import site
 import warnings
 # from numba import njit
 # from numba.typed import List
@@ -4840,9 +4839,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         else:
             self.showMsg(f'Version {latestVersion} is available.  To get it:', blankLine=True)
             self.showMsg('====  Download the new PyMovie.exe from: '
-                         'https://github.com/bob-anderson-ok/pymovie/releases/latest',
+                         'https://github.com/bob-anderson-ok/pymovie/releases/latest '
+                         '(if you are running Windows and want the new PyMovie.exe file)',
                          blankLine=True)
-            self.showMsg(f'====  Or, for pip / uv installs:  pip install --upgrade pymovie=={latestVersion}',
+            self.showMsg('====  If you are running MacOs, go to '
+                         'https://github.com/bob-anderson-ok/pymovie '
+                         'and follow the README instructions.',
                          blankLine=True)
 
 
@@ -7030,17 +7032,50 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                               f'If a permission error is present, you will need to manually delete\n'
                               f'the folder.')
 
-    def prepareAutorunPyoteFile(self, csv_file):
-        with open(self.folder_dir + '/auto_run_pyote.py', "w") as f:
-            f.writelines('import sys\n\n')
-            f.writelines('# The following path is needed to locate pyoteapp\n')
-            f.writelines(f'sys.path.append(r"{Path(site.getusersitepackages())}")\n\n')
-            f.writelines('# The following path(s) is/are needed to locate standard packages\n')
-            for path in site.getsitepackages():
-                f.writelines(f'sys.path.append(r"{Path(path)}")\n')
-            f.writelines('\n')
-            f.writelines('from pyoteapp import pyote\n')
-            f.writelines(f'pyote.main(r"{Path(csv_file)}")\n')
+    def launchPyote(self, csv_filename):
+        from pymovie import pyote_handoff
+
+        pyote = pyote_handoff.find_pyote()
+
+        if pyote is None:
+            saved = self.settings.value('pyoteExePath', '')
+            if saved:
+                candidate = pathlib.Path(saved)
+                if candidate.exists():
+                    pyote = candidate
+                    try:
+                        pyote_handoff.write_marker(candidate)
+                    except OSError:
+                        pass
+
+        if pyote is None:
+            options = QFileDialog.Options()
+            options |= QFileDialog.DontUseNativeDialog
+            if sys.platform == 'win32':
+                title = 'Locate PyOTE.exe (PyApp launcher)'
+                filt = 'PyOTE executable (PyOTE.exe pyote.exe);;All files (*.*)'
+            elif sys.platform == 'darwin':
+                title = 'Locate PyOTE (launcher)'
+                filt = 'All files (*)'
+            else:
+                title = 'Locate PyOTE (launcher)'
+                filt = 'All files (*)'
+            chosen, _ = QFileDialog.getOpenFileName(self, title, '', filt, options=options)
+            if not chosen:
+                self.showMsg('PyOTE launch cancelled --- CSV file was still saved.')
+                return
+            pyote = pathlib.Path(chosen)
+            self.settings.setValue('pyoteExePath', str(pyote))
+            try:
+                pyote_handoff.write_marker(pyote)
+            except OSError as e:
+                self.showMsg(f'(note: could not update PyOTE rendezvous marker: {e})')
+
+        try:
+            pyote_handoff.open_in_pyote(pathlib.Path(csv_filename), pyote)
+            self.showMsg('##### PyOTE is starting up --- this takes a few seconds #####')
+        except OSError as e:
+            self.showMsgPopup(f'Failed to launch PyOTE:\n{e}')
 
     def saveCmosOutlawPixelList(self):
         options = QFileDialog.Options()
@@ -7141,16 +7176,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 f.flush()
 
         if self.runPyote.isChecked():
-            # We need to prepare a script that is unique to the user's platform
-            # and to include a path to the csv file to be given to PyOTE
-            self.prepareAutorunPyoteFile(filename)
-
-            # Next, we run that script.
-            # We use Popen so that we don't have to wait for the process to complete (i.e.,
-            # for the user to quit using PyOTE) and so that multiple PyOTE processes
-            # can be running at the same time.
-            subprocess.Popen(f'python "{self.folder_dir + "/auto_run_pyote.py"}" ', shell=True)
-            self.showMsg(f'##### PyOTE is starting up --- this takes a few seconds #####')
+            self.launchPyote(filename)
 
     def writeCsvFile(self):
         def sortOnFrame(val):
@@ -7356,16 +7382,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     f.flush()
 
             if self.runPyote.isChecked():
-                # We need to prepare a script that is unique to the user's platform
-                # and to include a path to the csv file to be given to PyOTE
-                self.prepareAutorunPyoteFile(filename)
-
-                # Next, we run that script.
-                # We use Popen so that we don't have to wait for the process to complete (i.e.,
-                # for the user to quit using PyOTE) and so that multiple PyOTE processes
-                # can be running at the same time.
-                subprocess.Popen(f'python "{self.folder_dir + "/auto_run_pyote.py"}" ', shell=True)
-                self.showMsg(f'##### PyOTE is starting up --- this takes a few seconds #####')
+                self.launchPyote(filename)
 
     def trackerPresent(self):
         for app in self.getApertureList():
