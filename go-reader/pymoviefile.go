@@ -21,8 +21,9 @@ const (
 
 	// Sizes of the fields known to format version 1. A file may have larger
 	// header and record sizes if a later writer appended fields; those are skipped.
-	minHeaderSize    = 1059
-	fixedRecordBytes = 299 // record bytes before the image; the record is 299 + 3n² bytes
+	minHeaderSize    = 1059 // the fixed header fields; the initial frame section follows them
+	apertureBytes    = 300  // one entry of the initial frame section's aperture table
+	fixedRecordBytes = 299  // record bytes before the image; the record is 299 + 3n² bytes
 )
 
 type Header struct {
@@ -32,6 +33,30 @@ type Header struct {
 	RoiSize       int    // n: every record in the file uses this roi size
 	ObsDate       string // e.g. "2026-09-25"; may be empty
 	Source        string // source video or folder name
+
+	// The initial frame section: the full frame at the start of the analysis,
+	// rendered as RGB with each aperture's box drawn in its color, and the
+	// apertures' positions. Files written before the section was added have
+	// no frame and no apertures.
+	FrameWidth  int     // w in pixels; 0 if no frame was recorded
+	FrameHeight int     // h in pixels
+	Frame       []uint8 // w*h*3 RGB bytes, row-major: pixel (row, col) starts at (row*w+col)*3
+	Apertures   []Aperture
+}
+
+// Aperture is an aperture's placement in the initial frame. X is the column and Y the row.
+type Aperture struct {
+	Name          string
+	Color         string  // PyMovie's color name, e.g. "red", "green", "yellow", "white"
+	X0, Y0        int     // the aperture box's top-left pixel
+	Width, Height int     // the box size in pixels
+	Xc, Yc        float64 // the centroid; NaN if not known
+}
+
+// FramePixel returns the RGB color of the initial frame at (row, col).
+func (h *Header) FramePixel(row, col int) (r, g, b uint8) {
+	i := (row*h.FrameWidth + col) * 3
+	return h.Frame[i], h.Frame[i+1], h.Frame[i+2]
 }
 
 type Record struct {
@@ -89,6 +114,10 @@ func Parse(data []byte) (Header, []Record, error) {
 		return h, nil, fmt.Errorf("file is shorter than its header size %d", h.HeaderSize)
 	}
 
+	if err := h.parseFrameSection(data[minHeaderSize:h.HeaderSize]); err != nil {
+		return h, nil, err
+	}
+
 	body := data[h.HeaderSize:]
 	recSize := int(h.RecordSize)
 	count := len(body) / recSize // whole records only
@@ -97,6 +126,43 @@ func Parse(data []byte) (Header, []Record, error) {
 		recs[k] = parseRecord(body[k*recSize:(k+1)*recSize], n)
 	}
 	return h, recs, nil
+}
+
+// parseFrameSection decodes the initial frame section, which follows the fixed
+// header fields. An empty section (a file from before it was added) leaves the
+// header without a frame or apertures. Bytes after the section are fields added
+// by a later writer, and are skipped.
+func (h *Header) parseFrameSection(sec []byte) error {
+	if len(sec) < 4 {
+		return nil
+	}
+	w, ht := int(le.Uint16(sec[0:])), int(le.Uint16(sec[2:]))
+	tableStart := 4 + 3*w*ht + 2
+	if len(sec) < tableStart {
+		return fmt.Errorf("header is too short for its %d x %d initial frame", w, ht)
+	}
+	count := int(le.Uint16(sec[tableStart-2:]))
+	if len(sec) < tableStart+count*apertureBytes {
+		return fmt.Errorf("header is too short for its %d apertures", count)
+	}
+	if w > 0 && ht > 0 {
+		h.FrameWidth, h.FrameHeight = w, ht
+		h.Frame = append([]uint8(nil), sec[4:4+3*w*ht]...)
+	}
+	for k := range count {
+		b := sec[tableStart+k*apertureBytes:]
+		h.Apertures = append(h.Apertures, Aperture{
+			Name:   utf32(b[0:256]),
+			Color:  ascii(b[256:272]),
+			X0:     int(int32(le.Uint32(b[272:]))),
+			Y0:     int(int32(le.Uint32(b[276:]))),
+			Width:  int(le.Uint16(b[280:])),
+			Height: int(le.Uint16(b[282:])),
+			Xc:     f64(b[284:]),
+			Yc:     f64(b[292:]),
+		})
+	}
+	return nil
 }
 
 func parseRecord(b []byte, n int) Record {

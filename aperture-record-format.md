@@ -14,7 +14,7 @@ Go reader: `go-reader/` (package `pymoviefile`).
 ## File layout
 
 ```
-header   header_size bytes    (1059 in this version)
+header   header_size bytes    (1065 + 3wh + 300a in this version: w × h frame, a apertures)
 record   record_size bytes    (299 + 3n² in this version, n = roi size)
 record
 ...
@@ -35,17 +35,54 @@ record
   integer division. **A partial record at the end of the file is ignored**: it
   means the run was interrupted while that record was being written.
 
-## Header (1059 bytes in this version)
+## Header
+
+The header is 1059 bytes of fixed fields, followed by the **initial frame
+section**. Files written before the section was added have only the fixed
+fields (`header_size` 1059).
 
 | Offset | Field | Type | Bytes | Contents |
 |---:|---|---|---:|---|
 | 0 | magic | 8 ASCII bytes | 8 | `PYMOVIE` followed by one null byte |
 | 8 | format_version | uint16 | 2 | `1` |
-| 10 | header_size | uint32 | 4 | Bytes in the header, including any fields added later. `1059` when written by this version. |
+| 10 | header_size | uint32 | 4 | Bytes in the header, including the initial frame section and any fields added later. `1065 + 3wh + 300a` when written by this version. |
 | 14 | record_size | uint32 | 4 | Bytes in each record, including any fields added later. `299 + 3n²` when written by this version. |
 | 18 | roi_size | uint8 | 1 | n, the roi size used by every record |
 | 19 | obs_date | 16 ASCII bytes | 16 | Observation date, e.g. `2026-09-25`, null padded (may be empty) |
 | 35 | source | 256 characters, UTF-32LE | 1024 | Source video or folder name, null padded |
+
+### Initial frame section (6 + 3wh + 300a bytes)
+
+A record of where the apertures were placed: the full frame being analysed when
+recording started, and the apertures at that moment. Its length depends on the
+frame size w × h and the number of apertures a, so the offsets below are counted
+from the start of the section (header offset 1059).
+
+| Offset | Field | Type | Bytes | Contents |
+|---:|---|---|---:|---|
+| 0 | frame_width | uint16 | 2 | w, the frame width in pixels. `0` if no frame was recorded. |
+| 2 | frame_height | uint16 | 2 | h, the frame height in pixels. `0` if no frame was recorded. |
+| 4 | frame | w × h × 3 uint8, row-major | 3wh | The frame as an RGB picture: gray at the display's black and white levels, with each aperture's box outlined in its color. Pixel (row, col) is the 3 bytes R, G, B at `(row * w + col) * 3`. |
+| 4 + 3wh | aperture_count | uint16 | 2 | a, the number of apertures |
+| 6 + 3wh | apertures | a × aperture | 300a | One entry per aperture, in aperture order |
+
+Each aperture entry (300 bytes):
+
+| Offset | Field | Type | Bytes | Contents |
+|---:|---|---|---:|---|
+| 0 | name | 64 characters, UTF-32LE | 256 | Aperture name, null padded, as in the records |
+| 256 | color | 16 ASCII bytes | 16 | PyMovie's color for the aperture: `red`, `green`, `yellow` or `white`, null padded |
+| 272 | x0 | int32 | 4 | Column of the aperture box's top-left pixel |
+| 276 | y0 | int32 | 4 | Row of the aperture box's top-left pixel |
+| 280 | width | uint16 | 2 | Box width in pixels (n) |
+| 282 | height | uint16 | 2 | Box height in pixels (n) |
+| 284 | xc | float64 | 8 | Centroid column in frame pixels; NaN if not known |
+| 292 | yc | float64 | 8 | Centroid row in frame pixels; NaN if not known |
+
+Boxes are outlined on the pixels at their edges: rows `y0` and `y0 + height − 1`
+and columns `x0` and `x0 + width − 1`, cut off at the frame's edges. The colors
+are red (255, 0, 0), green (0, 255, 0), yellow (255, 255, 0) and white
+(255, 255, 255); any other color name is drawn magenta (255, 0, 255).
 
 ## Aperture record (299 + 3n² bytes in this version)
 
@@ -85,6 +122,9 @@ readers:
 - A reader decodes the fields it knows at their fixed offsets, then skips to
   `header_size` (for the first record) or to the next multiple of `record_size`
   (for the next record). Unknown trailing bytes are ignored.
+- The initial frame section has a variable length, so a field added to the
+  header later goes after it, at offset `1059 + 6 + 3wh + 300a`. A header of
+  exactly 1059 bytes has no initial frame section: no frame and no apertures.
 - A reader rejects a file whose `header_size` or `record_size` is **smaller**
   than the sizes this version defines.
 - `format_version` changes only for a change that can't be made this way, such
@@ -138,6 +178,13 @@ target = records[records['name'] == 'target']   # one aperture's records, in fra
 This checks the magic, format version and sizes, skips fields added by later
 writers, and ignores a partial last record.
 
+```python
+frame_rgb, apertures = apertureRecord.read_initial_frame('observation.pymovie')
+# frame_rgb: (h, w, 3) uint8 array, or None; apertures: list of ApertureInfo
+for ap in apertures:
+    print(ap.name, ap.color, ap.x0, ap.y0, ap.width, ap.height, ap.xc, ap.yc)
+```
+
 **Go**:
 
 ```go
@@ -148,16 +195,30 @@ if err != nil { ... }
 for _, r := range records {
     fmt.Println(r.Frame, r.Name, r.Intensity, r.Pixel(10, 10), r.InMask(10, 10))
 }
+// The initial frame: header.FrameWidth x header.FrameHeight RGB (0 x 0 if none)
+red, green, blue := header.FramePixel(row, col)
+for _, a := range header.Apertures {
+    fmt.Println(a.Name, a.Color, a.X0, a.Y0, a.Width, a.Height, a.Xc, a.Yc)
+}
 ```
 
-`go-reader/testdata/` holds two files written by PyMovie's own writer:
-`sample.pymovie` (ending in a partial record) and `extended.pymovie` (with
-extra header and record bytes, as a later writer might produce). `go test` in
-`go-reader/` checks every field of both. After changing the format, regenerate
+`go-reader/testdata/` holds three files written by PyMovie's own writer:
+`sample.pymovie` (with an initial frame and two apertures, one running off the
+frame's edge, and ending in a partial record), `extended.pymovie` (with an empty
+initial frame section and extra header and record bytes, as a later writer might
+produce) and `no-frame-section.pymovie` (a 1059 byte header, as written before
+the initial frame section was added). `go test` in `go-reader/` checks every
+field of all three. After changing the format, regenerate
 them with `go-reader/testdata/make_testdata.py`.
 
 ## How PyMovie produces the file
 
+- **The initial frame** is taken when the header is written, at the first
+  record of an analysis: the frame being analysed, scaled with the black and
+  white levels of PyMovie's frame display, with every aperture's box drawn in
+  its color, and every aperture's name, color, box and centroid at that moment.
+  If the frame can't be rendered, a message says so and the file is written
+  with apertures but no frame, rather than stopping the recording.
 - **What is recorded:** during an analysis run, one record is written right
   after each aperture's data point is recorded, so the `.pymovie` file holds
   exactly the data points behind the CSV. In field mode there are two records

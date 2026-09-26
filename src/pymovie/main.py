@@ -7060,11 +7060,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             return
         try:
             if self.recordWriter is None:
+                frame_rgb, apertures = self.initialFrameForRecords()
                 fd, self.recordTempPath = tempfile.mkstemp(prefix='pymovie-', suffix='.pymovie-tmp')
                 os.close(fd)
                 self.recordWriter = apertureRecord.ApertureRecordWriter(
                     self.recordTempPath, self.recordImage.shape[0],
-                    source=self.filename or '', obs_date=self.recordingDate())
+                    source=self.filename or '', obs_date=self.recordingDate(),
+                    frame_rgb=frame_rgb, apertures=apertures)
             self.recordWriter.append(
                 name=aperture.name, intensity=data_tuple[4], appsum=data_tuple[5], frame=data_tuple[8],
                 timestamp=data_tuple[12], saturation=self.satPixelSpinBox.value(),
@@ -7074,6 +7076,23 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                          f'for this analysis: {e}')
             self.discardApertureRecords()
             self.recordingFailed = True  # Until the data is cleared: a .pymovie with gaps would mislead
+
+    def initialFrameForRecords(self):
+        # Returns (frame_rgb, apertures) for the header of a new aperture record file: the frame being analysed,
+        # at the display's black/white levels, with each aperture's box drawn in its color, and the apertures'
+        # names, colors, boxes and centroids. A frame that can't be rendered is left out rather than stopping
+        # the recording.
+        apertures = []
+        for app in self.getApertureList():
+            x0, y0, nx, ny = app.getBbox()
+            apertures.append(apertureRecord.ApertureInfo(
+                name=app.name, color=app.color, x0=x0, y0=y0, width=nx, height=ny, xc=app.xc, yc=app.yc))
+        try:
+            levels = self.frameView.ui.histogram.getLevels()
+            return apertureRecord.render_frame(self.image, apertures, levels=levels), apertures
+        except Exception as e:
+            self.showMsg(f'The initial frame could not be saved with the aperture records: {e}')
+            return None, apertures
 
     def recordingDate(self):
         date = None

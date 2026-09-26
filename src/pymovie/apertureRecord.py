@@ -7,8 +7,12 @@ appended to a temporary file, which becomes <csv name>.pymovie when the csv file
 
 File layout (all multi-byte values little-endian, no padding between fields):
 
-    header  (header_size bytes: 1059 in this version)
+    header  (header_size bytes: 1065 + 3*w*h + 300*apertures in this version)
     record  (record_size bytes: 299 + 3 * roi_size**2 in this version)
+
+The header starts with fixed fields (HEADER_DTYPE, 1059 bytes), followed by the initial frame
+section: the full w x h frame at the start of the analysis, rendered as RGB with the aperture
+boxes drawn in their colors, and a table of the apertures (APERTURE_DTYPE) with their positions.
     record
     ...
 
@@ -29,6 +33,8 @@ See aperture-record-format.md in the repository root for the full description.
 """
 
 import os
+import struct
+from collections import namedtuple
 
 import numpy as np
 
@@ -44,6 +50,31 @@ HEADER_DTYPE = np.dtype([
     ('obs_date', 'S16'),           # ASCII, e.g. b'2026-09-25' (null padded, may be empty)
     ('source', '<U256'),           # source video/folder name, UTF-32LE (null padded)
 ])
+
+
+# One entry of the aperture table in the initial frame section (300 bytes)
+APERTURE_DTYPE = np.dtype([
+    ('name', '<U64'),              # aperture name, 64 characters, UTF-32LE (null padded)
+    ('color', 'S16'),              # ASCII color name, e.g. b'red' (null padded)
+    ('x0', '<i4'),                 # column of the aperture box's top-left pixel
+    ('y0', '<i4'),                 # row of the aperture box's top-left pixel
+    ('width', '<u2'),              # box width in pixels
+    ('height', '<u2'),             # box height in pixels
+    ('xc', '<f8'),                 # centroid column (NaN if not known)
+    ('yc', '<f8'),                 # centroid row (NaN if not known)
+])
+
+# An aperture's placement in the initial frame. x is the column, y the row.
+ApertureInfo = namedtuple('ApertureInfo', 'name color x0 y0 width height xc yc')
+
+# RGB colors used to draw aperture boxes, by PyMovie aperture color name
+APERTURE_COLORS = {
+    'red': (255, 0, 0),
+    'green': (0, 255, 0),
+    'yellow': (255, 255, 0),
+    'white': (255, 255, 255),
+}
+UNKNOWN_APERTURE_COLOR = (255, 0, 255)  # magenta, for a color name not in APERTURE_COLORS
 
 
 def record_dtype(roi_size):
@@ -72,26 +103,90 @@ def clean_timestamp(timestamp):
     return text.encode('ascii', errors='replace')[:16]
 
 
-def make_header(roi_size, source='', obs_date=''):
+def render_frame(image, apertures, levels=None):
+    """Returns the frame as an RGB uint8 array (h, w, 3) with each aperture's box outlined in its color.
+
+    image is the 2-D frame (a 3-D color frame is shown in gray). Pixel values from levels[0] (black) to
+    levels[1] (white) are spread over the gray scale; without levels, the frame's own range is used.
+    apertures are ApertureInfo.
+    """
+    img = np.nan_to_num(np.asarray(image, dtype=np.float64))
+    if img.ndim == 3:
+        img = img.mean(axis=2)
+    lo, hi = (float(levels[0]), float(levels[1])) if levels is not None else (img.min(), img.max())
+    if hi <= lo:
+        hi = lo + 1
+    gray = np.clip((img - lo) / (hi - lo) * 255 + 0.5, 0, 255).astype(np.uint8)
+    rgb = np.repeat(gray[:, :, np.newaxis], 3, axis=2)
+
+    h, w = gray.shape
+    for ap in apertures:
+        color = APERTURE_COLORS.get(ap.color, UNKNOWN_APERTURE_COLOR)
+        left, top = int(ap.x0), int(ap.y0)
+        right, bottom = left + int(ap.width) - 1, top + int(ap.height) - 1
+        cols = slice(max(left, 0), min(right, w - 1) + 1)
+        rows = slice(max(top, 0), min(bottom, h - 1) + 1)
+        for row in (top, bottom):
+            if 0 <= row < h:
+                rgb[row, cols] = color
+        for col in (left, right):
+            if 0 <= col < w:
+                rgb[rows, col] = color
+    return rgb
+
+
+def frame_section(frame_rgb=None, apertures=()):
+    """Returns the bytes of the header's initial frame section.
+
+    frame_rgb is an (h, w, 3) uint8 array, or None for no frame (width and height 0).
+    apertures are ApertureInfo.
+    """
+    if frame_rgb is None:
+        w = h = 0
+        pixels = b''
+    else:
+        frame_rgb = np.asarray(frame_rgb)
+        if frame_rgb.ndim != 3 or frame_rgb.shape[2] != 3:
+            raise ValueError(f'frame_rgb must be (h, w, 3), not {frame_rgb.shape}')
+        h, w = frame_rgb.shape[:2]
+        if w > 65535 or h > 65535:
+            raise ValueError(f'a {w} x {h} frame is too large to record')
+        pixels = np.ascontiguousarray(frame_rgb, dtype=np.uint8).tobytes()
+
+    table = np.zeros(len(apertures), dtype=APERTURE_DTYPE)
+    for i, ap in enumerate(apertures):
+        table[i]['name'] = str(ap.name)[:64]
+        table[i]['color'] = str(ap.color).encode('ascii', errors='replace')[:16]
+        table[i]['x0'], table[i]['y0'] = ap.x0, ap.y0
+        table[i]['width'], table[i]['height'] = ap.width, ap.height
+        table[i]['xc'] = np.nan if ap.xc is None else ap.xc
+        table[i]['yc'] = np.nan if ap.yc is None else ap.yc
+    return struct.pack('<HH', w, h) + pixels + struct.pack('<H', len(apertures)) + table.tobytes()
+
+
+def make_header(roi_size, source='', obs_date='', frame_rgb=None, apertures=()):
+    """Returns the header bytes: the fixed fields followed by the initial frame section."""
+    section = frame_section(frame_rgb, apertures)
     header = np.zeros(1, dtype=HEADER_DTYPE)
     header['magic'] = MAGIC
     header['format_version'] = FORMAT_VERSION
-    header['header_size'] = HEADER_DTYPE.itemsize
+    header['header_size'] = HEADER_DTYPE.itemsize + len(section)
     header['record_size'] = record_dtype(roi_size).itemsize
     header['roi_size'] = roi_size
     header['obs_date'] = str(obs_date).encode('ascii', errors='replace')[:16]
     header['source'] = str(source)[:256]
-    return header
+    return header.tobytes() + section
 
 
 class ApertureRecordWriter:
     """Appends aperture records to a .pymovie (or temporary) file.
 
-    The header is written when the file is created. Opening an existing file (append=True)
-    continues it after checking that its roi size and record size match.
+    The header, including the initial frame (frame_rgb, from render_frame) and the aperture
+    table (apertures, a list of ApertureInfo), is written when the file is created. Opening an
+    existing file (append=True) continues it after checking that its roi size and record size match.
     """
 
-    def __init__(self, path, roi_size, source='', obs_date='', append=False):
+    def __init__(self, path, roi_size, source='', obs_date='', append=False, frame_rgb=None, apertures=()):
         self.path = path
         self.roi_size = int(roi_size)
         self.dtype = record_dtype(self.roi_size)
@@ -105,7 +200,8 @@ class ApertureRecordWriter:
             self.file = open(path, 'ab')
         else:
             self.file = open(path, 'wb')
-            self.file.write(make_header(self.roi_size, source=source, obs_date=obs_date).tobytes())
+            self.file.write(make_header(self.roi_size, source=source, obs_date=obs_date,
+                                        frame_rgb=frame_rgb, apertures=apertures))
 
     def append(self, name, intensity, appsum, frame, timestamp, saturation, image, mask):
         n = self.roi_size
@@ -154,6 +250,34 @@ def read_header(path):
             int(header['record_size']) < record_dtype(header['roi_size']).itemsize:
         raise ValueError(f'{path} has a header or record size smaller than format version {FORMAT_VERSION} allows')
     return header
+
+
+def read_initial_frame(path):
+    """Returns (frame_rgb, apertures) from the header's initial frame section.
+
+    frame_rgb is an (h, w, 3) uint8 array, or None if no frame was recorded; apertures is a list
+    of ApertureInfo. A file written before the section was added has neither: (None, []).
+    """
+    header = read_header(path)
+    extra = int(header['header_size']) - HEADER_DTYPE.itemsize
+    if extra < 4:
+        return None, []
+    with open(path, 'rb') as f:
+        f.seek(HEADER_DTYPE.itemsize)
+        data = f.read(extra)
+    w, h = struct.unpack_from('<HH', data, 0)
+    table_start = 4 + 3 * w * h + 2
+    if len(data) < table_start:
+        raise ValueError(f'{path} has a header too short for its {w} x {h} initial frame')
+    frame_rgb = np.frombuffer(data, dtype=np.uint8, count=3 * w * h, offset=4).reshape(h, w, 3) if w * h else None
+    (count,) = struct.unpack_from('<H', data, table_start - 2)
+    if len(data) < table_start + count * APERTURE_DTYPE.itemsize:
+        raise ValueError(f'{path} has a header too short for its {count} apertures')
+    table = np.frombuffer(data, dtype=APERTURE_DTYPE, count=count, offset=table_start)
+    apertures = [ApertureInfo(str(r['name']), r['color'].decode('ascii', errors='replace'),
+                              int(r['x0']), int(r['y0']), int(r['width']), int(r['height']),
+                              float(r['xc']), float(r['yc'])) for r in table]
+    return frame_rgb, apertures
 
 
 def copy_sorted_by_frame(src, dest):
