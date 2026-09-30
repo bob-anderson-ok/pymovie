@@ -170,6 +170,15 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 PRINT_TRACKING_DATA = False
 
 
+class RowSumPlotWidget(pg.PlotWidget):
+    # TEMPORARY (test feature): lets PyMovie uncheck the row-sum checkbox when the user closes the window
+    windowClosed = pyqtSignal()
+
+    def closeEvent(self, event):
+        self.windowClosed.emit()
+        super().closeEvent(event)
+
+
 class CustomViewBox(pg.ViewBox):
     def __init__(self, *args, **kwds):
         pg.ViewBox.__init__(self, *args, **kwds)
@@ -507,6 +516,13 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.runPyote.installEventFilter(self)
 
+        # PymovieLcReader is bundled into the package by scripts/build-exe.ps1; a dev checkout may lack it
+        from pymovie import lc_viewer
+        if lc_viewer.find_viewer() is None:
+            self.runLcViewer.setChecked(False)
+            self.runLcViewer.setEnabled(False)
+            self.runLcViewer.setToolTip('PymovieLcReader is not included in this installation of PyMovie.')
+
         # Open (or create) file for holding 'sticky' stuff
         self.settings = QSettings('PyMovie.ini', QSettings.IniFormat)
         self.settings.setFallbacksEnabled(False)
@@ -524,6 +540,20 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.autoStretchContrastSpinBox.setValue(int(self.settings.value('autoStretchContrast', 6)))
         self.autoStretchCheckBox.clicked.connect(self.onAutoStretchToggled)
         self.autoStretchContrastSpinBox.valueChanged.connect(self.onAutoStretchContrastChanged)
+
+        # TEMPORARY (test feature): row-sum plot of the displayed frame. The checkbox is built
+        # here rather than in PyMovie.ui so the whole feature can be removed from main.py alone.
+        self.rowSumProfile = None  # np.ndarray: sum of pixels in each row of the current frame
+        self.rowSumPlotWidget = None
+        self.rowSumPlotCurve = None
+        self.rowSumMeanLine = None      # pg.InfiniteLine (green) at the mean of rowSumProfile
+        self.rowSumUpperStdLine = None  # pg.InfiniteLine (red) at mean + std
+        self.rowSumLowerStdLine = None  # pg.InfiniteLine (red) at mean - std
+        self.rowSumPlotCheckBox =QtWidgets.QCheckBox('row sum plot', self.layoutWidget)
+        self.rowSumPlotCheckBox.setToolTip('TEMPORARY: when checked, a window shows the sum of the '
+                                           'pixels in each row of the currently displayed frame.')
+        self.horizontalLayout_autoStretch.addWidget(self.rowSumPlotCheckBox)
+        self.rowSumPlotCheckBox.clicked.connect(self.onRowSumPlotToggled)
 
         self.enableManualWorkFolderSelectionCheckBox.installEventFilter(self)
 
@@ -7122,11 +7152,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def saveApertureRecords(self, csv_filename):
         # Copies the temporary record file to <csv name>.pymovie, sorted into ascending frame order (as the csv
         # file is). The temporary file is kept and recording carries on into it, so a later csv write again
-        # saves every record behind that csv file.
+        # saves every record behind that csv file. Returns the .pymovie path, or None if none was written.
         if self.recordWriter is None:
             if self.recordingFailed:
                 self.showMsg('No .pymovie file was written because aperture records could not be recorded.')
-            return
+            return None
         self.recordWriter.flush()
         dest = os.path.splitext(csv_filename)[0] + '.pymovie'
         try:
@@ -7135,6 +7165,28 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         except Exception as e:
             self.showMsgPopup(f'The aperture records could not be written to\n{dest}\n\n{e}\n\n'
                               f'They are kept, so writing the csv file again will retry.')
+            return None
+        return dest
+
+    def launchLcViewerIfChecked(self, pymovie_filename):
+        # pymovie_filename is what saveApertureRecords() returned: None when no .pymovie file was written
+        if not self.runLcViewer.isChecked():
+            return
+        if pymovie_filename is None:
+            self.showMsg('PymovieLcReader was not started because no .pymovie file was written.')
+            return
+
+        from pymovie import lc_viewer
+
+        viewer = lc_viewer.find_viewer()
+        if viewer is None:
+            self.showMsg('PymovieLcReader is not included in this installation of PyMovie.')
+            return
+        try:
+            lc_viewer.open_in_viewer(pathlib.Path(pymovie_filename), viewer)
+            self.showMsg('##### PymovieLcReader is starting up #####')
+        except OSError as e:
+            self.showMsgPopup(f'Failed to launch PymovieLcReader:\n{e}')
 
     def launchPyote(self, csv_filename):
         from pymovie import pyote_handoff
@@ -7331,7 +7383,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             if self.rowSums:
                 self.writeSpecialRowSumCsvFile(filename, num_data_pts, appdata)
-                self.saveApertureRecords(filename)
+                self.launchLcViewerIfChecked(self.saveApertureRecords(filename))
                 return
 
             for i in range(num_data_pts - 1):
@@ -7457,7 +7509,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     f.write('\n')
                     f.flush()
 
-            self.saveApertureRecords(filename)
+            self.launchLcViewerIfChecked(self.saveApertureRecords(filename))
 
             if self.runPyote.isChecked():
                 self.launchPyote(filename)
@@ -11249,6 +11301,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.applyDarkFlatCorrectionsCheckBox.setChecked(False)
 
             self.applyAutoStretch()
+            self.updateRowSumPlot()
 
             if self.viewFieldsCheckBox.isChecked():
                 self.createImageFields()
@@ -12386,6 +12439,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
     def closeEvent(self, event):
 
         self.analysisRequested = False
+        if self.rowSumPlotWidget is not None:  # TEMPORARY row-sum plot
+            self.rowSumPlotWidget.close()
         self.discardApertureRecords()  # Records not saved by a csv write are not kept
 
         tabOrderList = []
@@ -12591,6 +12646,61 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if (self.playPaused and self.filename is not None
                 and self.autoStretchCheckBox.isChecked()):
             self.showFrame()
+
+    # TEMPORARY (test feature): row-sum plot
+    def onRowSumPlotToggled(self, checked):
+        if checked:
+            self.updateRowSumPlot()
+        elif self.rowSumPlotWidget is not None:
+            self.rowSumPlotWidget.close()
+
+    def onRowSumPlotWindowClosed(self, *_args):
+        self.rowSumPlotWidget = None
+        self.rowSumPlotCurve = None
+        self.rowSumMeanLine = None
+        self.rowSumUpperStdLine = None
+        self.rowSumLowerStdLine = None
+        self.rowSumPlotCheckBox.setChecked(False)
+
+    def updateRowSumPlot(self):
+        if not self.rowSumPlotCheckBox.isChecked() or self.image is None:
+            return
+        # float64 accumulation avoids overflow on wide uint16 frames
+        self.rowSumProfile = np.sum(self.image, axis=1, dtype=np.float64)
+        if self.rowSumPlotWidget is None:
+            self.rowSumPlotWidget = RowSumPlotWidget()
+            self.rowSumPlotWidget.windowClosed.connect(self.onRowSumPlotWindowClosed)
+            self.rowSumPlotWidget.setWindowTitle(f'PyMovie {version.version()} Row sums (TEMPORARY)')
+            self.rowSumPlotWidget.resize(900, 500)
+            self.rowSumPlotWidget.showGrid(x=True, y=True)
+            self.rowSumPlotWidget.setLabel('bottom', 'row number')
+            self.rowSumPlotWidget.setLabel('left', 'sum of pixels in row')
+            self.rowSumPlotCurve = self.rowSumPlotWidget.plot(pen='b')
+            self.rowSumMeanLine = pg.InfiniteLine(angle=0, pen='g')
+            self.rowSumUpperStdLine = pg.InfiniteLine(angle=0, pen='r')
+            self.rowSumLowerStdLine = pg.InfiniteLine(angle=0, pen='r')
+            for line in (self.rowSumMeanLine, self.rowSumUpperStdLine, self.rowSumLowerStdLine):
+                self.rowSumPlotWidget.addItem(line)
+            self.rowSumPlotWidget.show()
+        # 3 rounds of 3-sigma clipping so outlier rows don't skew the mean/std
+        keptRowSums = self.rowSumProfile
+        for _ in range(3):
+            rowSumMean = np.mean(keptRowSums)
+            rowSumStd = np.std(keptRowSums)
+            clipped = keptRowSums[np.abs(keptRowSums - rowSumMean) <= 3.0 * rowSumStd]
+            if clipped.size == 0 or clipped.size == keptRowSums.size:
+                break
+            keptRowSums = clipped
+        rowSumMean = np.mean(keptRowSums)
+        rowSumStd = np.std(keptRowSums)
+        self.rowSumPlotWidget.setWindowTitle(
+            f'PyMovie {version.version()} Row sums (TEMPORARY)  frame {self.currentFrameSpinBox.value()}'
+            f'  clipped mean {rowSumMean:0.1f}  std {rowSumStd:0.1f}'
+            f'  ({keptRowSums.size} of {self.rowSumProfile.size} rows kept)')
+        self.rowSumPlotCurve.setData(self.rowSumProfile)
+        self.rowSumMeanLine.setValue(rowSumMean)
+        self.rowSumUpperStdLine.setValue(rowSumMean + rowSumStd)
+        self.rowSumLowerStdLine.setValue(rowSumMean - rowSumStd)
 
     def openDocFile(self):
         docFilePath = os.path.join(os.path.split(__file__)[0], 'PyMovie-doc.pdf')

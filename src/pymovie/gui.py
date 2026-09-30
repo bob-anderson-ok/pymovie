@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'PyMovie.ui'
+# Form implementation generated from reading ui file 'src/pymovie/PyMovie.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.7
 #
@@ -1422,6 +1422,10 @@ class Ui_MainWindow(object):
         self.runPyote = QtWidgets.QCheckBox(self.layoutWidget1)
         self.runPyote.setObjectName("runPyote")
         self.horizontalLayout_23.addWidget(self.runPyote)
+        self.runLcViewer = QtWidgets.QCheckBox(self.layoutWidget1)
+        self.runLcViewer.setChecked(True)
+        self.runLcViewer.setObjectName("runLcViewer")
+        self.horizontalLayout_23.addWidget(self.runLcViewer)
         self.horizontalLayout_20 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_20.setSpacing(0)
         self.horizontalLayout_20.setObjectName("horizontalLayout_20")
@@ -2012,6 +2016,8 @@ class Ui_MainWindow(object):
         self.transportMaxRight.setToolTip(_translate("MainWindow", "<html><head/><body><p>Jump to last frame.</p><p>In addition, set <span style=\" font-weight:600; color:#fc0107;\">stop frame</span> to the frame number of the last frame.</p></body></html>"))
         self.transportMaxRight.setText(_translate("MainWindow", ">>"))
         self.runPyote.setText(_translate("MainWindow", "auto-run PyOTE"))
+        self.runLcViewer.setToolTip(_translate("MainWindow", "When checked, writing a csv file also opens its .pymovie file in PymovieLcReader."))
+        self.runLcViewer.setText(_translate("MainWindow", "auto-run LC viewer"))
         self.transportCsv.setToolTip(_translate("MainWindow", "<html><head/><body><p>Clicking this button opens a Save File dialog. Use this dialog to name and, optionally select the directory where you wish the csv file to be written. The default directory is the directory from which the video data was read.</p><p>A set of columns is created for each aperture with the column naming incorporating the aperture name for identification.</p><p>Hopefully you named each aperture in a logical manner. While there is an automatic unique name given to each aperture at creation time, providing user-friendly aperture names will help greatly in identifying the csv file columns.</p><p>Apertures can be renamed at any time without losing any data, so please make use of this feature: it will make consumers of your csv file happy.</p></body></html>"))
         self.transportCsv.setText(_translate("MainWindow", "write csv"))
         self.transportPlot.setToolTip(_translate("MainWindow", "<html><head/><body><p>Clicking this button triggers the production of a set of plots that provides a visual summary of the aperture data collected.  Note the <span style=\" font-weight:600; color:#fc0107;\">cascade</span> checkbox that controls whether these plots are done on top of each other (exactly aligned with each other) or spread like a deck of cards (cascased).</p><p>These plots make use of the name that you have assigned to each aperture (you did do that didn\'t you?). While there is an automatic unique name given to each aperture at creation time, providing user-friendly aperture names will help greatly in identifying the plots and is particularly useful in identifying csv file columns.</p><p>Apertures can be renamed at any time without losing any data, so please make use of this feature: it will make consumers of your lightcurves happy.</p><p>A composite plot is produced that contains the lightcurves for all of the apertures on a single plot.</p><p>Then a plot for each individual aperture is produced. This plot has two parts: a large \'signal intensity\' suplot at the top and a smaller \'number of mask pixels\' subplot at the bottom.</p><p>In the individual plots a symbol code is used to indicate when a default mask was used. Instead of a colored circle for signal intensity, a black triangle is used instead to indicate that the mask used in measuring this point\'s intensity was not computed from the image but was instead a \'default\' of some kind.</p></body></html>"))

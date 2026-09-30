@@ -74,7 +74,8 @@ pymovie = "pymovie.main:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-pymovie = ["*.ui", "*.bat", "*.ini", "*.txt"]
+# bin/ holds the PymovieLcReader executable, copied in by scripts/build-exe.ps1 (not kept in git)
+pymovie = ["*.ui", "*.bat", "*.ini", "*.txt", "bin/*"]
 
 [tool.setuptools.dynamic]
 version = { attr = "pymovie.version.__version__" }

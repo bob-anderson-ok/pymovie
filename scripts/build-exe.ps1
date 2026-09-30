@@ -7,12 +7,43 @@
 #      After install, close and reopen PowerShell so `cargo` is on PATH.
 #
 # Usage (from the project root):
-#   powershell -ExecutionPolicy Bypass -File scripts\build-exe.ps1
+#   powershell -ExecutionPolicy Bypass -File scripts\build-exe.ps1 -LcReaderExe <path\to\PymovieLcReader.exe>
+#
+# PymovieLcReader.exe (the Go/Fyne light-curve viewer) is bundled inside the
+# pymovie package at src\pymovie\bin\. -LcReaderExe (or the env var
+# PYMOVIE_LCREADER_EXE) names the viewer to copy there; by default it is the
+# release build in the sibling Go project (..\..\GolandProjects\PymovieLcReader\dist).
+# If that isn't found, the copy already in src\pymovie\bin\ is used; if there is
+# none, the build stops unless -NoLcReader is passed.
 #
 # Output:  dist\PyMovie.exe
 
+param(
+    [string]$LcReaderExe = $env:PYMOVIE_LCREADER_EXE,
+    [switch]$NoLcReader
+)
+
+if (-not $LcReaderExe -and -not $NoLcReader) {
+    $defaultReader = Join-Path $PSScriptRoot "..\..\..\GolandProjects\PymovieLcReader\dist\PymovieLcReader.exe"
+    if (Test-Path $defaultReader) { $LcReaderExe = (Resolve-Path $defaultReader).Path }
+}
+
 $ErrorActionPreference = "Stop"
 Set-Location -Path (Join-Path $PSScriptRoot "..")
+
+$bundledViewer = Join-Path $PWD "src\pymovie\bin\PymovieLcReader.exe"
+if ($LcReaderExe) {
+    if (-not (Test-Path $LcReaderExe)) { throw "PymovieLcReader not found: $LcReaderExe" }
+    New-Item -ItemType Directory -Force (Split-Path $bundledViewer) | Out-Null
+    Copy-Item -Path $LcReaderExe -Destination $bundledViewer -Force
+}
+if (Test-Path $bundledViewer) {
+    Write-Host "==> Bundling PymovieLcReader: $bundledViewer ($((Get-Item $bundledViewer).LastWriteTime))"
+} elseif ($NoLcReader) {
+    Write-Host "==> Building WITHOUT PymovieLcReader (-NoLcReader)"
+} else {
+    throw "PymovieLcReader.exe is not in src\pymovie\bin\ --- pass -LcReaderExe <path>, or -NoLcReader to build without it"
+}
 
 Write-Host "==> Building PyMovie wheel with uv..."
 uv build

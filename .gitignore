@@ -37,3 +37,6 @@ pymovie-3.7.6/src/pymovie/NE3Lut.p
 src/pymovie/custom-digits.p
 src/pymovie/formatter.txt
 src/pymovie/pyote.ini
+
+# PymovieLcReader executable, copied in at build time by scripts/build-exe.ps1
+src/pymovie/bin/
