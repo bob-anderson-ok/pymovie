@@ -110,6 +110,7 @@ from pathlib import Path
 from urllib.request import urlopen
 from copy import deepcopy
 from pymovie.checkForNewerVersion import getLatestPackageVersion, isNewerVersion
+from pymovie import updatesDialog
 from pymovie import starPositionDialog
 from pymovie import aperturesFileTagDialog
 from pymovie import hotPixelDialog
@@ -168,6 +169,10 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 PRINT_TRACKING_DATA = False
+
+# Auto-stretch contrast used to render the stacked .pymovie initial frame. Fixed (not the user's contrast setting)
+# because it reliably shows the faintest stars.
+RECORD_STACK_CONTRAST = 6
 
 
 class RowSumPlotWidget(pg.PlotWidget):
@@ -552,8 +557,25 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.rowSumPlotCheckBox =QtWidgets.QCheckBox('row sum plot', self.layoutWidget)
         self.rowSumPlotCheckBox.setToolTip('TEMPORARY: when checked, a window shows the sum of the '
                                            'pixels in each row of the currently displayed frame.')
-        self.horizontalLayout_autoStretch.addWidget(self.rowSumPlotCheckBox)
+        # The checkbox is hidden (not in any layout) and stays unchecked, which keeps the feature off. To bring it
+        # back, restore the addWidget() line and delete the setVisible(False) line.
+        # self.horizontalLayout_autoStretch.addWidget(self.rowSumPlotCheckBox)
+        self.rowSumPlotCheckBox.setVisible(False)
         self.rowSumPlotCheckBox.clicked.connect(self.onRowSumPlotToggled)
+
+        # Number of frames stacked at the start of an analysis run to make the .pymovie initial frame
+        self.recordStackLabel = QtWidgets.QLabel('.pymovie stack', self.layoutWidget)
+        self.recordStackSpinBox = QtWidgets.QSpinBox(self.layoutWidget)
+        self.recordStackSpinBox.setRange(1, 1000)
+        self.recordStackSpinBox.setValue(int(self.settings.value('recordStackFrames', 64)))
+        stack_tip = ('Number of frames, from the start of an analysis run, that are aligned on the yellow #1 '
+                     'aperture and averaged to make the initial frame saved in the .pymovie file (and an '
+                     'enhanced-image .fit file in the FinderFrames folder). Pause is disabled while they are '
+                     'collected. 1 saves the starting frame unstacked.')
+        self.recordStackLabel.setToolTip(stack_tip)
+        self.recordStackSpinBox.setToolTip(stack_tip)
+        self.horizontalLayout_autoStretch.addWidget(self.recordStackLabel)
+        self.horizontalLayout_autoStretch.addWidget(self.recordStackSpinBox)
 
         self.enableManualWorkFolderSelectionCheckBox.installEventFilter(self)
 
@@ -1002,6 +1024,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.recordingFailed = False
         self.recordImage = None  # set by getApertureStats(): the aperture image just measured ...
         self.recordMask = None   # ... and the sampling mask actually used to measure it
+        # Stack of the first frames of the run that replaces the record file's initial frame (see
+        # stackFrameForRecords()): None until the first frame is added, then a dict
+        self.recordStack = None
+        self.recordStackDone = False
+        self.recordApertures = []
 
         self.currentOcrBox = None
 
@@ -1396,6 +1423,30 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.documentationPushButton.clicked.connect(self.showDocumentation)
         self.documentationPushButton.installEventFilter(self)
+
+        # Built here rather than in PyMovie.ui: the Plot Robust Mean button's slot becomes a row holding that
+        # button with this one to its right
+        self.checkForUpdatesButton = QtWidgets.QPushButton('Check for updates', self.layoutWidget)
+        self.checkForUpdatesButton.setToolTip('Lists the PyMovie releases on GitHub (newer ones in bold) with their '
+                                              'notes, and offers a download of the selected release\'s PyMovie.exe')
+        self.checkForUpdatesButton.setStyleSheet("background-color : yellow")
+        robustMeanIndex = self.verticalLayout_15.indexOf(self.demoMeanPushButton)
+        self.verticalLayout_15.removeWidget(self.demoMeanPushButton)
+        robustMeanRow = QtWidgets.QHBoxLayout()
+        robustMeanRow.addWidget(self.demoMeanPushButton)
+        robustMeanRow.addWidget(self.checkForUpdatesButton)
+        self.verticalLayout_15.insertLayout(robustMeanIndex, robustMeanRow)
+
+        # On the File/Folder tab, under the Open "finder" image button (built here rather than in PyMovie.ui)
+        self.openPymovieButton = QtWidgets.QPushButton('Open .pymovie light curve file', self.tab_5)
+        self.openPymovieButton.setToolTip('Pick a .pymovie file (the file selector starts in the current work '
+                                              'folder) to open in the light curve viewer (PymovieLcReader).')
+        self.openPymovieButton.setStyleSheet("background-color : yellow")
+        self.verticalLayout_9.addWidget(self.openPymovieButton)
+        self.openPymovieButton.clicked.connect(self.openPymovieFile)
+        self.openPymovieButton.installEventFilter(self)
+        self.checkForUpdatesButton.clicked.connect(self.showUpdates)
+        self.checkForUpdatesButton.installEventFilter(self)
 
         self.demoMeanPushButton.clicked.connect(self.showRobustMeanDemo)
         self.demoMeanPushButton.installEventFilter(self)
@@ -4875,16 +4926,22 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if not isNewerVersion(latestVersion, version.version()):
             self.showMsg('You are running the most recent version of PyMovie')
         else:
-            self.showMsg(f'Version {latestVersion} is available.  To get it:', blankLine=True)
-            self.showMsg('====  Download the new PyMovie.exe from: '
-                         'https://github.com/bob-anderson-ok/pymovie/releases/latest '
-                         '(if you are running Windows and want the new PyMovie.exe file)',
-                         blankLine=True)
-            self.showMsg('====  If you are running MacOs, go to '
-                         'https://github.com/bob-anderson-ok/pymovie '
-                         'and follow the README instructions.',
-                         blankLine=True)
+            self.showMsg(f'Version {latestVersion} is available. Use the "Check for updates" button on the Help '
+                         f'tab to see what is new and to get it.', blankLine=True)
+            msg = QMessageBox(self)
+            msg.setIcon(QMessageBox.Information)
+            msg.setWindowTitle('PyMovie update available')
+            msg.setText(f'PyMovie {latestVersion} is available (you are running {version.version()}).\n\n'
+                        f'Use the "Check for updates" button on the Help tab to see what is new '
+                        f'and to download it.')
+            showButton = msg.addButton('Show updates now', QMessageBox.AcceptRole)
+            msg.addButton('Later', QMessageBox.RejectRole)
+            msg.exec_()
+            if msg.clickedButton() == showButton:
+                self.showUpdates()
 
+    def showUpdates(self):
+        updatesDialog.UpdatesDialog(version.version(), parent=self).exec_()
 
 
     def createAviSerWcsFolder(self):
@@ -6893,6 +6950,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 lastFrame = self.stopAtFrameSpinBox.value()
 
                 if currentFrame == lastFrame + stop_offset:
+                    self.finishRecordStack()  # The run ended before the stack was complete
                     self.analysisPaused = True
                     self.analysisRequested = False
                     self.setTransportButtonsEnableState(True)
@@ -6916,6 +6974,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                     self.recordPsf = True
                     self.currentFrameSpinBox.setValue(currentFrame)
                     QtGui.QGuiApplication.processEvents()
+            self.finishRecordStack()  # The run was stopped some other way before the stack was complete
         else:
             self.viewFieldsCheckBox.setEnabled(True)
 
@@ -7091,6 +7150,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         try:
             if self.recordWriter is None:
                 frame_rgb, apertures = self.initialFrameForRecords()
+                self.recordApertures = apertures  # drawn again on the stacked frame (finishRecordStack())
                 fd, self.recordTempPath = tempfile.mkstemp(prefix='pymovie-', suffix='.pymovie-tmp')
                 os.close(fd)
                 self.recordWriter = apertureRecord.ApertureRecordWriter(
@@ -7124,6 +7184,96 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.showMsg(f'The initial frame could not be saved with the aperture records: {e}')
             return None, apertures
 
+    def recordStackYellow(self):
+        # The aperture the record stack is aligned on: the primary yellow aperture, else the first yellow one
+        yellows = [app for app in self.getApertureList() if app.color == 'yellow']
+        for app in yellows:
+            if app.primary_yellow_aperture:
+                return app
+        return yellows[0] if yellows else None
+
+    def stackFrameForRecords(self):
+        # Called once per analysis frame, after that frame's records are written. Adds the frame (whole, even
+        # in field mode) to a stack, shifted by whole pixels so that the yellow #1 aperture's centroid stays where
+        # it was on the starting frame, as the "finder" stacker does with a 'stack' aperture. The stack is thus
+        # aligned on the starting frame, so the aperture boxes and centroids in the record file's header fit it.
+        # When recordStackSpinBox frames have been added, finishRecordStack() puts the stack in the header.
+        if self.recordStackDone or self.recordWriter is None or self.image is None:
+            return
+        try:
+            yellow = self.recordStackYellow()
+            if yellow is None or yellow.xc is None or yellow.yc is None:
+                raise ValueError('there is no yellow aperture to align on')
+            image = np.asarray(self.image, dtype=np.float64)
+            if image.ndim == 3:
+                image = image.mean(axis=2)
+            frame = self.currentFrameSpinBox.value()
+
+            if self.recordStack is None:
+                if self.recordWriter.frame_shape is None:
+                    self.recordStackDone = True  # There is no initial frame to replace
+                    return
+                self.recordStack = {'sum': np.zeros_like(image), 'count': 0, 'x0': yellow.xc, 'y0': yellow.yc,
+                                    'first': frame, 'last': frame, 'dtype': np.asarray(self.image).dtype}
+                self.transportPause.setEnabled(False)  # The run may not be paused while the stack is collected
+                self.showMsg(f'Stacking {self.recordStackSpinBox.value()} frames for the .pymovie initial frame')
+
+            stack = self.recordStack
+            if image.shape != stack['sum'].shape:
+                raise ValueError(f'frame {frame} is {image.shape}, not {stack["sum"].shape}')
+            rows = int(round(stack['y0'] - yellow.yc))
+            cols = int(round(stack['x0'] - yellow.xc))
+            stack['sum'] += np.roll(image, (rows, cols), axis=(0, 1))
+            stack['count'] += 1
+            stack['first'] = min(stack['first'], frame)
+            stack['last'] = max(stack['last'], frame)
+        except Exception as e:
+            self.showMsg(f'The .pymovie initial frame will not be stacked: {e}')
+            self.recordStackDone = True
+            if self.analysisRequested:
+                self.transportPause.setEnabled(True)
+            return
+
+        if stack['count'] >= self.recordStackSpinBox.value():
+            self.finishRecordStack()
+
+    def finishRecordStack(self):
+        # Averages the frames stacked so far (fewer than asked for if the run ended early), saves the result as
+        # FinderFrames/enhanced-image-<first frame>.fit and puts it, rendered with auto-stretch levels at a fixed
+        # contrast of RECORD_STACK_CONTRAST (whatever the user's contrast settings), in place of the starting frame
+        # in the record file's header. Does nothing if no stack is being collected.
+        if self.recordStackDone or self.recordStack is None:
+            return
+        self.recordStackDone = True
+        if self.analysisRequested:
+            self.transportPause.setEnabled(True)
+        stack = self.recordStack
+        count = stack['count']
+        try:
+            mean = stack['sum'] / count  # Rendered unrounded, so 8-bit video keeps the precision stacking gains
+            if np.issubdtype(stack['dtype'], np.integer):
+                info = np.iinfo(stack['dtype'])
+                fit_image = np.clip(np.round(mean), info.min, info.max).astype(stack['dtype'])
+            else:
+                fit_image = np.clip(np.round(mean), 0, 65535).astype(np.uint16)
+
+            if self.finderFramesDir:
+                os.makedirs(self.finderFramesDir, exist_ok=True)
+                height, width = fit_image.shape
+                self.writeFitFile(image=fit_image,
+                                  outfile=os.path.join(self.finderFramesDir, f'enhanced-image-{stack["first"]}.fit'),
+                                  avi_location=self.filename, first_frame=stack['first'],
+                                  last_frame=stack['last'], width=width, height=height)
+
+            # None (an unsuitable image) makes render_frame() use the image's own range
+            levels = self.computeAutoStretchLevels(fit_image, RECORD_STACK_CONTRAST)
+            self.recordWriter.replace_initial_frame(
+                apertureRecord.render_frame(mean, self.recordApertures, levels=levels))
+            self.showMsg(f'The .pymovie initial frame is a stack of {count} frames '
+                         f'({stack["first"]} to {stack["last"]})')
+        except Exception as e:
+            self.showMsg(f'The stacked frame could not replace the .pymovie initial frame: {e}')
+
     def recordingDate(self):
         date = None
         if self.fits_folder_in_use:
@@ -7139,6 +7289,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         return date or ''
 
     def discardApertureRecords(self):
+        if self.recordStack is not None and not self.recordStackDone:
+            self.transportPause.setEnabled(self.analysisRequested)
+        self.recordStack = None
+        self.recordStackDone = False
         if self.recordWriter is not None:
             self.recordWriter.close()
             self.recordWriter = None
@@ -7157,6 +7311,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             if self.recordingFailed:
                 self.showMsg('No .pymovie file was written because aperture records could not be recorded.')
             return None
+        self.finishRecordStack()
         self.recordWriter.flush()
         dest = os.path.splitext(csv_filename)[0] + '.pymovie'
         try:
@@ -7175,7 +7330,23 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         if pymovie_filename is None:
             self.showMsg('PymovieLcReader was not started because no .pymovie file was written.')
             return
+        self.openInLcViewer(pymovie_filename)
 
+    def openPymovieFile(self):
+        # The user picks a .pymovie file, starting in the current work folder, and it is opened in PymovieLcReader
+        from pymovie import lc_viewer
+
+        if lc_viewer.find_viewer() is None:
+            self.showMsgPopup('The light curve viewer (PymovieLcReader) is not included in this installation '
+                              'of PyMovie.')
+            return
+        start_dir = self.folder_dir if self.folder_dir else self.settings.value('avidir', './')
+        path, _ = QFileDialog.getOpenFileName(self, 'Select a .pymovie light curve file', start_dir,
+                                              'PyMovie light curve files (*.pymovie)')
+        if path:
+            self.openInLcViewer(path)
+
+    def openInLcViewer(self, pymovie_filename):
         from pymovie import lc_viewer
 
         viewer = lc_viewer.find_viewer()
@@ -8567,6 +8738,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                                 self.stackXtrack.append(aperture.xc)
                                 self.stackYtrack.append(aperture.yc)
                                 self.stackFrame.append(self.currentFrameSpinBox.value())
+                    self.stackFrameForRecords()
 
                 return
 
@@ -8614,6 +8786,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         self.stackFrame.append(self.currentFrameSpinBox.value())
                 except Exception as e:
                     self.showMsg(f'while attempting to addData: {repr(e)}')
+            self.stackFrameForRecords()
 
     def jogApertureAndXcYc(self, app, delta_xc, delta_yc):
         # jog the aperture frame, then set the new center coordinates
@@ -12458,6 +12631,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         self.settings.setValue('autoStretchEnabled', self.autoStretchCheckBox.isChecked())
         self.settings.setValue('autoStretchContrast', self.autoStretchContrastSpinBox.value())
+        self.settings.setValue('recordStackFrames', self.recordStackSpinBox.value())
 
         self.settings.setValue('manualWorkfolderSelection', self.enableManualWorkFolderSelectionCheckBox.isChecked())
 

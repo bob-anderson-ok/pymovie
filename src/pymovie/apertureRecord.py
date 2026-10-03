@@ -13,6 +13,8 @@ File layout (all multi-byte values little-endian, no padding between fields):
 The header starts with fixed fields (HEADER_DTYPE, 1059 bytes), followed by the initial frame
 section: the full w x h frame at the start of the analysis, rendered as RGB with the aperture
 boxes drawn in their colors, and a table of the apertures (APERTURE_DTYPE) with their positions.
+PyMovie writes the starting frame first, then replaces its pixels (replace_initial_frame) with
+a stack of the first frames of the run, aligned on the starting frame so the boxes still fit.
     record
     ...
 
@@ -202,6 +204,18 @@ class ApertureRecordWriter:
             self.file = open(path, 'wb')
             self.file.write(make_header(self.roi_size, source=source, obs_date=obs_date,
                                         frame_rgb=frame_rgb, apertures=apertures))
+        self.frame_shape = None if frame_rgb is None or append else np.asarray(frame_rgb).shape
+
+    def replace_initial_frame(self, frame_rgb):
+        """Overwrites the pixels of the header's initial frame with frame_rgb (same shape as the frame the
+        file was created with), leaving the aperture table and the records untouched."""
+        frame_rgb = np.asarray(frame_rgb)
+        if self.frame_shape is None or frame_rgb.shape != self.frame_shape:
+            raise ValueError(f'frame_rgb {frame_rgb.shape} does not match the initial frame {self.frame_shape}')
+        self.file.flush()
+        self.file.seek(HEADER_DTYPE.itemsize + 4)  # the pixels follow the fixed fields and the <HH w, h
+        self.file.write(np.ascontiguousarray(frame_rgb, dtype=np.uint8).tobytes())
+        self.file.seek(0, os.SEEK_END)
 
     def append(self, name, intensity, appsum, frame, timestamp, saturation, image, mask):
         n = self.roi_size

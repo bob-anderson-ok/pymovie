@@ -219,6 +219,14 @@ them with `go-reader/testdata/make_testdata.py`.
   its color, and every aperture's name, color, box and centroid at that moment.
   If the frame can't be rendered, a message says so and the file is written
   with apertures but no frame, rather than stopping the recording.
+  Those pixels are then replaced by a stack: the first n frames of the run
+  (n is the sticky ".pymovie stack" setting, default 64), each shifted by whole
+  pixels so the primary yellow aperture's centroid stays where it was on the
+  starting frame, averaged, and scaled with auto-stretch levels at a fixed contrast of 6. Because the
+  stack is aligned on the starting frame, the aperture table still fits it. A run
+  that ends before n frames uses the frames it has. The run can't be paused while
+  the stack is collected. The stack is also saved as
+  `FinderFrames/enhanced-image-<first frame>.fit`.
 - **What is recorded:** during an analysis run, one record is written right
   after each aperture's data point is recorded, so the `.pymovie` file holds
   exactly the data points behind the CSV. In field mode there are two records
