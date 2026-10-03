@@ -566,12 +566,12 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         # Number of frames stacked at the start of an analysis run to make the .pymovie initial frame
         self.recordStackLabel = QtWidgets.QLabel('.pymovie stack', self.layoutWidget)
         self.recordStackSpinBox = QtWidgets.QSpinBox(self.layoutWidget)
-        self.recordStackSpinBox.setRange(1, 1000)
+        self.recordStackSpinBox.setRange(16, 512)
         self.recordStackSpinBox.setValue(int(self.settings.value('recordStackFrames', 64)))
         stack_tip = ('Number of frames, from the start of an analysis run, that are aligned on the yellow #1 '
                      'aperture and averaged to make the initial frame saved in the .pymovie file (and an '
                      'enhanced-image .fit file in the FinderFrames folder). Pause is disabled while they are '
-                     'collected. 1 saves the starting frame unstacked.')
+                     'collected. Allowed range: 16 to 512.')
         self.recordStackLabel.setToolTip(stack_tip)
         self.recordStackSpinBox.setToolTip(stack_tip)
         self.horizontalLayout_autoStretch.addWidget(self.recordStackLabel)
