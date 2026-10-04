@@ -14,7 +14,7 @@ Go reader: `go-reader/` (package `pymoviefile`).
 ## File layout
 
 ```
-header   header_size bytes    (1065 + 3wh + 300a in this version: w × h frame, a apertures)
+header   header_size bytes    (1067 + 3wh + 300a in this version: w × h frame, a apertures)
 record   record_size bytes    (299 + 3n² in this version, n = roi size)
 record
 ...
@@ -45,7 +45,7 @@ fields (`header_size` 1059).
 |---:|---|---|---:|---|
 | 0 | magic | 8 ASCII bytes | 8 | `PYMOVIE` followed by one null byte |
 | 8 | format_version | uint16 | 2 | `1` |
-| 10 | header_size | uint32 | 4 | Bytes in the header, including the initial frame section and any fields added later. `1065 + 3wh + 300a` when written by this version. |
+| 10 | header_size | uint32 | 4 | Bytes in the header, including the initial frame section, stacked_frames and any fields added later. `1067 + 3wh + 300a` when written by this version. |
 | 14 | record_size | uint32 | 4 | Bytes in each record, including any fields added later. `299 + 3n²` when written by this version. |
 | 18 | roi_size | uint8 | 1 | n, the roi size used by every record |
 | 19 | obs_date | 16 ASCII bytes | 16 | Observation date, e.g. `2026-09-25`, null padded (may be empty) |
@@ -78,6 +78,17 @@ Each aperture entry (300 bytes):
 | 282 | height | uint16 | 2 | Box height in pixels (n) |
 | 284 | xc | float64 | 8 | Centroid column in frame pixels; NaN if not known |
 | 292 | yc | float64 | 8 | Centroid row in frame pixels; NaN if not known |
+
+### Stacked frames (2 bytes)
+
+Follows the initial frame section, at header offset `1059 + 6 + 3wh + 300a`.
+
+| Offset | Field | Type | Bytes | Contents |
+|---:|---|---|---:|---|
+| 0 | stacked_frames | uint16 | 2 | The number of frames averaged into the initial frame (see **How PyMovie produces the file**). `1` for a single frame, `0` if no frame was recorded. |
+
+Files written before this field was added end their header with the aperture
+table; readers report `0` for them.
 
 Boxes are outlined on the pixels at their edges: rows `y0` and `y0 + height − 1`
 and columns `x0` and `x0 + width − 1`, cut off at the frame's edges. The colors
@@ -123,7 +134,8 @@ readers:
   `header_size` (for the first record) or to the next multiple of `record_size`
   (for the next record). Unknown trailing bytes are ignored.
 - The initial frame section has a variable length, so a field added to the
-  header later goes after it, at offset `1059 + 6 + 3wh + 300a`. A header of
+  header later goes after it. `stacked_frames` was added this way, at offset
+  `1059 + 6 + 3wh + 300a`; the next field goes at `1059 + 8 + 3wh + 300a`. A header of
   exactly 1059 bytes has no initial frame section: no frame and no apertures.
 - A reader rejects a file whose `header_size` or `record_size` is **smaller**
   than the sizes this version defines.
@@ -183,6 +195,7 @@ frame_rgb, apertures = apertureRecord.read_initial_frame('observation.pymovie')
 # frame_rgb: (h, w, 3) uint8 array, or None; apertures: list of ApertureInfo
 for ap in apertures:
     print(ap.name, ap.color, ap.x0, ap.y0, ap.width, ap.height, ap.xc, ap.yc)
+stacked = apertureRecord.read_stacked_frames('observation.pymovie')  # 0 if not recorded
 ```
 
 **Go**:
@@ -195,7 +208,8 @@ if err != nil { ... }
 for _, r := range records {
     fmt.Println(r.Frame, r.Name, r.Intensity, r.Pixel(10, 10), r.InMask(10, 10))
 }
-// The initial frame: header.FrameWidth x header.FrameHeight RGB (0 x 0 if none)
+// The initial frame: header.FrameWidth x header.FrameHeight RGB (0 x 0 if none),
+// the average of header.StackedFrames frames (0 if not recorded)
 red, green, blue := header.FramePixel(row, col)
 for _, a := range header.Apertures {
     fmt.Println(a.Name, a.Color, a.X0, a.Y0, a.Width, a.Height, a.Xc, a.Yc)
@@ -225,7 +239,8 @@ them with `go-reader/testdata/make_testdata.py`.
   starting frame, averaged, and scaled with auto-stretch levels at a fixed contrast of 6. Because the
   stack is aligned on the starting frame, the aperture table still fits it. A run
   that ends before n frames uses the frames it has. The run can't be paused while
-  the stack is collected. The stack is also saved as
+  the stack is collected. `stacked_frames` is set to the number of frames
+  averaged (it is `1` until then). The stack is also saved as
   `FinderFrames/enhanced-image-<first frame>.fit`.
 - **What is recorded:** during an analysis run, one record is written right
   after each aperture's data point is recorded, so the `.pymovie` file holds

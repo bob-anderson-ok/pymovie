@@ -7,7 +7,7 @@ appended to a temporary file, which becomes <csv name>.pymovie when the csv file
 
 File layout (all multi-byte values little-endian, no padding between fields):
 
-    header  (header_size bytes: 1065 + 3*w*h + 300*apertures in this version)
+    header  (header_size bytes: 1067 + 3*w*h + 300*apertures in this version)
     record  (record_size bytes: 299 + 3 * roi_size**2 in this version)
 
 The header starts with fixed fields (HEADER_DTYPE, 1059 bytes), followed by the initial frame
@@ -15,6 +15,8 @@ section: the full w x h frame at the start of the analysis, rendered as RGB with
 boxes drawn in their colors, and a table of the apertures (APERTURE_DTYPE) with their positions.
 PyMovie writes the starting frame first, then replaces its pixels (replace_initial_frame) with
 a stack of the first frames of the run, aligned on the starting frame so the boxes still fit.
+The initial frame section is followed by stacked_frames (uint16): the number of frames averaged
+into the initial frame (1 for the starting frame alone, 0 if there is no frame).
     record
     ...
 
@@ -65,6 +67,10 @@ APERTURE_DTYPE = np.dtype([
     ('xc', '<f8'),                 # centroid column (NaN if not known)
     ('yc', '<f8'),                 # centroid row (NaN if not known)
 ])
+
+# Follows the initial frame section: the number of frames averaged into the initial frame
+STACKED_FRAMES_FORMAT = '<H'
+STACKED_FRAMES_SIZE = struct.calcsize(STACKED_FRAMES_FORMAT)
 
 # An aperture's placement in the initial frame. x is the column, y the row.
 ApertureInfo = namedtuple('ApertureInfo', 'name color x0 y0 width height xc yc')
@@ -166,9 +172,14 @@ def frame_section(frame_rgb=None, apertures=()):
     return struct.pack('<HH', w, h) + pixels + struct.pack('<H', len(apertures)) + table.tobytes()
 
 
-def make_header(roi_size, source='', obs_date='', frame_rgb=None, apertures=()):
-    """Returns the header bytes: the fixed fields followed by the initial frame section."""
-    section = frame_section(frame_rgb, apertures)
+def make_header(roi_size, source='', obs_date='', frame_rgb=None, apertures=(), stacked_frames=None):
+    """Returns the header bytes: the fixed fields, the initial frame section and stacked_frames.
+
+    stacked_frames defaults to 1 with a frame (the frame alone) and 0 without one.
+    """
+    if stacked_frames is None:
+        stacked_frames = 0 if frame_rgb is None else 1
+    section = frame_section(frame_rgb, apertures) + struct.pack(STACKED_FRAMES_FORMAT, stacked_frames)
     header = np.zeros(1, dtype=HEADER_DTYPE)
     header['magic'] = MAGIC
     header['format_version'] = FORMAT_VERSION
@@ -200,21 +211,27 @@ class ApertureRecordWriter:
                 raise ValueError(f'{path} holds {int(header["record_size"])} byte records; '
                                  f'this code writes {self.dtype.itemsize} byte records')
             self.file = open(path, 'ab')
+            self.stacked_frames_offset = None
         else:
             self.file = open(path, 'wb')
-            self.file.write(make_header(self.roi_size, source=source, obs_date=obs_date,
-                                        frame_rgb=frame_rgb, apertures=apertures))
+            header = make_header(self.roi_size, source=source, obs_date=obs_date,
+                                 frame_rgb=frame_rgb, apertures=apertures)
+            self.file.write(header)
+            self.stacked_frames_offset = len(header) - STACKED_FRAMES_SIZE
         self.frame_shape = None if frame_rgb is None or append else np.asarray(frame_rgb).shape
 
-    def replace_initial_frame(self, frame_rgb):
+    def replace_initial_frame(self, frame_rgb, stacked_frames):
         """Overwrites the pixels of the header's initial frame with frame_rgb (same shape as the frame the
-        file was created with), leaving the aperture table and the records untouched."""
+        file was created with), the average of stacked_frames frames, leaving the aperture table and the
+        records untouched."""
         frame_rgb = np.asarray(frame_rgb)
         if self.frame_shape is None or frame_rgb.shape != self.frame_shape:
             raise ValueError(f'frame_rgb {frame_rgb.shape} does not match the initial frame {self.frame_shape}')
         self.file.flush()
         self.file.seek(HEADER_DTYPE.itemsize + 4)  # the pixels follow the fixed fields and the <HH w, h
         self.file.write(np.ascontiguousarray(frame_rgb, dtype=np.uint8).tobytes())
+        self.file.seek(self.stacked_frames_offset)
+        self.file.write(struct.pack(STACKED_FRAMES_FORMAT, stacked_frames))
         self.file.seek(0, os.SEEK_END)
 
     def append(self, name, intensity, appsum, frame, timestamp, saturation, image, mask):
@@ -292,6 +309,24 @@ def read_initial_frame(path):
                               int(r['x0']), int(r['y0']), int(r['width']), int(r['height']),
                               float(r['xc']), float(r['yc'])) for r in table]
     return frame_rgb, apertures
+
+
+def read_stacked_frames(path):
+    """Returns the number of frames averaged into the header's initial frame: 1 for a single frame,
+    0 if there is no frame or the file was written before the stacked_frames field was added."""
+    header = read_header(path)
+    extra = int(header['header_size']) - HEADER_DTYPE.itemsize
+    if extra < 4:
+        return 0
+    with open(path, 'rb') as f:
+        f.seek(HEADER_DTYPE.itemsize)
+        data = f.read(extra)
+    w, h = struct.unpack_from('<HH', data, 0)
+    (count,) = struct.unpack_from('<H', data, 4 + 3 * w * h)
+    offset = 4 + 3 * w * h + 2 + count * APERTURE_DTYPE.itemsize
+    if len(data) < offset + STACKED_FRAMES_SIZE:
+        return 0
+    return struct.unpack_from(STACKED_FRAMES_FORMAT, data, offset)[0]
 
 
 def copy_sorted_by_frame(src, dest):

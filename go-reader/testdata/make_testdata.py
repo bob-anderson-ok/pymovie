@@ -32,6 +32,7 @@ frame_rgb = ar.render_frame(frame, apertures, levels=(0, 390))
 sample = os.path.join(here, 'sample.pymovie')
 with ar.ApertureRecordWriter(sample, n, source='Ünïcode video.avi', obs_date='2026-09-25',
                              frame_rgb=frame_rgb, apertures=apertures) as w:
+    w.replace_initial_frame(frame_rgb, stacked_frames=64)  # as PyMovie does once its stack is complete
     w.append('target ñ', -123.25, 28901234.0, 70000.5, '[12:34:56.1234567]', 65534, image, mask)
     w.append('comp', 1.5, 2.0, 70001, '', 255, image, mask)
 # An interrupted run: half a record at the end, which readers must ignore
@@ -42,7 +43,7 @@ header_size = struct.unpack_from('<I', open(sample, 'rb').read(14), 10)[0]
 records = np.fromfile(sample, dtype=ar.record_dtype(n), count=2, offset=header_size)
 
 # A file from a hypothetical later writer that appended fields to the header (12 bytes, after the
-# initial frame section, which here holds no frame and no apertures) and to each record (5 bytes)
+# initial frame section, which here holds no frame and no apertures, and stacked_frames) and to each record (5 bytes)
 # without changing format_version.
 extended = os.path.join(here, 'extended.pymovie')
 header = bytearray(ar.make_header(n, source='extended', obs_date='2030-01-01'))
@@ -68,5 +69,7 @@ assert (got_frame == frame_rgb).all() and got_apertures[0] == apertures[0], got_
 assert got_apertures[1][:6] == apertures[1][:6] and np.isnan(got_apertures[1].xc)
 assert ar.read_initial_frame(extended) == (None, [])
 assert ar.read_initial_frame(original) == (None, [])
+assert ar.read_stacked_frames(sample) == 64
+assert ar.read_stacked_frames(extended) == 0 and ar.read_stacked_frames(original) == 0
 assert len(ar.read_aperture_records(original)[1]) == 2
 print('wrote', sample, extended, original)

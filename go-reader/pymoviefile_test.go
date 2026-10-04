@@ -45,11 +45,11 @@ func TestSample(t *testing.T) {
 		t.Fatal(err)
 	}
 	// 1059 fixed bytes, then the frame section: w and h, a 40 x 30 RGB frame, the
-	// aperture count and two 300 byte apertures.
-	if h.FormatVersion != 1 || h.HeaderSize != 1059+4+40*30*3+2+2*300 || h.RecordSize != 1622 || h.RoiSize != 21 ||
-		h.ObsDate != "2026-09-25" || h.Source != "Ünïcode video.avi" {
-		t.Errorf("header: version %d, sizes %d and %d, roi %d, %q, %q",
-			h.FormatVersion, h.HeaderSize, h.RecordSize, h.RoiSize, h.ObsDate, h.Source)
+	// aperture count and two 300 byte apertures, then stacked_frames.
+	if h.FormatVersion != 1 || h.HeaderSize != 1059+4+40*30*3+2+2*300+2 || h.RecordSize != 1622 || h.RoiSize != 21 ||
+		h.ObsDate != "2026-09-25" || h.Source != "Ünïcode video.avi" || h.StackedFrames != 64 {
+		t.Errorf("header: version %d, sizes %d and %d, roi %d, %q, %q, %d stacked",
+			h.FormatVersion, h.HeaderSize, h.RecordSize, h.RoiSize, h.ObsDate, h.Source, h.StackedFrames)
 	}
 	checkRecords(t, recs)
 
@@ -95,7 +95,7 @@ func TestNoFrameSection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if h.HeaderSize != 1059 || h.FrameWidth != 0 || h.Frame != nil || h.Apertures != nil {
+	if h.HeaderSize != 1059 || h.FrameWidth != 0 || h.Frame != nil || h.Apertures != nil || h.StackedFrames != 0 {
 		t.Errorf("header = %+v", h)
 	}
 	checkRecords(t, recs)
@@ -106,9 +106,9 @@ func TestExtendedHeaderAndRecords(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// An empty frame section (no frame, no apertures: 6 bytes) and 12 unknown bytes.
-	if h.HeaderSize != 1059+6+12 || h.RecordSize != 1622+5 || h.Source != "extended" || h.ObsDate != "2030-01-01" ||
-		h.FrameWidth != 0 || h.Apertures != nil {
+	// An empty frame section (no frame, no apertures: 6 bytes), stacked_frames and 12 unknown bytes.
+	if h.HeaderSize != 1059+6+2+12 || h.RecordSize != 1622+5 || h.Source != "extended" || h.ObsDate != "2030-01-01" ||
+		h.FrameWidth != 0 || h.Apertures != nil || h.StackedFrames != 0 {
 		t.Errorf("header = %+v", h)
 	}
 	checkRecords(t, recs)

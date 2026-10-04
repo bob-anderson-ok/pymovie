@@ -7268,7 +7268,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             # None (an unsuitable image) makes render_frame() use the image's own range
             levels = self.computeAutoStretchLevels(fit_image, RECORD_STACK_CONTRAST)
             self.recordWriter.replace_initial_frame(
-                apertureRecord.render_frame(mean, self.recordApertures, levels=levels))
+                apertureRecord.render_frame(mean, self.recordApertures, levels=levels), stacked_frames=count)
             self.showMsg(f'The .pymovie initial frame is a stack of {count} frames '
                          f'({stack["first"]} to {stack["last"]})')
         except Exception as e:

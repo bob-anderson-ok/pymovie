@@ -23,6 +23,7 @@ const (
 	// header and record sizes if a later writer appended fields; those are skipped.
 	minHeaderSize    = 1059 // the fixed header fields; the initial frame section follows them
 	apertureBytes    = 300  // one entry of the initial frame section's aperture table
+	stackedBytes     = 2    // stacked_frames, which follows the initial frame section
 	fixedRecordBytes = 299  // record bytes before the image; the record is 299 + 3n² bytes
 )
 
@@ -42,6 +43,11 @@ type Header struct {
 	FrameHeight int     // h in pixels
 	Frame       []uint8 // w*h*3 RGB bytes, row-major: pixel (row, col) starts at (row*w+col)*3
 	Apertures   []Aperture
+
+	// StackedFrames is the number of frames averaged into the initial frame: 1 for
+	// a single frame, 0 if there is no frame or the file was written before this
+	// field (which follows the initial frame section) was added.
+	StackedFrames int
 }
 
 // Aperture is an aperture's placement in the initial frame. X is the column and Y the row.
@@ -129,9 +135,9 @@ func Parse(data []byte) (Header, []Record, error) {
 }
 
 // parseFrameSection decodes the initial frame section, which follows the fixed
-// header fields. An empty section (a file from before it was added) leaves the
-// header without a frame or apertures. Bytes after the section are fields added
-// by a later writer, and are skipped.
+// header fields, and the stacked_frames field after it. An empty section (a file
+// from before it was added) leaves the header without a frame or apertures. Bytes
+// after stacked_frames are fields added by a later writer, and are skipped.
 func (h *Header) parseFrameSection(sec []byte) error {
 	if len(sec) < 4 {
 		return nil
@@ -161,6 +167,9 @@ func (h *Header) parseFrameSection(sec []byte) error {
 			Xc:     f64(b[284:]),
 			Yc:     f64(b[292:]),
 		})
+	}
+	if end := tableStart + count*apertureBytes; len(sec) >= end+stackedBytes {
+		h.StackedFrames = int(le.Uint16(sec[end:]))
 	}
 	return nil
 }
