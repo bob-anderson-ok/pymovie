@@ -55,7 +55,7 @@ dependencies = [
     "JsonForm==0.0.2",
     "PyYAML==6.0",
     "keyring==23.7.0",
-    "requests==2.28.1",
+    "requests==2.33.0",
     "beautifulsoup4==4.11.1",
     "html5lib==1.1",
     "more-itertools==9.1.0",
