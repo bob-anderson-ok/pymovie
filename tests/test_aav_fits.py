@@ -13,6 +13,28 @@ from pymovie.main import PyMovie
 
 
 class AavFitsTests(unittest.TestCase):
+    def test_output_folder_picker_uses_default_and_returns_selection(self):
+        state = SimpleNamespace(
+            getAviFitsOutputDir=Mock(return_value='/observations/fits_converted'),
+            getAviFieldFitsOutputDir=Mock(return_value='/observations/fits_converted_fields'),
+        )
+        with patch('pymovie.main.os.path.isdir', return_value=False), \
+                patch('pymovie.main.QFileDialog.getExistingDirectory', return_value='/other/output') as picker:
+            self.assertEqual(PyMovie.chooseAviFitsOutputDir(state, 'frames'), '/other/output')
+        self.assertEqual(picker.call_args.args[2], '/observations')
+
+    def test_clear_only_generated_fits_for_selected_mode(self):
+        with tempfile.TemporaryDirectory() as directory:
+            paths = [Path(directory) / name for name in (
+                'frame-000000.fits', 'field-000000.fits', 'science.fits', 'frame-not-a-number.fits'
+            )]
+            for path in paths:
+                path.touch()
+            PyMovie.clearExistingFitsFiles(PyMovie, directory, 'frames')
+            self.assertFalse(paths[0].exists())
+            for path in paths[1:]:
+                self.assertTrue(path.exists())
+
     def test_aav_date_prompt_suggests_date_from_filename(self):
         state = SimpleNamespace(
             aav_file_in_use=True, avi_date=None,
@@ -108,14 +130,17 @@ class AavFitsTests(unittest.TestCase):
     def test_declined_confirmation_preserves_existing_fits(self):
         self.check_conversion(confirmed=False)
 
-    def check_conversion(self, cancelled=False, error='', confirmed=True):
+    def test_cancelled_folder_selection_preserves_existing_fits(self):
+        self.check_conversion(selection_cancelled=True)
+
+    def check_conversion(self, cancelled=False, error='', confirmed=True, selection_cancelled=False):
         capture, pixels = self.make_capture(error=error)
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / 'sample.aav'
             source.touch()
             output = Path(directory) / 'fits_converted'
-            if not confirmed:
-                output.mkdir()
+            output.mkdir()
+            if not confirmed or selection_cancelled:
                 (output / 'existing.fits').write_bytes(b'keep existing data')
             state = Mock(
                 avi_in_use=False, aav_file_in_use=True,
@@ -127,7 +152,7 @@ class AavFitsTests(unittest.TestCase):
             )
             state.getAviFitsConversionModeFromUser.return_value = 'frames'
             state.getAviFitsConversionDateFromUser.return_value = '2026-10-26'
-            state.getAviFitsOutputDir.return_value = str(output)
+            state.chooseAviFitsOutputDir.return_value = '' if selection_cancelled else str(output)
             state.confirmAviFitsConversion.return_value = confirmed
             state.aviFrameToGray.side_effect = PyMovie.aviFrameToGray
             state.getConvertedFrameTimestampInfo.return_value = dict(
@@ -142,16 +167,18 @@ class AavFitsTests(unittest.TestCase):
                 progress.return_value.wasCanceled.return_value = cancelled
                 PyMovie.convertAviFramesToFits(state)
             state.openAviCapture.assert_not_called()
-            if cancelled or error or not confirmed:
+            if cancelled or error or not confirmed or selection_cancelled:
                 state.getConvertedFrameTimestampInfo.assert_not_called()
                 state.writeConvertedFrameFits.assert_not_called()
                 self.assertFalse((output / 'frame-000000.fits').exists())
                 if error:
                     self.assertIn(error, state.showMsgPopup.call_args.args[0])
-                if not confirmed:
+                if not confirmed or selection_cancelled:
                     self.assertEqual((output / 'existing.fits').read_bytes(), b'keep existing data')
                     state.clearExistingFitsFiles.assert_not_called()
                     capture.reader.getMainImageAndStatusData.assert_not_called()
+                if selection_cancelled:
+                    state.confirmAviFitsConversion.assert_not_called()
             else:
                 state.getConvertedFrameTimestampInfo.assert_called_once()
                 state.writeConvertedFrameFits.assert_called_once()

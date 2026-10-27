@@ -2360,6 +2360,14 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         avi_path = self.avi_location or self.filename
         return os.path.join(os.path.dirname(avi_path), 'fits_converted_fields')
 
+    def chooseAviFitsOutputDir(self, conversion_mode):
+        default_dir = (self.getAviFieldFitsOutputDir() if conversion_mode == 'fields'
+                       else self.getAviFitsOutputDir())
+        initial_dir = default_dir if os.path.isdir(default_dir) else os.path.dirname(default_dir)
+        return QFileDialog.getExistingDirectory(
+            self, 'Select FITS output folder', initial_dir, QFileDialog.ShowDirsOnly
+        )
+
     @staticmethod
     def normalizeFitsDate(date):
         if not date:
@@ -2571,15 +2579,24 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             return 'frames'
         return None
 
+    @staticmethod
+    def existingConvertedFitsFiles(out_dir, conversion_mode):
+        prefix = 'field' if conversion_mode == 'fields' else 'frame'
+        return [
+            path for path in glob.glob(os.path.join(out_dir, f'{prefix}-*'))
+            if re.fullmatch(rf'{prefix}-\d{{6}}\.fits?', os.path.basename(path)) and os.path.isfile(path)
+        ]
+
     def confirmAviFitsConversion(self, out_dir, output_count, conversion_mode):
-        existing_fits = glob.glob(os.path.join(out_dir, '*.fit')) + glob.glob(os.path.join(out_dir, '*.fits'))
+        existing_fits = self.existingConvertedFitsFiles(out_dir, conversion_mode)
         unit_name = 'field' if conversion_mode == 'fields' else 'frame'
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Question)
         if existing_fits:
             msg.setText(
                 f'{len(existing_fits)} FITS files already exist in:\n\n{out_dir}\n\n'
-                f'Convert {output_count} video {unit_name}s? Existing FITS files in this folder will be removed first.'
+                f'Convert {output_count} video {unit_name}s? Existing {unit_name} FITS files '
+                'with matching names in this folder will be removed first.'
             )
         else:
             msg.setText(f'Convert {output_count} video {unit_name}s to FITS files in:\n\n{out_dir}')
@@ -2615,10 +2632,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         date_text = date_text.strip() or '2000-01-01'
         return self.normalizeFitsDate(date_text)
 
-    @staticmethod
-    def clearExistingFitsFiles(out_dir):
-        existing_fits = glob.glob(os.path.join(out_dir, '*.fit')) + glob.glob(os.path.join(out_dir, '*.fits'))
-        for fpath in existing_fits:
+    def clearExistingFitsFiles(self, out_dir, conversion_mode):
+        for fpath in self.existingConvertedFitsFiles(out_dir, conversion_mode):
             os.remove(fpath)
 
     def writeConvertedFrameFits(self, image, out_dir, video_path, frame_num, frame_count, timestamp_info, cap):
@@ -2687,20 +2702,16 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 cap.release()
                 return
 
-        if conversion_mode == 'fields':
-            out_dir = self.getAviFieldFitsOutputDir()
-            output_count = frame_count * 2
-        else:
-            out_dir = self.getAviFitsOutputDir()
-            output_count = frame_count
-
-        if not os.path.exists(out_dir):
-            os.mkdir(out_dir)
+        output_count = frame_count * 2 if conversion_mode == 'fields' else frame_count
+        out_dir = self.chooseAviFitsOutputDir(conversion_mode)
+        if not out_dir:
+            cap.release()
+            return
 
         if not self.confirmAviFitsConversion(out_dir, output_count, conversion_mode):
             cap.release()
             return
-        self.clearExistingFitsFiles(out_dir)
+        self.clearExistingFitsFiles(out_dir, conversion_mode)
 
         saved_state = {
             'image': self.image.copy() if self.image is not None else None,

@@ -84,10 +84,12 @@ AVI/AAV to FITS
 --------------
 
 After opening a video and loading or training its OCR timestamp profile, use
-``Timestamp -> Convert AVI/AAV to FITS``. Full frames are written to
-``fits_converted``. Field images, when available, are written in timestamp
-order to ``fits_converted_fields``. The confirmation dialog lists the target
-directory and warns if existing FITS files there will be replaced.
+``Timestamp -> Convert AVI/AAV to FITS``. Choose an existing output folder in
+the folder dialog. It starts at ``fits_converted`` for full frames or
+``fits_converted_fields`` for field images when those folders exist; otherwise
+it starts in the source video's folder. You can create a new folder in the
+dialog. The confirmation lists the target folder and warns before replacing
+matching ``frame-`` or ``field-`` FITS files. Other FITS files are preserved.
 
 AAV conversion preserves the reader's 16-bit pixel values. Full-frame exposure
 comes from AAV frame metadata where available, with the effective frame rate
