@@ -80,6 +80,20 @@ To pick up a new PyMovie release::
 uv automatically re-syncs the environment whenever ``uv.lock`` has changed,
 so there is nothing else to do.
 
+AVI codecs
+----------
+
+If OpenCV cannot decode an AVI, PyMovie tries its packed RV24 reader and then
+PyAV/FFmpeg. Install PyAV in the environment created by uv to enable that
+second fallback::
+
+    uv pip install av
+
+The reader regression tests create short RV24 and lossless FFV1 videos in
+temporary directories. Run all of them with::
+
+    uv run --with av python -m unittest discover -s tests -v
+
 Troubleshooting
 ---------------
 
