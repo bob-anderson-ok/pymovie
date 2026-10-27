@@ -531,6 +531,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         # Open (or create) file for holding 'sticky' stuff
         self.settings = QSettings('PyMovie.ini', QSettings.IniFormat)
         self.settings.setFallbacksEnabled(False)
+        self.setupPhotometryNoiseControls()
 
         state = self.settings.value('manualWorkfolderSelection', False) == 'true'
         self.enableManualWorkFolderSelectionCheckBox.setChecked(state)
@@ -7509,6 +7510,11 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         def sortOnFrame(val):
             return val[8]
 
+        def format_csv_float(value, decimals=2):
+            if value is None or not np.isfinite(value):
+                return ''
+            return f'{value:0.{decimals}f}'
+
 
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
@@ -7571,6 +7577,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             # The following call fills self.appDictList with the aperture table entries
             self.fillApertureDictionaries()
+            write_signal_error_columns = self.writeSignalErrorCsvCheckBox.isChecked()
+            gain = self.getPhotometryNoiseSettings()
+            signal_error_note = self.getPhotometryNoiseApproximationNote(gain)
 
             with open(filename, 'w') as f:
                 # Standard header
@@ -7637,6 +7646,17 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 else:
                     f.write(f'# Aperture photometry was used to extract the lightcurves\n')
 
+                if write_signal_error_columns:
+                    f.write('# signal_err is an approximate aperture-photometry uncertainty; '
+                            'background RMS includes read noise and pixels are assumed independent\n')
+                    f.write(f'# signal_err setting: gain_e_per_adu={gain:0.6f}\n')
+                    f.write(f'# signal_err formula: sigma_total = sqrt(sigma_bkg^2*(N_ap + N_ap^2/N_bkg) + '
+                            f'max(signal,0)/gain)\n')
+                    if self.extractionCode in ('NRE', 'NPIX'):
+                        f.write('# signal_err and snr are blank for NRE/NPIX extraction\n')
+                    if signal_error_note is not None:
+                        f.write(f'{signal_error_note}\n')
+
                 # csv column headers with aperture names in entry order
                 # Tangra uses FrameNo
                 f.write(f'FrameNum,timeInfo')
@@ -7647,6 +7667,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 for name in names:
                     f.write(f',appsum-{name},avgbkg-{name},stdbkg-{name},nmaskpx-{name},'
                             f'maxpx-{name},xcentroid-{name},ycentroid-{name},hit-defect-{name}')
+
+                if write_signal_error_columns:
+                    for name in names:
+                        f.write(f',signal_err-{name},snr-{name}')
 
                 f.write('\n')
 
@@ -7675,7 +7699,20 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                         if xcentroid is not None:
                             f.write(f',{xcentroid:0.2f},{ycentroid:0.2f},{hit_defect_flag:0d}')
                         else:
-                            f.write(f',,{hit_defect_flag:0d}')
+                            f.write(f',,,{hit_defect_flag:0d}')
+
+                    if write_signal_error_columns:
+                        for k in range(num_apps):
+                            signal_err, snr = np.nan, np.nan
+                            if self.extractionCode not in ('NRE', 'NPIX'):
+                                signal_err, snr = self.calcSignalErrorAndSnr(
+                                    signal=appdata[k][i][4],
+                                    sigma_bkg=appdata[k][i][11],
+                                    signal_pixel_count=appdata[k][i][7],
+                                    background_pixel_count=appdata[k][i][16]
+                                )
+                            f.write(f',{format_csv_float(signal_err)},{format_csv_float(snr)}')
+
 
                     f.write('\n')
                     f.flush()
@@ -7775,6 +7812,135 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             return 6.8
 
         return 3.2
+
+    def setupPhotometryNoiseControls(self):
+        self.photometryNoiseGroupBox = QtWidgets.QGroupBox('Photometry Noise', self.tab_10)
+        self.photometryNoiseGroupBox.setToolTip(
+            'Optional aperture-photometry uncertainty based on local background scatter and source shot noise.'
+        )
+
+        group_layout = QtWidgets.QVBoxLayout(self.photometryNoiseGroupBox)
+
+        checkbox_layout = QtWidgets.QHBoxLayout()
+        self.writeSignalErrorCsvCheckBox = QtWidgets.QCheckBox('write signal_err/snr columns')
+        self.writeSignalErrorCsvCheckBox.setChecked(
+            self.settings.value('writeSignalErrorCsv', False) == 'true'
+        )
+        checkbox_layout.addWidget(self.writeSignalErrorCsvCheckBox)
+
+        self.photometryNoiseInfoButton = QtWidgets.QToolButton()
+        self.photometryNoiseInfoButton.setAutoRaise(True)
+        self.photometryNoiseInfoButton.setIcon(
+            self.style().standardIcon(QtWidgets.QStyle.SP_MessageBoxInformation)
+        )
+        self.photometryNoiseInfoButton.setToolTip('Show the detailed photometry error model.')
+        self.photometryNoiseInfoButton.clicked.connect(self.showPhotometryNoiseHelp)
+        checkbox_layout.addWidget(self.photometryNoiseInfoButton)
+        checkbox_layout.addStretch()
+        group_layout.addLayout(checkbox_layout)
+
+        form_layout = QtWidgets.QFormLayout()
+
+        self.photometryGainSpinBox = QtWidgets.QDoubleSpinBox()
+        self.photometryGainSpinBox.setDecimals(3)
+        self.photometryGainSpinBox.setRange(1e-6, 1e6)
+        self.photometryGainSpinBox.setSingleStep(0.1)
+        self.photometryGainSpinBox.setValue(float(self.settings.value('photometryGain', 1.0)))
+        self.photometryGainSpinBox.setToolTip('Detector gain in electrons per ADU.')
+        form_layout.addRow('Gain [e-/ADU]', self.photometryGainSpinBox)
+
+        group_layout.addLayout(form_layout)
+
+        insert_at = max(self.verticalLayout_32.count() - 1, 0)
+        self.verticalLayout_32.insertWidget(insert_at, self.photometryNoiseGroupBox)
+
+    def showHtmlHelpDialog(self, title, html):
+        self.helperThing.setWindowTitle(title)
+        self.helperThing.raise_()
+        self.helperThing.show()
+        self.helperThing.textEdit.clear()
+        self.helperThing.textEdit.setHtml(html)
+        self.helperThing.setHidden(True)
+        self.helperThing.setVisible(True)
+
+    @staticmethod
+    def getPhotometryNoiseHelpHtml():
+        return (
+            "<html><body style='font-family: Segoe UI, Arial, sans-serif; color:#252525;'>"
+            "<div style='max-width:820px;'>"
+            "<div style='font-size:15pt; font-weight:600; margin-bottom:10px;'>"
+            "Photometry Noise Model"
+            "</div>"
+            "<div style='margin-bottom:10px;'>"
+            "When <b>signal_err</b> output is enabled, PyMovie writes one uncertainty estimate per aperture "
+            "and frame, together with the corresponding <b>SNR</b>."
+            "</div>"
+            "<div style='margin:10px 0 6px 0; font-size:12pt; font-weight:600;'>Formula</div>"
+            "<div style='margin-left:12px; font-family: Georgia, Times New Roman, serif; font-size:13pt;'>"
+            "&sigma;<sub>tot</sub> = &radic;("
+            "&sigma;<sub>bkg</sub><sup>2</sup>(N<sub>ap</sub> + N<sub>ap</sub><sup>2</sup>/N<sub>bkg</sub>)"
+            " + max(signal, 0)/gain)"
+            "</div>"
+            "<div style='margin:12px 0 6px 0; font-size:12pt; font-weight:600;'>Meaning of each term</div>"
+            "<ul style='margin-top:4px;'>"
+            "<li><b>Background term</b>: scatter of the local background, including the penalty from estimating "
+            "that background from a finite set of pixels. The measured scatter already includes read noise.</li>"
+            "<li><b>Source term</b>: photon shot noise of the measured star signal.</li>"
+            "</ul>"
+            "<div style='margin:12px 0 6px 0; font-size:12pt; font-weight:600;'>Definitions</div>"
+            "<table cellspacing='0' cellpadding='4' style='margin-left:6px;'>"
+            "<tr><td><b>signal</b></td><td>background-subtracted aperture signal in ADU</td></tr>"
+            "<tr><td><b>&sigma;<sub>bkg</sub></b></td><td>background RMS in ADU per pixel</td></tr>"
+            "<tr><td><b>N<sub>ap</sub></b></td><td>number of pixels inside the aperture mask</td></tr>"
+            "<tr><td><b>N<sub>bkg</sub></b></td><td>number of background pixels used by PyMovie</td></tr>"
+            "<tr><td><b>gain</b></td><td>detector gain in electrons per ADU</td></tr>"
+            "</table>"
+            "<div style='margin-top:12px;'>"
+            "<b>SNR</b> is reported as <b>signal / &sigma;<sub>tot</sub></b>. This is an approximate "
+            "estimate for aperture photometry, assuming independent pixels. NRE and NPIX outputs are blank."
+            "</div>"
+            "</div>"
+            "</body></html>"
+        )
+
+    def showPhotometryNoiseHelp(self):
+        self.showHtmlHelpDialog('Photometry Noise Model', self.getPhotometryNoiseHelpHtml())
+
+    def getPhotometryNoiseSettings(self):
+        gain = float(self.photometryGainSpinBox.value())
+        if not np.isfinite(gain) or gain <= 0.0:
+            gain = 1.0
+
+        return gain
+
+    @staticmethod
+    def getPhotometryNoiseApproximationNote(gain):
+        if np.isclose(gain, 1.0):
+            return '# signal_err note: gain=1.0 e-/ADU is the default; set the measured camera gain if different.'
+        return None
+
+    def calcSignalErrorAndSnr(self, signal, sigma_bkg, signal_pixel_count, background_pixel_count):
+        if signal is None or sigma_bkg is None or signal_pixel_count is None or background_pixel_count is None:
+            return np.nan, np.nan
+        if not np.isfinite(signal) or not np.isfinite(sigma_bkg) or sigma_bkg < 0:
+            return np.nan, np.nan
+        if signal_pixel_count <= 0 or background_pixel_count < 2:
+            return np.nan, np.nan
+        gain = self.getPhotometryNoiseSettings()
+        if not np.isfinite(gain) or gain <= 0:
+            return np.nan, np.nan
+
+        background_variance = sigma_bkg ** 2 * (
+            signal_pixel_count + signal_pixel_count ** 2 / background_pixel_count
+        )
+        variance = background_variance + max(signal, 0.0) / gain
+        if not np.isfinite(variance) or variance < 0:
+            return np.nan, np.nan
+        signal_err = float(np.sqrt(variance))
+        if signal_err <= 0.0:
+            return signal_err, np.nan
+
+        return signal_err, float(signal / signal_err)
 
     def getTMEsearchGridSize(self):
         if self.tmeSearch3x3radioButton.isChecked():
@@ -9058,6 +9224,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         mean, std, sorted_data, _, _, _, _, _, bkgnd_pixels = newRobustMeanStd(thumbnail,
                                                                                lunar=self.lunarCheckBox.isChecked())
         aperture_mean = mean
+        bkgnd_pixel_count = len(bkgnd_pixels)
         maxpx = sorted_data[-1]  # Needed only as a return value - part of statistics of the aperture
 
         mean_top, *_ = newRobustMeanStd(thumbnail[0::2, :], lunar=self.lunarCheckBox.isChecked())
@@ -9261,6 +9428,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 if self.extractionCode == 'NRE':
                     mean, std, _, _, _, _, _, _, bkgnd_pixels = newRobustMeanStd(thumbnail,
                                                                                  lunar=self.lunarCheckBox.isChecked())
+                bkgnd_pixel_count = len(bkgnd_pixels)
 
                 w = 2 * int(aperture.default_mask_radius) + 1
 
@@ -9300,6 +9468,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             else: # Aperture photometry in use
                 mean, std, _, _, _, _, _, _, bkgnd_pixels = newRobustMeanStd(thumbnail,
                                                                              lunar=self.lunarCheckBox.isChecked())
+                bkgnd_pixel_count = len(bkgnd_pixels)
 
                 # if aperture.name.endswith('X'):
                 #     For this aperture, we will use the photutils background and std calculator
@@ -9463,55 +9632,27 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.field1_data = (xc_roi, yc_roi, xc_world, yc_world,
                                     top_signal, top_appsum, mean_top, top_mask_pixel_count,
                                     frame_num, cvxhull, maxpx, std, timestamp,
-                                    aperture_mean, self.smoothingCount, hit_defect_flag)
+                                    aperture_mean, self.smoothingCount, hit_defect_flag, bkgnd_pixel_count)
                 timestamp = self.lowerTimestamp
                 self.field2_data = (xc_roi, yc_roi, xc_world, yc_world,
                                     bottom_signal, bottom_appsum, mean_bot, bottom_mask_pixel_count,
                                     frame_num + 0.5, cvxhull, maxpx, std, timestamp,
-                                    aperture_mean, self.smoothingCount, hit_defect_flag)
+                                    aperture_mean, self.smoothingCount, hit_defect_flag, bkgnd_pixel_count)
             else:
                 timestamp = self.lowerTimestamp
                 self.field1_data = (xc_roi, yc_roi, xc_world, yc_world,
                                     bottom_signal, bottom_appsum, mean_bot, bottom_mask_pixel_count,
                                     frame_num, cvxhull, maxpx, std, timestamp,
-                                    aperture_mean, self.smoothingCount, hit_defect_flag
+                                    aperture_mean, self.smoothingCount, hit_defect_flag, bkgnd_pixel_count
                                     )
                 timestamp = self.upperTimestamp
                 self.field2_data = (xc_roi, yc_roi, xc_world, yc_world,
                                     top_signal, top_appsum, mean_top, top_mask_pixel_count,
                                     frame_num + 0.5, cvxhull, maxpx, std, timestamp,
-                                    aperture_mean, self.smoothingCount, hit_defect_flag
+                                    aperture_mean, self.smoothingCount, hit_defect_flag, bkgnd_pixel_count
                                     )
 
-        if not (self.avi_in_use or self.aav_file_in_use):
-            if self.fits_folder_in_use:
-                timestamp = self.fits_timestamp
-            elif self.ser_file_in_use:
-                timestamp = self.ser_timestamp
-            elif self.adv_file_in_use:
-                timestamp = self.adv_timestamp
-            elif self.ravf_file_in_use:
-                timestamp = self.ravf_timestamp
-            else:
-                # The following 2 changes are so that dark-flats be shown and worked on before an observation
-                # file has been selected
-                timestamp = ''
-                # self.showMsg(f'Unexpected folder type in use.')
-        else:
-            if self.topFieldFirstRadioButton.isChecked():
-                if self.upperTimestamp:
-                    timestamp = self.upperTimestamp
-                else:
-                    timestamp = ''
-            else:
-                if self.lowerTimestamp:
-                    timestamp = self.lowerTimestamp
-                else:
-                    timestamp = ''
-
-            if self.avi_timestamp:
-                timestamp = self.avi_timestamp
-
+        timestamp = self.getCurrentFrameTimestamp()
 
         self.bkavg = mean
         self.bkstd = std
@@ -9524,7 +9665,29 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         return (xc_roi, yc_roi, xc_world, yc_world, signal,
                 appsum, mean, max_area, frame_num, cvxhull, maxpx, std, timestamp,
-                aperture_mean, self.smoothingCount, hit_defect_flag)  # These last two are for background smoothing
+                aperture_mean, self.smoothingCount, hit_defect_flag, bkgnd_pixel_count)  # Background sample count supports uncertainty export
+
+    def getCurrentFrameTimestamp(self):
+        if self.fits_folder_in_use:
+            return self.fits_timestamp or ''
+        if self.ser_file_in_use:
+            return self.ser_timestamp or ''
+        if self.adv_file_in_use:
+            return self.adv_timestamp or ''
+        if self.ravf_file_in_use:
+            return self.ravf_timestamp or ''
+        if not (self.avi_in_use or self.aav_file_in_use):
+            return ''
+
+        if self.topFieldFirstRadioButton.isChecked():
+            timestamp = self.upperTimestamp or ''
+        else:
+            timestamp = self.lowerTimestamp or ''
+
+        if self.avi_in_use and self.avi_timestamp:
+            timestamp = self.avi_timestamp
+
+        return timestamp
 
     def calcTMEIntensity(self, aperture, img, N):
         # Search NxN grid for max appsum
@@ -11214,6 +11377,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
             if self.avi_in_use:
                 try:
+                    self.avi_timestamp = ''
                     if self.fourcc == 'dvsd':
                         success, frame = self.getFrame(frame_to_show)
                         if len(frame.shape) == 3:
@@ -12683,6 +12847,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.settings.setValue('TME7x7search', self.tmeSearch7x7radioButton.isChecked())
 
         self.settings.setValue('satPixelLevel', self.satPixelSpinBox.value())
+        self.settings.setValue('writeSignalErrorCsv', self.writeSignalErrorCsvCheckBox.isChecked())
+        self.settings.setValue('photometryGain', self.photometryGainSpinBox.value())
 
         if self.apertureEditor:
             self.apertureEditor.close()
