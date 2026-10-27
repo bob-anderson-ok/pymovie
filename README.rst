@@ -80,6 +80,18 @@ To pick up a new PyMovie release::
 uv automatically re-syncs the environment whenever ``uv.lock`` has changed,
 so there is nothing else to do.
 
+Tests
+-----
+
+Run the OCR pickle compatibility regression tests from the repository root::
+
+    uv run python -m unittest discover -s tests -v
+
+The tests cover NumPy 1.x and 2.x array module paths, corrupted input, and
+loading OCR templates from the observation folder or application folder.
+Fixtures are generated in temporary directories; existing OCR files are not
+modified.
+
 Troubleshooting
 ---------------
 
