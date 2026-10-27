@@ -2588,14 +2588,26 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         return msg.exec_() == QMessageBox.Yes
 
     def getAviFitsConversionDateFromUser(self):
-        if self.avi_date:
+        if self.avi_date and not self.aav_file_in_use:
             return self.normalizeFitsDate(self.avi_date)
+
+        suggested_date = '2000-01-01'
+        if self.aav_file_in_use:
+            video_path = self.avi_location or self.filename or ''
+            match = re.match(r'^(\d{4})[_-](\d{2})[_-](\d{2})(?:\D|$)', os.path.basename(video_path))
+            if match:
+                candidate = '-'.join(match.groups())
+                try:
+                    datetime.strptime(candidate, '%Y-%m-%d')
+                    suggested_date = candidate
+                except ValueError:
+                    pass
 
         date_text, accepted = QtWidgets.QInputDialog.getText(
             self,
             'Video DATE-OBS date',
             'Enter UTC date for DATE-OBS headers (YYYY-MM-DD):',
-            text='2000-01-01'
+            text=suggested_date
         )
         if not accepted:
             return None

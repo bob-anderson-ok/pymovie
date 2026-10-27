@@ -13,6 +13,17 @@ from pymovie.main import PyMovie
 
 
 class AavFitsTests(unittest.TestCase):
+    def test_aav_date_prompt_suggests_date_from_filename(self):
+        state = SimpleNamespace(
+            aav_file_in_use=True, avi_date=None,
+            avi_location='/observations/2026_09_08__Ixion.aav', filename=None,
+            normalizeFitsDate=PyMovie.normalizeFitsDate,
+        )
+        with patch('pymovie.main.QtWidgets.QInputDialog.getText', return_value=('2026-09-08', True)) as prompt:
+            date = PyMovie.getAviFitsConversionDateFromUser(state)
+        self.assertEqual(date, '2026-09-08')
+        self.assertEqual(prompt.call_args.kwargs['text'], '2026-09-08')
+
     def make_capture(self, error=''):
         pixels = np.array([[0, 256], [4096, 65535]], dtype=np.uint16)
         reader = SimpleNamespace(
