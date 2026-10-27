@@ -111,6 +111,7 @@ from urllib.request import urlopen
 from copy import deepcopy
 from pymovie.checkForNewerVersion import getLatestPackageVersion, isNewerVersion
 from pymovie import updatesDialog
+from pymovie.aav_capture import AavFitsCapture
 from pymovie import starPositionDialog
 from pymovie import aperturesFileTagDialog
 from pymovie import hotPixelDialog
@@ -899,6 +900,17 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.ocrboxBasePath = None
         self.modelDigitsFilename = None
 
+
+        self.convertAviToFitsButton = QtWidgets.QPushButton(self.tab_6)
+        self.convertAviToFitsButton.setObjectName("convertAviToFitsButton")
+        self.convertAviToFitsButton.setText("Convert AVI/AAV to FITS")
+        self.convertAviToFitsButton.setToolTip(
+            "Write AVI/AAV frames or chronological fields as FITS files using the active timestamp OCR profile."
+        )
+        self.verticalLayout_10.addWidget(self.convertAviToFitsButton)
+        self.convertAviToFitsButton.clicked.connect(self.convertAviFramesToFits)
+        self.convertAviToFitsButton.installEventFilter(self)
+        self.convertAviToFitsButton.setEnabled(False)
 
         # These are used for CCD hot pixel treatment
         self.hotPixelList = []
@@ -2339,6 +2351,465 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             outlist.writeto(outfile, overwrite=True)
         except Exception as e:
             self.showMsgPopup(f'In writeFitFile() === {e}')
+
+    def getAviFitsOutputDir(self):
+        avi_path = self.avi_location or self.filename
+        return os.path.join(os.path.dirname(avi_path), 'fits_converted')
+
+    def getAviFieldFitsOutputDir(self):
+        avi_path = self.avi_location or self.filename
+        return os.path.join(os.path.dirname(avi_path), 'fits_converted_fields')
+
+    @staticmethod
+    def normalizeFitsDate(date):
+        if not date:
+            return '2000-01-01'
+
+        date = str(date).strip().replace('/', '-')
+        parts = date.split('-')
+        if len(parts) == 3:
+            try:
+                return f'{int(parts[0]):04d}-{int(parts[1]):02d}-{int(parts[2]):02d}'
+            except ValueError:
+                pass
+
+        return date
+
+    @staticmethod
+    def normalizeFitsTime(timestamp):
+        if not timestamp:
+            return ''
+        return str(timestamp).strip().strip('[]')
+
+    def getAviFrameDateForFits(self, sharp_cap_date=None):
+        return self.normalizeFitsDate(sharp_cap_date or self.avi_date)
+
+    @staticmethod
+    def getFieldIntervalSeconds(upper_time, lower_time):
+        if upper_time is None or lower_time is None or upper_time < 0 or lower_time < 0:
+            return None
+
+        interval = abs(lower_time - upper_time)
+        if interval > 43200:
+            interval = 86400 - interval
+        return interval
+
+    @staticmethod
+    def aviFrameToGray(frame):
+        if frame is None:
+            return None
+        if len(frame.shape) == 3:
+            return cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # noqa
+        return frame.copy()
+
+    def getConvertedFrameTimestampInfo(self):
+        upper_timestamp = ''
+        lower_timestamp = ''
+        upper_score = None
+        lower_score = None
+        upper_time = None
+        lower_time = None
+        first_field = ''
+        sharp_cap_date = None
+
+        if self.sharpCapTimestampPresent:
+            timestamp, sharp_cap_date = self.getSharpCapTimestring()
+            self.avi_timestamp = timestamp
+            upper_timestamp = timestamp
+            lower_timestamp = timestamp
+            first_timestamp = timestamp
+            first_field = 'SHARPCAP'
+            timestamp_valid = bool(timestamp)
+            upper_valid = timestamp_valid
+            lower_valid = timestamp_valid
+        else:
+            self.createImageFields()
+            self.upperTimestamp = ''
+            self.lowerTimestamp = ''
+            upper_timestamp, upper_time, _upper_scores, upper_score, \
+                lower_timestamp, lower_time, _lower_scores, lower_score = self.extractTimestamps(printresults=False)
+            self.upperTimestamp = upper_timestamp or ''
+            self.lowerTimestamp = lower_timestamp or ''
+
+            if self.topFieldFirstRadioButton.isChecked():
+                first_timestamp = self.upperTimestamp
+                first_time = upper_time
+                first_field = 'UPPER'
+            else:
+                first_timestamp = self.lowerTimestamp
+                first_time = lower_time
+                first_field = 'LOWER'
+
+            timestamp_valid = bool(first_timestamp) and first_time is not None and first_time >= 0
+            upper_valid = bool(self.upperTimestamp) and upper_time is not None and upper_time >= 0
+            lower_valid = bool(self.lowerTimestamp) and lower_time is not None and lower_time >= 0
+
+        field_interval = self.getFieldIntervalSeconds(upper_time, lower_time)
+        fits_time = self.normalizeFitsTime(first_timestamp)
+        fits_date = self.getAviFrameDateForFits(sharp_cap_date)
+        date_obs = f'{fits_date}T{fits_time}' if timestamp_valid and fits_time else ''
+        upper_time_text = self.normalizeFitsTime(upper_timestamp)
+        lower_time_text = self.normalizeFitsTime(lower_timestamp)
+
+        return {
+            'date_obs': date_obs,
+            'fits_date': fits_date,
+            'upper_timestamp': upper_timestamp or '',
+            'lower_timestamp': lower_timestamp or '',
+            'field_interval': field_interval,
+            'upper_date_obs': f'{fits_date}T{upper_time_text}' if upper_valid and upper_time_text else '',
+            'lower_date_obs': f'{fits_date}T{lower_time_text}' if lower_valid and lower_time_text else '',
+            'upper_valid': upper_valid,
+            'lower_valid': lower_valid,
+            'first_field': first_field,
+            'upper_score': upper_score,
+            'lower_score': lower_score,
+            'timestamp_valid': timestamp_valid,
+            'date_was_defaulted': fits_date == '2000-01-01' and sharp_cap_date is None and not self.avi_date,
+        }
+
+    @staticmethod
+    def getFieldTimestampInfo(timestamp_info, field_name):
+        if field_name == 'UPPER':
+            return {
+                **timestamp_info,
+                'date_obs': timestamp_info['upper_date_obs'],
+                'first_field': 'UPPER',
+                'timestamp_valid': timestamp_info['upper_valid'],
+            }
+        if field_name == 'LOWER':
+            return {
+                **timestamp_info,
+                'date_obs': timestamp_info['lower_date_obs'],
+                'first_field': 'LOWER',
+                'timestamp_valid': timestamp_info['lower_valid'],
+            }
+        return timestamp_info
+
+    @staticmethod
+    def fourccToString(fourcc):
+        fourcc_str = ''.join(f'{fourcc >> (8 * index) & 0xff:c}' for index in range(4))
+        if all(32 <= ord(char) <= 126 for char in fourcc_str):
+            return fourcc_str
+        return ''
+
+    def writeConvertedFitsFrame(self, image, outfile, video_path, frame_num, frame_count, timestamp_info, cap,
+                                source_frame_num=None, field_name='', exposure_divisor=1):
+        fits_image = image.astype('uint16', copy=False)
+        outlist = pyfits.PrimaryHDU(fits_image)
+        outhdr = outlist.header
+
+        height, width = fits_image.shape
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        fourcc = int(cap.get(cv2.CAP_PROP_FOURCC))
+        fourcc_str = PyMovie.fourccToString(fourcc)
+
+        outhdr['SIMPLE'] = True
+        outhdr['NAXIS'] = 2
+        outhdr['NAXIS1'] = width
+        outhdr['NAXIS2'] = height
+        outhdr['DATE'] = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+        if timestamp_info['date_obs']:
+            outhdr['DATE-OBS'] = timestamp_info['date_obs']
+        outhdr['FRAME'] = frame_num
+        outhdr['NFRAMES'] = frame_count
+        if source_frame_num is not None:
+            outhdr['SRCFRAM'] = source_frame_num
+        if field_name:
+            outhdr['FIELD'] = field_name
+        outhdr['FILE'] = video_path
+        if fourcc_str:
+            outhdr['FOURCC'] = fourcc_str
+        if fps:
+            outhdr['FPS'] = float(fps)
+
+        field_interval = timestamp_info.get('field_interval')
+        if field_name and field_interval:
+            outhdr['EXPTIME'] = float(field_interval)
+            outhdr['EXPOSURE'] = float(field_interval)
+        elif getattr(cap, 'exposure_seconds', None):
+            outhdr['EXPTIME'] = float(cap.exposure_seconds / exposure_divisor)
+            outhdr['EXPOSURE'] = float(cap.exposure_seconds / exposure_divisor)
+        elif fps:
+            exposure = float(1.0 / (fps * exposure_divisor))
+            outhdr['EXPTIME'] = exposure
+            outhdr['EXPOSURE'] = exposure
+        outhdr['PM-UPPER'] = timestamp_info['upper_timestamp']
+        outhdr['PM-LOWER'] = timestamp_info['lower_timestamp']
+        outhdr['PM-FIRST'] = timestamp_info['first_field']
+        outhdr['OCRVALID'] = bool(timestamp_info['timestamp_valid'])
+        if timestamp_info['upper_score'] is not None:
+            outhdr['OCRUSCOR'] = int(timestamp_info['upper_score'])
+        if timestamp_info['lower_score'] is not None:
+            outhdr['OCRLSCOR'] = int(timestamp_info['lower_score'])
+        if timestamp_info['date_was_defaulted']:
+            outhdr['COMMENT'] = 'DATE-OBS uses default date 2000-01-01; OCR profile reads time only.'
+
+        outlist.writeto(outfile, overwrite=True)
+
+    def getAviFitsConversionModeFromUser(self):
+        if self.aav_file_in_use and getattr(self, 'aav_num_frames_integrated', None) != 1:
+            self.showMsg('Integrated AAV (or unknown integration): exporting full-frame FITS only.')
+            return 'frames'
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Question)
+        msg.setText(
+            'Select FITS conversion mode.\n\n'
+            'Field FITS writes two chronological FITS images per video frame for high time resolution.'
+        )
+        msg.setWindowTitle('AVI/AAV to FITS mode')
+        field_button = msg.addButton('Field FITS', QMessageBox.AcceptRole)
+        frame_button = msg.addButton('Full-frame FITS', QMessageBox.ActionRole)
+        msg.addButton(QMessageBox.Cancel)
+        msg.setDefaultButton(field_button)
+        msg.exec_()
+
+        clicked = msg.clickedButton()
+        if clicked == field_button:
+            return 'fields'
+        if clicked == frame_button:
+            return 'frames'
+        return None
+
+    def confirmAviFitsConversion(self, out_dir, output_count, conversion_mode):
+        existing_fits = glob.glob(os.path.join(out_dir, '*.fit')) + glob.glob(os.path.join(out_dir, '*.fits'))
+        unit_name = 'field' if conversion_mode == 'fields' else 'frame'
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Question)
+        if existing_fits:
+            msg.setText(
+                f'{len(existing_fits)} FITS files already exist in:\n\n{out_dir}\n\n'
+                f'Convert {output_count} video {unit_name}s? Existing FITS files in this folder will be removed first.'
+            )
+        else:
+            msg.setText(f'Convert {output_count} video {unit_name}s to FITS files in:\n\n{out_dir}')
+        msg.setWindowTitle('Convert AVI/AAV to FITS')
+        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        return msg.exec_() == QMessageBox.Yes
+
+    def getAviFitsConversionDateFromUser(self):
+        if self.avi_date:
+            return self.normalizeFitsDate(self.avi_date)
+
+        date_text, accepted = QtWidgets.QInputDialog.getText(
+            self,
+            'Video DATE-OBS date',
+            'Enter UTC date for DATE-OBS headers (YYYY-MM-DD):',
+            text='2000-01-01'
+        )
+        if not accepted:
+            return None
+
+        date_text = date_text.strip() or '2000-01-01'
+        return self.normalizeFitsDate(date_text)
+
+    @staticmethod
+    def clearExistingFitsFiles(out_dir):
+        existing_fits = glob.glob(os.path.join(out_dir, '*.fit')) + glob.glob(os.path.join(out_dir, '*.fits'))
+        for fpath in existing_fits:
+            os.remove(fpath)
+
+    def writeConvertedFrameFits(self, image, out_dir, video_path, frame_num, frame_count, timestamp_info, cap):
+        outfile = os.path.join(out_dir, f'frame-{frame_num:06d}.fits')
+        self.writeConvertedFitsFrame(image, outfile, video_path, frame_num, frame_count, timestamp_info, cap)
+
+    def writeConvertedFieldFits(self, out_dir, video_path, source_frame_num, frame_count, timestamp_info, cap):
+        field_pairs = [
+            ('UPPER', self.upper_field, timestamp_info['upper_valid']),
+            ('LOWER', self.lower_field, timestamp_info['lower_valid']),
+        ]
+        if not self.topFieldFirstRadioButton.isChecked():
+            field_pairs.reverse()
+
+        written = 0
+        for offset, (field_name, field_image, _field_valid) in enumerate(field_pairs):
+            field_sequence = source_frame_num * 2 + offset
+            outfile = os.path.join(out_dir, f'field-{field_sequence:06d}.fits')
+            field_timestamp_info = self.getFieldTimestampInfo(timestamp_info, field_name)
+            self.writeConvertedFitsFrame(
+                field_image, outfile, video_path, field_sequence, frame_count * 2,
+                field_timestamp_info, cap, source_frame_num=source_frame_num, field_name=field_name,
+                exposure_divisor=2
+            )
+            written += 1
+        return written
+
+    def convertAviFramesToFits(self):
+        if not (self.avi_in_use or self.aav_file_in_use):
+            self.showMsgPopup('This conversion is only available for AVI/MOV/AAV files.')
+            return
+
+        if not (self.sharpCapTimestampPresent or (self.timestampReadingEnabled and self.timestampFormatter is not None)):
+            self.showMsgPopup('A complete timestamp OCR profile must be loaded or trained before converting to FITS.')
+            return
+
+        video_path = self.avi_location or self.filename
+        if not video_path or not os.path.exists(video_path):
+            self.showMsgPopup('The video file path is not available.')
+            return
+
+        if self.aav_file_in_use:
+            cap = AavFitsCapture(self.adv2_reader, self.adv_meta_data)
+        else:
+            open_capture = getattr(self, 'openAviCapture', cv2.VideoCapture)
+            cap = open_capture(video_path)
+        if not cap.isOpened():
+            self.showMsgPopup(f'{video_path} could not be opened for FITS conversion.')
+            return
+
+        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        if frame_count <= 0:
+            cap.release()
+            self.showMsgPopup('Could not determine the number of frames in the video file.')
+            return
+
+        conversion_mode = self.getAviFitsConversionModeFromUser()
+        if conversion_mode is None:
+            cap.release()
+            return
+
+        conversion_date = None
+        if not self.sharpCapTimestampPresent:
+            conversion_date = self.getAviFitsConversionDateFromUser()
+            if conversion_date is None:
+                cap.release()
+                return
+
+        if conversion_mode == 'fields':
+            out_dir = self.getAviFieldFitsOutputDir()
+            output_count = frame_count * 2
+        else:
+            out_dir = self.getAviFitsOutputDir()
+            output_count = frame_count
+
+        if not os.path.exists(out_dir):
+            os.mkdir(out_dir)
+
+        if not self.confirmAviFitsConversion(out_dir, output_count, conversion_mode):
+            cap.release()
+            return
+        self.clearExistingFitsFiles(out_dir)
+
+        saved_state = {
+            'image': self.image.copy() if self.image is not None else None,
+            'image_fields': self.image_fields.copy() if hasattr(self, 'image_fields') and self.image_fields is not None else None,
+            'upper_field': self.upper_field.copy() if self.upper_field is not None else None,
+            'lower_field': self.lower_field.copy() if self.lower_field is not None else None,
+            'upper_timestamp': self.upperTimestamp,
+            'lower_timestamp': self.lowerTimestamp,
+            'avi_timestamp': self.avi_timestamp,
+            'avi_date': self.avi_date,
+            'analysis_paused': self.analysisPaused,
+            'upper_left_count': self.upper_left_count,
+            'upper_right_count': self.upper_right_count,
+            'lower_left_count': self.lower_left_count,
+            'lower_right_count': self.lower_right_count,
+            'current_upper_box_pos': self.currentUpperBoxPos,
+            'current_lower_box_pos': self.currentLowerBoxPos,
+        }
+
+        self.convertAviToFitsButton.setEnabled(False)
+        self.analysisPaused = False
+        if conversion_date is not None:
+            self.avi_date = conversion_date
+        self.stackerProgressBar.setValue(0)
+        converted = 0
+        failed = 0
+        cancelled = False
+        output_unit = 'fields' if conversion_mode == 'fields' else 'frames'
+        progress_dialog = QtWidgets.QProgressDialog(
+            f'Writing {output_count} FITS {output_unit} to:\n{out_dir}',
+            'Cancel',
+            0,
+            output_count,
+            self
+        )
+        progress_dialog.setWindowTitle('Converting video to FITS')
+        progress_dialog.setWindowModality(QtCore.Qt.WindowModal)
+        progress_dialog.setMinimumDuration(0)
+        progress_dialog.setValue(0)
+        QtGui.QGuiApplication.processEvents()
+
+        try:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            self.showMsg(f'Converting video frames to FITS: {out_dir}')
+            if conversion_mode == 'fields':
+                self.showMsg('Field FITS mode: writing two chronological FITS files per video frame.')
+            if conversion_date == '2000-01-01' and saved_state['avi_date'] in (None, ''):
+                self.showMsg('DATE-OBS will use date 2000-01-01 because this OCR profile reads time only.')
+            elif conversion_date is not None:
+                self.showMsg(f'DATE-OBS will use date {conversion_date}.')
+
+            for frame_num in range(frame_count):
+                if progress_dialog.wasCanceled():
+                    cancelled = True
+                    break
+
+                status, frame = cap.read()
+                if not status:
+                    failed += 1
+                    self.showMsg(f'Frame {frame_num} could not be read; stopping conversion.')
+                    break
+
+                image = self.aviFrameToGray(frame)
+                if image is None:
+                    failed += 1
+                    continue
+
+                self.image = image
+                timestamp_info = self.getConvertedFrameTimestampInfo()
+                if conversion_mode == 'fields':
+                    converted += self.writeConvertedFieldFits(out_dir, video_path, frame_num, frame_count,
+                                                              timestamp_info, cap)
+                else:
+                    self.writeConvertedFrameFits(image, out_dir, video_path, frame_num, frame_count,
+                                                 timestamp_info, cap)
+                    converted += 1
+
+                if frame_num % 25 == 0 or frame_num == frame_count - 1:
+                    self.stackerProgressBar.setValue(int((frame_num + 1) * 100 / frame_count))
+                    progress_dialog.setLabelText(
+                        f'Writing FITS {converted} / {output_count}\n'
+                        f'Source video frame {frame_num + 1} / {frame_count}\n'
+                        f'{out_dir}'
+                    )
+                    progress_dialog.setValue(converted)
+                    QtGui.QGuiApplication.processEvents()
+                    if progress_dialog.wasCanceled():
+                        cancelled = True
+                        break
+
+            if cancelled:
+                self.stackerProgressBar.setValue(0)
+                self.showMsg(f'Video to FITS conversion cancelled: {converted} files written to {out_dir}')
+                self.showMsgPopup(f'Conversion cancelled after writing {converted} FITS file(s) in:\n\n{out_dir}')
+            else:
+                self.stackerProgressBar.setValue(100 if converted == output_count else 0)
+                self.showMsg(f'Video to FITS conversion complete: {converted} files written to {out_dir}')
+                if failed:
+                    self.showMsg(f'{failed} frame(s) were not converted.')
+                self.showMsgPopup(f'Converted {converted} FITS file(s) in:\n\n{out_dir}')
+        except Exception as e:
+            self.showMsgPopup(f'Video to FITS conversion failed:\n\n{repr(e)}')
+        finally:
+            progress_dialog.close()
+            cap.release()
+            self.image = saved_state['image']
+            self.image_fields = saved_state['image_fields']
+            self.upper_field = saved_state['upper_field']
+            self.lower_field = saved_state['lower_field']
+            self.upperTimestamp = saved_state['upper_timestamp']
+            self.lowerTimestamp = saved_state['lower_timestamp']
+            self.avi_timestamp = saved_state['avi_timestamp']
+            self.avi_date = saved_state['avi_date']
+            self.analysisPaused = saved_state['analysis_paused']
+            self.upper_left_count = saved_state['upper_left_count']
+            self.upper_right_count = saved_state['upper_right_count']
+            self.lower_left_count = saved_state['lower_left_count']
+            self.lower_right_count = saved_state['lower_right_count']
+            self.currentUpperBoxPos = saved_state['current_upper_box_pos']
+            self.currentLowerBoxPos = saved_state['current_lower_box_pos']
+            self.updateConvertAviToFitsButtonState()
 
     def getNextFrame(self, avi_reader, frame_num, first_free_row, last_free_row):
         # success, frame = avi_reader.read()
@@ -6627,6 +7098,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.savedStateFrameNumber = None
 
         self.saveApertureState.setEnabled(False)
+        self.convertAviToFitsButton.setEnabled(False)
         self.restoreApertureState.setEnabled(False)
 
         self.viewFieldsCheckBox.setEnabled(False)
@@ -6659,6 +7131,15 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.transportPlot.setEnabled(state)
         self.transportCsv.setEnabled(state)
 
+    def updateConvertAviToFitsButtonState(self):
+        cap_available = (
+            self.aav_file_in_use and getattr(self, "adv2_reader", None) is not None
+        ) or (self.avi_in_use and self.cap is not None and self.cap.isOpened())
+        timestamp_ready = self.sharpCapTimestampPresent or (
+            self.timestampReadingEnabled and self.timestampFormatter is not None
+        )
+        self.convertAviToFitsButton.setEnabled(bool(cap_available and timestamp_ready))
+
     def enableControlsForAviData(self):
 
         self.setTransportButtonsEnableState(True)
@@ -6672,6 +7153,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.processAsFieldsCheckBox.setEnabled(True)
         self.topFieldFirstRadioButton.setEnabled(True)
         self.bottomFieldFirstRadioButton.setEnabled(True)
+        self.updateConvertAviToFitsButtonState()
 
     def enableControlsForFitsData(self):
 
@@ -6684,6 +7166,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.stopAtFrameSpinBox.setEnabled(True)
         self.viewFieldsCheckBox.setChecked(False)
         self.viewFieldsCheckBox.setEnabled(False)
+        self.updateConvertAviToFitsButtonState()
 
     def getStarPositionString(self, ini_icrs):
         starPos = StarPositionDialog()
@@ -10971,6 +11454,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
         if self.formatterCode == 'SharpCap8':
             self.sharpCapTimestampPresent = True
+            self.updateConvertAviToFitsButtonState()
             return
 
         if processTimestampProfile:
@@ -10998,6 +11482,8 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             self.vtiSelectComboBox.setEnabled(not self.timestampReadingEnabled)
         else:
             self.vtiSelectComboBox.setEnabled(True)
+
+        self.updateConvertAviToFitsButtonState()
 
     def getFrameNumberFromFile(self, filename):
         fullpath = self.folder_dir + r'/' + filename

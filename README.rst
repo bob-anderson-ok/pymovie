@@ -80,6 +80,29 @@ To pick up a new PyMovie release::
 uv automatically re-syncs the environment whenever ``uv.lock`` has changed,
 so there is nothing else to do.
 
+AVI/AAV to FITS
+--------------
+
+After opening a video and loading or training its OCR timestamp profile, use
+``Timestamp -> Convert AVI/AAV to FITS``. Full frames are written to
+``fits_converted``. Field images, when available, are written in timestamp
+order to ``fits_converted_fields``. The confirmation dialog lists the target
+directory and warns if existing FITS files there will be replaced.
+
+AAV conversion preserves the reader's 16-bit pixel values. Full-frame exposure
+comes from AAV frame metadata where available, with the effective frame rate
+as a fallback. Integrated AAV recordings use full-frame output only.
+
+Tests
+-----
+
+Run the regression tests from the repository root::
+
+    uv run python -m unittest discover -s tests -v
+
+The tests cover FITS timestamp and exposure headers, conversion cancellation,
+and AAV reader behavior using generated data.
+
 Troubleshooting
 ---------------
 
