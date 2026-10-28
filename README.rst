@@ -80,6 +80,19 @@ To pick up a new PyMovie release::
 uv automatically re-syncs the environment whenever ``uv.lock`` has changed,
 so there is nothing else to do.
 
+ADV/AAV on Apple Silicon
+------------------------
+
+Adv2 1.2.0 bundles an Intel-only macOS library. After installing the Python
+dependencies, Apple Silicon users can build the native reader with::
+
+    uv run python scripts/build_advcore_macos.py
+
+This requires Git and Xcode Command Line Tools (``xcode-select --install``).
+The script builds the official ADVCore source at a pinned revision for ARM64,
+keeps a backup of the original library, and installs it in the active Python
+environment. Repeat this step after reinstalling Adv2.
+
 Troubleshooting
 ---------------
 
