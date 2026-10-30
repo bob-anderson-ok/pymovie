@@ -81,7 +81,7 @@ uv automatically re-syncs the environment whenever ``uv.lock`` has changed,
 so there is nothing else to do.
 
 AVI/AAV to FITS
---------------
+---------------
 
 After opening a video and loading or training its OCR timestamp profile, use
 ``Timestamp -> Convert AVI/AAV to FITS``. Choose an existing output folder in
@@ -104,6 +104,7 @@ Run the regression tests from the repository root::
 
 The tests cover FITS timestamp and exposure headers, conversion cancellation,
 and AAV reader behavior using generated data.
+
 AVI codecs
 ----------
 
@@ -117,6 +118,7 @@ The reader regression tests create short RV24 and lossless FFV1 videos in
 temporary directories. Run all of them with::
 
     uv run --with av python -m unittest discover -s tests -v
+
 ADV/AAV on Apple Silicon
 ------------------------
 
@@ -129,6 +131,7 @@ This requires Git and Xcode Command Line Tools (``xcode-select --install``).
 The script builds the official ADVCore source at a pinned revision for ARM64,
 keeps a backup of the original library, and installs it in the active Python
 environment. Repeat this step after reinstalling Adv2.
+
 Tests
 -----
 

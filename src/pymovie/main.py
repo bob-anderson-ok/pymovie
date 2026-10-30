@@ -149,7 +149,7 @@ from astropy.coordinates import SkyCoord
 from astroquery.vizier import Vizier
 from skimage import measure, transform
 import skimage
-import subprocess
+# import subprocess
 
 from pymovie.aperture import *  # This gets MeasurementAperture and Horizontalline classes
 from pymovie.ocrCharacterBox import *
