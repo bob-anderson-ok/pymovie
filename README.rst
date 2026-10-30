@@ -89,6 +89,20 @@ background scatter with source shot noise. Local background scatter already
 includes read noise, so it is not added separately. Set the detector gain for
 your camera; the default gain is marked as approximate in the CSV header.
 The existing ``.pymovie`` recording is still written alongside the CSV.
+AVI/AAV to FITS
+---------------
+
+After opening a video and loading or training its OCR timestamp profile, use
+``Timestamp -> Convert AVI/AAV to FITS``. Choose an existing output folder in
+the folder dialog. It starts at ``fits_converted`` for full frames or
+``fits_converted_fields`` for field images when those folders exist; otherwise
+it starts in the source video's folder. You can create a new folder in the
+dialog. The confirmation lists the target folder and warns before replacing
+matching ``frame-`` or ``field-`` FITS files. Other FITS files are preserved.
+
+AAV conversion preserves the reader's 16-bit pixel values. Full-frame exposure
+comes from AAV frame metadata where available, with the effective frame rate
+as a fallback. Integrated AAV recordings use full-frame output only.
 
 Tests
 -----
@@ -101,6 +115,47 @@ The tests cover numerical limiting cases and CSV error columns alongside the
 ``.pymovie`` recording. The numerical tests check the implemented uncertainty
 formula; they do not establish its physical calibration for a specific
 detector or data reduction workflow.
+The tests cover FITS timestamp and exposure headers, conversion cancellation,
+and AAV reader behavior using generated data.
+
+AVI codecs
+----------
+
+If OpenCV cannot decode an AVI, PyMovie tries its packed RV24 reader and then
+PyAV/FFmpeg. Install PyAV in the environment created by uv to enable that
+second fallback::
+
+    uv pip install av
+
+The reader regression tests create short RV24 and lossless FFV1 videos in
+temporary directories. Run all of them with::
+
+    uv run --with av python -m unittest discover -s tests -v
+
+ADV/AAV on Apple Silicon
+------------------------
+
+Adv2 1.2.0 bundles an Intel-only macOS library. After installing the Python
+dependencies, Apple Silicon users can build the native reader with::
+
+    uv run python scripts/build_advcore_macos.py
+
+This requires Git and Xcode Command Line Tools (``xcode-select --install``).
+The script builds the official ADVCore source at a pinned revision for ARM64,
+keeps a backup of the original library, and installs it in the active Python
+environment. Repeat this step after reinstalling Adv2.
+
+Tests
+-----
+
+Run the OCR pickle compatibility regression tests from the repository root::
+
+    uv run python -m unittest discover -s tests -v
+
+The tests cover NumPy 1.x and 2.x array module paths, corrupted input, and
+loading OCR templates from the observation folder or application folder.
+Fixtures are generated in temporary directories; existing OCR files are not
+modified.
 
 Troubleshooting
 ---------------
