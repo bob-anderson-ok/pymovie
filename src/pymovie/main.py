@@ -101,6 +101,7 @@ from astropy import modeling
 # from astropy.time import Time
 import sys
 import os
+import struct
 import re
 import errno
 import platform
@@ -183,6 +184,340 @@ class RowSumPlotWidget(pg.PlotWidget):
     def closeEvent(self, event):
         self.windowClosed.emit()
         super().closeEvent(event)
+
+
+class Raw24AviReader:
+    """Minimal OpenCV-like reader for uncompressed RV24 AVI files."""
+
+    is_raw24_avi = True
+
+    def __init__(self, filename):
+        self.filename = filename
+        self.handle = None
+        self.width = None
+        self.height = None
+        self.frame_count = None
+        self.fps = 0.0
+        self.fourcc = 'RV24'
+        self.next_frame = 0
+        self.movi_data_start = None
+        self.frame_chunk_size = None
+        self.frame_chunk_span = None
+        self._open()
+
+    def _open(self):
+        self._read_header()
+        self.handle = open(self.filename, 'rb')
+
+    def _read_header(self):
+        file_size = os.path.getsize(self.filename)
+        with open(self.filename, 'rb') as handle:
+            if handle.read(4) != b'RIFF':
+                raise ValueError('Not a RIFF file')
+            handle.seek(8)
+            if handle.read(4) != b'AVI ':
+                raise ValueError('Not an AVI file')
+
+            metadata = {
+                'avih_frame_count': None,
+                'avih_fps': 0.0,
+                'stream_length': None,
+                'stream_fps': 0.0,
+                'compression': None,
+                'bit_count': None,
+            }
+            self._scan_chunks(handle, 12, file_size, metadata)
+
+            if self.movi_data_start is None:
+                raise ValueError('AVI movi chunk not found')
+            if metadata['compression'] != b'RV24' or metadata['bit_count'] != 24:
+                raise ValueError('Only RV24 24-bit AVI files are supported')
+            if not self.width or not self.height:
+                raise ValueError('AVI dimensions not found')
+
+            handle.seek(self.movi_data_start)
+            chunk_id = handle.read(4)
+            raw_size = handle.read(4)
+            if len(raw_size) != 4 or not chunk_id.endswith((b'db', b'dc')):
+                raise ValueError('First AVI frame chunk not found')
+
+            self.frame_chunk_size = struct.unpack('<I', raw_size)[0]
+            expected_size = self.width * self.height * 3
+            if self.frame_chunk_size != expected_size:
+                raise ValueError('Unexpected RV24 frame size')
+
+            self.frame_chunk_span = 8 + self.frame_chunk_size + (self.frame_chunk_size & 1)
+            max_frames_by_size = max(0, (file_size - self.movi_data_start) // self.frame_chunk_span)
+            header_frame_count = metadata['stream_length'] or metadata['avih_frame_count'] or max_frames_by_size
+            self.frame_count = min(header_frame_count, max_frames_by_size)
+            self.fps = metadata['stream_fps'] or metadata['avih_fps']
+
+    def _scan_chunks(self, handle, start, end, metadata):
+        pos = start
+        while pos + 8 <= end:
+            handle.seek(pos)
+            chunk_id = handle.read(4)
+            raw_size = handle.read(4)
+            if len(chunk_id) != 4 or len(raw_size) != 4:
+                return
+
+            chunk_size = struct.unpack('<I', raw_size)[0]
+            data_start = pos + 8
+            data_end = data_start + chunk_size
+            next_pos = data_end + (chunk_size & 1)
+
+            if chunk_id == b'LIST':
+                list_type = handle.read(4)
+                if list_type == b'movi':
+                    self.movi_data_start = data_start + 4
+                    return
+                self._scan_chunks(handle, data_start + 4, data_end, metadata)
+            else:
+                self._read_header_chunk(handle, chunk_id, data_start, chunk_size, metadata)
+
+            pos = next_pos
+
+    def _read_header_chunk(self, handle, chunk_id, data_start, chunk_size, metadata):
+        if chunk_id not in (b'avih', b'strh', b'strf'):
+            return
+
+        handle.seek(data_start)
+        data = handle.read(chunk_size)
+
+        if chunk_id == b'avih' and len(data) >= 40:
+            microseconds_per_frame = struct.unpack_from('<I', data, 0)[0]
+            metadata['avih_frame_count'] = struct.unpack_from('<I', data, 16)[0]
+            self.width = struct.unpack_from('<I', data, 32)[0]
+            self.height = struct.unpack_from('<I', data, 36)[0]
+            if microseconds_per_frame:
+                metadata['avih_fps'] = 1_000_000.0 / microseconds_per_frame
+        elif chunk_id == b'strh' and len(data) >= 36 and data[:4] == b'vids':
+            scale = struct.unpack_from('<I', data, 20)[0]
+            rate = struct.unpack_from('<I', data, 24)[0]
+            metadata['stream_length'] = struct.unpack_from('<I', data, 32)[0]
+            if scale:
+                metadata['stream_fps'] = rate / scale
+        elif chunk_id == b'strf' and len(data) >= 20:
+            width = struct.unpack_from('<i', data, 4)[0]
+            height = struct.unpack_from('<i', data, 8)[0]
+            self.width = abs(width)
+            self.height = abs(height)
+            metadata['bit_count'] = struct.unpack_from('<H', data, 14)[0]
+            metadata['compression'] = data[16:20]
+
+    def isOpened(self):
+        return self.handle is not None and not self.handle.closed
+
+    def release(self):
+        if self.handle is not None:
+            self.handle.close()
+
+    def get(self, prop_id):
+        if prop_id == cv2.CAP_PROP_POS_FRAMES:
+            return float(self.next_frame)
+        if prop_id == cv2.CAP_PROP_FRAME_COUNT:
+            return float(self.frame_count)
+        if prop_id == cv2.CAP_PROP_FPS:
+            return float(self.fps)
+        if prop_id == cv2.CAP_PROP_FRAME_WIDTH:
+            return float(self.width)
+        if prop_id == cv2.CAP_PROP_FRAME_HEIGHT:
+            return float(self.height)
+        if prop_id == cv2.CAP_PROP_FOURCC:
+            return float(sum(ord(char) << (8 * index) for index, char in enumerate(self.fourcc)))
+        return 0.0
+
+    def set(self, prop_id, value):
+        if prop_id != cv2.CAP_PROP_POS_FRAMES:
+            return False
+        frame_num = int(value)
+        if frame_num < 0 or frame_num >= self.frame_count:
+            return False
+        self.next_frame = frame_num
+        return True
+
+    def read(self):
+        if not self.isOpened() or self.next_frame >= self.frame_count:
+            return False, None
+
+        chunk_start = self.movi_data_start + self.next_frame * self.frame_chunk_span
+        self.handle.seek(chunk_start)
+        chunk_id = self.handle.read(4)
+        raw_size = self.handle.read(4)
+        if len(raw_size) != 4 or not chunk_id.endswith((b'db', b'dc')):
+            return False, None
+
+        chunk_size = struct.unpack('<I', raw_size)[0]
+        if chunk_size != self.frame_chunk_size:
+            return False, None
+
+        raw_frame = self.handle.read(chunk_size)
+        if len(raw_frame) != chunk_size:
+            return False, None
+
+        self.next_frame += 1
+        frame = np.frombuffer(raw_frame, dtype=np.uint8).reshape((self.height, self.width, 3)).copy()
+        return True, frame
+
+
+class PyAvAviReader:
+    """OpenCV-like AVI reader backed by PyAV for codecs OpenCV cannot decode."""
+
+    is_pyav_avi = True
+
+    def __init__(self, filename):
+        import av
+
+        self.av = av
+        self.filename = filename
+        self.container = None
+        self.stream = None
+        self.frame_iter = None
+        self.width = 0
+        self.height = 0
+        self.frame_count = 0
+        self.fps = 0.0
+        self.fourcc = ''
+        self.next_frame = 0
+        self.decoded_frame_num = 0
+        self.seek_jump_threshold = 50
+        self._open()
+
+    def _open(self):
+        self.container = self.av.open(self.filename)
+        self.stream = self.container.streams.video[0]
+        self.stream.thread_type = 'AUTO'
+
+        codec_context = self.stream.codec_context
+        self.width = codec_context.width
+        self.height = codec_context.height
+        self.frame_count = int(self.stream.frames or 0)
+        self.fps = self._rateToFloat(self.stream.average_rate)
+        if not self.fps:
+            self.fps = self._rateToFloat(codec_context.framerate)
+        self.fourcc = str(getattr(codec_context, 'codec_tag', '') or '').strip()
+        if not self.fourcc and codec_context.name:
+            self.fourcc = codec_context.name[:4].upper()
+
+        self._resetDecoder()
+
+    @staticmethod
+    def _rateToFloat(rate):
+        if not rate:
+            return 0.0
+        try:
+            return float(rate)
+        except (TypeError, ValueError, ZeroDivisionError):
+            return 0.0
+
+    def _resetDecoder(self):
+        if self.container is None:
+            return
+        self.container.close()
+        self.container = self.av.open(self.filename)
+        self.stream = self.container.streams.video[0]
+        self.stream.thread_type = 'AUTO'
+        self.frame_iter = self.container.decode(self.stream)
+        self.decoded_frame_num = 0
+
+    def _seekToFrame(self, frame_num):
+        if not self.fps or not self.stream or not self.stream.time_base:
+            return False
+
+        try:
+            offset = int((frame_num / self.fps) / float(self.stream.time_base))
+            self.container.seek(offset, stream=self.stream, any_frame=False, backward=True)
+            self.frame_iter = self.container.decode(self.stream)
+            self.decoded_frame_num = None
+        except Exception:
+            return False
+
+        return True
+
+    def _frameNumberFromFrame(self, frame):
+        if self.fps:
+            if frame.pts is not None and self.stream.time_base:
+                return int(round(float(frame.pts * self.stream.time_base) * self.fps))
+            if frame.time is not None:
+                return int(round(float(frame.time) * self.fps))
+        return None
+
+    def _readDecodedFrame(self):
+        frame = next(self.frame_iter)
+        frame_num = self._frameNumberFromFrame(frame)
+        if frame_num is None:
+            if self.decoded_frame_num is None:
+                frame_num = 0
+            else:
+                frame_num = self.decoded_frame_num
+        self.decoded_frame_num = frame_num + 1
+        return frame_num, frame
+
+    @staticmethod
+    def _fourccToInt(fourcc):
+        fourcc = (fourcc or '')[:4].ljust(4, '\x00')
+        return sum(ord(char) << (8 * index) for index, char in enumerate(fourcc))
+
+    def isOpened(self):
+        return self.container is not None
+
+    def release(self):
+        if self.container is not None:
+            self.container.close()
+            self.container = None
+            self.frame_iter = None
+
+    def get(self, prop_id):
+        if prop_id == cv2.CAP_PROP_POS_FRAMES:
+            return float(self.next_frame)
+        if prop_id == cv2.CAP_PROP_FRAME_COUNT:
+            return float(self.frame_count)
+        if prop_id == cv2.CAP_PROP_FPS:
+            return float(self.fps)
+        if prop_id == cv2.CAP_PROP_FRAME_WIDTH:
+            return float(self.width)
+        if prop_id == cv2.CAP_PROP_FRAME_HEIGHT:
+            return float(self.height)
+        if prop_id == cv2.CAP_PROP_FOURCC:
+            return float(self._fourccToInt(self.fourcc))
+        return 0.0
+
+    def set(self, prop_id, value):
+        if prop_id != cv2.CAP_PROP_POS_FRAMES:
+            return False
+        frame_num = int(value)
+        if frame_num < 0:
+            return False
+        if self.frame_count and frame_num >= self.frame_count:
+            return False
+        if (self.decoded_frame_num is None or frame_num < self.decoded_frame_num or
+                frame_num - self.decoded_frame_num > self.seek_jump_threshold):
+            if not self._seekToFrame(frame_num):
+                self._resetDecoder()
+        self.next_frame = frame_num
+        return True
+
+    def read(self):
+        if not self.isOpened():
+            return False, None
+        if self.frame_count and self.next_frame >= self.frame_count:
+            return False, None
+        if self.decoded_frame_num is not None and self.next_frame < self.decoded_frame_num:
+            self._resetDecoder()
+
+        try:
+            while self.decoded_frame_num is None or self.decoded_frame_num <= self.next_frame:
+                frame_num, frame = self._readDecodedFrame()
+                if frame_num >= self.next_frame:
+                    break
+        except StopIteration:
+            return False, None
+
+        self.next_frame += 1
+        if frame_num != self.next_frame - 1:
+            return False, None
+
+        return True, frame.to_ndarray(format='bgr24')
 
 
 class CustomViewBox(pg.ViewBox):
@@ -10109,6 +10444,33 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 # Version 3.4.1 added next line
                 self.thumbTwoView.setLevels(min=self.levels[0], max=self.levels[1])
 
+    def openAviCapture(self, filename, api_preference=None, announce_fallback=True):
+        if api_preference is None:
+            cap = cv2.VideoCapture(filename)  # noqa
+        else:
+            cap = cv2.VideoCapture(filename, api_preference)  # noqa
+
+        if cap.isOpened():
+            return cap
+
+        cap.release()
+
+        try:
+            cap = Raw24AviReader(filename)
+        except (OSError, ValueError, struct.error):
+            try:
+                cap = PyAvAviReader(filename)
+            except Exception:
+                return cap
+
+            if announce_fallback:
+                self.showMsg('OpenCV could not open this AVI; using PyMovie PyAV/FFmpeg AVI reader.')
+            return cap
+
+        if announce_fallback:
+            self.showMsg('OpenCV could not open this AVI; using PyMovie RV24 raw AVI reader.')
+        return cap
+
     def getFrame(self, fr_num):
 
         trace = False
@@ -10148,7 +10510,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
             if trace:
                 self.showMsg(f'Closing and reopening avi_file: {self.filename}')
             self.cap.release()
-            self.cap = cv2.VideoCapture(self.filename, cv2.CAP_FFMPEG)  # noqa
+            self.cap = self.openAviCapture(self.filename, cv2.CAP_FFMPEG, announce_fallback=False)
             next_frame = self.cap.get(cv2.CAP_PROP_POS_FRAMES)  # noqa
             if trace:
                 self.showMsg(f'requested frame: {fr_num}  next in line for cap.read(): {next_frame}')
@@ -10348,7 +10710,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
                 self.showMsg(f'Opened: {self.filename}')
                 if self.cap:
                     self.cap.release()
-                self.cap = cv2.VideoCapture(self.filename, cv2.CAP_FFMPEG)  # noqa
+                self.cap = self.openAviCapture(self.filename, cv2.CAP_FFMPEG)
                 if not self.cap.isOpened():
                     self.showMsg(f'  {self.filename} could not be opened!')
                     self.fourcc = ''
@@ -10724,7 +11086,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
 
                 if self.cap:
                     self.cap.release()
-                self.cap = cv2.VideoCapture(self.avi_location)  # noqa
+                self.cap = self.openAviCapture(self.avi_location)
                 if not self.cap.isOpened():
                     self.showMsg(f'  {self.avi_location} could not be opened!')
                 else:
