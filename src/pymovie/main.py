@@ -870,6 +870,9 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.settings.setFallbacksEnabled(False)
         self.setupPhotometryNoiseControls()
 
+        if self.runLcViewer.isEnabled():
+            self.runLcViewer.setChecked(self.settings.value('runLcViewer', 'true') == 'true')
+
         state = self.settings.value('manualWorkfolderSelection', False) == 'true'
         self.enableManualWorkFolderSelectionCheckBox.setChecked(state)
 
@@ -13670,6 +13673,10 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         self.settings.setValue('recordStackFrames', self.recordStackSpinBox.value())
 
         self.settings.setValue('manualWorkfolderSelection', self.enableManualWorkFolderSelectionCheckBox.isChecked())
+
+        # When the viewer is missing the checkbox is forced off, which is not the user's choice, so don't save it
+        if self.runLcViewer.isEnabled():
+            self.settings.setValue('runLcViewer', self.runLcViewer.isChecked())
 
         self.settings.setValue('tablist', tabOrderList)
 
