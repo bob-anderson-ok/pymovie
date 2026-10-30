@@ -80,6 +80,15 @@ To pick up a new PyMovie release::
 uv automatically re-syncs the environment whenever ``uv.lock`` has changed,
 so there is nothing else to do.
 
+Photometry uncertainty export
+-----------------------------
+
+The ``Photometry Noise`` controls on the ``Median/Misc`` tab can add
+``signal_err`` and ``snr`` columns to CSV files. The estimate combines local
+background scatter with source shot noise. Local background scatter already
+includes read noise, so it is not added separately. Set the detector gain for
+your camera; the default gain is marked as approximate in the CSV header.
+The existing ``.pymovie`` recording is still written alongside the CSV.
 AVI/AAV to FITS
 ---------------
 
@@ -102,6 +111,10 @@ Run the regression tests from the repository root::
 
     uv run python -m unittest discover -s tests -v
 
+The tests cover numerical limiting cases and CSV error columns alongside the
+``.pymovie`` recording. The numerical tests check the implemented uncertainty
+formula; they do not establish its physical calibration for a specific
+detector or data reduction workflow.
 The tests cover FITS timestamp and exposure headers, conversion cancellation,
 and AAV reader behavior using generated data.
 
