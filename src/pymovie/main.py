@@ -112,6 +112,7 @@ from urllib.request import urlopen
 from copy import deepcopy
 from pymovie.checkForNewerVersion import getLatestPackageVersion, isNewerVersion
 from pymovie import updatesDialog
+from pymovie.pickle_compat import load_numpy_pickle
 from pymovie import starPositionDialog
 from pymovie import aperturesFileTagDialog
 from pymovie import hotPixelDialog
@@ -5662,7 +5663,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         pickled_digits_path = os.path.join(self.ocrDigitsDir, pickled_digits_fn)
 
         if os.path.exists(pickled_digits_path):
-            self.modelDigits = pickle.load(open(pickled_digits_path, "rb"))
+            self.modelDigits = load_numpy_pickle(pickled_digits_path)
             self.showMissingModelDigits()
             return
 
@@ -5670,7 +5671,7 @@ class PyMovie(PyQt5.QtWidgets.QMainWindow, gui.Ui_MainWindow):
         pickled_digits_path = os.path.join(self.homeDir, pickled_digits_fn)
 
         if os.path.exists(pickled_digits_path):
-            self.modelDigits = pickle.load(open(pickled_digits_path, "rb"))
+            self.modelDigits = load_numpy_pickle(pickled_digits_path)
 
         self.showMissingModelDigits()
 
