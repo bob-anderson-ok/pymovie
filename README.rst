@@ -92,6 +92,17 @@ This requires Git and Xcode Command Line Tools (``xcode-select --install``).
 The script builds the official ADVCore source at a pinned revision for ARM64,
 keeps a backup of the original library, and installs it in the active Python
 environment. Repeat this step after reinstalling Adv2.
+Tests
+-----
+
+Run the OCR pickle compatibility regression tests from the repository root::
+
+    uv run python -m unittest discover -s tests -v
+
+The tests cover NumPy 1.x and 2.x array module paths, corrupted input, and
+loading OCR templates from the observation folder or application folder.
+Fixtures are generated in temporary directories; existing OCR files are not
+modified.
 
 Troubleshooting
 ---------------
