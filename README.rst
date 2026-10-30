@@ -89,6 +89,7 @@ background scatter with source shot noise. Local background scatter already
 includes read noise, so it is not added separately. Set the detector gain for
 your camera; the default gain is marked as approximate in the CSV header.
 The existing ``.pymovie`` recording is still written alongside the CSV.
+
 AVI/AAV to FITS
 ---------------
 
