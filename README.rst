@@ -104,6 +104,42 @@ Run the regression tests from the repository root::
 
 The tests cover FITS timestamp and exposure headers, conversion cancellation,
 and AAV reader behavior using generated data.
+AVI codecs
+----------
+
+If OpenCV cannot decode an AVI, PyMovie tries its packed RV24 reader and then
+PyAV/FFmpeg. Install PyAV in the environment created by uv to enable that
+second fallback::
+
+    uv pip install av
+
+The reader regression tests create short RV24 and lossless FFV1 videos in
+temporary directories. Run all of them with::
+
+    uv run --with av python -m unittest discover -s tests -v
+ADV/AAV on Apple Silicon
+------------------------
+
+Adv2 1.2.0 bundles an Intel-only macOS library. After installing the Python
+dependencies, Apple Silicon users can build the native reader with::
+
+    uv run python scripts/build_advcore_macos.py
+
+This requires Git and Xcode Command Line Tools (``xcode-select --install``).
+The script builds the official ADVCore source at a pinned revision for ARM64,
+keeps a backup of the original library, and installs it in the active Python
+environment. Repeat this step after reinstalling Adv2.
+Tests
+-----
+
+Run the OCR pickle compatibility regression tests from the repository root::
+
+    uv run python -m unittest discover -s tests -v
+
+The tests cover NumPy 1.x and 2.x array module paths, corrupted input, and
+loading OCR templates from the observation folder or application folder.
+Fixtures are generated in temporary directories; existing OCR files are not
+modified.
 
 Troubleshooting
 ---------------
